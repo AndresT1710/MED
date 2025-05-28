@@ -9,15 +9,22 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// URL del BACKEND
-builder.Services.AddScoped(sp => new HttpClient
+// Configuración del HttpClient con timeout extendido
+builder.Services.AddScoped(sp =>
 {
-    BaseAddress = new Uri("https://localhost:7009")  // <== Puerto backend real
+    var httpClient = new HttpClient
+    {
+        BaseAddress = new Uri("https://localhost:7009/"),
+        Timeout = TimeSpan.FromSeconds(30)
+    };
+
+    // Headers por defecto
+    httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+    return httpClient;
 });
 
-
 builder.Services.AddBlazoredLocalStorage();
-// SERVICES
 builder.Services.AddScoped<PersonService>();
 
 await builder.Build().RunAsync();

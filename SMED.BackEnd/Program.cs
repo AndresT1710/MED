@@ -43,16 +43,14 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 5. CORS - permitir frontend real
+// 5. CORS - CONFIGURACIÓN TEMPORAL PARA DESARROLLO
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy
-            .WithOrigins("https://localhost:7251")  // <== Cambiado al puerto real del frontend
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
@@ -70,8 +68,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowFrontend");
+// CORS debe ir ANTES que todo lo demás
+app.UseCors();
 
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 

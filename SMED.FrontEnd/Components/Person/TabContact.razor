@@ -1,0 +1,200 @@
+﻿@using SMED.Shared.DTOs
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+
+<div class="form-section">
+    <h4>Dirección</h4>
+
+    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].MainStreet" placeholder="Calle Principal" />
+    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].SecondaryStreet1" placeholder="Calle Secundaria 1" />
+    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].SecondaryStreet2" placeholder="Calle Secundaria 2" />
+    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].HouseNumber" placeholder="Número de Casa" />
+    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].Reference" placeholder="Referencia" />
+</div>
+
+<div class="form-section">
+    <h4>Teléfonos</h4>
+
+    <div class="form-group">
+        <label>Primer Nombre</label>
+        <InputText @bind-Value="Person.Phone.Landline" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label>Segundo Nombre</label>
+        <InputText @bind-Value="Person.Phone.Mobile" class="form-control" />
+    </div>
+</div>
+
+<div class="form-section mt-4">
+    <h4>Residencia</h4>
+
+    <label>Provincia</label>
+    <InputSelect @bind-Value="SelectedProvinceId"
+                 class="form-control mb-2">
+        <option value="">-- Seleccione Provincia --</option>
+        @if (provincias != null)
+        {
+            @foreach (var provincia in provincias)
+            {
+                <option value="@provincia.Id">@provincia.Name</option>
+            }
+        }
+    </InputSelect>
+    <ValidationMessage For="@(() => Person.Residence.ProvinceId)" />
+
+
+    <label>Ciudad</label>
+    <InputSelect @bind-Value="Person.Residence.CityId"
+                 class="form-control"
+                 disabled="@(ciudades == null || !ciudades.Any())">
+        <option value="">-- Seleccione Ciudad --</option>
+        @if (ciudades != null)
+        {
+            @foreach (var ciudad in ciudades)
+            {
+                <option value="@ciudad.Id">@ciudad.Name</option>
+            }
+        }
+    </InputSelect>
+    <ValidationMessage For="@(() => Person.Residence.CityId)" />
+
+</div>
+
+@code {
+    [Parameter]
+    public PersonDTO Person { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<int?> ProvinceIdChanged { get; set; }
+
+    private List<ProvinceDTO>? provincias;
+    private List<CityDTO>? ciudades;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Person.Address ??= new() { new PersonAddressDTO() };
+        Person.Residence ??= new PersonResidenceDTO();
+
+        await LoadProvinces();
+
+        // Si ya tiene provincia seleccionada, cargar ciudades
+        if (Person.Residence.ProvinceId.HasValue)
+        {
+            await LoadCities(Person.Residence.ProvinceId.Value);
+
+            // Actualizar nombre de ciudad si ya está seleccionada
+            if (Person.Residence.CityId.HasValue)
+            {
+                var ciudad = ciudades?.FirstOrDefault(c => c.Id == Person.Residence.CityId);
+                Person.Residence.CityName = ciudad?.Name;
+            }
+        }
+
+        await SaveToLocalStorage();
+    }
+
+    private async Task LoadProvinces()
+    {
+        isLoading = true;
+        try
+        {
+            provincias = await Http.GetFromJsonAsync<List<ProvinceDTO>>("api/complements/provinces");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading provinces: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadCities(int provinceId)
+    {
+        if (provinceId <= 0) return;
+
+        isLoading = true;
+        try
+        {
+            ciudades = await Http.GetFromJsonAsync<List<CityDTO>>($"api/complements/city/{provinceId}");
+
+            // Actualizar el nombre de la provincia
+            var selectedProvince = provincias?.FirstOrDefault(p => p.Id == provinceId);
+            if (selectedProvince != null)
+            {
+                Person.Residence.ProvinceName = selectedProvince.Name;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading cities: {ex.Message}");
+            ciudades = new List<CityDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnProvinciaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int provinciaId))
+        {
+            SelectedProvinceId = provinciaId;
+            await LoadCities(provinciaId);
+            await ProvinceIdChanged.InvokeAsync(provinciaId);
+            await SaveToLocalStorage();
+        }
+    }
+
+    private async Task SaveToLocalStorage()
+    {
+        try
+        {
+            await localStorage.SetItemAsync("person", Person);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving to localStorage: {ex.Message}");
+        }
+    }
+
+
+    private int? SelectedProvinceId
+    {
+        get => Person.Residence?.ProvinceId;
+        set
+        {
+            if (Person.Residence == null)
+                Person.Residence = new PersonResidenceDTO();
+
+            if (Person.Residence.ProvinceId != value)
+            {
+                Person.Residence.ProvinceId = value;
+                Person.Residence.CityId = null; // Reset ciudad
+                Person.Residence.CityName = null;
+
+                var provincia = provincias?.FirstOrDefault(p => p.Id == value);
+                Person.Residence.ProvinceName = provincia?.Name;
+
+                _ = LoadCitiesAndSave(value);
+            }
+        }
+    }
+
+    private async Task LoadCitiesAndSave(int? provinceId)
+    {
+        if (provinceId.HasValue)
+            await LoadCities(provinceId.Value);
+
+        await ProvinceIdChanged.InvokeAsync(provinceId);
+        await SaveToLocalStorage();
+
+        // Forzar renderizado para habilitar el combo de ciudad
+        StateHasChanged();
+    }
+
+}

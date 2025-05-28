@@ -1,0 +1,256 @@
+﻿/* === Editable Table Wrapper === */
+.editable-table-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+/* === Editable Table Card === */
+.editable-table {
+    flex: 1 1 calc(50% - 0.5rem);
+    box-sizing: border-box;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 300px; /* Fixed height for ~4 rows */
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* === Header === */
+.editable-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+    min-height: 40px;
+    gap: 0.5rem;
+}
+
+    .editable-table-header h5 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+    }
+
+    .editable-table-header .btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+/* === Scroll Container === */
+.editable-table-scroll {
+    overflow: auto;
+    flex: 1;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+/* === Table === */
+.editable-table-content {
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: white;
+    width: 100%;
+    table-layout: auto;
+}
+
+    .editable-table-content th,
+    .editable-table-content td {
+        border: 1px solid #ddd;
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 250px;
+        min-width: 50px;
+        background-color: white;
+    }
+
+    .editable-table-content th {
+        background-color: #f8f9fa !important;
+        font-weight: 600;
+        color: #495057;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        font-size: 0.9rem;
+    }
+
+    .editable-table-content td {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    .editable-table-content .action-column {
+        text-align: center;
+        white-space: nowrap;
+        width: 1%;
+    }
+
+    .editable-table-content .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        margin: 0 0.125rem;
+        white-space: nowrap;
+    }
+
+    .editable-table-content .btn-sm {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .editable-table-content tbody tr:hover th,
+    .editable-table-content tbody tr:hover td {
+        background-color: #f8f9fa !important;
+    }
+
+/* === Scrollbar === */
+.editable-table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.editable-table-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.editable-table-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+    .editable-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+/* === Empty State === */
+.editable-table-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+    background-color: white;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === Modal Overlay === */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+/* === Modal Dialog === */
+.modal {
+    z-index: 1050;
+}
+
+.modal-dialog {
+    max-width: 600px;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+    .modal-header h5 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* === Form Inputs Inside Modal === */
+.modal-body .form-label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.modal-body .form-control {
+    font-size: 0.9rem;
+    border-radius: 0.4rem;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .editable-table-wrapper {
+        flex-direction: column;
+    }
+
+    .editable-table {
+        flex: 1 1 100%;
+        height: 280px;
+    }
+
+    .editable-table-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+        .editable-table-header h5 {
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+
+    .editable-table-content th,
+    .editable-table-content td {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+
+    .editable-table-content .btn {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+        margin: 0 0.1rem;
+    }
+}

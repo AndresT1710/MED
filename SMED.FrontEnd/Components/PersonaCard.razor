@@ -1,0 +1,37 @@
+﻿@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+
+
+@code {
+    [Parameter] public PersonDTO Person { get; set; }
+}
+
+<div class="card shadow-sm mb-3" style="min-width: 700px; max-width: 100%;">
+    <div class="card-body">
+        <h5 class="card-title">Información de la Persona</h5>
+        <p class="card-text">
+            <strong>Nombre completo:</strong> @($"{Person?.FirstName} {Person?.MiddleName} {Person?.LastName} {Person?.SecondLastName}") <br />
+            <strong>Cédula:</strong> @(Person?.Document?.DocumentNumber ?? "No disponible") <br />
+            <strong>Tipo Documento:</strong> @(Person?.Document?.DocumentTypeName ?? "No disponible") <br />
+            <strong>Fecha Nacimiento:</strong> @Person?.BirthDate?.ToString("yyyy-MM-dd") <br />
+            <strong>Correo:</strong> @(Person?.Email ?? "No disponible") <br /> 
+            <strong>Dirección:</strong><br />
+            - Calle Principal: @(Person?.Address?.FirstOrDefault()?.MainStreet ?? "No disponible")<br />
+            - Calle Sec. 1: @(Person?.Address?.FirstOrDefault()?.SecondaryStreet1 ?? "No disponible")<br />
+            - Calle Sec. 2: @(Person?.Address?.FirstOrDefault()?.SecondaryStreet2 ?? "No disponible")<br />
+            - Número Casa: @(Person?.Address?.FirstOrDefault()?.HouseNumber ?? "No disponible")<br />
+            - Referencia: @(Person?.Address?.FirstOrDefault()?.Reference ?? "No disponible")<br />
+            <strong>Teléfonos:</strong> Celular: @(Person?.Phone?.Mobile ?? "No disponible"), Convencional: @(Person?.Phone?.Landline ?? "No disponible")<br />
+            <strong>Estado Civil:</strong> @(Person?.MaritalStatus?.Name ?? "No disponible")<br />
+            <strong>Seguro Médico:</strong> @(Person?.MedicalInsurance?.FirstOrDefault()?.Name ?? "No disponible")<br />
+            <strong>Lateralidad:</strong> @(Person?.Laterality?.NameLaterality ?? "No disponible")<br />
+            <strong>Religión:</strong> @(Person?.Religion?.Name ?? "No disponible")<br />
+            <strong>Ciudad / Provincia:</strong> @(Person?.Residence?.CityName ?? "No disponible") / @(Person?.Residence?.ProvinceName ?? "No disponible")<br />
+            <strong>Profesional de Salud:</strong> @(Person?.HealthProfessional?.NameTypeProfessional ?? "No disponible"), Registro: @(Person?.HealthProfessional?.RegistrationNumber ?? "No disponible")<br />
+            <strong>Grupo Sanguíneo:</strong> @(Person?.BloodGroup?.Name ?? "No disponible")<br />
+            <strong>Profesión:</strong> @(Person?.Professions?.FirstOrDefault()?.Name ?? "No disponible")<br />
+            <strong>Actividad Laboral:</strong> @(Person?.LaborActivity?.FirstOrDefault()?.Name ?? "No disponible")<br />
+            <strong>Instrucción:</strong> @(Person?.EducationLevel?.Name ?? "No disponible")<br />
+        </p>
+    </div>
+</div>

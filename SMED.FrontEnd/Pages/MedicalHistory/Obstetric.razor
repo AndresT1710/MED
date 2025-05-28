@@ -1,0 +1,15 @@
+﻿@page "/medical-history/obstetric"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - Obstétrico</h4>
+    <PatientSelector />
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial obstétrico...");
+        // Lógica real de guardado aquí
+    }
+}

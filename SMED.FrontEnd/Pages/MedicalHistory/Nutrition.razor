@@ -1,0 +1,16 @@
+﻿@page "/medical-history/nutrition"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - Nutrición</h4>
+    <PatientSelector />
+
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial nutricional...");
+        // Lógica real de guardado aquí
+    }
+}

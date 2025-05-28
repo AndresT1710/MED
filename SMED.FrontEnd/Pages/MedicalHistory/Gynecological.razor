@@ -1,0 +1,16 @@
+﻿@page "/medical-history/gynecological"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - Ginecología</h4>
+    <PatientSelector />
+    
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial ginecológico...");
+        // Lógica real de guardado aquí
+    }
+}

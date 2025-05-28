@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Nuevo perfil",
+    "Projects": [
+      {
+        "Path": "SMED.FrontEnd\\SMED.FrontEnd.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "SMED.BackEnd\\SMED.BackEnd.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

@@ -1,0 +1,158 @@
+﻿@using SMED.Shared.DTOs
+@inject HttpClient Http
+
+<div class="form-section">
+    <h4>Documentos</h4>
+    <div class="form-group">
+        <label>Tipo de documento</label>
+        <InputSelect @bind-Value="SelectedDocumentTypeId" class="form-control">
+            <option value="">-- Seleccione --</option>
+            @foreach (var tipo in DocumentTypes)
+            {
+                <option value="@tipo.Id">@tipo.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="form-group">
+        <label>Número de documento</label>
+        <InputText @bind-Value="Person.Document.DocumentNumber" class="form-control" />
+    </div>
+</div>
+
+<div class="form-section">
+
+    <h4>Profesional de la Salud</h4>
+
+    <div class="form-group">
+        <label>Tipo de Profesional</label>
+        <InputSelect @bind-Value="SelectedHealthProfessionalTypeId" class="form-control">
+            <option value="">-- Seleccione --</option>
+            @foreach (var tipo in HealthProfessionalTypes)
+            {
+                <option value="@tipo.Id">@tipo.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    @if (ShowProfessionalFields)
+    {
+        <div class="professional-fields">
+            <div class="form-group">
+                <label>Número de Registro/Matrícula</label>
+                <InputText @bind-Value="Person.HealthProfessional.RegistrationNumber"
+                class="form-control"
+                placeholder="Ingrese el número de registro" />
+                <ValidationMessage For="@(() => Person.HealthProfessional.RegistrationNumber)" />
+            </div>
+        </div>
+    }
+</div>
+
+
+@code {
+    [Parameter]
+    public PersonDTO Person { get; set; } = new();
+
+    private List<DocumentTypeDTO> DocumentTypes = new();
+
+    private List<HealthProfessionalTypeDTO> HealthProfessionalTypes = new();
+
+    private bool ShowProfessionalFields => SelectedHealthProfessionalTypeId.HasValue && SelectedHealthProfessionalTypeId.Value != 25;
+
+
+    private int? SelectedDocumentTypeId
+    {
+        get => Person.Document?.DocumentTypeId;
+        set
+        {
+            if (Person.Document == null)
+                Person.Document = new PersonDocumentDTO();
+
+            Person.Document.DocumentTypeId = value;
+
+            var selectedType = DocumentTypes.FirstOrDefault(dt => dt.Id == value);
+            Person.Document.DocumentTypeName = selectedType?.Name;
+        }
+    }
+
+    private int? SelectedHealthProfessionalTypeId
+    {
+        get => Person.HealthProfessional?.HealthProfessionalTypeId;
+        set
+        {
+            Person.HealthProfessional ??= new HealthProfessionalDTO();
+            Person.HealthProfessional.HealthProfessionalTypeId = value;
+
+            // ACTUALIZACIÓN CORREGIDA DEL NOMBRE
+            if (value.HasValue)
+            {
+                var selectedType = HealthProfessionalTypes.FirstOrDefault(t => t.Id == value.Value);
+                Person.HealthProfessional.NameTypeProfessional = selectedType?.Name;
+            }
+            else
+            {
+                Person.HealthProfessional.NameTypeProfessional = null;
+            }
+
+            // Resetear campos si se selecciona "Ninguno" (25)
+            if (value == 25)
+            {
+                Person.HealthProfessional.RegistrationNumber = null;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Person.Document ??= new PersonDocumentDTO();
+        await CargarTiposDocumento();
+		await LoadHealthProfessionalTypes();
+
+        // Si ya tiene un tipo de documento asignado, actualizar el nombre
+        if (Person.Document.DocumentTypeId.HasValue)
+        {
+            var docType = DocumentTypes.FirstOrDefault(dt => dt.Id == Person.Document.DocumentTypeId);
+            if (docType != null)
+            {
+                Person.Document.DocumentTypeName = docType.Name;
+            }
+        }
+
+        if (Person.HealthProfessional?.HealthProfessionalTypeId != null &&
+             string.IsNullOrEmpty(Person.HealthProfessional.NameTypeProfessional))
+        {
+            var tipo = HealthProfessionalTypes.FirstOrDefault(hp => hp.Id == Person.HealthProfessional.HealthProfessionalTypeId);
+            if (tipo != null)
+            {
+                Person.HealthProfessional.NameTypeProfessional = tipo.Name;
+            }
+        }
+
+
+    }
+
+    private async Task CargarTiposDocumento()
+    {
+        try
+        {
+            DocumentTypes = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/complements/document-types") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar tipos de documento: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionalTypes()
+    {
+        try
+        {
+            HealthProfessionalTypes = await Http.GetFromJsonAsync<List<HealthProfessionalTypeDTO>>("api/complements/health-professional-types") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando tipos de profesionales: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,23 @@
+# .NET
+**/[Bb]in/
+**/[Oo]bj/
+**/.vs/
+**/.vscode/
+
+# Archivos compilados
+**/*.dll
+**/*.pdb
+**/*.exe
+**/*.js.map
+**/*.js
+**/*.json
+**/*.cache
+
+# Blazor/WebAssembly
+**/wwwroot/_framework/
+# Blazor/WASM específico
+**/Client/bin/
+**/Client/obj/
+**/wwwroot/_framework/
+**/*.js
+**/*.json

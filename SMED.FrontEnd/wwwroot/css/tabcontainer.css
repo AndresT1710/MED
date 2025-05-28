@@ -1,0 +1,42 @@
+﻿.tab-container {
+    position: relative;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-header {
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+    .tab-header .nav-link {
+        border-radius: 1rem 1rem 0 0;
+        color: #495057;
+        font-weight: 500;
+        margin-right: 0.5rem;
+    }
+
+        .tab-header .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd #0d6efd #ffffff;
+        }
+
+.tab-body {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 0.5rem 0.5rem;
+    min-height: 300px;
+}
+
+.save-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 999;
+    padding: 0.75rem 1.5rem;
+    border-radius: 2rem;
+}

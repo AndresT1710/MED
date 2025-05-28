@@ -1,0 +1,154 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div class="editable-table">
+    <div class="editable-table-header">
+        <h5 title="@Title">@Title</h5>
+        <button class="btn btn-success" @onclick="() => showAddModal = true">Agregar</button>
+    </div>
+
+    <div class="editable-table-scroll">
+        @if (Rows?.Count > 0)
+        {
+            <table class="editable-table-content">
+                <thead>
+                    <tr>
+                        @foreach (var header in ColumnHeaders)
+                        {
+                            <th>@header</th>
+                        }
+                        <th class="action-column">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Rows.Count; i++)
+                    {
+                        int index = i;
+                        <tr>
+                            @for (int j = 0; j < Rows[i].Count; j++)
+                            {
+                                <td>@Rows[i][j]</td>
+                            }
+                            <td class="action-column">
+                                <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(index)">Editar</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(index)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="editable-table-empty">No hay datos disponibles</div>
+        }
+    </div>
+
+    @if (showAddModal || editingIndex != -1)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog" style="max-width: 600px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((editingIndex == -1) ? "Agregar Registro" : "Editar Registro")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @for (int i = 0; i < ColumnHeaders.Count; i++)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">@ColumnHeaders[i]</label>
+                                <input class="form-control" @bind="currentRow[i]" />
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                        <button class="btn btn-primary" @onclick="SaveRow">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (showDeleteConfirm)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                        <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        ¿Está seguro de que desea eliminar este registro?
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
+                        <button class="btn btn-danger" @onclick="DeleteRow">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Editable Table";
+    [Parameter] public List<string> ColumnHeaders { get; set; } = new();
+    [Parameter] public List<List<string>> Rows { get; set; } = new();
+
+    bool showAddModal = false;
+    bool showDeleteConfirm = false;
+    int editingIndex = -1;
+    int deleteIndex = -1;
+    List<string> currentRow = new();
+
+    void EditRow(int index)
+    {
+        editingIndex = index;
+        currentRow = new List<string>(Rows[index]);
+    }
+
+    void ConfirmDelete(int index)
+    {
+        deleteIndex = index;
+        showDeleteConfirm = true;
+    }
+
+    void DeleteRow()
+    {
+        if (deleteIndex >= 0 && deleteIndex < Rows.Count)
+        {
+            Rows.RemoveAt(deleteIndex);
+        }
+        showDeleteConfirm = false;
+    }
+
+    void SaveRow()
+    {
+        if (editingIndex >= 0)
+        {
+            Rows[editingIndex] = new List<string>(currentRow);
+        }
+        else
+        {
+            Rows.Add(new List<string>(currentRow));
+        }
+
+        CloseModal();
+    }
+
+    void CloseModal()
+    {
+        showAddModal = false;
+        editingIndex = -1;
+        currentRow = ColumnHeaders.Select(_ => "").ToList();
+    }
+
+    protected override void OnParametersSet()
+    {
+        currentRow = ColumnHeaders.Select(_ => "").ToList();
+    }
+}

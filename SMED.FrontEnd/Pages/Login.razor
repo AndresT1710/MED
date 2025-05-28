@@ -1,0 +1,47 @@
+﻿@page "/login"
+@layout SMED.FrontEnd.Layout.LoginLayout
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<h3 class="mb-4 text-center">Iniciar Sesión</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="inputEmail" class="form-label">Correo electrónico</label>
+        <InputText id="inputEmail" class="form-control" @bind-Value="loginModel.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label for="inputPassword" class="form-label">Contraseña</label>
+        <div class="input-group password-group">
+            <InputText id="inputPassword"
+                       class="form-control"
+                       type="@PasswordInputType"
+                       @bind-Value="loginModel.Password" />
+            <button type="button"
+                    class="btn toggle-password-btn @(ShowPassword ? "btn-hide" : "btn-show")"
+                    @onclick="TogglePasswordVisibility"
+                    aria-label="Mostrar/ocultar contraseña">
+                <i class="@PasswordToggleIcon me-1"></i> @(ShowPassword ? "Ocultar" : "Mostrar")
+            </button>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
+        <span class="me-2">Ingresar</span>
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
+              style="display: @(IsLoading ? "inline-block" : "none")"></span>
+    </button>
+</EditForm>
+
+

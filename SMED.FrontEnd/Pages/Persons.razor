@@ -1,0 +1,225 @@
+﻿@page "/persons"
+@layout MainLayout
+@using SMED.FrontEnd.Components
+@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject PersonService PersonaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<link rel="stylesheet" href="css/managementtable.css" />
+
+<h3 class="mb-4">Gestión de Personas</h3>
+
+<ManagementTable TableTitle="Personas"
+                 Columns="PersonColumns"
+                 SearchOptions="PersonColumns"
+                 DocumentTypes="documentTypeList"
+                 SearchCallback="SearchHandler"
+                 AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
+                 ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
+                 RenderActions="RenderPersonActions"
+                 @ref="table" />
+
+@if (showCard && selectedPerson != null)
+{
+    <div class="modal fade show d-flex align-items-center justify-content-center"
+         tabindex="-1"
+         style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
+         role="dialog">
+
+        <div style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center;">
+            <div class="modal-content"
+                 style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
+                <div class="modal-header">
+                    <h5 class="modal-title">Información de la Persona</h5>
+                    <button type="button" class="btn-close" @onclick="() => showCard = false"></button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
+                    <PersonaCard person="selectedPerson" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
+
+    private ManagementTable table;
+
+    private List<string> PersonColumns = new()
+    {
+        "Primer Nombre", "Segundo Nombre", "Primer Apellido", "Segundo Apellido", "Cédula de Identidad", "Acciones"
+    };
+
+    private PersonDTO selectedPerson;
+    private bool showCard = false;
+
+    private List<DocumentTypeDTO> documentTypeList = new();
+    private List<PersonDTO> personList = new();
+    private List<List<string>> PersonData = new();
+    private List<List<string>> FilteredData = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types");
+        await LoadPersonData();
+        await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+    }
+
+    private async Task LoadPersonData()
+    {
+        personList = await PersonaService.GetAllPersons();
+
+        PersonData = personList.Select(p => new List<string>
+        {
+            p.FirstName ?? "",
+            p.MiddleName ?? "",
+            p.LastName ?? "",
+            p.SecondLastName ?? "",
+            (p.Document?.DocumentTypeId == 1) ? (p.Document.DocumentNumber ?? "") : "",
+            p.BirthDate?.ToString("yyyy-MM-dd") ?? "",
+            p.Email ?? "",
+            p.Address?.FirstOrDefault()?.MainStreet ?? "",
+            p.Address?.FirstOrDefault()?.SecondaryStreet1 ?? "",
+            p.Address?.FirstOrDefault()?.SecondaryStreet2 ?? "",
+            p.Address?.FirstOrDefault()?.HouseNumber ?? "",
+            p.Address?.FirstOrDefault()?.Reference ?? "",
+            p.Phone?.Mobile ?? "",
+            p.Phone?.Landline ?? "",
+            p.MaritalStatus?.Name ?? "",
+            p.MedicalInsurance?.FirstOrDefault()?.Name ?? "",
+            p.Document?.DocumentNumber ?? "",
+            p.Document?.DocumentTypeName ?? "",
+            p.Laterality?.NameLaterality ?? "",
+            p.Religion?.Name ?? "",
+            p.Residence?.CityName ?? "",
+            p.Residence?.ProvinceName ?? "",
+            p.HealthProfessional?.NameTypeProfessional ?? "",
+            p.HealthProfessional?.RegistrationNumber ?? "",
+            p.BloodGroup?.Name ?? "",
+            p.Professions?.FirstOrDefault()?.Name ?? "",
+            p.LaborActivity?.FirstOrDefault()?.Name ?? "",
+            p.EducationLevel?.Name ?? "",
+            p.Id.ToString()
+        }).ToList();
+    }
+
+    private async Task Search(string[] data)
+    {
+        string field = data[0];
+        string value = data[1]?.Trim().ToLower() ?? "";
+
+        if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value))
+        {
+            await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+            return;
+        }
+
+        int index = PersonColumns.IndexOf(field);
+        if (index < 0) return;
+
+        if (field == "Cédula de Identidad")
+        {
+            FilteredData = PersonData
+                .Where(row => row[index].Equals(value, StringComparison.OrdinalIgnoreCase))
+                .Select(r => r.Concat(new[] { r[0] }).ToList())
+                .ToList();
+        }
+        else
+        {
+            FilteredData = PersonData
+                .Where(row => row[index].ToLower().Contains(value))
+                .Select(r => r.Concat(new[] { r[0] }).ToList())
+                .ToList();
+        }
+
+        await table.LoadRecords(FilteredData);
+    }
+
+    private Task AddPerson()
+    {
+        Navigation.NavigateTo("/persona/nueva");
+        return Task.CompletedTask;
+    }
+
+    private async Task ClearSearch()
+    {
+        await table.ClearSearch();
+        await LoadPersonData();
+        await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+    }
+
+    RenderFragment<List<string>> RenderPersonActions => row => builder =>
+    {
+        int seq = 0;
+        var id = row[28];
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
+        builder.AddAttribute(seq++, "title", "Ver");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewPerson(id)));
+        builder.AddContent(seq++, "Ver");
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
+        builder.AddAttribute(seq++, "title", "Editar");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditPerson(id)));
+        builder.AddContent(seq++, "Editar");
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
+        builder.AddAttribute(seq++, "title", "Eliminar");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeletePerson(id)));
+        builder.AddContent(seq++, "Eliminar");
+        builder.CloseElement();
+    };
+
+    private void ViewPerson(string id)
+    {
+        selectedPerson = personList.FirstOrDefault(p => p.Id.ToString() == id);
+
+        if (selectedPerson == null)
+        {
+            JS.InvokeVoidAsync("alert", $"No se encontró la persona con ID: {id}");
+            return;
+        }
+        showCard = true;
+    }
+
+    private void EditPerson(string id)
+    {
+        Navigation.NavigateTo($"/persona/editar/{id}");
+    }
+
+    private async Task DeletePerson(string id)
+    {
+        if (!int.TryParse(id, out int idInt))
+        {
+            await JS.InvokeVoidAsync("alert", "ID inválido");
+            return;
+        }
+
+        var person = personList.FirstOrDefault(p => p.Id == idInt);
+        if (person == null)
+        {
+            await JS.InvokeVoidAsync("alert", $"No se encontró la persona con ID: {id}");
+            return;
+        }
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar a {person.FirstName}?");
+        if (confirmed)
+        {
+            // Simular eliminación exitosa sin el servicio real
+            personList.Remove(person);
+            await LoadPersonData();
+            await JS.InvokeVoidAsync("alert", "Persona eliminada (simulado)");
+            await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+        }
+    }
+}

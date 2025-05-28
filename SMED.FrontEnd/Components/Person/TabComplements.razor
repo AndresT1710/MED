@@ -1,0 +1,433 @@
+﻿@using SMED.Shared.DTOs
+@inject HttpClient Http
+
+<div class="form-section">
+    <h4>Información Complementaria</h4>
+
+    <div class="form-group">
+        <label>Estado Civil</label>
+        <InputSelect @bind-Value="SelectedMaritalStatusId" class="form-control">
+            <option value="">-- Seleccione Estado Civil --</option>
+            @if (MaritalStatusList != null)
+            {
+                @foreach (var estado in MaritalStatusList)
+                {
+                    <option value="@estado.Id">@estado.Name</option>
+                }
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => Person.MaritalStatus.Id)" />
+    </div>
+
+
+
+    <div class="form-group">
+        <label>Religión</label>
+        <InputSelect @bind-Value="SelectedReligionId" class="form-control">
+            <option value="">-- Seleccione Religión --</option>
+            @foreach (var religion in Religions)
+            {
+                <option value="@religion.Id">@religion.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => Person.Religion.Id)" />
+    </div>
+
+
+    <div class="form-group">
+        <label>Grupo Sanguíneo</label>
+        <InputSelect @bind-Value="SelectedBloodGroupId" class="form-control">
+            <option value="">-- Seleccione Grupo Sanguíneo --</option>
+            @foreach (var bg in BloodGroups)
+            {
+                <option value="@bg.Id">@bg.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => Person.BloodGroup.Id)" />
+    </div>
+
+
+    <div class="form-group">
+        <label>Profesión</label>
+        <select class="form-control mb-2" @bind="selectedProfessionId">
+            <option value="">-- Seleccione Profesión --</option>
+            @foreach (var p in ProfessionsList)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+
+        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarProfesion">Agregar profesión</button>
+    </div>
+
+    @if (Person.Professions is not null && Person.Professions.Count > 0)
+    {
+        <ul class="mt-2">
+            @foreach (var prof in Person.Professions)
+            {
+                <li>
+                    @prof.Name
+                    <button class="btn btn-sm btn-danger ml-2" @onclick="@(() => QuitarProfesion(prof.Id))">Quitar</button>
+                </li>
+            }
+        </ul>
+    }
+
+
+    <div class="form-group">
+        <label>Actividad Laboral</label>
+        <select class="form-control mb-2" @bind="selectedLaborActivityId">
+            <option value="">-- Seleccione Actividad Laboral --</option>
+            @foreach (var a in LaborActivities)
+            {
+                <option value="@a.Id">@a.Name</option>
+            }
+        </select>
+
+        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarActividadLaboral">Agregar actividad</button>
+    </div>
+
+    <ul>
+        @foreach (var s in Person.LaborActivity)
+        {
+            <li>
+                @s.Name
+                <button class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">X</button>
+            </li>
+        }
+    </ul>
+
+
+    <div class="form-group">
+        <label>Nivel de Educación</label>
+        <InputSelect @bind-Value="SelectedEducationLevelId" class="form-control">
+            <option value="">-- Seleccione Nivel Educativo --</option>
+            @foreach (var n in EducationLevels)
+            {
+                <option value="@n.Id">@n.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => Person.EducationLevel.Id)" />
+    </div>
+
+    <div class="form-group">
+        <label>Seguro Médico</label>
+        <select class="form-control mb-2" @bind="selectedMedicalInsuranceId">
+            <option value="">-- Seleccione Seguro Médico --</option>
+            @foreach (var s in MedicalInsurances)
+            {
+                <option value="@s.Id">@s.Name</option>
+            }
+        </select>
+
+        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarSeguroMedico">Agregar seguro</button>
+    </div>
+
+    <ul>
+        @foreach (var s in Person.MedicalInsurance)
+        {
+            <li>
+                @s.Name
+                <button class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">X</button>
+            </li>
+        }
+    </ul>
+
+    <div class="form-group">
+        <label>Lateralidad</label>
+        <InputSelect @bind-Value="SelectedLateralityId" class="form-control">
+            <option value="">-- Seleccione Lateralidad --</option>
+            @foreach (var lateralidad in Lateralities)
+            {
+                <option value="@lateralidad.Id">@lateralidad.Name</option>
+            }
+        </InputSelect>
+    </div>
+</div>
+
+@code {
+    [Parameter] public PersonDTO Person { get; set; } = new();
+
+    private List<MaritalStatusDTO> MaritalStatusList = new();
+    private List<ReligionDTO> Religions = new();
+    private List<BloodGroupDTO> BloodGroups = new();
+    private List<ProfessionDTO> ProfessionsList = new();
+    private List<LaborActivityDTO> LaborActivities = new();
+    private List<EducationLevelDTO> EducationLevels = new();
+    private List<MedicalInsuranceDTO> MedicalInsurances = new();
+    private List<LateralityDTO> Lateralities = new();
+
+
+    int selectedLaborActivityId;
+    int selectedMedicalInsuranceId;
+    int? selectedProfessionId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatosComplementarios();
+
+        // Inicializar objetos si son null
+        Person.Laterality ??= new PersonLateralityDTO();
+        Person.LaborActivity ??= new();
+        Person.MedicalInsurance ??= new();
+
+        // Si ya tiene una lateralidad asignada, cargar el nombre
+        if (Person.Laterality.LateralityId.HasValue && string.IsNullOrEmpty(Person.Laterality.NameLaterality))
+        {
+            var laterality = Lateralities.FirstOrDefault(l => l.Id == Person.Laterality.LateralityId);
+            if (laterality != null)
+            {
+                Person.Laterality.NameLaterality = laterality.Name;
+            }
+        }
+
+        if (Person.Religion?.Id != null && string.IsNullOrEmpty(Person.Religion.Name))
+        {
+            var religion = Religions.FirstOrDefault(r => r.Id == Person.Religion.Id);
+
+			if (religion != null)
+			{
+				Person.Religion.Name = religion.Name;
+			}
+        }
+
+        if (Person.BloodGroup?.Id != null && string.IsNullOrEmpty(Person.BloodGroup.Name))
+        {
+            var bloodGroup = BloodGroups.FirstOrDefault(r => r.Id == Person.BloodGroup.Id);
+
+            if (bloodGroup != null)
+            {
+                Person.BloodGroup.Name = bloodGroup.Name;
+            }
+        }
+
+        if (Person.EducationLevel?.Id != null && string.IsNullOrEmpty(Person.EducationLevel.Name))
+        {
+            var educationLevel = EducationLevels.FirstOrDefault(r => r.Id == Person.EducationLevel.Id);
+
+            if (educationLevel != null)
+            {
+                Person.EducationLevel.Name = educationLevel.Name;
+            }
+        }
+
+    }
+
+    private async Task CargarDatosComplementarios()
+    {
+        try
+        {
+            var tasks = new List<Task>
+            {
+                LoadMaritalStatuses(),
+                LoadReligions(),
+                LoadBloodGroups(),
+                LoadProfessions(),
+                LoadLaborActivities(),
+                LoadEducationLevels(),
+                LoadMedicalInsurances(),
+                LoadLateralities()
+            };
+
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando datos complementarios: {ex.Message}");
+        }
+    }
+
+    private async Task LoadMaritalStatuses()
+    {
+        MaritalStatusList = await Http.GetFromJsonAsync<List<MaritalStatusDTO>>("api/Complements/marital-status") ?? new();
+    }
+
+    private async Task LoadReligions()
+    {
+        Religions = await Http.GetFromJsonAsync<List<ReligionDTO>>("api/Complements/religions") ?? new();
+    }
+
+    private async Task LoadBloodGroups()
+    {
+        BloodGroups = await Http.GetFromJsonAsync<List<BloodGroupDTO>>("api/Complements/blood-groups") ?? new();
+    }
+	private async Task LoadProfessions()
+	{
+        ProfessionsList = await Http.GetFromJsonAsync<List<ProfessionDTO>>("api/Complements/professions") ?? new();
+	}
+	private async Task LoadLaborActivities()
+	{
+        LaborActivities = await Http.GetFromJsonAsync<List<LaborActivityDTO>>("api/Complements/labor-activities") ?? new();
+	}
+	private async Task LoadEducationLevels()
+	{
+        EducationLevels = await Http.GetFromJsonAsync<List<EducationLevelDTO>>("api/Complements/education-levels") ?? new();
+	}
+	private async Task LoadMedicalInsurances()
+	{
+        MedicalInsurances = await Http.GetFromJsonAsync<List<MedicalInsuranceDTO>>("api/Complements/medical-insurances") ?? new();
+	}
+	private async Task LoadLateralities()
+	{
+        Lateralities = await Http.GetFromJsonAsync<List<LateralityDTO>>("api/Complements/lateralities") ?? new();
+	}
+
+
+    private int? SelectedLateralityId
+    {
+        get => Person.Laterality?.LateralityId;
+        set
+        {
+            if (Person.Laterality == null)
+                Person.Laterality = new PersonLateralityDTO();
+
+            Person.Laterality.LateralityId = value;
+
+            // Actualizar NameLaterality basado en la selección
+            var selectedLaterality = Lateralities.FirstOrDefault(l => l.Id == value);
+            Person.Laterality.NameLaterality = selectedLaterality?.Name;
+        }
+    }
+    private int? SelectedReligionId
+    {
+        get => Person.Religion?.Id;
+        set
+        {
+            if (Person.Religion == null)
+                Person.Religion = new ReligionDTO();
+
+            Person.Religion.Id = value ?? 0; 
+
+            // Actualizar el nombre basado en la selección
+            var selectedReligion = Religions.FirstOrDefault(r => r.Id == value);
+            Person.Religion.Name = selectedReligion?.Name;
+        }
+    }
+
+    private int? SelectedBloodGroupId
+    {
+        get => Person.BloodGroup?.Id;
+        set
+        {
+            if (Person.BloodGroup == null)
+                Person.BloodGroup = new BloodGroupDTO();
+
+            Person.BloodGroup.Id = value ?? 0;
+
+            // Actualizar el nombre basado en la selección
+            var selectedBloodGroup = BloodGroups.FirstOrDefault(r => r.Id == value);
+            Person.BloodGroup.Name = selectedBloodGroup?.Name;
+        }
+    }
+
+    private int? SelectedMaritalStatusId
+    {
+        get => Person.MaritalStatus?.Id;
+        set
+        {
+            if (value.HasValue)
+            {
+                Person.MaritalStatus = MaritalStatusList.FirstOrDefault(ms => ms.Id == value)
+                                    ?? new MaritalStatusDTO { Id = value.Value };
+            }
+            else
+            {
+                Person.MaritalStatus = null;
+            }
+        }
+    }
+
+    private int? SelectedEducationLevelId
+    {
+        get => Person.EducationLevel?.Id;
+        set
+        {
+            if (value.HasValue)
+            {
+                Person.EducationLevel = EducationLevels.FirstOrDefault(ms => ms.Id == value)
+                                    ?? new EducationLevelDTO { Id = value.Value };
+            }
+            else
+            {
+                Person.EducationLevel = null;
+            }
+        }
+    }
+
+    private List<int> SelectedProfessionIds
+    {
+        get => Person.Professions?.Select(p => p.Id).ToList() ?? new();
+        set
+        {
+            Person.Professions = ProfessionsList
+                .Where(p => value.Contains(p.Id))
+                .ToList();
+        }
+    }
+
+
+    private void AgregarActividadLaboral()
+    {
+        var actividad = LaborActivities.FirstOrDefault(a => a.Id == selectedLaborActivityId);
+        if (actividad != null && !Person.LaborActivity.Any(a => a.Id == actividad.Id))
+        {
+            Person.LaborActivity.Add(actividad);
+        }
+    }
+    private void QuitarActividadLaboral(int id)
+    {
+        var actividad = Person.LaborActivity.FirstOrDefault(s => s.Id == id);
+        if (actividad != null)
+        {
+            Person.LaborActivity.Remove(actividad);
+        }
+    }
+
+
+    private void AgregarSeguroMedico()
+    {
+        var seguro = MedicalInsurances.FirstOrDefault(s => s.Id == selectedMedicalInsuranceId);
+        if (seguro != null && !Person.MedicalInsurance.Any(s => s.Id == seguro.Id))
+        {
+            Person.MedicalInsurance.Add(seguro);
+        }
+    }
+
+    private void QuitarSeguroMedico(int id)
+    {
+        var seguro = Person.MedicalInsurance.FirstOrDefault(s => s.Id == id);
+        if (seguro != null)
+        {
+            Person.MedicalInsurance.Remove(seguro);
+        }
+    }
+
+    private void AgregarProfesion()
+    {
+        if (selectedProfessionId != null)
+        {
+            var seleccionada = ProfessionsList.FirstOrDefault(p => p.Id == selectedProfessionId);
+
+            if (seleccionada != null && !Person.Professions.Any(p => p.Id == seleccionada.Id))
+            {
+                Person.Professions.Add(new ProfessionDTO
+                    {
+                        Id = seleccionada.Id,
+                        Name = seleccionada.Name
+                    });
+            }
+
+            selectedProfessionId = null; // Limpiar selección
+        }
+    }
+
+
+    private void QuitarProfesion(int id)
+    {
+        var item = Person.Professions.FirstOrDefault(p => p.Id == id);
+        if (item != null)
+        {
+            Person.Professions.Remove(item);
+        }
+    }
+}

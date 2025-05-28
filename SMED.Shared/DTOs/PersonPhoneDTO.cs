@@ -1,0 +1,15 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SMED.Shared.DTOs
+{
+    public class PersonPhoneDTO
+    {
+        public string? Mobile { get; set; }
+        public string? Landline { get; set; }
+    }
+}

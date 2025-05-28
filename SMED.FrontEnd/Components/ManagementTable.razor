@@ -1,0 +1,202 @@
+﻿@using Microsoft.AspNetCore.Components
+@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+
+@inject IJSRuntime JS
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <!-- Search + buttons at top -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div class="d-flex flex-wrap align-items-center gap-2" style="flex:1 1 50%;">
+                <select class="form-select form-select-sm w-auto" @bind="SearchField">
+                    <option disabled value="">Elija opción de búsqueda</option>
+                    @foreach (var option in SearchOptions)
+                    {
+                        <option value="@option">@option</option>
+                    }
+                </select>
+
+                @if (IsDocumentTypeField)
+                {
+                    <select class="form-select form-select-sm w-auto" @bind="SearchValue">
+                        <option value="">-- Seleccione tipo --</option>
+                        @foreach (var type in DocumentTypes)
+                        {
+                            <option value="@type.Name">@type.Name</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input class="form-control form-control-sm" placeholder="Ingrese término..." style="min-width: 200px;"
+                           @bind="SearchValue" />
+                }
+
+                <button class="btn btn-primary btn-sm" @onclick="ExecuteSearch" disabled="@(!CanSearch)">
+                    Buscar
+                </button>
+            </div>
+
+            <div class="d-flex gap-2" style="flex:1 1 40%; justify-content: flex-end;">
+                <button class="btn btn-success btn-sm" @onclick="AddCallback">Agregar</button>
+                <button class="btn btn-secondary btn-sm" @onclick="ClearCallback">Limpiar</button>
+            </div>
+        </div>
+
+        <!-- Table title -->
+        @if (!string.IsNullOrWhiteSpace(TableTitle))
+        {
+            <h5 class="mb-3">@TableTitle</h5>
+        }
+
+        <!-- Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        @foreach (var col in Columns)
+                        {
+                            <th>@col</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (DisplayedRecords.Any())
+                    {
+                        @foreach (var row in DisplayedRecords)
+                        {
+                            <tr>
+                                @for (int i = 0; i < Columns.Count; i++)
+                                {
+                                    <td>
+                                        @if (i == Columns.Count - 1 && RenderActions != null)
+                                        {
+                                            @RenderActions(row)
+                                        }
+                                        else if (i < row.Count)
+                                        {
+                                            @row[i]
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="@Columns.Count" class="text-center text-muted">No hay registros para mostrar</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Items per page control + paginator -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <label class="mb-0" for="selectPageSize">Mostrar</label>
+                <select id="selectPageSize" class="form-select form-select-sm w-auto" @bind="PageSize">
+                    @foreach (var size in PageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
+                <span class="mb-0">registros por página</span>
+            </div>
+
+            <nav aria-label="Paginación">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePage(1)">Primero</button>
+                    </li>
+                    <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePage(CurrentPage - 1)">Anterior</button>
+                    </li>
+
+                    @foreach (var num in PageNumbers)
+                    {
+                        <li class="page-item @(num == CurrentPage ? "active" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(num)">@num</button>
+                        </li>
+                    }
+
+                    <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePage(CurrentPage + 1)">Siguiente</button>
+                    </li>
+                    <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePage(TotalPages)">Último</button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<DocumentTypeDTO> DocumentTypes { get; set; } = new();
+    [Parameter] public List<string> Columns { get; set; } = new();
+    [Parameter] public string TableTitle { get; set; }
+    [Parameter] public EventCallback<string[]> SearchCallback { get; set; }
+    [Parameter] public EventCallback AddCallback { get; set; }
+    [Parameter] public EventCallback ClearCallback { get; set; }
+    [Parameter] public RenderFragment<List<string>> RenderActions { get; set; }
+    [Parameter] public List<string> SearchOptions { get; set; } = new();
+
+    private List<List<string>> AllRecords = new();
+    private List<List<string>> DisplayedRecords = new();
+
+    private bool IsDocumentTypeField => SearchField == "Tipo de Documentos";
+
+    private int PageSize = 5;
+    private int CurrentPage = 1;
+    private List<int> PageSizeOptions = new() { 5, 10, 15, 20 };
+
+    private string SearchField { get; set; } = string.Empty;
+    private string SearchValue { get; set; } = string.Empty;
+
+    public async Task LoadRecords(List<List<string>> records)
+    {
+        AllRecords = records;
+        CurrentPage = 1;
+        UpdatePagination();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePagination()
+    {
+        TotalPages = (int)Math.Ceiling((double)AllRecords.Count / PageSize);
+        if (CurrentPage > TotalPages) CurrentPage = TotalPages;
+        if (CurrentPage < 1) CurrentPage = 1;
+
+        DisplayedRecords = AllRecords
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        PageNumbers = Enumerable.Range(1, TotalPages).ToList();
+    }
+
+    private void ChangePage(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagination();
+    }
+
+    private void ExecuteSearch()
+    {
+        SearchCallback.InvokeAsync(new string[] { SearchField, SearchValue });
+    }
+
+    public async Task ClearSearch()
+    {
+        SearchField = string.Empty;
+        SearchValue = string.Empty;
+        await SearchCallback.InvokeAsync(new string[] { "", "" });
+    }
+
+    private int TotalPages = 1;
+    private List<int> PageNumbers = new();
+    private bool CanSearch => !string.IsNullOrWhiteSpace(SearchField) && !string.IsNullOrWhiteSpace(SearchValue);
+}

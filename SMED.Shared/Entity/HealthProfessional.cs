@@ -1,0 +1,30 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SMED.Shared.Entity
+{
+    public partial class HealthProfessional
+    {
+        [Key]
+        public int HealthProfessionalId { get; set; }
+
+        public int? HealthProfessionalTypeId { get; set; }
+
+        [StringLength(50)]
+        public string? RegistrationNumber { get; set; }
+
+        [ForeignKey("HealthProfessionalId")]
+        [InverseProperty("HealthProfessional")]
+        public virtual Person PersonNavigation { get; set; } = null!;
+
+        [ForeignKey("HealthProfessionalTypeId")]
+        [InverseProperty("HealthProfessionals")]
+        public virtual HealthProfessionalType? HealthProfessionalTypeNavigation { get; set; }
+    }
+
+}

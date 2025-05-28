@@ -1,0 +1,43 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="tab-container">
+    <ul class="tab-header nav nav-tabs">
+        @foreach (var tab in Tabs)
+        {
+            <li class="nav-item">
+                <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
+                   href="@tab.Url">@tab.Title</a>
+            </li>
+        }
+    </ul>
+
+    <div class="tab-body">
+        @ChildContent
+    </div>
+
+    <button class="btn btn-primary save-button" @onclick="OnSaveClick">Guardar</button>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private List<TabItem> Tabs = new()
+    {
+        new TabItem("General", "/medical-history/general"),
+        new TabItem("Gynecological", "/medical-history/gynecological"),
+        new TabItem("Nutrition", "/medical-history/nutrition"),
+        new TabItem("Obstetric", "/medical-history/obstetric"),
+        new TabItem("Psychological", "/medical-history/psychological"),
+    };
+
+    private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);
+
+    private async Task OnSaveClick()
+    {
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(null);
+    }
+
+    private record TabItem(string Title, string Url);
+}

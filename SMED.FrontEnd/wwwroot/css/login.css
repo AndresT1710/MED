@@ -1,0 +1,111 @@
+﻿.login-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.left-panel {
+    flex: 1;
+    min-height: 40vh;
+    background-image: url('/images/fondologin.jpg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    order: 2;
+}
+
+.right-panel {
+    flex: 1;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    order: 1;
+    z-index: 1;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    animation: fadeInUp 0.5s ease-in-out;
+    margin: 1rem 0;
+    box-sizing: border-box;
+}
+
+/* Responsivo */
+@media (min-width: 768px) {
+    .login-container {
+        flex-direction: row;
+    }
+
+    .left-panel {
+        min-height: 100vh;
+        order: 1;
+    }
+
+    .right-panel {
+        order: 2;
+        padding: 0;
+    }
+
+    .login-card {
+        margin: 0;
+    }
+}
+
+/* Animación */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilo del input-group */
+.password-group {
+    display: flex;
+}
+
+/* Botón integrado en el input-group */
+.toggle-password-btn {
+    border: 1px solid #ced4da;
+    border-left: none;
+    padding: 0 0.75rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* Estado: oculto (mostrar contraseña) */
+.btn-show {
+    background-color: #f1f1f1;
+    color: #333;
+}
+
+/* Estado: visible (ocultar contraseña) */
+.btn-hide {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Hover animado */
+.toggle-password-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}

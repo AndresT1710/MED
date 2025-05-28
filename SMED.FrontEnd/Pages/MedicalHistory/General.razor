@@ -1,0 +1,86 @@
+﻿@page "/medical-history/general"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - General</h4>
+    <PatientSelector />
+
+    <div class="editable-table-wrapper">
+        <EditableTable Title="Antecedentes Personales"
+                       ColumnHeaders="@headersPersonales"
+                       Rows="@personales" />
+
+        <EditableTable Title="Antecedentes Familiares"
+                       ColumnHeaders="@headersFamiliares"
+                       Rows="@familiares" />
+
+        <EditableTable Title="Antecedentes de Cirugías"
+                       ColumnHeaders="@headersCirugias"
+                       Rows="@cirugias" />
+
+        <EditableTable Title="Antecedentes de Alergias"
+                       ColumnHeaders="@headersAlergias"
+                       Rows="@alergias" />
+
+        <EditableTable Title="Antecedentes de Hábitos"
+                       ColumnHeaders="@headersHabitos"
+                       Rows="@habitos" />
+    </div>
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial general...");
+        // Implementar lógica de guardado real aquí
+    }
+
+    private List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
+    private List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Edad de aparición" };
+    private List<string> headersCirugias = new() { "Cirugías", "Fecha de Cirugía" };
+    private List<string> headersAlergias = new() { "Alergias" };
+    private List<string> headersHabitos = new() { "Hábitos" };
+
+    private List<List<string>> personales = new()
+    {
+        new() { "Respiratoria", "Asma" },
+        new() { "Cardiaca", "Hipertensión" },
+        new() { "Neurológica", "Epilepsia" },
+        new() { "Digestiva", "Úlcera péptica" },
+        new() { "Metabólica", "Diabetes tipo II" }
+    };
+
+    private List<List<string>> familiares = new()
+    {
+        new() { "Padre", "Cardiaca", "Infarto", "55" },
+        new() { "Madre", "Metabólica", "Diabetes", "40" },
+        new() { "Hermano", "Neurológica", "Epilepsia", "10" },
+        new() { "Tía", "Respiratoria", "Asma", "30" },
+        new() { "Abuela", "Oncológica", "Cáncer de mama", "60" },
+        new() { "Primo", "Autoinmune", "Lupus", "25" }
+    };
+
+    private List<List<string>> cirugias = new()
+    {
+        new() { "Apendicectomía", "2012-06-10" },
+        new() { "Colecistectomía", "2018-09-21" },
+        new() { "Cesárea", "2021-03-15" }
+    };
+
+    private List<List<string>> alergias = new()
+    {
+        new() { "Penicilina" },
+        new() { "Polvo" },
+        new() { "Picadura de abeja" }
+    };
+
+    private List<List<string>> habitos = new()
+    {
+        new() { "Tabaquismo" },
+        new() { "Alcohol ocasional" },
+        new() { "Ejercicio regular" },
+        new() { "Consumo de café" },
+        new() { "Sedentarismo" },
+        new() { "Dieta rica en azúcares" }
+    };
+}

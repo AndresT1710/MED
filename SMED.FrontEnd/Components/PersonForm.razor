@@ -1,0 +1,157 @@
+﻿@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Components.Person
+@using SMED.FrontEnd.Services
+@inject PersonService PersonService
+@inject IJSRuntime JS
+@page "/person-forms"
+
+@if (mostrarFormulario)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Formulario de Persona</h5>
+                    <button type="button" class="btn-close" @onclick="CerrarFormulario" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@person" OnValidSubmit="Guardar">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link @(tabIndex == 0 ? "active" : "")" @onclick="() => CambiarTab(0)">Datos personales</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(tabIndex == 1 ? "active" : "")" @onclick="() => CambiarTab(1)">Documento</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(tabIndex == 2 ? "active" : "")" @onclick="() => CambiarTab(2)">Contacto</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(tabIndex == 3 ? "active" : "")" @onclick="() => CambiarTab(3)">Complementarios</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content mt-3">
+                            @switch (tabIndex)
+                            {
+                                case 0:
+                                    <TabPersonal Person="person" />
+                                    break;
+                                case 1:
+                                    <TabDocument Person="person" />
+                                    break;
+                                case 2:
+                                    <TabContact Person="person" />
+                                    break;
+                                case 3:
+                                    <TabComplements Person="person" />
+                                    break;
+                            }
+                        </div>
+
+                        @if (tabIndex == 3)
+                        {
+                            <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+                        }
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private int tabIndex = 0;
+    private PersonDTO person = new();
+    private bool mostrarFormulario = true;
+
+    protected override void OnInitialized()
+    {
+        InicializarPersonaSiEsNecesario();
+    }
+
+    private void InicializarPersonaSiEsNecesario()
+    {
+        person.Phone ??= new();
+        person.Document ??= new();
+        person.Address ??= new() { new() };
+
+        person.MaritalStatus ??= new();
+        person.Religion ??= new();
+        person.BloodGroup ??= new();
+        person.Professions ??= new();
+        person.EducationLevel ??= new();
+        person.Laterality ??= new();
+
+        person.MedicalInsurance ??= new();
+        person.LaborActivity ??= new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var json = await JS.InvokeAsync<string>("localStorageHelper.loadPerson");
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    var loaded = System.Text.Json.JsonSerializer.Deserialize<PersonDTO>(json);
+                    if (loaded != null)
+                    {
+                        person = loaded;
+                        InicializarPersonaSiEsNecesario();
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Error al deserializar localStorage.");
+                }
+            }
+        }
+    }
+
+    private async Task GuardarTemporalmente()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(person);
+        await JS.InvokeVoidAsync("localStorageHelper.savePerson", json);
+    }
+
+    private async Task Guardar()
+    {
+        Console.WriteLine("Enviando datos al backend...");
+
+        var resultado = await PersonService.CreatePerson(person);
+
+        if (resultado)
+        {
+            await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
+            person = new();
+            InicializarPersonaSiEsNecesario();
+            tabIndex = 0;
+            mostrarFormulario = false;
+            await JS.InvokeVoidAsync("alert", "Persona guardada exitosamente.");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error al guardar la persona.");
+        }
+    }
+
+    private async void CambiarTab(int index)
+    {
+        await GuardarTemporalmente();
+        tabIndex = index;
+    }
+
+    private async void CerrarFormulario()
+    {
+        await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
+        person = new();
+        tabIndex = 0;
+        mostrarFormulario = false;
+    }
+}

@@ -1,0 +1,16 @@
+﻿@page "/medical-history/psychological"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - Psicología</h4>
+    <PatientSelector />
+
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial psicológico...");
+        // Lógica real de guardado aquí
+    }
+}

@@ -1,0 +1,102 @@
+﻿@using SMED.Shared.DTOs
+@inject HttpClient Http
+
+<div class="form-group">
+    <label>Primer Nombre</label>
+    <InputText @bind-Value="Person.FirstName" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Segundo Nombre</label>
+    <InputText @bind-Value="Person.MiddleName" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Apellido paterno</label>
+    <InputText @bind-Value="Person.LastName" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Apellido materno</label>
+    <InputText @bind-Value="Person.SecondLastName" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Género</label>
+    @if (isLoading)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else
+    {
+        <InputSelect @bind-Value="SelectedGenderId" class="form-control">
+            <option value="">-- Seleccione Género --</option>
+            @foreach (var gender in genders)
+            {
+                <option value="@gender.Id">@gender.Name</option>
+            }
+        </InputSelect>
+    }
+</div>
+
+<div class="form-group">
+    <label>Fecha de nacimiento</label>
+    <InputDate @bind-Value="Person.BirthDate" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>Correo</label>
+    <InputText @bind-Value="Person.Email" class="form-control" />
+</div>
+
+@code {
+    [Parameter]
+    public PersonDTO Person { get; set; }
+
+    private List<GenderDTO> genders = new();
+    private bool isLoading = false;
+
+
+    // Intermediario para manejar bind y asignar Gender completo
+    private int? SelectedGenderId
+    {
+        get => Person.Gender?.Id ?? Person.GenderId;
+        set
+        {
+            Person.GenderId = value;
+            Person.Gender = genders?.FirstOrDefault(g => g.Id == value);
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGenders();
+
+        if (Person.GenderId.HasValue && Person.Gender == null && genders != null)
+        {
+            Person.Gender = genders.FirstOrDefault(g => g.Id == Person.GenderId);
+        }
+    }
+
+    private async Task LoadGenders()
+    {
+        isLoading = true;
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<GenderDTO>>("api/Complements/genders");
+            genders = response ?? new List<GenderDTO>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading genders: {ex.Message}");
+            genders = new List<GenderDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

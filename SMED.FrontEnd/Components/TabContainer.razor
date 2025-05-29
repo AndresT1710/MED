@@ -1,21 +1,27 @@
 ﻿@inject NavigationManager NavigationManager
 
-<div class="tab-container">
-    <ul class="tab-header nav nav-tabs">
-        @foreach (var tab in Tabs)
-        {
-            <li class="nav-item">
-                <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
-                   href="@tab.Url">@tab.Title</a>
-            </li>
-        }
-    </ul>
+<div class="tab-container-wrapper">
+    <div class="tab-container">
+        <ul class="tab-header nav nav-tabs">
+            @foreach (var tab in Tabs)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
+                       href="@tab.Url">@tab.Title</a>
+                </li>
+            }
+        </ul>
 
-    <div class="tab-body">
-        @ChildContent
+        <div class="tab-body">
+            @ChildContent
+        </div>
+
+        <div class="tab-actions">
+            <button class="btn btn-primary save-button" @onclick="OnSaveClick">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+        </div>
     </div>
-
-    <button class="btn btn-primary save-button" @onclick="OnSaveClick">Guardar</button>
 </div>
 
 @code {
@@ -25,10 +31,10 @@
     private List<TabItem> Tabs = new()
     {
         new TabItem("General", "/medical-history/general"),
-        new TabItem("Obstetric", "/medical-history/obstetric"),
-        new TabItem("Gynecological", "/medical-history/gynecological"),
-        new TabItem("Nutrition", "/medical-history/nutrition"),
-        new TabItem("Psychological", "/medical-history/psychological"),
+        new TabItem("Obstétrico", "/medical-history/obstetric"),
+        new TabItem("Ginecológico", "/medical-history/gynecological"),
+        new TabItem("Nutrición", "/medical-history/nutrition"),
+        new TabItem("Psicológico", "/medical-history/psychological"),
     };
 
     private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);

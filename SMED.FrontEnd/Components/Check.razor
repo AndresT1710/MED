@@ -1,0 +1,69 @@
+﻿<div class="check-container">
+    <label class="check-label">
+        <input type="checkbox"
+               class="check-input"
+               checked="@TempChecked"
+               @oninput="OnInputChanged" />
+        <span class="check-title">@Title</span>
+    </label>
+</div>
+
+@if (ShowConfirmModal)
+{
+    <div class="modal-backdrop" @onclick="CloseModal">
+        <div class="modal-content" @onclick:stopPropagation>
+            <p>¿Estás seguro de desmarcar este apartado?</p>
+            <div class="modal-actions">
+                <button class="btn-confirm" @onclick="ConfirmUncheck">Sí</button>
+                <button class="btn-cancel" @onclick="CancelUncheck">No</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Título del Check";
+    [Parameter] public bool IsChecked { get; set; } = false;
+
+    private bool TempChecked { get; set; }
+    private bool ShowConfirmModal { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        TempChecked = IsChecked;
+    }
+
+    private void OnInputChanged(ChangeEventArgs e)
+    {
+        var newValue = (bool)e.Value;
+
+        if (TempChecked && !newValue)
+        {
+            // Desmarcando: mostrar modal antes de aplicar el cambio
+            ShowConfirmModal = true;
+        }
+        else
+        {
+            TempChecked = newValue;
+            IsChecked = newValue;
+        }
+    }
+
+    private void ConfirmUncheck()
+    {
+        TempChecked = false;
+        IsChecked = false;
+        ShowConfirmModal = false;
+    }
+
+    private void CancelUncheck()
+    {
+        TempChecked = true; // Volver a marcar
+        ShowConfirmModal = false;
+    }
+
+    private void CloseModal()
+    {
+        CancelUncheck();
+    }
+}

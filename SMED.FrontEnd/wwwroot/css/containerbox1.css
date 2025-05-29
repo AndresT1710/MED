@@ -1,0 +1,104 @@
+﻿.containerbox1-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1rem 0;
+}
+
+/* Aseguramos que el wrapper pueda controlar correctamente el ancho */
+.containerbox1-wrapper {
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Tamaños de columnas */
+.containerbox1-full {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding: 0.5rem;
+}
+
+.containerbox1-half {
+    flex: 1 1 calc(50% - 0.5rem);
+    max-width: calc(50% - 0.5rem);
+    padding: 0.5rem;
+}
+
+.containerbox1-third {
+    flex: 1 1 calc(33.333% - 0.5rem);
+    max-width: calc(33.333% - 0.5rem);
+    padding: 0.5rem;
+}
+
+.containerbox1-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.containerbox1-box {
+    position: relative;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    min-height: 80px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 0.95rem;
+    overflow-wrap: break-word;
+}
+
+.containerbox1-placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+.edit-button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+/* MODAL */
+.containerbox1-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.containerbox1-modal {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.containerbox1-textarea {
+    height: 200px;
+    resize: vertical;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .containerbox1-half,
+    .containerbox1-third {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}

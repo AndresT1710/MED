@@ -1,0 +1,94 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+
+<div class="containerbox2-wrapper @BoxWidthClass">
+    <label class="containerbox2-label">@Title</label>
+    <div class="containerbox2-box" @onclick="ShowModal">
+        @if (SelectedDate == null)
+        {
+            <span class="containerbox2-placeholder">Fecha no registrada</span>
+        }
+        else
+        {
+            @SelectedDate?.ToString("dd/MM/yyyy")
+        }
+
+        <button class="edit-button" @onclick:stopPropagation="true" @onclick="ShowModal">
+            📅
+        </button>
+    </div>
+</div>
+
+@if (IsModalVisible)
+{
+    <div class="containerbox2-modal-backdrop" @onclick="TryCloseModal">
+        <div class="containerbox2-modal" @onclick:stopPropagation>
+            <h5 class="mb-3">Seleccionar fecha</h5>
+            <InputDate @bind-Value="TempDate" class="form-control containerbox2-datepicker" />
+            <div class="modal-buttons mt-3">
+                <button class="btn btn-primary" @onclick="Save">Guardar</button>
+                <button class="btn btn-secondary" @onclick="TryCloseModal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowConfirmExit)
+{
+    <div class="containerbox2-modal-backdrop" @onclick="() => ShowConfirmExit = false">
+        <div class="containerbox2-modal" @onclick:stopPropagation>
+            <p>¿Está seguro de salir sin guardar?</p>
+            <div class="modal-buttons mt-3">
+                <button class="btn btn-secondary" @onclick="() => ShowConfirmExit = false">No</button>
+                <button class="btn btn-danger" @onclick="DiscardChanges">Sí</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Fecha editable";
+    [Parameter] public string Width { get; set; } = "full"; // "full", "half", "third"
+
+    private DateTime? SelectedDate = null;
+    private DateTime? TempDate = null;
+    private bool IsModalVisible = false;
+    private bool ShowConfirmExit = false;
+
+    private string BoxWidthClass => Width switch
+    {
+        "half" => "containerbox2-half",
+        "third" => "containerbox2-third",
+        _ => "containerbox2-full"
+    };
+
+    private void ShowModal()
+    {
+        TempDate = SelectedDate;
+        IsModalVisible = true;
+    }
+
+    private void Save()
+    {
+        SelectedDate = TempDate;
+        IsModalVisible = false;
+    }
+
+    private void TryCloseModal()
+    {
+        if (TempDate != SelectedDate)
+        {
+            ShowConfirmExit = true;
+        }
+        else
+        {
+            IsModalVisible = false;
+        }
+    }
+
+    private void DiscardChanges()
+    {
+        TempDate = SelectedDate;
+        IsModalVisible = false;
+        ShowConfirmExit = false;
+    }
+}

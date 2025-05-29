@@ -57,7 +57,7 @@
             }
         </select>
 
-        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarProfesion">Agregar profesión</button>
+        <button type="button" class="btn btn-sm btn-secondary mt-1" @onclick="AgregarProfesion">Agregar profesión</button>
     </div>
 
     @if (Person.Professions is not null && Person.Professions.Count > 0)
@@ -84,7 +84,7 @@
             }
         </select>
 
-        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarActividadLaboral">Agregar actividad</button>
+        <button type="button" class="btn btn-sm btn-secondary mt-1" @onclick="AgregarActividadLaboral">Agregar actividad</button>
     </div>
 
     <ul>
@@ -92,7 +92,7 @@
         {
             <li>
                 @s.Name
-                <button class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">X</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">Quitar</button>
             </li>
         }
     </ul>
@@ -120,7 +120,7 @@
             }
         </select>
 
-        <button class="btn btn-sm btn-secondary mt-1" @onclick="AgregarSeguroMedico">Agregar seguro</button>
+        <button type ="button" class="btn btn-sm btn-secondary mt-1" @onclick ="AgregarSeguroMedico">Agregar seguro</button>
     </div>
 
     <ul>
@@ -128,7 +128,7 @@
         {
             <li>
                 @s.Name
-                <button class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">X</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">Quitar</button>
             </li>
         }
     </ul>
@@ -417,7 +417,7 @@
                     });
             }
 
-            selectedProfessionId = null; // Limpiar selección
+            selectedProfessionId = null;
         }
     }
 

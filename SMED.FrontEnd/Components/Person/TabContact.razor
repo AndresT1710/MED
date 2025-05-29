@@ -6,11 +6,11 @@
 <div class="form-section">
     <h4>Dirección</h4>
 
-    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].MainStreet" placeholder="Calle Principal" />
-    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].SecondaryStreet1" placeholder="Calle Secundaria 1" />
-    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].SecondaryStreet2" placeholder="Calle Secundaria 2" />
-    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].HouseNumber" placeholder="Número de Casa" />
-    <InputText class="form-control mb-2" @bind-Value="Person.Address[0].Reference" placeholder="Referencia" />
+    <InputText class="form-control mb-2" @bind-Value="MainStreet" placeholder="Calle Principal" />
+    <InputText class="form-control mb-2" @bind-Value="SecondaryStreet1" placeholder="Calle Secundaria 1" />
+    <InputText class="form-control mb-2" @bind-Value="SecondaryStreet2" placeholder="Calle Secundaria 2" />
+    <InputText class="form-control mb-2" @bind-Value="HouseNumber" placeholder="Número de Casa" />
+    <InputText class="form-control mb-2" @bind-Value="Reference" placeholder="Referencia" />
 </div>
 
 <div class="form-section">
@@ -18,11 +18,11 @@
 
     <div class="form-group">
         <label>Teléfono</label>
-        <InputText @bind-Value="Person.Phone.Landline" class="form-control" />
+        <InputText @bind-Value="Landline" class="form-control" />
     </div>
     <div class="form-group">
         <label>Celular</label>
-        <InputText @bind-Value="Person.Phone.Mobile" class="form-control" />
+        <InputText @bind-Value="Mobile" class="form-control" />
     </div>
 </div>
 
@@ -76,6 +76,7 @@
     {
         Person.Address ??= new() { new PersonAddressDTO() };
         Person.Residence ??= new PersonResidenceDTO();
+        Person.Phone ??= new PersonPhoneDTO();
 
         await LoadProvinces();
 
@@ -195,6 +196,86 @@
 
         // Forzar renderizado para habilitar el combo de ciudad
         StateHasChanged();
+    }
+
+    //IMPUTS
+    private string? MainStreet
+    {
+        get => Person.Address?.ElementAtOrDefault(0)?.MainStreet;
+        set
+        {
+            if (Person.Address != null && Person.Address.Count > 0)
+            {
+                Person.Address[0].MainStreet = value;
+            }
+        }
+    }
+    private string? SecondaryStreet1
+    {
+        get => Person.Address?.ElementAtOrDefault(0)?.SecondaryStreet1;
+        set
+        {
+            if (Person.Address != null && Person.Address.Count > 0)
+            {
+                Person.Address[0].SecondaryStreet1 = value;
+            }
+        }
+    }
+    private string? SecondaryStreet2
+    {
+        get => Person.Address?.ElementAtOrDefault(0)?.SecondaryStreet2;
+        set
+        {
+            if (Person.Address != null && Person.Address.Count > 0)
+            {
+                Person.Address[0].SecondaryStreet2 = value;
+            }
+        }
+    }
+    private string? HouseNumber
+    {
+        get => Person.Address?.ElementAtOrDefault(0)?.HouseNumber;
+        set
+        {
+            if (Person.Address != null && Person.Address.Count > 0)
+            {
+                Person.Address[0].HouseNumber = value;
+            }
+        }
+    }
+    private string? Reference
+    {
+        get => Person.Address?.ElementAtOrDefault(0)?.Reference;
+        set
+        {
+            if (Person.Address != null && Person.Address.Count > 0)
+            {
+                Person.Address[0].Reference = value;
+            }
+        }
+    }
+    private string? Landline
+    {
+        get => Person.Phone?.Landline;
+        set
+        {
+            if (Person.Phone == null)
+                Person.Phone = new PersonPhoneDTO();
+
+            Person.Phone.Landline = value;
+        }
+    }
+
+    private string? Mobile
+    {
+        get => Person.Phone?.Mobile;
+        set
+        {
+            if (Person.Phone == null)
+                Person.Phone = new PersonPhoneDTO();
+
+            Person.Phone.Mobile = value;
+        }
     }
 
 }

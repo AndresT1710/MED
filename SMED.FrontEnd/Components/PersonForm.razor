@@ -21,20 +21,29 @@
 
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link @(tabIndex == 0 ? "active" : "")" @onclick="() => CambiarTab(0)">Datos personales</a>
+                                <a href="#" class="nav-link @(tabIndex == 0 ? "active" : "")"
+                                @onclick:preventDefault
+                                   @onclick="() => CambiarTab(0)">Datos personales</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(tabIndex == 1 ? "active" : "")" @onclick="() => CambiarTab(1)">Documento</a>
+                                <a href="#" class="nav-link @(tabIndex == 1 ? "active" : "")"
+                                @onclick:preventDefault
+                                   @onclick="() => CambiarTab(1)">Documento</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(tabIndex == 2 ? "active" : "")" @onclick="() => CambiarTab(2)">Contacto</a>
+                                <a href="#" class="nav-link @(tabIndex == 2 ? "active" : "")"
+                                @onclick:preventDefault
+                                   @onclick="() => CambiarTab(2)">Contacto</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(tabIndex == 3 ? "active" : "")" @onclick="() => CambiarTab(3)">Complementarios</a>
+                                <a href="#" class="nav-link @(tabIndex == 3 ? "active" : "")"
+                                @onclick:preventDefault
+                                   @onclick="() => CambiarTab(3)">Complementarios</a>
                             </li>
                         </ul>
 
-                        <div class="tab-content mt-3">
+
+                        <div class="tab-content mt-4">
                             @switch (tabIndex)
                             {
                                 case 0:
@@ -54,8 +63,13 @@
 
                         @if (tabIndex == 3)
                         {
-                            <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+                            <div class="text-end mt-4">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-save"></i> Guardar
+                                </button>
+                            </div>
                         }
+
                     </EditForm>
                 </div>
             </div>
@@ -185,11 +199,12 @@
         }
     }
 
-    private async void CambiarTab(int index)
+    private async Task CambiarTab(int index)
     {
         await GuardarTemporalmente();
         tabIndex = index;
     }
+
 
     private async void CerrarFormulario()
     {

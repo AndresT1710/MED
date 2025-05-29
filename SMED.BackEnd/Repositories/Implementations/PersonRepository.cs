@@ -396,9 +396,33 @@ namespace SMED.BackEnd.Repositories.Implementations
                 }
             }
 
+            //Update Professions
+            if (dto.Professions != null && dto.Professions.Any())
+            {
+                //Delete professions in BD
+                _context.PersonProfessions.RemoveRange(person.PersonProfessions);
+
+                //Clear the collection
+                person.PersonProfessions.Clear();
+
+                //Add
+                foreach (var professionDTO in dto.Professions)
+                {
+                    if (professionDTO.Id != 0 && await _context.Professions.AnyAsync(p => p.Id == professionDTO.Id))
+                    {
+                        var personProfession = new PersonProfession
+                        {
+                            PersonId = person.Id,
+                            ProfessionId = professionDTO.Id
+                        };
+                        person.PersonProfessions.Add(personProfession);
+                    }
+                }
+            }
+
 
             //Update Medical Insurance
-             if (dto.MedicalInsurance != null)
+            if (dto.MedicalInsurance != null)
             {
                 //Delete medical insurances in BD
                 _context.PersonMedicalInsurances.RemoveRange(person.PersonMedicalInsurances);

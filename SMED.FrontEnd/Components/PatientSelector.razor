@@ -1,51 +1,92 @@
-﻿@using Microsoft.AspNetCore.Components
+﻿@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
+@inject PersonService PersonaService
 
-<div class="patient-selector">
-    <div class="patient-filters">
-        <!-- Desplegable para seleccionar tipo de búsqueda -->
-        <select @bind="SearchBy" class="patient-dropdown">
-            <option disabled selected value="">Seleccione opción de búsqueda</option>
+<div class="card p-3">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <select class="form-select form-select-sm w-auto" @bind="SearchBy">
+            <option disabled value="">Buscar por...</option>
             <option value="cedula">Cédula</option>
             <option value="nombre">Nombre</option>
             <option value="historia">Historia Clínica</option>
         </select>
 
-        <!-- Campo para escribir término de búsqueda -->
-        <input @bind="SearchTerm" placeholder="Ingrese término" class="patient-input" />
+        <input class="form-control form-control-sm" placeholder="Ingrese término"
+               style="min-width: 200px;" @bind="SearchTerm" />
 
-        <!-- Botón para activar búsqueda -->
-        <button @onclick="SearchPatient" class="patient-button">
-            Buscar
+        <button class="btn btn-primary btn-sm" @onclick="SearchPerson"
+                disabled="@(!IsFormValid)">
+                Buscar
+        </button>
+
+        <button class="btn btn-secondary btn-sm" @onclick="ClearSearch">
+            Limpiar
         </button>
     </div>
 
-    <!-- Muestra paciente seleccionado si hay -->
-    <div class="patient-selected">
-        <label><strong>Paciente:</strong></label>
-        <div class="patient-data">
-            @if (!string.IsNullOrWhiteSpace(SelectedPatient))
-            {
-                <span>@SelectedPatient</span>
-            }
-            else
-            {
-                <em>No se ha seleccionado un paciente.</em>
-            }
+    @if (FoundPerson is not null)
+    {
+        <div class="alert alert-info">
+            <h5>Datos del Paciente</h5>
+            <p><strong>Nombre:</strong> @FoundPerson.FirstName @FoundPerson.LastName</p>
+            <p><strong>Cédula:</strong> @FoundPerson.Document?.DocumentNumber</p>
+            <p><strong>Fecha Nacimiento:</strong> @FoundPerson.BirthDate?.ToString("dd/MM/yyyy")</p>
+            <p><strong>Email:</strong> @FoundPerson.Email</p>
+            <!-- Puedes mostrar más datos aquí -->
         </div>
-    </div>
+    }
+    else if (HasSearched)
+    {
+        <div class="alert alert-warning">No se encontró ninguna persona con esos datos.</div>
+    }
 </div>
 
 @code {
     private string SearchBy { get; set; } = "";
     private string SearchTerm { get; set; } = "";
-    private string SelectedPatient { get; set; } = "";
+    private PersonDTO? FoundPerson { get; set; }
+    private bool HasSearched = false;
 
-    private void SearchPatient()
+    private async Task SearchPerson()
     {
-        // Simulación de búsqueda (se conectará luego a un servicio real)
-        if (!string.IsNullOrWhiteSpace(SearchBy) && !string.IsNullOrWhiteSpace(SearchTerm))
+        HasSearched = false;
+        FoundPerson = null;
+
+        var allPersons = await PersonaService.GetAllPersons();
+
+        SearchTerm = SearchTerm.Trim().ToLower();
+
+        switch (SearchBy)
         {
-            SelectedPatient = $"Ejemplo: {SearchBy.ToUpper()} - {SearchTerm}";
+            case "cedula":
+                FoundPerson = allPersons.FirstOrDefault(p => p.Document?.DocumentNumber?.ToLower() == SearchTerm);
+                break;
+
+            case "nombre":
+                FoundPerson = allPersons.FirstOrDefault(p =>
+                    $"{p.FirstName} {p.LastName}".ToLower().Contains(SearchTerm));
+                break;
+
+           /* case "historia":
+                FoundPerson = allPersons.FirstOrDefault(p =>
+                p.MedicalHistory?.ToLower().Contains(SearchTerm));
+                break;
+                */
         }
+
+        HasSearched = true;
     }
+
+    private void ClearSearch()
+    {
+        SearchBy = "";
+        SearchTerm = "";
+        FoundPerson = null;
+        HasSearched = false;
+		StateHasChanged();
+    }
+    private bool IsFormValid =>
+    !string.IsNullOrWhiteSpace(SearchBy) &&
+    !string.IsNullOrWhiteSpace(SearchTerm);
+
 }

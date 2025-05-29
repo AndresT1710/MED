@@ -64,6 +64,58 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<bool> UpdatePerson(PersonDTO person)
+        {
+            try
+            {
+                if (person == null || person.Id == null)
+                {
+                    Console.WriteLine("Persona o Id nulo");
+                    return false;
+                }
+
+                var response = await _http.PutAsJsonAsync($"api/Person/{person.Id}", person);
+
+                Console.WriteLine($"Status: {response.StatusCode}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {error}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex}");
+                return false;
+            }
+        }
+
+        public async Task<bool> DeletePerson(int id)
+        {
+            try
+            {
+                var response = await _http.DeleteAsync($"api/Person/{id}");
+
+                Console.WriteLine($"Status: {response.StatusCode}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {error}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex}");
+                return false;
+            }
+        }
+
 
     }
 }

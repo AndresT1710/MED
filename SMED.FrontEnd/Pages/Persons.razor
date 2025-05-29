@@ -14,25 +14,25 @@
 <h3 class="mb-4">Gestión de Personas</h3>
 
 <ManagementTable TableTitle="Personas"
-                 Columns="PersonColumns"
-                 SearchOptions="PersonColumns"
-                 DocumentTypes="documentTypeList"
-                 SearchCallback="SearchHandler"
-                 AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
-                 ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
-                 RenderActions="RenderPersonActions"
-                 @ref="table" />
+Columns="PersonColumns"
+SearchOptions="PersonColumns"
+DocumentTypes="documentTypeList"
+SearchCallback="SearchHandler"
+AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
+ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
+RenderActions="RenderPersonActions"
+@ref="table" />
 
 @if (showCard && selectedPerson != null)
 {
     <div class="modal fade show d-flex align-items-center justify-content-center"
-         tabindex="-1"
-         style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
-         role="dialog">
+    tabindex="-1"
+    style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
+    role="dialog">
 
         <div style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center;">
             <div class="modal-content"
-                 style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
+            style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
                 <div class="modal-header">
                     <h5 class="modal-title">Información de la Persona</h5>
                     <button type="button" class="btn-close" @onclick="() => showCard = false"></button>
@@ -44,6 +44,28 @@
         </div>
     </div>
 }
+
+
+
+<!-- Modal flotante -->
+@if (showForm)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((selectedPerson == null || selectedPerson.Id == 0) ? "Nueva Persona" : "Editar Persona")</h5>
+                    <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <PersonForm Person="selectedPerson" OnSaved="OnPersonSaved" OnCancel="HideForm" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 
 @code {
     private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
@@ -57,6 +79,7 @@
 
     private PersonDTO selectedPerson;
     private bool showCard = false;
+    private bool showForm = false;
 
     private List<DocumentTypeDTO> documentTypeList = new();
     private List<PersonDTO> personList = new();
@@ -142,7 +165,7 @@
 
     private Task AddPerson()
     {
-        Navigation.NavigateTo("/persona/nueva");
+        ShowForm();
         return Task.CompletedTask;
     }
 
@@ -155,30 +178,37 @@
 
     RenderFragment<List<string>> RenderPersonActions => row => builder =>
     {
-        int seq = 0;
-        var id = row[28];
+    int seq = 0;
+    var id = row[28];
 
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
-        builder.AddAttribute(seq++, "title", "Ver");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewPerson(id)));
-        builder.AddContent(seq++, "Ver");
-        builder.CloseElement();
+    // Busca la persona en la lista original para pasarla completa
+    var personToEdit = personList.FirstOrDefault(p => p.Id.ToString() == id);
 
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
-        builder.AddAttribute(seq++, "title", "Editar");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditPerson(id)));
-        builder.AddContent(seq++, "Editar");
-        builder.CloseElement();
+    builder.OpenElement(seq++, "button");
+    builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
+    builder.AddAttribute(seq++, "title", "Ver");
+    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewPerson(id)));
+    builder.AddContent(seq++, "Ver");
+    builder.CloseElement();
 
-        builder.OpenElement(seq++, "button");
-        builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
-        builder.AddAttribute(seq++, "title", "Eliminar");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeletePerson(id)));
-        builder.AddContent(seq++, "Eliminar");
-        builder.CloseElement();
+    builder.OpenElement(seq++, "button");
+    builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
+    builder.AddAttribute(seq++, "title", "Editar");
+    if (personToEdit != null)
+    {
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditPerson(personToEdit)));
+    }
+    builder.AddContent(seq++, "Editar");
+    builder.CloseElement();
+
+    builder.OpenElement(seq++, "button");
+    builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
+    builder.AddAttribute(seq++, "title", "Eliminar");
+    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeletePerson(id)));
+    builder.AddContent(seq++, "Eliminar");
+    builder.CloseElement();
     };
+
 
     private void ViewPerson(string id)
     {
@@ -192,10 +222,12 @@
         showCard = true;
     }
 
-    private void EditPerson(string id)
+    private void EditPerson(PersonDTO personToEdit)
     {
-        Navigation.NavigateTo($"/persona/editar/{id}");
+        selectedPerson = personToEdit;
+        showForm = true;
     }
+
 
     private async Task DeletePerson(string id)
     {
@@ -215,11 +247,37 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar a {person.FirstName}?");
         if (confirmed)
         {
-            // Simular eliminación exitosa sin el servicio real
-            personList.Remove(person);
-            await LoadPersonData();
-            await JS.InvokeVoidAsync("alert", "Persona eliminada (simulado)");
-            await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+            var success = await PersonaService.DeletePerson(idInt);
+            if (success)
+            {
+                personList.Remove(person);
+                await LoadPersonData();  // Recarga la lista desde el backend
+                await JS.InvokeVoidAsync("alert", "Persona eliminada exitosamente");
+                await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al eliminar la persona");
+            }
         }
+    }
+
+
+	private void ShowForm()
+	{
+		showForm = true;
+	}
+	private void HideForm()
+	{
+		showForm = false;
+        selectedPerson = null;
+	}
+
+    private async Task OnPersonSaved(PersonDTO newPerson)
+    {
+        showForm = false;
+		await LoadPersonData();
+        await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+
     }
 }

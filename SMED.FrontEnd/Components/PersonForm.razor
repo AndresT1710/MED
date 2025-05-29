@@ -64,9 +64,42 @@
 }
 
 @code {
+
+    [Parameter]
+    public EventCallback<PersonDTO> OnSaved { get; set; }
+
+    [Parameter]
+    public PersonDTO Person { get; set; } = new PersonDTO();
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool isEditMode = false;
+
     private int tabIndex = 0;
     private PersonDTO person = new();
     private bool mostrarFormulario = true;
+
+    protected override void OnParametersSet()
+    {
+        if (Person != null && Person.Id > 0)
+        {
+            isEditMode = true;
+            person = ClonePerson(Person);
+        }
+        else
+        {
+            isEditMode = false;
+            person = new PersonDTO();
+            InicializarPersonaSiEsNecesario();
+        }
+    }
+
+    private PersonDTO ClonePerson(PersonDTO original)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(original);
+        return System.Text.Json.JsonSerializer.Deserialize<PersonDTO>(json);
+    }
 
     protected override void OnInitialized()
     {
@@ -122,18 +155,29 @@
 
     private async Task Guardar()
     {
-        Console.WriteLine("Enviando datos al backend...");
+        Console.WriteLine(isEditMode ? "Actualizando persona..." : "Creando persona...");
 
-        var resultado = await PersonService.CreatePerson(person);
+        bool resultado;
+        if (isEditMode)
+        {
+            resultado = await PersonService.UpdatePerson(person);
+        }
+        else
+        {
+            resultado = await PersonService.CreatePerson(person);
+        }
 
         if (resultado)
         {
             await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
-            person = new();
+            await OnSaved.InvokeAsync(person);
+
+            person = new PersonDTO();
             InicializarPersonaSiEsNecesario();
             tabIndex = 0;
             mostrarFormulario = false;
-            await JS.InvokeVoidAsync("alert", "Persona guardada exitosamente.");
+
+            await JS.InvokeVoidAsync("alert", isEditMode ? "Persona actualizada exitosamente." : "Persona creada exitosamente.");
         }
         else
         {
@@ -150,8 +194,13 @@
     private async void CerrarFormulario()
     {
         await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
-        person = new();
+        person = new PersonDTO();
         tabIndex = 0;
         mostrarFormulario = false;
+
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
     }
 }

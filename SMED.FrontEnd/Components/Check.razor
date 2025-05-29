@@ -2,8 +2,8 @@
     <label class="check-label">
         <input type="checkbox"
                class="check-input"
-               checked="@TempChecked"
-               @oninput="OnInputChanged" />
+               @onclick="InterceptClick"
+               @ref="CheckboxRef" />
         <span class="check-title">@Title</span>
     </label>
 </div>
@@ -25,45 +25,58 @@
     [Parameter] public string Title { get; set; } = "Título del Check";
     [Parameter] public bool IsChecked { get; set; } = false;
 
-    private bool TempChecked { get; set; }
-    private bool ShowConfirmModal { get; set; } = false;
+    private ElementReference CheckboxRef;
+    private bool InternalChecked;
+    private bool ShowConfirmModal = false;
 
-    protected override void OnInitialized()
+    protected override void OnAfterRender(bool firstRender)
     {
-        TempChecked = IsChecked;
+        if (firstRender)
+        {
+            _ = SetCheckbox(InternalChecked = IsChecked);
+        }
     }
 
-    private void OnInputChanged(ChangeEventArgs e)
+    private async Task SetCheckbox(bool value)
     {
-        var newValue = (bool)e.Value;
+        await JS.InvokeVoidAsync("setCheckboxState", CheckboxRef, value);
+    }
 
-        if (TempChecked && !newValue)
+    private async Task InterceptClick(MouseEventArgs e)
+    {
+        // Prevenimos que se marque/desmarque automáticamente
+        if (InternalChecked)
         {
-            // Desmarcando: mostrar modal antes de aplicar el cambio
             ShowConfirmModal = true;
+            StateHasChanged();
+            await SetCheckbox(true); // Reforzar el estado visible
         }
         else
         {
-            TempChecked = newValue;
-            IsChecked = newValue;
+            InternalChecked = true;
+            IsChecked = true;
+            await SetCheckbox(true);
         }
     }
 
-    private void ConfirmUncheck()
+    private async Task ConfirmUncheck()
     {
-        TempChecked = false;
+        InternalChecked = false;
         IsChecked = false;
         ShowConfirmModal = false;
+        await SetCheckbox(false);
     }
 
-    private void CancelUncheck()
+    private async Task CancelUncheck()
     {
-        TempChecked = true; // Volver a marcar
         ShowConfirmModal = false;
+        await SetCheckbox(true); // Reforzar estado anterior
     }
 
-    private void CloseModal()
+    private async Task CloseModal()
     {
-        CancelUncheck();
+        await CancelUncheck();
     }
+
+    [Inject] private IJSRuntime JS { get; set; }
 }

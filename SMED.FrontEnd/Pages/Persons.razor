@@ -165,6 +165,7 @@ RenderActions="RenderPersonActions"
 
     private Task AddPerson()
     {
+		selectedPerson = new PersonDTO();
         ShowForm();
         return Task.CompletedTask;
     }

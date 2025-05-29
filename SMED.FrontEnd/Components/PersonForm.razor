@@ -139,7 +139,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !isEditMode)
         {
             var json = await JS.InvokeAsync<string>("localStorageHelper.loadPerson");
             if (!string.IsNullOrEmpty(json))

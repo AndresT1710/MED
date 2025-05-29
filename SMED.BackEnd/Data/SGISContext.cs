@@ -333,6 +333,7 @@ namespace SGIS.Models
                 entity.HasOne(d => d.Patient)
                     .WithMany(p => p.ClinicalHistories)
                     .HasForeignKey(d => d.PatientId)
+                    .HasPrincipalKey(p => p.PersonId)
                     .HasConstraintName("FK_ClinicalHistory_Patient");
             });
 

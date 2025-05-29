@@ -9,6 +9,7 @@ namespace SMED.Shared.DTOs
 {
     public class ClinicalHistoryDTO
     {
+        public int ClinicalHistoryId { get; set; }
         public string HistoryNumber { get; set; } = null!;
         public DateTime? CreationDate { get; set; }
         public bool? IsActive { get; set; }

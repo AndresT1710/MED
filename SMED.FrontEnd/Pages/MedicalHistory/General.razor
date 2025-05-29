@@ -8,79 +8,85 @@
     <div class="editable-table-wrapper">
         <EditableTable Title="Antecedentes Personales"
                        ColumnHeaders="@headersPersonales"
-                       Rows="@personales" />
+                       Rows="@personales"
+                       ColumnOptions="@optionsPersonales" />
 
         <EditableTable Title="Antecedentes Familiares"
                        ColumnHeaders="@headersFamiliares"
-                       Rows="@familiares" />
+                       Rows="@familiares"
+                       ColumnOptions="@optionsFamiliares" />
 
         <EditableTable Title="Antecedentes de Cirugías"
                        ColumnHeaders="@headersCirugias"
-                       Rows="@cirugias" />
+                       Rows="@cirugias"
+                       ColumnOptions="@optionsCirugias" />
 
         <EditableTable Title="Antecedentes de Alergias"
                        ColumnHeaders="@headersAlergias"
-                       Rows="@alergias" />
+                       Rows="@alergias"
+                       ColumnOptions="@optionsAlergias" />
 
         <EditableTable Title="Antecedentes de Hábitos"
                        ColumnHeaders="@headersHabitos"
-                       Rows="@habitos" />
+                       Rows="@habitos"
+                       ColumnOptions="@optionsHabitos" />
     </div>
 </TabContainer>
 
 @code {
-    private async Task GuardarDatos()
+    // Headers
+    List<string> headersPersonales = new() { "Tipo", "Descripción", "Fecha" };
+    List<string> headersFamiliares = new() { "Parentesco", "Enfermedad", "Observaciones" };
+    List<string> headersCirugias = new() { "Procedimiento", "Año", "Complicaciones" };
+    List<string> headersAlergias = new() { "Alergeno", "Reacción", "Severidad" };
+    List<string> headersHabitos = new() { "Hábito", "Frecuencia", "Años" };
+
+    // Datos
+    List<List<string>> personales = new();
+    List<List<string>> familiares = new();
+    List<List<string>> cirugias = new();
+    List<List<string>> alergias = new();
+    List<List<string>> habitos = new();
+
+    // Opciones para los selects
+    Dictionary<string, List<string>> optionsPersonales = new()
+        {
+            ["Tipo"] = new() { "Enfermedad", "Accidente", "Hospitalización", "Otro" },
+            ["Descripción"] = new() { "Diabetes", "Hipertensión", "Asma", "Cardiopatía" },
+            ["Fecha"] = new() { "Reciente", "Hace 1 año", "Hace 5 años", "Hace 10 años" }
+        };
+
+    Dictionary<string, List<string>> optionsFamiliares = new()
+        {
+            ["Parentesco"] = new() { "Padre", "Madre", "Hermano", "Abuelo" },
+            ["Enfermedad"] = new() { "Cáncer", "Diabetes", "Hipertensión", "Alzheimer" },
+            ["Observaciones"] = new() { "Fallecido", "Vivo en tratamiento", "Sin complicaciones" }
+        };
+
+    // Similar para las otras tablas...
+    Dictionary<string, List<string>> optionsCirugias = new()
+        {
+            ["Procedimiento"] = new() { "Apéndice", "Vesícula", "Rodilla", "Cesárea" },
+            ["Año"] = new() { "2023", "2020", "2015", "2010" },
+            ["Complicaciones"] = new() { "Ninguna", "Infección", "Hemorragia", "Otra" }
+        };
+
+    Dictionary<string, List<string>> optionsAlergias = new()
+        {
+            ["Alergeno"] = new() { "Penicilina", "Aspirina", "Mariscos", "Polvo" },
+            ["Reacción"] = new() { "Urticaria", "Anafilaxia", "Erupción", "Edema" },
+            ["Severidad"] = new() { "Leve", "Moderada", "Severa", "Crítica" }
+        };
+
+    Dictionary<string, List<string>> optionsHabitos = new()
+        {
+            ["Hábito"] = new() { "Tabaco", "Alcohol", "Cafeína", "Ejercicio" },
+            ["Frecuencia"] = new() { "Diario", "Semanal", "Ocasional", "Ex-fumador" },
+            ["Años"] = new() { "<1 año", "1-5 años", "5-10 años", ">10 años" }
+        };
+
+    void GuardarDatos()
     {
-        Console.WriteLine("Guardando datos del historial general...");
-        // Implementar lógica de guardado real aquí
+        // Lógica para guardar los datos
     }
-
-    private List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
-    private List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Edad de aparición" };
-    private List<string> headersCirugias = new() { "Cirugías", "Fecha de Cirugía" };
-    private List<string> headersAlergias = new() { "Alergias" };
-    private List<string> headersHabitos = new() { "Hábitos" };
-
-    private List<List<string>> personales = new()
-    {
-        new() { "Respiratoria", "Asma" },
-        new() { "Cardiaca", "Hipertensión" },
-        new() { "Neurológica", "Epilepsia" },
-        new() { "Digestiva", "Úlcera péptica" },
-        new() { "Metabólica", "Diabetes tipo II" }
-    };
-
-    private List<List<string>> familiares = new()
-    {
-        new() { "Padre", "Cardiaca", "Infarto", "55" },
-        new() { "Madre", "Metabólica", "Diabetes", "40" },
-        new() { "Hermano", "Neurológica", "Epilepsia", "10" },
-        new() { "Tía", "Respiratoria", "Asma", "30" },
-        new() { "Abuela", "Oncológica", "Cáncer de mama", "60" },
-        new() { "Primo", "Autoinmune", "Lupus", "25" }
-    };
-
-    private List<List<string>> cirugias = new()
-    {
-        new() { "Apendicectomía", "2012-06-10" },
-        new() { "Colecistectomía", "2018-09-21" },
-        new() { "Cesárea", "2021-03-15" }
-    };
-
-    private List<List<string>> alergias = new()
-    {
-        new() { "Penicilina" },
-        new() { "Polvo" },
-        new() { "Picadura de abeja" }
-    };
-
-    private List<List<string>> habitos = new()
-    {
-        new() { "Tabaquismo" },
-        new() { "Alcohol ocasional" },
-        new() { "Ejercicio regular" },
-        new() { "Consumo de café" },
-        new() { "Sedentarismo" },
-        new() { "Dieta rica en azúcares" }
-    };
 }

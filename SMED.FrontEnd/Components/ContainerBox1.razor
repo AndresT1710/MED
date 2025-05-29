@@ -1,0 +1,94 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+
+<div class="containerbox1-wrapper @BoxWidthClass">
+    <label class="containerbox1-label">@Title</label>
+    <div class="containerbox1-box" @onclick="ShowModal">
+        @if (string.IsNullOrWhiteSpace(Content))
+        {
+            <span class="containerbox1-placeholder">Aún no registrado</span>
+        }
+        else
+        {
+            @Content
+        }
+
+        <button class="edit-button" @onclick:stopPropagation="true" @onclick="ShowModal">
+            ✏️
+        </button>
+    </div>
+</div>
+
+@if (IsModalVisible)
+{
+    <div class="containerbox1-modal-backdrop" @onclick="TryCloseModal">
+        <div class="containerbox1-modal" @onclick:stopPropagation>
+            <h5 class="mb-3">Editar contenido</h5>
+            <textarea class="form-control containerbox1-textarea" @bind="TempContent" rows="8"></textarea>
+            <div class="modal-buttons mt-3">
+                <button class="btn btn-primary" @onclick="Save">Guardar</button>
+                <button class="btn btn-secondary" @onclick="TryCloseModal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowConfirmExit)
+{
+    <div class="containerbox1-modal-backdrop" @onclick="()=> ShowConfirmExit = false">
+        <div class="containerbox1-modal" @onclick:stopPropagation>
+            <p>¿Está seguro de salir sin guardar?</p>
+            <div class="modal-buttons mt-3">
+                <button class="btn btn-secondary" @onclick="()=> ShowConfirmExit = false">No</button>
+                <button class="btn btn-danger" @onclick="DiscardChanges">Sí</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Celda editable";
+    [Parameter] public string Width { get; set; } = "full"; // "full", "half", "third"
+
+    private string Content = "";
+    private string TempContent = "";
+    private bool IsModalVisible = false;
+    private bool ShowConfirmExit = false;
+
+    private string BoxWidthClass => Width switch
+    {
+        "half" => "containerbox1-half",
+        "third" => "containerbox1-third",
+        _ => "containerbox1-full"
+    };
+
+    private void ShowModal()
+    {
+        TempContent = Content;
+        IsModalVisible = true;
+    }
+
+    private void Save()
+    {
+        Content = TempContent;
+        IsModalVisible = false;
+    }
+
+    private void TryCloseModal()
+    {
+        if (TempContent != Content)
+        {
+            ShowConfirmExit = true;
+        }
+        else
+        {
+            IsModalVisible = false;
+        }
+    }
+
+    private void DiscardChanges()
+    {
+        TempContent = Content;
+        IsModalVisible = false;
+        ShowConfirmExit = false;
+    }
+}

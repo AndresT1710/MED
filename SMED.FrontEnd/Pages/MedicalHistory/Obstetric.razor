@@ -4,6 +4,32 @@
 <TabContainer OnSave="GuardarDatos">
     <h4>Historia Clínica - Obstétrico</h4>
     <PatientSelector />
+
+    <div class="d-flex flex-wrap">
+        <Check Title="Embarazo actual" />
+        <Check Title="Gestas Previas" />
+        <Check Title="Partos" />
+        <Check Title="Antecedentes de aborto espontáneo" />
+        <Check Title="Cesáreas" />
+        <Check Title="Lactando" />
+    </div>
+
+
+    <div class="containerbox1-grid">
+        <ContainerBox1 Title="Nacidos Vivos" Width="half" />
+        <ContainerBox1 Title="Nacidos Muertos" Width="half" />
+        <ContainerBox1 Title="Hijos Vivos" Width="half" />
+        <ContainerBox1 Title="Edad Gestacionaria" Width="half" />
+    </div>
+
+    <div class="containerbox2-grid">
+        <ContainerBox2 Title="Fecha probable de parto" Width="half" />
+        <!-- otro ContainerBox2 con half para que entren dos -->
+    </div>
+
+
+
+
 </TabContainer>
 
 @code {

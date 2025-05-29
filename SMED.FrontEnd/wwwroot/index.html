@@ -15,8 +15,12 @@
     <link href="css/tabcontainer.css" rel="stylesheet" />
     <link href="css/patientselector.css" rel="stylesheet" />
     <link href="css/editabletable.css" rel="stylesheet" />
+    <link href="css/check.css" rel="stylesheet" />
+    <link href="css/containerbox1.css" rel="stylesheet" />
+    <link href="css/containerbox2.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="SMED.FrontEnd.styles.css" rel="stylesheet" />
+
 
 
 </head>
@@ -40,3 +44,11 @@
 
 </html>
 <script src="js/localStorageHelper.js"></script>
+<script>
+    window.setCheckboxState = function (checkbox, checked) {
+        if (checkbox) {
+            checkbox.checked = checked;
+        }
+    };
+</script>
+

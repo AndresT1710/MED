@@ -31,15 +31,16 @@
                        Rows="@habitos"
                        ColumnOptions="@optionsHabitos" />
     </div>
+
 </TabContainer>
 
 @code {
     // Headers
-    List<string> headersPersonales = new() { "Tipo", "Descripción", "Fecha" };
-    List<string> headersFamiliares = new() { "Parentesco", "Enfermedad", "Observaciones" };
-    List<string> headersCirugias = new() { "Procedimiento", "Año", "Complicaciones" };
+    List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad"};
+    List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad","Edad de Aparición" };
+    List<string> headersCirugias = new() { "Procedimiento", "Fecha de Cirugía", "Secuelas" };
     List<string> headersAlergias = new() { "Alergeno", "Reacción", "Severidad" };
-    List<string> headersHabitos = new() { "Hábito", "Frecuencia", "Años" };
+    List<string> headersHabitos = new() { "Hábito"};
 
     // Datos
     List<List<string>> personales = new();
@@ -51,24 +52,23 @@
     // Opciones para los selects
     Dictionary<string, List<string>> optionsPersonales = new()
         {
-            ["Tipo"] = new() { "Enfermedad", "Accidente", "Hospitalización", "Otro" },
-            ["Descripción"] = new() { "Diabetes", "Hipertensión", "Asma", "Cardiopatía" },
-            ["Fecha"] = new() { "Reciente", "Hace 1 año", "Hace 5 años", "Hace 10 años" }
+            ["Tipo de Enfermedad"] = new() { "Cardiovascular", "Endocrina", "Oncologica", "Otro" },
+            ["Enfermedad"] = new() { "Diabetes", "Hipertensión", "Asma", "Cardiopatía" }
         };
 
     Dictionary<string, List<string>> optionsFamiliares = new()
         {
             ["Parentesco"] = new() { "Padre", "Madre", "Hermano", "Abuelo" },
-            ["Enfermedad"] = new() { "Cáncer", "Diabetes", "Hipertensión", "Alzheimer" },
-            ["Observaciones"] = new() { "Fallecido", "Vivo en tratamiento", "Sin complicaciones" }
+            [" Tipo de Enfermedad"] = new() {"Cardiovascular", "Endocrina", "Oncologica", "Otro" },
+            ["Enfermedad"] = new() { "Cáncer", "Diabetes", "Hipertensión", "Alzheimer" }
         };
 
     // Similar para las otras tablas...
     Dictionary<string, List<string>> optionsCirugias = new()
         {
             ["Procedimiento"] = new() { "Apéndice", "Vesícula", "Rodilla", "Cesárea" },
-            ["Año"] = new() { "2023", "2020", "2015", "2010" },
-            ["Complicaciones"] = new() { "Ninguna", "Infección", "Hemorragia", "Otra" }
+            ["Fecha de Cirugía"] = new() { "2023", "2020", "2015", "2010" },
+            ["Secuelas"] = new() { "Ninguna", "Infección", "Hemorragia", "Otra" }
         };
 
     Dictionary<string, List<string>> optionsAlergias = new()
@@ -80,9 +80,7 @@
 
     Dictionary<string, List<string>> optionsHabitos = new()
         {
-            ["Hábito"] = new() { "Tabaco", "Alcohol", "Cafeína", "Ejercicio" },
-            ["Frecuencia"] = new() { "Diario", "Semanal", "Ocasional", "Ex-fumador" },
-            ["Años"] = new() { "<1 año", "1-5 años", "5-10 años", ">10 años" }
+            ["Hábito"] = new() { "Tabaco", "Alcohol", "Cafeína", "Ejercicio" }
         };
 
     void GuardarDatos()

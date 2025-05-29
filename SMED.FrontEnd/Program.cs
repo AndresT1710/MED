@@ -14,7 +14,7 @@ builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient
     {
-        BaseAddress = new Uri("https://localhost:7009/"),
+        BaseAddress = new Uri("https://localhost:62687/"),
         Timeout = TimeSpan.FromSeconds(30)
     };
 

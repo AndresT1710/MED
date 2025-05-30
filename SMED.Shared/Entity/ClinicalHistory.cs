@@ -56,8 +56,9 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalRecordNavigation")]
         public virtual ICollection<PersonalHistory> PersonalHistories { get; set; } = new List<PersonalHistory>();
 
+
         [ForeignKey("PatientId")]
-        [InverseProperty("ClinicalHistories")]
+        [InverseProperty("ClinicalHistory")]
         public virtual Patient? Patient { get; set; }
     }
 

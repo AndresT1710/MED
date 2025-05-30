@@ -331,11 +331,12 @@ namespace SGIS.Models
                 entity.Property(e => e.CreationDate).HasColumnType("datetime");
 
                 entity.HasOne(d => d.Patient)
-                    .WithMany(p => p.ClinicalHistories)
-                    .HasForeignKey(d => d.PatientId)
-                    .HasPrincipalKey(p => p.PersonId)
+                    .WithOne(p => p.ClinicalHistory)
+                    .HasForeignKey<ClinicalHistory>(d => d.PatientId)
+                    .HasPrincipalKey<Patient>(p => p.PersonId)
                     .HasConstraintName("FK_ClinicalHistory_Patient");
             });
+
 
             //ALLERGYHISTORY
             modelBuilder.Entity<AllergyHistory>(entity =>

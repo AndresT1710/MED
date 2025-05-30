@@ -24,6 +24,10 @@ builder.Services.AddScoped<IRepository<UserDTO, int>, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PersonRepository>();
 builder.Services.AddScoped<ClinicalHistoryRepository>();
+builder.Services.AddScoped<IRepository<AllergyDTO, int>, AllergyRepository>();
+builder.Services.AddScoped<IRepository<AllergyHistoryDTO, int>, AllergyHistoryRepository>();
+
+
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

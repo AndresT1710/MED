@@ -21,7 +21,7 @@ namespace SMED.Shared.Entity
     public virtual ICollection<EmergencyContact> EmergencyContacts { get; set; } = new List<EmergencyContact>();
 
     [InverseProperty("Patient")]
-    public virtual ICollection<ClinicalHistory> ClinicalHistories { get; set; } = new List<ClinicalHistory>();
+    public virtual ClinicalHistory ClinicalHistory { get; set; }
 
     [InverseProperty("Patient")]
     public virtual PatientRelationship? PatientRelationship { get; set; }

@@ -12,9 +12,9 @@
                        ColumnOptions="@optionsActividadesDeportivas" />
 
         <EditableTable Title="Estilo de Vida"
-                       ColumnHeaders="@headersFamiliares"
-                       Rows="@familiares"
-                       ColumnOptions="@optionsFamiliares" />
+                       ColumnHeaders="@headersEstiloDeVida"
+                       Rows="@estilodevida"
+                       ColumnOptions="@optionsEstiloDeVida" />
 
         <EditableTable Title="Hábitos Dietéticos"
                        ColumnHeaders="@headersCirugias"
@@ -47,14 +47,14 @@
 
     // Headers
     List<string> headersActividadesDeportivas = new() { "Actividad", "Minutos al día", "Número de dias/semana" };
-    List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Edad de Aparición" };
+    List<string> headersEstiloDeVida = new() { "Estilo de Vida" };
     List<string> headersCirugias = new() { "Procedimiento", "Fecha de Cirugía", "Secuelas" };
     List<string> headersAlergias = new() { "Alergeno", "Reacción", "Severidad" };
     List<string> headersHabitos = new() { "Hábito" };
 
     // Datos
     List<List<string>> actividadesdeportivas = new();
-    List<List<string>> familiares = new();
+    List<List<string>> estilodevida = new();
     List<List<string>> cirugias = new();
     List<List<string>> alergias = new();
     List<List<string>> habitos = new();
@@ -67,11 +67,9 @@
             ["Número de dias/semana"] = new() { "1", "2", "3", "4","5","6" ,"7"},
         };
 
-    Dictionary<string, List<string>> optionsFamiliares = new()
+    Dictionary<string, List<string>> optionsEstiloDeVida = new()
         {
-            ["Parentesco"] = new() { "Padre", "Madre", "Hermano", "Abuelo" },
-            [" Tipo de Enfermedad"] = new() { "Cardiovascular", "Endocrina", "Oncologica", "Otro" },
-            ["Enfermedad"] = new() { "Cáncer", "Diabetes", "Hipertensión", "Alzheimer" }
+            ["Estilo De Vida"] = new() { "Sedentario", "Nomada", "Minimalista", "Maximalista" }
         };
 
     // Similar para las otras tablas...

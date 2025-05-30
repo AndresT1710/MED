@@ -1,0 +1,239 @@
+﻿/* === Main Container === */
+.management-table {
+    width: 100%;
+}
+
+/* === Card Styles === */
+.management-table-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: white;
+}
+
+.management-table-card-body {
+    padding: 1.5rem;
+}
+
+/* === Header Section === */
+.management-table-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.management-table-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 50%;
+}
+
+.management-table-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1 1 40%;
+    justify-content: flex-end;
+}
+
+/* === Form Controls === */
+.management-table-select {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    min-width: 200px;
+}
+
+.management-table-input {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    min-width: 200px;
+}
+
+/* === Buttons === */
+.management-table-button {
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.management-table-search-button {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.management-table-add-button {
+    color: #fff;
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.management-table-clear-button {
+    color: white; /* Cambia el color del texto a blanco */
+    background-color: #6c757d; /* Mantiene el color de fondo deseado */
+    border-color: #6c757d; /* Mantiene el color del borde igual al fondo */
+}
+
+.management-table-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* === Table Title === */
+.management-table-title {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+/* === Table Styles === */
+.management-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.management-table-content {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+    .management-table-content thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0.75rem;
+        vertical-align: bottom;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .management-table-content tbody tr {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+        .management-table-content tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+    .management-table-content tbody td {
+        padding: 0.75rem;
+        vertical-align: top;
+    }
+
+.management-table-empty {
+    text-align: center;
+    color: #6c757d;
+    padding: 1rem;
+}
+
+/* === Footer/Pagination === */
+.management-table-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    gap: 1rem;
+}
+
+.management-table-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.management-table-pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    margin: 0;
+    gap: 0.25rem;
+}
+
+    .management-table-pagination li {
+        display: inline-block;
+    }
+
+        .management-table-pagination li button {
+            position: relative;
+            display: block;
+            padding: 0.375rem 0.75rem;
+            margin-left: -1px;
+            line-height: 1.25;
+            color: #0d6efd;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+        }
+
+        .management-table-pagination li.active button {
+            z-index: 1;
+            color: #fff;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .management-table-pagination li.disabled button {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #fff;
+            border-color: #dee2e6;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+/* === Responsive Styles === */
+@media (max-width: 768px) {
+    .management-table-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .management-table-search {
+        flex: 1 1 100%;
+    }
+
+    .management-table-actions {
+        flex: 1 1 100%;
+        justify-content: flex-start;
+    }
+
+    .management-table-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .management-table-pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

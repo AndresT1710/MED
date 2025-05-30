@@ -44,12 +44,11 @@
 
     private async Task InterceptClick(MouseEventArgs e)
     {
-        // Prevenimos que se marque/desmarque automáticamente
         if (InternalChecked)
         {
             ShowConfirmModal = true;
             StateHasChanged();
-            await SetCheckbox(true); // Reforzar el estado visible
+            await SetCheckbox(true);
         }
         else
         {
@@ -70,7 +69,7 @@
     private async Task CancelUncheck()
     {
         ShowConfirmModal = false;
-        await SetCheckbox(true); // Reforzar estado anterior
+        await SetCheckbox(true);
     }
 
     private async Task CloseModal()

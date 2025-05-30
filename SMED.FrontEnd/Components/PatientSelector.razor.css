@@ -1,4 +1,5 @@
-﻿.patient-selector {
+﻿/* PatientSelector.razor.css */
+.patient-selector-container {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -10,7 +11,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.patient-filters {
+.patient-selector-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
@@ -18,8 +19,8 @@
     margin-bottom: 1rem;
 }
 
-.patient-dropdown,
-.patient-input {
+.patient-selector-dropdown,
+.patient-selector-input {
     padding: 0.5rem;
     border: 1px solid #aaa;
     border-radius: 5px;
@@ -28,7 +29,7 @@
     box-sizing: border-box;
 }
 
-.patient-button {
+.patient-selector-button {
     background-color: #007bff;
     color: white;
     padding: 0.5rem 1rem;
@@ -38,16 +39,30 @@
     transition: background-color 0.2s ease;
 }
 
-    .patient-button:hover {
+    .patient-selector-button:hover {
         background-color: #0056b3;
     }
 
-.patient-selected {
+.patient-selector-selected {
     padding-top: 0.5rem;
 }
 
-.patient-data {
+.patient-selector-data {
     margin-top: 0.25rem;
     font-size: 1rem;
     color: #333;
 }
+
+/* Estilos específicos para el alert de paciente encontrado */
+.patient-selector-alert {
+    margin-top: 1rem;
+}
+
+/* Estilos para el botón de limpiar */
+.patient-selector-clear-button {
+    background-color: #6c757d;
+}
+
+    .patient-selector-clear-button:hover {
+        background-color: #5a6268;
+    }

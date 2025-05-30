@@ -1,0 +1,16 @@
+﻿@page "/medical-history/registro"
+@using SMED.FrontEnd.Components
+
+<TabContainer OnSave="GuardarDatos">
+    <h4>Historia Clínica - Registro</h4>
+    <ManagementTable/>
+
+</TabContainer>
+
+@code {
+    private async Task GuardarDatos()
+    {
+        Console.WriteLine("Guardando datos del historial psicológico...");
+        // Lógica real de guardado aquí
+    }
+}

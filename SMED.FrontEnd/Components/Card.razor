@@ -1,14 +1,14 @@
 ﻿@using Microsoft.AspNetCore.Components
 @inject NavigationManager Navigation
 
-<div class="card module-card h-100">
-    <div class="card-header text-center card-title">
-        <h5 class="mb-0">@Title</h5>
+<div class="card">
+    <div class="card-header">
+        <h5>@Title</h5>
     </div>
     <div class="card-image">
         @if (!string.IsNullOrWhiteSpace(ImageUrl))
         {
-            <img src="@ImageUrl" alt="@Title" class="img-fluid card-img" />
+            <img src="@ImageUrl" alt="@Title" />
         }
         else
         {
@@ -17,11 +17,11 @@
             </div>
         }
     </div>
-    <div class="card-body text-center p-3">
-        <p class="card-text card-description">@Description</p>
+    <div class="card-body">
+        <p class="card-description">@Description</p>
     </div>
-    <div class="card-footer text-center bg-white border-top-0 pb-3">
-        <button class="btn btn-primary card-btn" @onclick="NavigateToRoute">INGRESAR</button>
+    <div class="card-footer">
+        <button class="card-btn" @onclick="NavigateToRoute">INGRESAR</button>
     </div>
 </div>
 

@@ -1,12 +1,4 @@
-﻿.containerbox1-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
-    padding: 1rem 0;
-}
-
-/* Aseguramos que el wrapper pueda controlar correctamente el ancho */
+﻿/* Estilos para el wrapper principal */
 .containerbox1-wrapper {
     box-sizing: border-box;
     position: relative;
@@ -31,6 +23,7 @@
     padding: 0.5rem;
 }
 
+/* Estilos para la etiqueta */
 .containerbox1-label {
     display: block;
     font-weight: 600;
@@ -38,6 +31,7 @@
     font-size: 0.95rem;
 }
 
+/* Estilos para la caja contenedora */
 .containerbox1-box {
     position: relative;
     padding: 0.75rem;
@@ -50,11 +44,13 @@
     overflow-wrap: break-word;
 }
 
+/* Estilos para el placeholder */
 .containerbox1-placeholder {
     color: #999;
     font-style: italic;
 }
 
+/* Estilos para el botón de edición */
 .edit-button {
     position: absolute;
     top: 6px;
@@ -65,7 +61,7 @@
     cursor: pointer;
 }
 
-/* MODAL */
+/* Estilos para el modal */
 .containerbox1-modal-backdrop {
     position: fixed;
     top: 0;
@@ -94,7 +90,14 @@
     overflow-y: auto;
 }
 
-/* Responsive */
+/* Estilos para los botones del modal */
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Estilos responsivos */
 @media (max-width: 768px) {
     .containerbox1-half,
     .containerbox1-third {

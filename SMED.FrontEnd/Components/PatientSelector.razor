@@ -2,42 +2,41 @@
 @using SMED.Shared.DTOs
 @inject PersonService PersonaService
 
-<div class="card p-3">
-    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-        <select class="form-select form-select-sm w-auto" @bind="SearchBy">
+<div class="patient-selector-container">
+    <div class="patient-selector-filters">
+        <select class="patient-selector-dropdown" @bind="SearchBy">
             <option disabled value="">Buscar por...</option>
             <option value="cedula">Cédula</option>
             <option value="nombre">Nombre</option>
             <option value="historia">Historia Clínica</option>
         </select>
 
-        <input class="form-control form-control-sm" placeholder="Ingrese término"
+        <input class="patient-selector-input" placeholder="Ingrese término"
                style="min-width: 200px;" @bind="SearchTerm" />
 
-        <button class="btn btn-primary btn-sm" @onclick="SearchPerson"
+        <button class="patient-selector-button" @onclick="SearchPerson"
                 disabled="@(!IsFormValid)">
-                Buscar
+            Buscar
         </button>
 
-        <button class="btn btn-secondary btn-sm" @onclick="ClearSearch">
+        <button class="patient-selector-button patient-selector-clear-button" @onclick="ClearSearch">
             Limpiar
         </button>
     </div>
 
     @if (FoundPerson is not null)
     {
-        <div class="alert alert-info">
+        <div class="patient-selector-alert alert alert-info">
             <h5>Datos del Paciente</h5>
             <p><strong>Nombre:</strong> @FoundPerson.FirstName @FoundPerson.LastName</p>
             <p><strong>Cédula:</strong> @FoundPerson.Document?.DocumentNumber</p>
             <p><strong>Fecha Nacimiento:</strong> @FoundPerson.BirthDate?.ToString("dd/MM/yyyy")</p>
             <p><strong>Email:</strong> @FoundPerson.Email</p>
-            <!-- Puedes mostrar más datos aquí -->
         </div>
     }
     else if (HasSearched)
     {
-        <div class="alert alert-warning">No se encontró ninguna persona con esos datos.</div>
+        <div class="patient-selector-alert alert alert-warning">No se encontró ninguna persona con esos datos.</div>
     }
 </div>
 
@@ -67,7 +66,7 @@
                     $"{p.FirstName} {p.LastName}".ToLower().Contains(SearchTerm));
                 break;
 
-           /* case "historia":
+                /* case "historia":
                 FoundPerson = allPersons.FirstOrDefault(p =>
                 p.MedicalHistory?.ToLower().Contains(SearchTerm));
                 break;
@@ -83,10 +82,10 @@
         SearchTerm = "";
         FoundPerson = null;
         HasSearched = false;
-		StateHasChanged();
+        StateHasChanged();
     }
-    private bool IsFormValid =>
-    !string.IsNullOrWhiteSpace(SearchBy) &&
-    !string.IsNullOrWhiteSpace(SearchTerm);
 
+    private bool IsFormValid =>
+        !string.IsNullOrWhiteSpace(SearchBy) &&
+        !string.IsNullOrWhiteSpace(SearchTerm);
 }

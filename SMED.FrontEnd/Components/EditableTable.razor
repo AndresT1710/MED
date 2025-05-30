@@ -49,20 +49,20 @@
 
     @if (showAddModal || editingIndex != -1)
     {
-        <div class="modal-backdrop fade show"></div>
-        <div class="modal-container">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">@((editingIndex == -1) ? "Agregar Registro" : "Editar Registro")</h5>
+        <div class="editable-table-modal-backdrop"></div>
+        <div class="editable-table-modal-container">
+            <div class="editable-table-modal-dialog">
+                <div class="editable-table-modal-content">
+                    <div class="editable-table-modal-header">
+                        <h5 class="editable-table-modal-title">@((editingIndex == -1) ? "Agregar Registro" : "Editar Registro")</h5>
                         <button type="button" class="btn-close" @onclick="CloseModal"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="editable-table-modal-body">
                         @for (int i = 0; i < ColumnHeaders.Count; i++)
                         {
-                            <div class="mb-3">
-                                <label class="form-label">@ColumnHeaders[i]</label>
-                                <select class="form-select" @bind="currentRow[i]">
+                            <div class="editable-table-form-group">
+                                <label class="editable-table-form-label">@ColumnHeaders[i]</label>
+                                <select class="editable-table-form-select" @bind="currentRow[i]">
                                     <option value="">Seleccione una opción</option>
                                     @foreach (var option in GetOptionsForColumn(i))
                                     {
@@ -72,7 +72,7 @@
                             </div>
                         }
                     </div>
-                    <div class="modal-footer">
+                    <div class="editable-table-modal-footer">
                         <button class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
                         <button class="btn btn-primary" @onclick="SaveRow">Guardar</button>
                     </div>
@@ -83,18 +83,18 @@
 
     @if (showDeleteConfirm)
     {
-        <div class="modal-backdrop fade show"></div>
-        <div class="modal-container">
-            <div class="modal-dialog modal-sm">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirmar Eliminación</h5>
+        <div class="editable-table-modal-backdrop"></div>
+        <div class="editable-table-modal-container">
+            <div class="editable-table-modal-dialog editable-table-modal-sm">
+                <div class="editable-table-modal-content">
+                    <div class="editable-table-modal-header">
+                        <h5 class="editable-table-modal-title">Confirmar Eliminación</h5>
                         <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="editable-table-modal-body">
                         ¿Está seguro de que desea eliminar este registro?
                     </div>
-                    <div class="modal-footer">
+                    <div class="editable-table-modal-footer">
                         <button class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
                         <button class="btn btn-danger" @onclick="DeleteRow">Eliminar</button>
                     </div>
@@ -171,4 +171,4 @@
     {
         currentRow = ColumnHeaders.Select(_ => "").ToList();
     }
-} 
+}

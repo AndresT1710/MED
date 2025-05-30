@@ -492,6 +492,44 @@ namespace SGIS.Models
             });
 
 
+            //PersonalHistory
+            modelBuilder.Entity<PersonalHistory>(entity =>
+            {
+                entity.HasOne(ph => ph.MedicalRecordNavigation)
+                    .WithMany(mr => mr.PersonalHistories)
+                    .HasForeignKey(ph => ph.ClinicalHistoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            //FamilyHistoryDetail
+            modelBuilder.Entity<FamilyHistoryDetail>(entity =>
+            {
+                entity.HasOne(f => f.MedicalRecordNavigation)
+                    .WithMany(mr => mr.FamilyHistoryDetails)
+                    .HasForeignKey(f => f.ClinicalHistoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(f => f.DiseaseNavigation)
+                    .WithMany(d => d.FamilyHistoryDetails)
+                    .HasForeignKey(f => f.DiseaseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            //GynecologicalHistory
+            modelBuilder.Entity<GynecologicalHistory>(entity =>
+            {
+                entity.HasOne(gh => gh.MedicalRecordNavigation)
+                    .WithMany(mr => mr.GynecologicalHistories)
+                    .HasForeignKey(gh => gh.ClinicalHistoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+
+                entity.HasOne(gh => gh.DiseaseNavigation)
+                    .WithMany(d => d.GynecologicalHistories)
+                    .HasForeignKey(gh => gh.DiseaseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
             base.OnModelCreating(modelBuilder);
         }
     }

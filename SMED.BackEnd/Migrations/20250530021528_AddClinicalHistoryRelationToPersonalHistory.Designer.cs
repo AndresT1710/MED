@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250530021528_AddClinicalHistoryRelationToPersonalHistory")]
+    partial class AddClinicalHistoryRelationToPersonalHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1216,8 +1219,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasOne("SMED.Shared.Entity.Disease", "DiseaseNavigation")
                         .WithMany("FamilyHistoryDetails")
-                        .HasForeignKey("DiseaseId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DiseaseId");
 
                     b.Navigation("DiseaseNavigation");
 

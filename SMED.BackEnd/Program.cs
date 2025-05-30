@@ -26,8 +26,18 @@ builder.Services.AddScoped<PersonRepository>();
 builder.Services.AddScoped<ClinicalHistoryRepository>();
 builder.Services.AddScoped<IRepository<AllergyDTO, int>, AllergyRepository>();
 builder.Services.AddScoped<IRepository<AllergyHistoryDTO, int>, AllergyHistoryRepository>();
-
-
+builder.Services.AddScoped<IRepository<DiseaseTypeDTO, int>, DiseaseTypeRepository>();
+builder.Services.AddScoped<IRepository<DiseaseDTO, int>, DiseaseRepository>();
+builder.Services.AddScoped<IRepository<PersonalHistoryDTO, int>, PersonalHistoryRepository>();
+builder.Services.AddScoped<IRepository<ObstetricHistoryDTO, int>, ObstetricHistoryRepository>();
+builder.Services.AddScoped<IRepository<FamilyHistoryDetailDTO, int>, FamilyHistoryDetailRepository>();
+builder.Services.AddScoped<IRepository<GynecologicalHistoryDTO, int>, GynecologicalHistoryRepository>();
+builder.Services.AddScoped<IRepository<ToxicHabitDTO, int>, ToxicHabitRepository>();
+builder.Services.AddScoped<IRepository<ToxicHabitBackgroundDTO, int>, ToxicHabitBackgroundRepository>();
+builder.Services.AddScoped<IRepository<SurgeryDTO, int>, SurgeryRepository>();
+builder.Services.AddScoped<IRepository<SurgeryHistoryDTO, int>, SurgeryHistoryRepository>();
+builder.Services.AddScoped<IRepository<FoodDTO, int>, FoodRepository>();
+builder.Services.AddScoped<IRepository<FoodIntoleranceHistoryDTO, int>, FoodIntoleranceHistoryRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

@@ -17,8 +17,6 @@ namespace Infrastructure.Models
         [StringLength(50)]
         public string HistoryNumber { get; set; } = null!;
 
-        public string Description { get; set; } = null!;
-
         [Column(TypeName = "datetime")]
         public DateTime? RegistrationDate { get; set; }
 

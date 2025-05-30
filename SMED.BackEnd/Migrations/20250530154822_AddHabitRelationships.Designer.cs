@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250530154822_AddHabitRelationships")]
+    partial class AddHabitRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,6 +57,11 @@ namespace SMED.BackEnd.Migrations
 
                     b.Property<int>("ClinicalHistoryId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
 
                     b.Property<string>("HistoryNumber")
                         .IsRequired()
@@ -301,9 +309,6 @@ namespace SMED.BackEnd.Migrations
 
                     b.Property<DateTime?>("RegistrationDate")
                         .HasColumnType("datetime");
-
-                    b.Property<DateTime?>("appearanceDate")
-                        .HasColumnType("datetime2");
 
                     b.HasKey("FamilyHistoryDetailId");
 
@@ -1093,9 +1098,6 @@ namespace SMED.BackEnd.Migrations
 
                     b.Property<DateTime?>("RegistrationDate")
                         .HasColumnType("datetime");
-
-                    b.Property<DateTime?>("SurgeryDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<int?>("SurgeryId")
                         .HasColumnType("int");

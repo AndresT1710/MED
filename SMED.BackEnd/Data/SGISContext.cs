@@ -67,6 +67,8 @@ namespace SGIS.Models
         public DbSet<FoodIntoleranceHistory> FoodIntoleranceHistories { get; set; }
         public DbSet<ObstetricHistory> ObstetricHistories { get; set; }
         public DbSet<PersonalHistory> PersonalHistories { get; set; }
+        public DbSet<Habits> Habits { get; set; }
+        public DbSet<HabitHistory> HabitHistories { get; set; }
 
         // Atención médica
         public DbSet<MedicalVisit> MedicalVisits { get; set; }
@@ -348,10 +350,6 @@ namespace SGIS.Models
                       .HasMaxLength(50)
                       .IsUnicode(false);
 
-                entity.Property(e => e.Description)
-                      .IsRequired()
-                      .IsUnicode(false);
-
                 entity.Property(e => e.RegistrationDate)
                       .HasColumnType("datetime");
 
@@ -528,6 +526,20 @@ namespace SGIS.Models
                     .WithMany(d => d.GynecologicalHistories)
                     .HasForeignKey(gh => gh.DiseaseId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<HabitHistory>(entity =>
+            {
+                entity.HasOne(d => d.Habit)
+                    .WithMany(p => p.HabitHistories)
+                    .HasForeignKey(d => d.HabitId)
+                    .HasConstraintName("FK_HabitHistory_Habits");
+
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(p => p.HabitHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_HabitHistory_ClinicalHistory");
             });
 
             base.OnModelCreating(modelBuilder);

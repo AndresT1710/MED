@@ -25,7 +25,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 {
                     AllergyHistoryId = a.AllergyHistoryId,
                     HistoryNumber = a.HistoryNumber,
-                    Description = a.Description,
                     RegistrationDate = a.RegistrationDate,
                     AllergyId = a.AllergyId,
                     ClinicalHistoryId = a.ClinicalHistoryId,
@@ -44,7 +43,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 {
                     AllergyHistoryId = a.AllergyHistoryId,
                     HistoryNumber = a.HistoryNumber,
-                    Description = a.Description,
                     RegistrationDate = a.RegistrationDate,
                     AllergyId = a.AllergyId,
                     ClinicalHistoryId = a.ClinicalHistoryId,
@@ -59,7 +57,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = new AllergyHistory
             {
                 HistoryNumber = dto.HistoryNumber,
-                Description = dto.Description,
                 RegistrationDate = dto.RegistrationDate,
                 AllergyId = dto.AllergyId,
                 ClinicalHistoryId = dto.ClinicalHistoryId
@@ -78,7 +75,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.HistoryNumber = dto.HistoryNumber;
-            entity.Description = dto.Description;
             entity.RegistrationDate = dto.RegistrationDate;
             entity.AllergyId = dto.AllergyId;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;

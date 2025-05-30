@@ -60,6 +60,9 @@ namespace SMED.Shared.Entity
         [ForeignKey("PatientId")]
         [InverseProperty("ClinicalHistory")]
         public virtual Patient? Patient { get; set; }
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<HabitHistory> HabitHistories { get; set; } = new List<HabitHistory>();
     }
 
 }

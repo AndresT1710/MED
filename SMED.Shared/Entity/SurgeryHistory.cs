@@ -22,6 +22,8 @@ namespace SMED.Shared.Entity
         [Column(TypeName = "datetime")]
         public DateTime? RegistrationDate { get; set; }
 
+        public DateTime? SurgeryDate { get; set; }
+
         public int ClinicalHistoryId { get; set; }
         public int? SurgeryId { get; set; }
 

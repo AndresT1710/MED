@@ -9,6 +9,7 @@ namespace SMED.Shared.DTOs
     public class PatientDTO
     {
         public int PersonId { get; set; }
+        public PersonDTO Person { get; set; }
 
     }
 }

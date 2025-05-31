@@ -14,8 +14,8 @@ builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient
     {
-        BaseAddress = new Uri("https://localhost:62687/"),
-        //BaseAddress = new Uri("https://localhost:7009/"),
+        //BaseAddress = new Uri("https://localhost:62687/"),
+        BaseAddress = new Uri("https://localhost:7009/"),
         Timeout = TimeSpan.FromSeconds(30)
     };
 
@@ -27,5 +27,6 @@ builder.Services.AddScoped(sp =>
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<PersonService>();
+builder.Services.AddScoped<ClinicalHistoryService>();
 
 await builder.Build().RunAsync();

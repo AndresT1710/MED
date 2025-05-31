@@ -15,6 +15,8 @@ namespace SMED.Shared.DTOs
         public bool? IsActive { get; set; }
         public string? GeneralObservations { get; set; }
 
+        public string PatientFullName { get; set; }
+
         public PatientDTO Patient { get; set; } = new PatientDTO();
     }
 }

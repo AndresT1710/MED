@@ -1,0 +1,80 @@
+﻿@using SMED.Shared.DTOs
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4>Detalle de Historia Clínica</h4>
+            <hr />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h5>Información Básica</h5>
+            <dl class="row">
+                <dt class="col-sm-4">Número:</dt>
+                <dd class="col-sm-8">@History.HistoryNumber</dd>
+
+                <dt class="col-sm-4">Fecha:</dt>
+                <dd class="col-sm-8">@History.CreationDate?.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-4">Estado:</dt>
+                <dd class="col-sm-8">
+                    <span class="badge @(History.IsActive == true ? "bg-success" : "bg-secondary")">
+                        @(History.IsActive == true ? "Activo" : "Inactivo")
+                    </span>
+                </dd>
+            </dl>
+        </div>
+
+        <div class="col-md-6">
+            <h5>Paciente</h5>
+            <dl class="row">
+                <dt class="col-sm-4">Nombre:</dt>
+                <dd class="col-sm-8">@History.Patient?.Person?.FirstName @History.Patient?.Person?.LastName</dd>
+
+                <dt class="col-sm-4">Cédula:</dt>
+                <dd class="col-sm-8">@(History.Patient?.Person?.Document?.DocumentNumber ?? "N/A")</dd>
+
+                <dt class="col-sm-4">Fecha Nac.:</dt>
+                <dd class="col-sm-8">@History.Patient?.Person?.BirthDate?.ToString("dd/MM/yyyy")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Observaciones Generales</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(History.GeneralObservations))
+                    {
+                        @History.GeneralObservations
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay observaciones registradas</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 text-end">
+            <button class="btn btn-primary" @onclick="EditHistory">
+                <i class="fas fa-edit"></i> Editar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ClinicalHistoryDTO History { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+
+    private void EditHistory()
+    {
+        OnEdit.InvokeAsync();
+    }
+}

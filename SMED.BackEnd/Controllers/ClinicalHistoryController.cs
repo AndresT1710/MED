@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SMED.BackEnd.Repositories.Implementations;
+using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
@@ -8,9 +9,9 @@ namespace SMED.BackEnd.Controllers
     [Route("api/[controller]")]
     public class ClinicalHistoryController : ControllerBase
     {
-        private readonly ClinicalHistoryRepository _clinicalHistoryRepository;
+        private readonly IClinicalHistoryRepository _clinicalHistoryRepository;
 
-        public ClinicalHistoryController(ClinicalHistoryRepository clinicalHistoryRepository)
+        public ClinicalHistoryController(IClinicalHistoryRepository clinicalHistoryRepository)
         {
             _clinicalHistoryRepository = clinicalHistoryRepository;
         }
@@ -20,6 +21,22 @@ namespace SMED.BackEnd.Controllers
         {
             var histories = await _clinicalHistoryRepository.GetAllAsync();
             return Ok(histories);
+        }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<ClinicalHistoryDTO>>> Search(
+         [FromQuery] string term,
+         [FromQuery] bool byIdNumber = false)
+        {
+            if (string.IsNullOrWhiteSpace(term))
+                return BadRequest("Search term is required");
+
+            var results = await _clinicalHistoryRepository.SearchAsync(term, byIdNumber);
+
+            if (!results.Any())
+                return NotFound("No se encontraron registros");
+
+            return Ok(results);
         }
 
         [HttpGet("{id}")]

@@ -7,7 +7,7 @@ using SMED.Shared.Entity;
 namespace SMED.BackEnd.Repositories.Implementations
 
 {
-    public class ClinicalHistoryRepository : IRepository<ClinicalHistoryDTO, int>
+    public class ClinicalHistoryRepository : IClinicalHistoryRepository
     {
         private readonly SGISContext _context;
 
@@ -119,10 +119,41 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        public async Task<List<ClinicalHistoryDTO>> SearchAsync(string searchTerm, bool searchByIdNumber = false)
+        {
+            var query = _context.ClinicalHistories
+                .Include(ch => ch.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                        .ThenInclude(p => p.PersonDocument)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                if (searchByIdNumber)
+                {
+                    // Búsqueda por número de documento (cédula)
+                    query = query.Where(ch =>
+                        ch.Patient != null &&
+                        ch.Patient.PersonNavigation != null &&
+                        ch.Patient.PersonNavigation.PersonDocument != null &&
+                        ch.Patient.PersonNavigation.PersonDocument.DocumentNumber.Contains(searchTerm));
+                }
+                else
+                {
+                    // Búsqueda por número de historia clínica
+                    query = query.Where(ch => ch.HistoryNumber.Contains(searchTerm));
+                }
+            }
+
+            return query.Select(MapToDTO).ToList();
+        }
+
+
         private ClinicalHistoryDTO MapToDTO(ClinicalHistory entity)
         {
             return new ClinicalHistoryDTO
             {
+                ClinicalHistoryId = entity.ClinicalHistoryId,
                 HistoryNumber = entity.HistoryNumber,
                 CreationDate = entity.CreationDate,
                 IsActive = entity.IsActive,
@@ -130,7 +161,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Patient = new PatientDTO
                 {
                     PersonId = entity.Patient.PersonId,
-                    // ... puedes mapear más propiedades del paciente si quieres
+                    Person = entity.Patient.PersonNavigation != null ? new PersonDTO
+                    {
+                        Id = entity.Patient.PersonNavigation.Id,
+                        FirstName = entity.Patient.PersonNavigation.FirstName,
+                        MiddleName = entity.Patient.PersonNavigation.MiddleName,
+                        LastName = entity.Patient.PersonNavigation.LastName,
+                        SecondLastName = entity.Patient.PersonNavigation.SecondLastName,
+                        BirthDate = entity.Patient.PersonNavigation.BirthDate,
+                        Email = entity.Patient.PersonNavigation.Email
+                        // Agrega otras propiedades según necesites
+                    } : null
                 }
             };
         }

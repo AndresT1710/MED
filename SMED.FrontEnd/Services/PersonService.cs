@@ -6,11 +6,11 @@ namespace SMED.FrontEnd.Services
 {
     public class PersonService
     {
-        private readonly HttpClient _http;
+        private readonly HttpClient _httpClient;
 
         public PersonService(HttpClient http)
         {
-            _http = http;
+            _httpClient = http;
         }
 
         public async Task<List<PersonDTO>> GetAllPersons()
@@ -18,9 +18,9 @@ namespace SMED.FrontEnd.Services
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, "api/Person");
-                Console.WriteLine($"Sending request to: {_http.BaseAddress}api/Person");
+                Console.WriteLine($"Sending request to: {_httpClient.BaseAddress}api/Person");
 
-                var response = await _http.SendAsync(request);
+                var response = await _httpClient.SendAsync(request);
 
                 Console.WriteLine($"Response status: {response.StatusCode}");
                 Console.WriteLine($"Request actually sent to: {response.RequestMessage.RequestUri}");
@@ -45,7 +45,7 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                var response = await _http.PostAsJsonAsync("api/Person", person);
+                var response = await _httpClient.PostAsJsonAsync("api/Person", person);
 
                 Console.WriteLine($"Status: {response.StatusCode}");
                 if (!response.IsSuccessStatusCode)
@@ -74,7 +74,7 @@ namespace SMED.FrontEnd.Services
                     return false;
                 }
 
-                var response = await _http.PutAsJsonAsync($"api/Person/{person.Id}", person);
+                var response = await _httpClient.PutAsJsonAsync($"api/Person/{person.Id}", person);
 
                 Console.WriteLine($"Status: {response.StatusCode}");
                 if (!response.IsSuccessStatusCode)
@@ -97,7 +97,7 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                var response = await _http.DeleteAsync($"api/Person/{id}");
+                var response = await _httpClient.DeleteAsync($"api/Person/{id}");
 
                 Console.WriteLine($"Status: {response.StatusCode}");
                 if (!response.IsSuccessStatusCode)

@@ -1,0 +1,198 @@
+﻿@using SMED.Shared.DTOs
+@inject HttpClient Http
+@inject IJSRuntime JS
+@using System.Text.Json;
+
+
+<EditForm Model="History" OnValidSubmit="HandleSave">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="patient" class="form-label">Paciente *</label>
+            @if (isLoadingPatients)
+            {
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            }
+            else
+            {
+                <div class="input-group">
+                    <InputSelect id="patient" class="form-select" @bind-Value="History.Patient.PersonId">
+                        <option value="">Seleccione un paciente</option>
+                        @foreach (var patient in Patients)
+                        {
+                            <option value="@patient.PersonId">
+                                @GetPatientDisplayName(patient)
+                            </option>
+                        }
+
+
+                    </InputSelect>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="SearchPatient">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <ValidationMessage For="@(() => History.Patient.PersonId)" />
+            }
+        </div>
+        <div class="col-md-6">
+            <label for="historyNumber" class="form-label">Número de Historia *</label>
+            <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" />
+            <ValidationMessage For="@(() => History.HistoryNumber)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="date" class="form-label">Fecha *</label>
+            <InputDate id="date" class="form-control" @bind-Value="History.CreationDate" />
+            <ValidationMessage For="@(() => History.CreationDate)" />
+        </div>
+        <div class="col-md-6">
+            <label for="isActive" class="form-label">Estado</label>
+            <div class="form-check form-switch mt-2">
+                <InputCheckbox id="isActive" class="form-check-input"
+                               @bind-Value="_isActive" />
+
+                <label class="form-check-label" for="isActive">
+                    @(_isActive ? "Activo" : "Inactivo")
+                </label>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="generalObservations" class="form-label">Observaciones Generales</label>
+        <InputTextArea id="generalObservations" class="form-control" @bind-Value="History.GeneralObservations" rows="3" />
+    </div>
+
+    <div class="text-end">
+        <button type="button" class="btn btn-secondary me-2" @onclick="HandleCancel" disabled="@isSaving">
+            Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span class="visually-hidden">Guardando...</span>
+            }
+            else
+            {
+                <span>Guardar</span>
+            }
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public ClinicalHistoryDTO History { get; set; } = new();
+    [Parameter] public EventCallback<ClinicalHistoryDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private List<PatientDTO> Patients { get; set; } = new();
+    private bool isLoadingPatients = true;
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Si Patient es null, lo inicializamos para evitar errores de binding
+        History.Patient ??= new PatientDTO();
+
+        await LoadPatients();
+    }
+
+    private async Task LoadPatients()
+    {
+        isLoadingPatients = true;
+        try
+        {
+            Patients = await Http.GetFromJsonAsync<List<PatientDTO>>("api/patient") ?? new();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading patients: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingPatients = false;
+        }
+    }
+
+    private string GetDocumentNumber(PersonDTO person)
+    {
+        return person?.Document?.DocumentNumber ?? "Sin cédula";
+    }
+
+    private async Task SearchPatient()
+    {
+        // Aquí podrías abrir un modal o redirigir a una búsqueda avanzada si lo deseas
+        await JS.InvokeVoidAsync("alert", "Funcionalidad de búsqueda de pacientes");
+    }
+
+    private async Task HandleSave()
+    {
+        isSaving = true;
+
+        try
+        {
+            // Validación mínima (opcional)
+            if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(History, new JsonSerializerOptions { WriteIndented = true });
+            await JS.InvokeVoidAsync("console.log", json);
+
+            if (History.ClinicalHistoryId == 0)
+            {
+                // Crear nuevo
+                await Http.PostAsJsonAsync("api/ClinicalHistory", History);
+            }
+            else
+            {
+                // Editar existente
+                await Http.PutAsJsonAsync($"api/ClinicalHistory/{History.ClinicalHistoryId}", History);
+            }
+
+            await OnSaved.InvokeAsync(History);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    private string GetPatientDisplayName(PatientDTO patient)
+    {
+        var person = patient.Person;
+        var doc = person?.Document;
+
+        string nombreCompleto = $"{person?.FirstName} {person?.LastName}";
+        string cedula = (doc?.DocumentTypeId == 1 && !string.IsNullOrWhiteSpace(doc.DocumentNumber))
+            ? doc.DocumentNumber
+            : "Sin cédula";
+
+        return $"{nombreCompleto} ({cedula})";
+    }
+
+    private bool _isActive
+    {
+        get => History.IsActive.GetValueOrDefault();  // Si es null, se asume false
+        set => History.IsActive = value;
+    }
+}

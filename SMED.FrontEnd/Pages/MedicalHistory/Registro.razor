@@ -9,6 +9,8 @@
 @inject IJSRuntime JS
 @inject HttpClient Http
 
+<TabContainer OnSave="GuardarDatos">
+
 <h3 class="mb-4">Gestión de Historias Clínicas</h3>
 
 <div class="search-container mb-4">
@@ -53,11 +55,12 @@
                         </div>
                     }
 
-<ManagementTable TableTitle="Historias Clínicas"
-                 Columns="ClinicalHistoryColumns"
-                 DocumentTypes="documentTypeList"
-                 RenderActions="RenderClinicalHistoryActions"
-                 @ref="table" />
+    <ManagementTableR TableTitle="Historias Clínicas"
+                      Columns="ClinicalHistoryColumns"
+                      DocumentTypes="documentTypeList"
+                      RenderActions="RenderClinicalHistoryActions"
+                      AddCallback="AddClinicalHistory"
+                      @ref="table" />
 
 
 @if (showDetail && selectedClinicalHistory != null)
@@ -101,10 +104,10 @@
         </div>
     </div>
 }
-
+</TabContainer>
 
 @code {
-    private ManagementTable table;
+    private ManagementTableR table;
     private ClinicalHistoryDTO selectedClinicalHistory;
     private bool showDetail = false;
     private bool showForm = false;
@@ -263,7 +266,7 @@
     private async Task ClearSearch()
     {
         searchTerm = string.Empty;
-        await table.ClearSearch();
+       // await table.ClearSearch();
         await LoadClinicalHistoryData();
     }
 
@@ -374,4 +377,10 @@
 
         await JS.InvokeVoidAsync("alert", message);
     }
+
+        void GuardarDatos()
+        {
+        // Lógica para guardar los datos
+        }
+
 }

@@ -1,0 +1,152 @@
+﻿@using Microsoft.AspNetCore.Components
+@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+
+@inject IJSRuntime JS
+
+<div class="management-table">
+    <div class="management-table-card">
+        <div class="management-table-card-body">
+            <!-- Sección simplificada del header (solo botón Agregar) -->
+            <div class="management-table-header">
+                <div class="management-table-actions">
+                    <button class="management-table-button management-table-add-button" @onclick="AddCallback">Agregar</button>
+                </div>
+            </div>
+
+            <!-- Table title -->
+            @if (!string.IsNullOrWhiteSpace(TableTitle))
+            {
+                <h5 class="management-table-title">@TableTitle</h5>
+            }
+
+            <!-- Table -->
+            <div class="management-table-responsive">
+                <table class="management-table-content">
+                    <thead>
+                        <tr>
+                            @foreach (var col in Columns)
+                            {
+                                <th>@col</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (DisplayedRecords.Any())
+                        {
+                            @foreach (var row in DisplayedRecords)
+                            {
+                                <tr>
+                                    @for (int i = 0; i < Columns.Count; i++)
+                                    {
+                                        <td>
+                                            @if (i == Columns.Count - 1 && RenderActions != null)
+                                            {
+                                                @RenderActions(row)
+                                            }
+                                            else if (i < row.Count)
+                                            {
+                                                @row[i]
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@Columns.Count" class="management-table-empty">No hay registros para mostrar</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="management-table-footer">
+                <div class="management-table-pagination-controls">
+                    <label for="selectPageSize">Mostrar</label>
+                    <select id="selectPageSize" class="management-table-select" @bind="PageSize">
+                        @foreach (var size in PageSizeOptions)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                    <span>registros por página</span>
+                </div>
+
+                <nav aria-label="Paginación">
+                    <ul class="management-table-pagination">
+                        <li class="@(CurrentPage == 1 ? "disabled" : "")">
+                            <button @onclick="() => ChangePage(1)">Primero</button>
+                        </li>
+                        <li class="@(CurrentPage == 1 ? "disabled" : "")">
+                            <button @onclick="() => ChangePage(CurrentPage - 1)">Anterior</button>
+                        </li>
+
+                        @foreach (var num in PageNumbers)
+                        {
+                            <li class="@(num == CurrentPage ? "active" : "")">
+                                <button @onclick="() => ChangePage(num)">@num</button>
+                            </li>
+                        }
+
+                        <li class="@(CurrentPage == TotalPages ? "disabled" : "")">
+                            <button @onclick="() => ChangePage(CurrentPage + 1)">Siguiente</button>
+                        </li>
+                        <li class="@(CurrentPage == TotalPages ? "disabled" : "")">
+                            <button @onclick="() => ChangePage(TotalPages)">Último</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<DocumentTypeDTO> DocumentTypes { get; set; } = new();
+    [Parameter] public List<string> Columns { get; set; } = new();
+    [Parameter] public string TableTitle { get; set; }
+    [Parameter] public EventCallback AddCallback { get; set; }
+    [Parameter] public RenderFragment<List<string>> RenderActions { get; set; }
+
+    private List<List<string>> AllRecords = new();
+    private List<List<string>> DisplayedRecords = new();
+
+    private int PageSize = 5;
+    private int CurrentPage = 1;
+    private List<int> PageSizeOptions = new() { 5, 10, 15, 20 };
+
+    public async Task LoadRecords(List<List<string>> records)
+    {
+        AllRecords = records;
+        CurrentPage = 1;
+        UpdatePagination();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdatePagination()
+    {
+        TotalPages = (int)Math.Ceiling((double)AllRecords.Count / PageSize);
+        if (CurrentPage > TotalPages) CurrentPage = TotalPages;
+        if (CurrentPage < 1) CurrentPage = 1;
+
+        DisplayedRecords = AllRecords
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+        PageNumbers = Enumerable.Range(1, TotalPages).ToList();
+    }
+
+    private void ChangePage(int newPage)
+    {
+        CurrentPage = newPage;
+        UpdatePagination();
+    }
+
+    private int TotalPages = 1;
+    private List<int> PageNumbers = new();
+}

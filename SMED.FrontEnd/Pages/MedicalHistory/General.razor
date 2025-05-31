@@ -41,7 +41,7 @@
     List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad"};
     List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad","Edad de Aparición" };
     List<string> headersCirugias = new() { "Procedimiento", "Fecha de Cirugía", "Secuelas" };
-    List<string> headersAlergias = new() { "Alergeno", "Reacción", "Severidad" };
+    List<string> headersAlergias = new() { "Alergeno"};
     List<string> headersHabitos = new() { "Hábito"};
 
     // Datos
@@ -75,9 +75,7 @@
 
     Dictionary<string, List<string>> optionsAlergias = new()
         {
-            ["Alergeno"] = new() { "Penicilina", "Aspirina", "Mariscos", "Polvo" },
-            ["Reacción"] = new() { "Urticaria", "Anafilaxia", "Erupción", "Edema" },
-            ["Severidad"] = new() { "Leve", "Moderada", "Severa", "Crítica" }
+            ["Alergeno"] = new() { "Penicilina", "Aspirina", "Mariscos", "Polvo" }
         };
 
     Dictionary<string, List<string>> optionsHabitos = new()

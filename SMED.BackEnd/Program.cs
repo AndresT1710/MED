@@ -40,6 +40,9 @@ builder.Services.AddScoped<IRepository<FoodDTO, int>, FoodRepository>();
 builder.Services.AddScoped<IRepository<FoodIntoleranceHistoryDTO, int>, FoodIntoleranceHistoryRepository>();
 builder.Services.AddScoped<IClinicalHistoryRepository, ClinicalHistoryRepository>();
 builder.Services.AddScoped<IRepository<PatientDTO, int>, PatientRepository>();
+builder.Services.AddScoped<IClinicalHistoryPatientRepository, PatientRepository>();
+
+
 
 
 // 4. Authentication

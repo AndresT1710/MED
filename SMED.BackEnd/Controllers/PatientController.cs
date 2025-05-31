@@ -2,7 +2,6 @@
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
-
 namespace SMED.BackEnd.Controllers
 {
     [ApiController]
@@ -10,10 +9,14 @@ namespace SMED.BackEnd.Controllers
     public class PatientController : ControllerBase
     {
         private readonly IRepository<PatientDTO, int> _repository;
+        private readonly IClinicalHistoryPatientRepository _historyRepository;
 
-        public PatientController(IRepository<PatientDTO, int> repository)
+        public PatientController(
+            IRepository<PatientDTO, int> repository,
+            IClinicalHistoryPatientRepository historyRepository)
         {
             _repository = repository;
+            _historyRepository = historyRepository;
         }
 
         // GET: api/patient
@@ -64,6 +67,13 @@ namespace SMED.BackEnd.Controllers
 
             return NoContent();
         }
-    }
 
+        // ✅ Reemplaza este método anterior
+        [HttpGet("WithClinicalHistory")]
+        public async Task<ActionResult<List<PatientDTO>>> GetPatientsWithHistory()
+        {
+            var withHistory = await _historyRepository.GetPatientsWithHistoryAsync();
+            return Ok(withHistory);
+        }
+    }
 }

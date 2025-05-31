@@ -116,6 +116,12 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<PatientDTO>> GetPatientsWithHistoryAsync()
+        {
+            var response = await _httpClient.GetFromJsonAsync<List<PatientDTO>>("api/patient/WithClinicalHistory");
+            return response ?? new List<PatientDTO>();
+        }
+
 
     }
 }

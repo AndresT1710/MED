@@ -14,7 +14,7 @@
         <input class="patient-selector-input" placeholder="Ingrese término"
                style="min-width: 200px;" @bind="SearchTerm" />
 
-        <button class="patient-selector-button" @onclick="SearchPerson"
+        <button class="patient-selector-button" @onclick="SearchPatient"
                 disabled="@(!IsFormValid)">
             Buscar
         </button>
@@ -24,54 +24,50 @@
         </button>
     </div>
 
-    @if (FoundPerson is not null)
+    @if (FoundPatient is not null)
     {
         <div class="patient-selector-alert alert alert-info">
             <h5>Datos del Paciente</h5>
-            <p><strong>Nombre:</strong> @FoundPerson.FirstName @FoundPerson.LastName</p>
-            <p><strong>Cédula:</strong> @FoundPerson.Document?.DocumentNumber</p>
-            <p><strong>Fecha Nacimiento:</strong> @FoundPerson.BirthDate?.ToString("dd/MM/yyyy")</p>
-            <p><strong>Email:</strong> @FoundPerson.Email</p>
+            <p><strong>Nombre:</strong> @FoundPatient.Person.FirstName @FoundPatient.Person.LastName</p>
+            <p><strong>Cédula:</strong> @FoundPatient.Person.Document?.DocumentNumber</p>
+            <p><strong>Fecha Nacimiento:</strong> @FoundPatient.Person.BirthDate?.ToString("dd/MM/yyyy")</p>
+            <p><strong>Email:</strong> @FoundPatient.Person.Email</p>
+            <p><strong>N° Historia Clínica:</strong> @FoundPatient.Person.ClinicalHistory?.HistoryNumber</p>
         </div>
     }
     else if (HasSearched)
     {
-        <div class="patient-selector-alert alert alert-warning">No se encontró ninguna persona con esos datos.</div>
+        <div class="patient-selector-alert alert alert-warning">No se encontró ningún paciente con esos datos.</div>
     }
 </div>
 
 @code {
     private string SearchBy { get; set; } = "";
     private string SearchTerm { get; set; } = "";
-    private PersonDTO? FoundPerson { get; set; }
+    private PatientDTO? FoundPatient { get; set; }
     private bool HasSearched = false;
 
-    private async Task SearchPerson()
+    private async Task SearchPatient()
     {
         HasSearched = false;
-        FoundPerson = null;
+        FoundPatient = null;
 
-        var allPersons = await PersonaService.GetAllPersons();
+        var patients = await PersonaService.GetPatientsWithHistoryAsync();
+        var term = SearchTerm.Trim().ToLower();
 
-        SearchTerm = SearchTerm.Trim().ToLower();
-
-        switch (SearchBy)
+        FoundPatient = SearchBy switch
         {
-            case "cedula":
-                FoundPerson = allPersons.FirstOrDefault(p => p.Document?.DocumentNumber?.ToLower() == SearchTerm);
-                break;
+            "cedula" => patients.FirstOrDefault(p =>
+                p.Person.Document?.DocumentNumber?.ToLower() == term),
 
-            case "nombre":
-                FoundPerson = allPersons.FirstOrDefault(p =>
-                    $"{p.FirstName} {p.LastName}".ToLower().Contains(SearchTerm));
-                break;
+            "nombre" => patients.FirstOrDefault(p =>
+                $"{p.Person.FirstName} {p.Person.LastName}".ToLower().Contains(term)),
 
-                /* case "historia":
-                FoundPerson = allPersons.FirstOrDefault(p =>
-                p.MedicalHistory?.ToLower().Contains(SearchTerm));
-                break;
-                */
-        }
+            "historia" => patients.FirstOrDefault(p =>
+                p.Person.ClinicalHistory?.HistoryNumber?.ToLower() == term),
+
+            _ => null
+        };
 
         HasSearched = true;
     }
@@ -80,7 +76,7 @@
     {
         SearchBy = "";
         SearchTerm = "";
-        FoundPerson = null;
+        FoundPatient = null;
         HasSearched = false;
         StateHasChanged();
     }

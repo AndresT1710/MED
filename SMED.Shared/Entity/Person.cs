@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
@@ -19,7 +16,6 @@ namespace SMED.Shared.Entity
         public string SecondLastName { get; set; }
         public DateTime? BirthDate { get; set; }
         public string Email { get; set; }
-
 
         // Navigation properties
 
@@ -58,11 +54,11 @@ namespace SMED.Shared.Entity
         public virtual PersonLaterality? PersonLaterality { get; set; }
 
         [InverseProperty("PersonNavigation")]
-        public virtual PersonResidence? PersonResidence { get; set; }       
-                
+        public virtual PersonResidence? PersonResidence { get; set; }
+
         [InverseProperty("PersonNavigation")]
         public virtual PersonReligion? PersonReligion { get; set; }
-                
+
         [InverseProperty("PersonNavigation")]
         public virtual PersonPhone? PersonPhone { get; set; }
 
@@ -72,5 +68,7 @@ namespace SMED.Shared.Entity
         [InverseProperty("Person")]
         public virtual ICollection<PersonProfession> PersonProfessions { get; set; } = new List<PersonProfession>();
 
+        // Access to ClinicalHistory through Patient
+        public virtual ClinicalHistory? ClinicalHistory => Patient?.ClinicalHistory;
     }
 }

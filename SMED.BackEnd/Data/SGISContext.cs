@@ -79,6 +79,19 @@ namespace SGIS.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
+
+
+            modelBuilder.Entity<Patient>()
+            .HasKey(p => p.PersonId);
+
+            modelBuilder.Entity<Patient>()
+                .HasOne(p => p.PersonNavigation)
+                .WithOne(p => p.Patient)
+                .HasForeignKey<Patient>(p => p.PersonId);
+
+
+
+
             //PROVINCE - CITY (1:N)
             modelBuilder.Entity<Province>()
                 .ToTable("Pronvince")
@@ -441,6 +454,10 @@ namespace SGIS.Models
 
                 entity.Property(e => e.RegistrationDate)
                     .HasColumnType("datetime");
+
+                // Configuración añadida para SurgeryDate
+                entity.Property(e => e.SurgeryDate)
+                    .HasColumnType("datetime");  // Mismo tipo que RegistrationDate
 
                 entity.HasOne(d => d.SurgeryNavigation)
                     .WithMany(p => p.SurgeryHistories)

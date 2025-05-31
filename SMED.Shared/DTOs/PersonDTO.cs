@@ -59,5 +59,8 @@ namespace SMED.Shared.DTOs
 
         //EDUCATIONLEVEL
         public EducationLevelDTO? EducationLevel { get; set; }
+
+        // Nueva propiedad agregada
+        public ClinicalHistoryDTO? ClinicalHistory { get; set; }
     }
 }

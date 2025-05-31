@@ -25,6 +25,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     HistoryNumber = s.HistoryNumber,
                     Description = s.Description,
                     RegistrationDate = s.RegistrationDate,
+                    SurgeryDate = s.SurgeryDate, // Añadido
                     ClinicalHistoryId = s.ClinicalHistoryId,
                     SurgeryId = s.SurgeryId,
                     SurgeryName = s.SurgeryNavigation != null ? s.SurgeryNavigation.Name : null
@@ -46,6 +47,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 HistoryNumber = s.HistoryNumber,
                 Description = s.Description,
                 RegistrationDate = s.RegistrationDate,
+                SurgeryDate = s.SurgeryDate, // Añadido
                 ClinicalHistoryId = s.ClinicalHistoryId,
                 SurgeryId = s.SurgeryId,
                 SurgeryName = s.SurgeryNavigation?.Name
@@ -59,6 +61,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 HistoryNumber = dto.HistoryNumber,
                 Description = dto.Description,
                 RegistrationDate = dto.RegistrationDate,
+                SurgeryDate = dto.SurgeryDate, // Añadido
                 ClinicalHistoryId = dto.ClinicalHistoryId,
                 SurgeryId = dto.SurgeryId
             };
@@ -77,6 +80,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.HistoryNumber = dto.HistoryNumber;
             entity.Description = dto.Description;
             entity.RegistrationDate = dto.RegistrationDate;
+            entity.SurgeryDate = dto.SurgeryDate; // Añadido
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.SurgeryId = dto.SurgeryId;
 
@@ -94,5 +98,4 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
     }
-
 }

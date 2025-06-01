@@ -4,7 +4,6 @@ using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace SMED.BackEnd.Repositories.Implementations
 {
     public class PersonalHistoryRepository : IRepository<PersonalHistoryDTO, int>
@@ -19,22 +18,27 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<PersonalHistoryDTO>> GetAllAsync()
         {
             var entities = await _context.PersonalHistories
+                .Include(ph => ph.DiseaseNavigation)
+                    .ThenInclude(d => d.DiseaseTypeNavigation)
                 .Include(ph => ph.MedicalRecordNavigation)
                 .ToListAsync();
+
             return entities.Select(MapToDto).ToList();
         }
 
         public async Task<PersonalHistoryDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.PersonalHistories
+                .Include(ph => ph.DiseaseNavigation)
+                    .ThenInclude(d => d.DiseaseTypeNavigation)
                 .Include(ph => ph.MedicalRecordNavigation)
                 .FirstOrDefaultAsync(ph => ph.PersonalHistoryId == id);
+
             return entity != null ? MapToDto(entity) : null;
         }
 
         public async Task<PersonalHistoryDTO> AddAsync(PersonalHistoryDTO dto)
         {
-            // Validar que exista el ClinicalHistory
             var clinicalHistoryExists = await _context.ClinicalHistories
                 .AnyAsync(ch => ch.ClinicalHistoryId == dto.ClinicalHistoryId);
 
@@ -44,6 +48,18 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = MapToEntity(dto);
             _context.PersonalHistories.Add(entity);
             await _context.SaveChangesAsync();
+
+            // Cargar relaciones para devolver DTO completo con nombres
+            await _context.Entry(entity)
+                .Reference(ph => ph.DiseaseNavigation)
+                .LoadAsync();
+            if (entity.DiseaseNavigation != null)
+            {
+                await _context.Entry(entity.DiseaseNavigation)
+                    .Reference(d => d.DiseaseTypeNavigation)
+                    .LoadAsync();
+            }
+
             return MapToDto(entity);
         }
 
@@ -52,7 +68,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PersonalHistories.FindAsync(dto.PersonalHistoryId);
             if (entity == null) return null;
 
-            // Validar que exista el nuevo ClinicalHistory si cambia
             if (entity.ClinicalHistoryId != dto.ClinicalHistoryId)
             {
                 var clinicalHistoryExists = await _context.ClinicalHistories
@@ -66,9 +81,21 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.Description = dto.Description;
             entity.RegistrationDate = dto.RegistrationDate;
             entity.DiseaseId = dto.DiseaseId;
-            entity.ClinicalHistoryId = dto.ClinicalHistoryId; // Actualizar la FK
+            entity.ClinicalHistoryId = dto.ClinicalHistoryId;
 
             await _context.SaveChangesAsync();
+
+            // Cargar relaciones para devolver DTO completo con nombres
+            await _context.Entry(entity)
+                .Reference(ph => ph.DiseaseNavigation)
+                .LoadAsync();
+            if (entity.DiseaseNavigation != null)
+            {
+                await _context.Entry(entity.DiseaseNavigation)
+                    .Reference(d => d.DiseaseTypeNavigation)
+                    .LoadAsync();
+            }
+
             return MapToDto(entity);
         }
 
@@ -82,7 +109,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        //Mapeo
+        // Map entity to DTO
         private PersonalHistoryDTO MapToDto(PersonalHistory entity)
         {
             return new PersonalHistoryDTO
@@ -91,10 +118,15 @@ namespace SMED.BackEnd.Repositories.Implementations
                 MedicalRecordNumber = entity.MedicalRecordNumber,
                 Description = entity.Description,
                 RegistrationDate = entity.RegistrationDate,
-                DiseaseId = entity.DiseaseId
+                DiseaseId = entity.DiseaseId,
+                ClinicalHistoryId = entity.ClinicalHistoryId,
+
+                DiseaseName = entity.DiseaseNavigation?.Name,
+                DiseaseTypeName = entity.DiseaseNavigation?.DiseaseTypeNavigation?.Name
             };
         }
 
+        // Map DTO to entity
         private PersonalHistory MapToEntity(PersonalHistoryDTO dto)
         {
             return new PersonalHistory
@@ -104,9 +136,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Description = dto.Description,
                 RegistrationDate = dto.RegistrationDate,
                 DiseaseId = dto.DiseaseId,
-                ClinicalHistoryId = dto.ClinicalHistoryId // Nuevo campo
+                ClinicalHistoryId = dto.ClinicalHistoryId
             };
         }
     }
-
 }

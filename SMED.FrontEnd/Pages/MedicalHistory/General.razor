@@ -9,7 +9,8 @@
 <TabContainer>
     <h4>Historia Clínica - General</h4>
 
-    <PatientSelector @bind-Value="clinicalHistoryId" />
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
 
     @if (clinicalHistoryId > 0)
     {
@@ -19,9 +20,9 @@
                            Rows="@personalesRows"
                            DiseaseTypes="@diseaseTypes"
                            GetDiseaseNamesByType="@GetDiseaseNamesByType"
-                           OnRowAdded="@(async (args) => await HandleRowAdded(args))"
-                           OnRowUpdated="@(async (args) => await HandleRowUpdated(args))"
-                           OnRowDeleted="@(async (index) => await HandleRowDeleted(index))" />
+                           OnRowAdded="@HandleRowAdded"
+                           OnRowUpdated="@HandleRowUpdated"
+                           OnRowDeleted="@HandleRowDeleted" />
         </div>
     }
     else
@@ -40,6 +41,7 @@
 
 @code {
     private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
     private string errorMessage = string.Empty;
 
     private readonly List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
@@ -83,6 +85,7 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, $"Error obteniendo enfermedades para tipo {diseaseTypeId}");
+            errorMessage = "No se pudieron cargar las enfermedades.";
             return new();
         }
     }
@@ -153,7 +156,7 @@
                     DiseaseId = enfermedad.DiseaseId,
                     Description = $"{args.diseaseType} - {args.disease}",
                     RegistrationDate = DateTime.Now,
-                    MedicalRecordNumber = GenerateMedicalRecordNumber()
+                    MedicalRecordNumber = medicalRecordNumber
                 };
 
             var (success, result, error) = await PersonalHistoryService.CreateAsync(nuevo);
@@ -251,8 +254,9 @@
         }
     }
 
-    private string GenerateMedicalRecordNumber()
+    private void HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
     {
-        return $"HC-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString()[..4]}";
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
     }
 }

@@ -14,42 +14,41 @@ namespace SMED.FrontEnd.Services
             _logger = logger;
         }
 
+        // Obtiene todos los antecedentes personales asociados a una historia clínica
         public async Task<List<PersonalHistoryDTO>> GetByClinicalHistoryIdAsync(int clinicalHistoryId)
         {
             try
             {
                 var response = await _http.GetAsync($"api/personalhistory/by-history/{clinicalHistoryId}");
-
                 if (!response.IsSuccessStatusCode)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error getting personal histories: {response.StatusCode} - {errorContent}");
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error getting personal histories for ClinicalHistoryId {Id}: {Status} - {Error}", clinicalHistoryId, response.StatusCode, error);
                     return new List<PersonalHistoryDTO>();
                 }
-
-                return await response.Content.ReadFromJsonAsync<List<PersonalHistoryDTO>>() ?? new List<PersonalHistoryDTO>();
+                var list = await response.Content.ReadFromJsonAsync<List<PersonalHistoryDTO>>();
+                return list ?? new List<PersonalHistoryDTO>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in GetByClinicalHistoryIdAsync");
+                _logger.LogError(ex, "Exception in GetByClinicalHistoryIdAsync for ClinicalHistoryId {Id}", clinicalHistoryId);
                 return new List<PersonalHistoryDTO>();
             }
         }
 
-        public async Task<(bool Success, PersonalHistoryDTO? Result, string Error)> CreateAsync(PersonalHistoryDTO dto)
+        // Crear nuevo antecedente personal
+        public async Task<(bool Success, PersonalHistoryDTO? Result, string ErrorMessage)> CreateAsync(PersonalHistoryDTO dto)
         {
             try
             {
-                // Validación básica antes de enviar
                 if (dto.ClinicalHistoryId <= 0)
-                {
-                    return (false, null, "ClinicalHistoryId es requerido");
-                }
+                    return (false, null, "El Id de Historia Clínica es requerido.");
+
+                if (string.IsNullOrWhiteSpace(dto.MedicalRecordNumber))
+                    return (false, null, "El número de expediente médico es requerido.");
 
                 if (string.IsNullOrWhiteSpace(dto.Description))
-                {
                     dto.Description = $"Antecedente personal - {DateTime.Now:yyyy-MM-dd}";
-                }
 
                 dto.RegistrationDate = DateTime.Now;
 
@@ -57,49 +56,49 @@ namespace SMED.FrontEnd.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error creating personal history: {response.StatusCode} - {errorContent}");
-                    return (false, null, errorContent);
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error creating personal history: {Status} - {Error}", response.StatusCode, error);
+                    return (false, null, error);
                 }
 
-                var result = await response.Content.ReadFromJsonAsync<PersonalHistoryDTO>();
-                return (true, result, string.Empty);
+                var created = await response.Content.ReadFromJsonAsync<PersonalHistoryDTO>();
+                return (true, created, string.Empty);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in CreateAsync");
+                _logger.LogError(ex, "Exception in CreateAsync");
                 return (false, null, ex.Message);
             }
         }
 
-        public async Task<(bool Success, string Error)> UpdateAsync(PersonalHistoryDTO dto)
+        // Actualizar antecedente personal existente
+        public async Task<(bool Success, string ErrorMessage)> UpdateAsync(PersonalHistoryDTO dto)
         {
             try
             {
                 if (dto.PersonalHistoryId <= 0)
-                {
-                    return (false, "ID de antecedente personal inválido");
-                }
+                    return (false, "El Id de antecedente personal es inválido.");
 
                 var response = await _http.PutAsJsonAsync($"api/personalhistory/{dto.PersonalHistoryId}", dto);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error updating personal history: {response.StatusCode} - {errorContent}");
-                    return (false, errorContent);
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error updating personal history Id {Id}: {Status} - {Error}", dto.PersonalHistoryId, response.StatusCode, error);
+                    return (false, error);
                 }
 
                 return (true, string.Empty);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in UpdateAsync");
+                _logger.LogError(ex, "Exception in UpdateAsync for PersonalHistoryId {Id}", dto.PersonalHistoryId);
                 return (false, ex.Message);
             }
         }
 
-        public async Task<(bool Success, string Error)> DeleteAsync(int id)
+        // Eliminar antecedente personal
+        public async Task<(bool Success, string ErrorMessage)> DeleteAsync(int id)
         {
             try
             {
@@ -107,16 +106,16 @@ namespace SMED.FrontEnd.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error deleting personal history: {response.StatusCode} - {errorContent}");
-                    return (false, errorContent);
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error deleting personal history Id {Id}: {Status} - {Error}", id, response.StatusCode, error);
+                    return (false, error);
                 }
 
                 return (true, string.Empty);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in DeleteAsync");
+                _logger.LogError(ex, "Exception in DeleteAsync for PersonalHistoryId {Id}", id);
                 return (false, ex.Message);
             }
         }

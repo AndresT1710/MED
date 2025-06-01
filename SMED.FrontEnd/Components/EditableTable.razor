@@ -47,6 +47,7 @@
         </table>
     </div>
 
+    @* Modal de Agregar/Editar *@
     @if (showAddModal)
     {
         <div class="editable-table-modal-backdrop" @onclick="CloseModal"></div>
@@ -94,6 +95,7 @@
         </div>
     }
 
+    @* Modal de Confirmación de Eliminación *@
     @if (showDeleteConfirm)
     {
         <div class="editable-table-modal-backdrop" @onclick="() => showDeleteConfirm = false"></div>
@@ -208,7 +210,6 @@
         if (index < 0 || index >= Rows.Count) return;
 
         editingIndex = index;
-
         var diseaseTypeName = Rows[index][0];
         var diseaseName = Rows[index][1];
 

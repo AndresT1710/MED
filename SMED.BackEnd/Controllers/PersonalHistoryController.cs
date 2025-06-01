@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -9,15 +10,19 @@ namespace SMED.BackEnd.Controllers
     public class PersonalHistoryController : ControllerBase
     {
         private readonly IRepository<PersonalHistoryDTO, int> _repository;
+        private readonly ILogger<PersonalHistoryController> _logger;
 
-        public PersonalHistoryController(IRepository<PersonalHistoryDTO, int> repository)
+        public PersonalHistoryController(
+            IRepository<PersonalHistoryDTO, int> repository,
+            ILogger<PersonalHistoryController> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<PersonalHistoryDTO>>> GetAll() =>
-        Ok(await _repository.GetAllAsync());
+            Ok(await _repository.GetAllAsync());
 
         [HttpGet("{id}")]
         public async Task<ActionResult<PersonalHistoryDTO>> GetById(int id)
@@ -36,7 +41,8 @@ namespace SMED.BackEnd.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, PersonalHistoryDTO dto)
         {
-            if (id != dto.PersonalHistoryId) return BadRequest();
+            if (id != dto.PersonalHistoryId)
+                return BadRequest();
 
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
@@ -49,16 +55,25 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-
         [HttpGet("by-history/{clinicalHistoryId}")]
         public async Task<ActionResult<List<PersonalHistoryDTO>>> GetByClinicalHistory(int clinicalHistoryId)
         {
-            var all = await _repository.GetAllAsync();
-            var filtered = all.Where(ph => ph.ClinicalHistoryId == clinicalHistoryId).ToList();
-            return Ok(filtered);
+            try
+            {
+                var all = await _repository.GetAllAsync();
+                var filtered = all
+                    .Where(ph => ph.ClinicalHistoryId == clinicalHistoryId)
+                    .ToList();
+
+                _logger.LogInformation($"Retrieved {filtered.Count} personal history records for ClinicalHistoryId={clinicalHistoryId}");
+
+                return Ok(filtered);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving personal history for ClinicalHistoryId={clinicalHistoryId}");
+                return StatusCode(500, "Internal server error");
+            }
         }
-
-
     }
-
 }

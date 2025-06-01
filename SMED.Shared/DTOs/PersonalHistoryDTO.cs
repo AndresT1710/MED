@@ -14,5 +14,8 @@ namespace SMED.Shared.DTOs
         public DateTime? RegistrationDate { get; set; }
         public int? DiseaseId { get; set; }
         public int ClinicalHistoryId { get; set; }
+
+
+
     }
 }

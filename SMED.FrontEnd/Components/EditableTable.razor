@@ -64,7 +64,7 @@
                                 <option value="">Seleccione un tipo</option>
                                 @foreach (var type in DiseaseTypes)
                                 {
-                                    <option value="@type.DiseaseTypeId" selected="@(selectedDiseaseType == type.DiseaseTypeId)">
+                                    <option value="@type.DiseaseTypeId" selected="@((selectedDiseaseType == type.DiseaseTypeId).ToString().ToLower())">
                                         @type.Name
                                     </option>
                                 }

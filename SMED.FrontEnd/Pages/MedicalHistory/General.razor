@@ -62,19 +62,6 @@
         }
     }
 
-    protected override async Task OnParametersSetAsync()
-    {
-        if (clinicalHistoryId > 0)
-        {
-            await LoadHistories();
-        }
-        else
-        {
-            personalesRows.Clear();
-            currentPersonalHistories.Clear();
-        }
-    }
-
     private async Task<List<string>> GetDiseaseNamesByType(int diseaseTypeId)
     {
         try
@@ -96,6 +83,7 @@
         {
             errorMessage = string.Empty;
             personalesRows.Clear();
+            currentPersonalHistories.Clear();
 
             var result = await PersonalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             currentPersonalHistories = result ?? new();
@@ -254,9 +242,15 @@
         }
     }
 
-    private void HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
+    private async void HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
     {
         clinicalHistoryId = patient.ClinicalHistoryId;
         medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadHistories();
+            StateHasChanged(); // Forzar recarga de UI después del await
+        }
     }
 }

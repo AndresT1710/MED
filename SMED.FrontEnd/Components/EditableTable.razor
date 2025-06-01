@@ -126,8 +126,8 @@
     [Parameter] public List<DiseaseTypeDTO> DiseaseTypes { get; set; } = new();
     [Parameter] public Func<int, Task<List<string>>>? GetDiseaseNamesByType { get; set; }
 
-    [Parameter] public EventCallback<(string diseaseType, string disease)> OnRowAdded { get; set; }
     [Parameter] public EventCallback<(int index, string diseaseType, string disease)> OnRowUpdated { get; set; }
+    [Parameter] public EventCallback<(string diseaseType, string disease)> OnRowAdded { get; set; }
     [Parameter] public EventCallback<int> OnRowDeleted { get; set; }
 
     private int editingIndex = -1;
@@ -185,8 +185,7 @@
 
     private async Task SaveRow()
     {
-        if (selectedDiseaseType <= 0 || string.IsNullOrEmpty(selectedDisease))
-            return;
+        if (selectedDiseaseType <= 0 || string.IsNullOrEmpty(selectedDisease)) return;
 
         var type = DiseaseTypes.FirstOrDefault(t => t.DiseaseTypeId == selectedDiseaseType);
         if (type == null) return;

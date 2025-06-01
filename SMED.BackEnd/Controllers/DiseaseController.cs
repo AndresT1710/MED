@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
+using Microsoft.EntityFrameworkCore; // Para ToListAsync()
+using SGIS.Models;
 using SMED.Shared.DTOs;
+using SMED.Shared.Entity;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -8,56 +10,107 @@ namespace SMED.BackEnd.Controllers
     [Route("api/[controller]")]
     public class DiseaseController : ControllerBase
     {
-        private readonly IRepository<DiseaseDTO, int> _repository;
+        private readonly SGISContext _context;
 
-        public DiseaseController(IRepository<DiseaseDTO, int> repository)
+        public DiseaseController(SGISContext context)
         {
-            _repository = repository;
+            _context = context;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<DiseaseDTO>>> GetAll() =>
-            Ok(await _repository.GetAllAsync());
+        public async Task<ActionResult<List<DiseaseDTO>>> GetAll()
+        {
+            var diseases = await _context.Diseases
+                .Select(d => new DiseaseDTO
+                {
+                    DiseaseId = d.DiseaseId,
+                    Name = d.Name,
+                    DiseaseTypeId = d.DiseaseTypeId
+                })
+                .ToListAsync();
+
+            return Ok(diseases);
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<DiseaseDTO>> GetById(int id)
         {
-            var dto = await _repository.GetByIdAsync(id);
-            return dto != null ? Ok(dto) : NotFound();
+            var disease = await _context.Diseases
+                .Where(d => d.DiseaseId == id)
+                .Select(d => new DiseaseDTO
+                {
+                    DiseaseId = d.DiseaseId,
+                    Name = d.Name,
+                    DiseaseTypeId = d.DiseaseTypeId
+                })
+                .FirstOrDefaultAsync();
+
+            return disease != null ? Ok(disease) : NotFound();
         }
 
         [HttpPost]
         public async Task<ActionResult<DiseaseDTO>> Create(DiseaseDTO dto)
         {
-            var result = await _repository.AddAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.DiseaseId }, result);
+            var entity = new Disease
+            {
+                Name = dto.Name,
+                DiseaseTypeId = dto.DiseaseTypeId
+            };
+
+            _context.Diseases.Add(entity);
+            await _context.SaveChangesAsync();
+
+            dto.DiseaseId = entity.DiseaseId;
+
+            return CreatedAtAction(nameof(GetById), new { id = dto.DiseaseId }, dto);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, DiseaseDTO dto)
         {
-            if (id != dto.DiseaseId) return BadRequest();
-            var updated = await _repository.UpdateAsync(dto);
-            return updated != null ? Ok(updated) : NotFound();
+            if (id != dto.DiseaseId)
+                return BadRequest();
+
+            var entity = await _context.Diseases.FindAsync(id);
+            if (entity == null)
+                return NotFound();
+
+            entity.Name = dto.Name;
+            entity.DiseaseTypeId = dto.DiseaseTypeId;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(dto);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _repository.DeleteAsync(id);
-            return deleted ? NoContent() : NotFound();
+            var entity = await _context.Diseases.FindAsync(id);
+            if (entity == null)
+                return NotFound();
+
+            _context.Diseases.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
-        [HttpGet("names/by-type-id/{typeId}")]
-        public async Task<ActionResult<List<string>>> GetDiseaseNamesByTypeId(int typeId)
+        // Aquí está la ruta que funcionó para tu compañero
+        [HttpGet("disease/{diseaseTypeId}")]
+        public async Task<ActionResult<IEnumerable<DiseaseDTO>>> GetDiseasesByType(int diseaseTypeId)
         {
-            var diseases = await _repository.GetAllAsync();
-            return Ok(diseases
-                .Where(d => d.DiseaseTypeId == typeId)
-                .Select(d => d.Name)
-                .Distinct()
-                .OrderBy(name => name)
-                .ToList());
+            var diseases = await _context.Diseases
+                .Where(d => d.DiseaseTypeId == diseaseTypeId)
+                .Select(d => new DiseaseDTO
+                {
+                    DiseaseId = d.DiseaseId,
+                    Name = d.Name,
+                    DiseaseTypeId = d.DiseaseTypeId
+                })
+                .ToListAsync();
+
+            return Ok(diseases);
         }
     }
 }

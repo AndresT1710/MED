@@ -6,6 +6,7 @@ namespace SMED.FrontEnd.Services
     public class DiseaseService
     {
         private readonly HttpClient _http;
+        private const string BasePath = "api/disease";
 
         public DiseaseService(HttpClient http)
         {
@@ -14,31 +15,33 @@ namespace SMED.FrontEnd.Services
 
         public async Task<DiseaseDTO?> GetByIdAsync(int diseaseId)
         {
-            return await _http.GetFromJsonAsync<DiseaseDTO>($"api/disease/{diseaseId}");
+            return await _http.GetFromJsonAsync<DiseaseDTO>($"{BasePath}/{diseaseId}");
         }
 
         public async Task<List<DiseaseDTO>> GetAllAsync()
         {
-            var result = await _http.GetFromJsonAsync<List<DiseaseDTO>>("api/disease");
+            var result = await _http.GetFromJsonAsync<List<DiseaseDTO>>(BasePath);
             return result ?? new List<DiseaseDTO>();
         }
 
-        public async Task<List<string>> GetNamesByTypeIdAsync(int diseaseTypeId)
+        public async Task<List<DiseaseDTO>> GetDiseasesByTypeAsync(int diseaseTypeId)
         {
             try
             {
-                var response = await _http.GetFromJsonAsync<List<string>>($"api/disease/names/by-type-id/{diseaseTypeId}");
-                return response ?? new List<string>();
+                // Cambié aquí la URL para que coincida con el controlador que funciona
+                var response = await _http.GetFromJsonAsync<List<DiseaseDTO>>($"{BasePath}/disease/{diseaseTypeId}");
+                return response ?? new List<DiseaseDTO>();
             }
-            catch
+            catch (Exception ex)
             {
-                return new List<string>();
+                Console.WriteLine($"Error al obtener enfermedades por tipo: {ex.Message}");
+                return new List<DiseaseDTO>();
             }
         }
 
         public async Task<List<DiseaseTypeDTO>> GetAllAsyncDiseaseTypes()
         {
-            var result = await _http.GetFromJsonAsync<List<DiseaseTypeDTO>>("api/diseasetype");
+            var result = await _http.GetFromJsonAsync<List<DiseaseTypeDTO>>("api/diseasetype/list");
             return result ?? new List<DiseaseTypeDTO>();
         }
     }

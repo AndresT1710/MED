@@ -37,7 +37,6 @@ namespace SMED.BackEnd.Controllers
         public async Task<IActionResult> Update(int id, DiseaseTypeDTO dto)
         {
             if (id != dto.DiseaseTypeId) return BadRequest();
-
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
         }
@@ -49,7 +48,6 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-
         [HttpGet("list")]
         public async Task<ActionResult<List<DiseaseTypeDTO>>> GetAllTypes()
         {
@@ -57,5 +55,4 @@ namespace SMED.BackEnd.Controllers
             return Ok(types.OrderBy(t => t.Name).ToList());
         }
     }
-
 }

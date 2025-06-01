@@ -5,6 +5,9 @@ using SMED.FrontEnd.Services;
 using Blazored.LocalStorage;
 using System.Net.Http;
 
+
+
+
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
@@ -30,6 +33,8 @@ builder.Services.AddScoped<PersonService>();
 builder.Services.AddScoped<ClinicalHistoryService>();
 builder.Services.AddScoped<DiseaseService>();
 builder.Services.AddScoped<PersonalHistoryService>();
+builder.Services.AddLogging();
+
 
 
 await builder.Build().RunAsync();

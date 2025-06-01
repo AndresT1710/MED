@@ -54,7 +54,6 @@ namespace SMED.Shared.Entity
         [InverseProperty("ClinicalHistory")]
         public virtual Patient? Patient { get; set; }
 
-        // Access to Person through Patient
         [NotMapped]
         public virtual Person? Person => Patient?.PersonNavigation;
     }

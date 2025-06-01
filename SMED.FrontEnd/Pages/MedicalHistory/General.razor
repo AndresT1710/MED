@@ -18,11 +18,42 @@
             <EditableTable Title="Antecedentes Personales"
                            ColumnHeaders="@headersPersonales"
                            Rows="@personalesRows"
-                           DiseaseTypes="@diseaseTypes"
-                           GetDiseaseNamesByType="@GetDiseaseNamesByType"
-                           OnRowAdded="@HandleRowAdded"
-                           OnRowUpdated="@HandleRowUpdated"
-                           OnRowDeleted="@HandleRowDeleted" />
+                           OnAddRequested="PrepareForAdd"
+                           OnEditRequested="PrepareForEdit"
+                           OnDeleteRequested="HandleRowDeleted"
+                           OnSaveRequested="SaveChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedDisease)">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>Tipo de Enfermedad</label>
+                        <select class="form-select" @onchange="OnDiseaseTypeChanged">
+                            <option value="">Seleccione un tipo</option>
+                            @foreach (var type in diseaseTypes)
+                            {
+                                <option value="@type.DiseaseTypeId" selected="@(selectedDiseaseType == type.DiseaseTypeId)">
+                                    @type.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Enfermedad</label>
+                        <select class="form-select" @bind="selectedDisease" disabled="@(!canSelectDisease)">
+                            <option value="">@(canSelectDisease ? "Seleccione una enfermedad" : "Seleccione primero el tipo")</option>
+                            @foreach (var disease in availableDiseases)
+                            {
+                                <option value="@disease">@disease</option>
+                            }
+                        </select>
+                        @if (isLoadingDiseases)
+                        {
+                            <div class="text-muted mt-1">Cargando enfermedades...</div>
+                        }
+                    </div>
+                </EditModalContent>
+
+            </EditableTable>
         </div>
     }
     else
@@ -44,10 +75,19 @@
     private string medicalRecordNumber = string.Empty;
     private string errorMessage = string.Empty;
 
+    // Datos para la tabla
     private readonly List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
     private List<List<string>> personalesRows = new();
     private List<DiseaseTypeDTO> diseaseTypes = new();
     private List<PersonalHistoryDTO> currentPersonalHistories = new();
+
+    // Estado para el formulario de edición
+    private int selectedDiseaseType = 0;
+    private string selectedDisease = "";
+    private List<string> availableDiseases = new();
+    private bool isLoadingDiseases = false;
+    private bool canSelectDisease => selectedDiseaseType > 0;
+    private int editingIndex = -1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,21 +99,6 @@
         {
             Logger.LogError(ex, "Error al cargar tipos de enfermedad");
             errorMessage = "Error al cargar los tipos de enfermedad. Por favor intente nuevamente.";
-        }
-    }
-
-    private async Task<List<string>> GetDiseaseNamesByType(int diseaseTypeId)
-    {
-        try
-        {
-            var diseases = await DiseaseService.GetDiseasesByTypeAsync(diseaseTypeId);
-            return diseases?.Select(d => d.Name).ToList() ?? new();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"Error obteniendo enfermedades para tipo {diseaseTypeId}");
-            errorMessage = "No se pudieron cargar las enfermedades.";
-            return new();
         }
     }
 
@@ -111,104 +136,162 @@
         }
     }
 
-    private async Task HandleRowAdded((string diseaseType, string disease) args)
+    private async Task OnDiseaseTypeChanged(ChangeEventArgs e)
     {
-        try
+        if (int.TryParse(e.Value?.ToString(), out var typeId))
         {
-            errorMessage = string.Empty;
+            selectedDiseaseType = typeId;
+            selectedDisease = "";
+            availableDiseases.Clear();
+            isLoadingDiseases = true;
 
-            if (string.IsNullOrWhiteSpace(args.diseaseType) || string.IsNullOrWhiteSpace(args.disease))
+            try
             {
-                errorMessage = "Debe seleccionar tanto el tipo como la enfermedad.";
-                return;
+                var diseases = await DiseaseService.GetDiseasesByTypeAsync(typeId);
+                availableDiseases = diseases?.Select(d => d.Name).ToList() ?? new();
             }
-
-            var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == args.diseaseType);
-            if (tipoDto == null)
+            catch (Exception ex)
             {
-                errorMessage = "Tipo de enfermedad no válido.";
-                return;
+                Logger.LogError(ex, $"Error obteniendo enfermedades para tipo {typeId}");
+                errorMessage = "No se pudieron cargar las enfermedades.";
             }
-
-            var enfermedades = await DiseaseService.GetDiseasesByTypeAsync(tipoDto.DiseaseTypeId);
-            var enfermedad = enfermedades.FirstOrDefault(d => d.Name == args.disease);
-            if (enfermedad == null)
+            finally
             {
-                errorMessage = "Enfermedad no encontrada.";
-                return;
+                isLoadingDiseases = false;
             }
-
-            var nuevo = new PersonalHistoryDTO
-                {
-                    ClinicalHistoryId = clinicalHistoryId,
-                    DiseaseId = enfermedad.DiseaseId,
-                    Description = $"{args.diseaseType} - {args.disease}",
-                    RegistrationDate = DateTime.Now,
-                    MedicalRecordNumber = medicalRecordNumber
-                };
-
-            var (success, result, error) = await PersonalHistoryService.CreateAsync(nuevo);
-
-            if (!success)
-            {
-                errorMessage = $"Error al crear antecedente: {error}";
-                return;
-            }
-
-            await LoadHistories();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al agregar antecedente");
-            errorMessage = "Error inesperado al agregar antecedente.";
         }
     }
 
-    private async Task HandleRowUpdated((int index, string diseaseType, string disease) args)
+    private void PrepareForAdd()
+    {
+        editingIndex = -1;
+        selectedDiseaseType = 0;
+        selectedDisease = "";
+        availableDiseases = new();
+    }
+
+    private async Task PrepareForEdit(int index)
+    {
+        editingIndex = index;
+
+        if (index < 0 || index >= personalesRows.Count) return;
+
+        var diseaseTypeName = personalesRows[index][0];
+        var diseaseName = personalesRows[index][1];
+
+        var type = diseaseTypes.FirstOrDefault(t => t.Name == diseaseTypeName);
+        if (type != null)
+        {
+            selectedDiseaseType = type.DiseaseTypeId;
+            selectedDisease = diseaseName;
+
+            isLoadingDiseases = true;
+            try
+            {
+                var diseases = await DiseaseService.GetDiseasesByTypeAsync(type.DiseaseTypeId);
+                availableDiseases = diseases?.Select(d => d.Name).ToList() ?? new();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Error obteniendo enfermedades para tipo {type.DiseaseTypeId}");
+                errorMessage = "No se pudieron cargar las enfermedades.";
+            }
+            finally
+            {
+                isLoadingDiseases = false;
+            }
+        }
+    }
+
+    private async Task SaveChanges()
     {
         try
         {
             errorMessage = string.Empty;
 
-            if (args.index < 0 || args.index >= currentPersonalHistories.Count)
+            if (string.IsNullOrWhiteSpace(selectedDisease))
             {
-                errorMessage = "Índice inválido para actualizar.";
+                errorMessage = "Debe seleccionar una enfermedad.";
                 return;
             }
 
-            var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == args.diseaseType);
-            if (tipoDto == null)
+            var type = diseaseTypes.FirstOrDefault(t => t.DiseaseTypeId == selectedDiseaseType);
+            if (type == null)
             {
                 errorMessage = "Tipo de enfermedad no válido.";
                 return;
             }
 
-            var enfermedades = await DiseaseService.GetDiseasesByTypeAsync(tipoDto.DiseaseTypeId);
-            var enfermedad = enfermedades.FirstOrDefault(d => d.Name == args.disease);
-            if (enfermedad == null)
+            if (editingIndex == -1)
             {
-                errorMessage = "Enfermedad no encontrada.";
-                return;
+                await AddNewRecord(type.Name, selectedDisease);
             }
-
-            var toUpdate = currentPersonalHistories[args.index];
-            toUpdate.DiseaseId = enfermedad.DiseaseId;
-            toUpdate.Description = $"{args.diseaseType} - {args.disease}";
-
-            var (success, error) = await PersonalHistoryService.UpdateAsync(toUpdate);
-
-            if (!success)
+            else
             {
-                errorMessage = $"Error al actualizar antecedente: {error}";
-                return;
+                await UpdateExistingRecord(editingIndex, type.Name, selectedDisease);
             }
 
             await LoadHistories();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al actualizar antecedente");
-            errorMessage = "Error inesperado al actualizar antecedente.";
+            Logger.LogError(ex, "Error al guardar cambios");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private async Task AddNewRecord(string diseaseType, string disease)
+    {
+        var enfermedades = await DiseaseService.GetDiseasesByTypeAsync(selectedDiseaseType);
+        var enfermedad = enfermedades.FirstOrDefault(d => d.Name == disease);
+        if (enfermedad == null)
+        {
+            errorMessage = "Enfermedad no encontrada.";
+            return;
+        }
+
+        var nuevo = new PersonalHistoryDTO
+            {
+                ClinicalHistoryId = clinicalHistoryId,
+                DiseaseId = enfermedad.DiseaseId,
+                Description = $"{diseaseType} - {disease}",
+                RegistrationDate = DateTime.Now,
+                MedicalRecordNumber = medicalRecordNumber
+            };
+
+        var (success, result, error) = await PersonalHistoryService.CreateAsync(nuevo);
+
+        if (!success)
+        {
+            errorMessage = $"Error al crear antecedente: {error}";
+        }
+    }
+
+    private async Task UpdateExistingRecord(int index, string diseaseType, string disease)
+    {
+        if (index < 0 || index >= currentPersonalHistories.Count)
+        {
+            errorMessage = "Índice inválido para actualizar.";
+            return;
+        }
+
+        var enfermedades = await DiseaseService.GetDiseasesByTypeAsync(selectedDiseaseType);
+        var enfermedad = enfermedades.FirstOrDefault(d => d.Name == disease);
+        if (enfermedad == null)
+        {
+            errorMessage = "Enfermedad no encontrada.";
+            return;
+        }
+
+        var toUpdate = currentPersonalHistories[index];
+        toUpdate.DiseaseId = enfermedad.DiseaseId;
+        toUpdate.Description = $"{diseaseType} - {disease}";
+
+        var (success, error) = await PersonalHistoryService.UpdateAsync(toUpdate);
+
+        if (!success)
+        {
+            errorMessage = $"Error al actualizar antecedente: {error}";
         }
     }
 
@@ -250,7 +333,7 @@
         if (clinicalHistoryId > 0)
         {
             await LoadHistories();
-            StateHasChanged(); // Forzar recarga de UI después del await
+            StateHasChanged();
         }
     }
 }

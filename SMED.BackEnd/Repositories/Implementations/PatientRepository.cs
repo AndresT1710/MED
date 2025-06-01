@@ -1,4 +1,5 @@
-﻿using SGIS.Models;
+﻿// PatientRepository.cs
+using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
@@ -18,10 +19,11 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<PatientDTO>> GetAllAsync()
         {
             var patients = await _context.Patients
-                .Include(p => p.ClinicalHistory)
                 .Include(p => p.PersonNavigation)
-                    .ThenInclude(pn => pn.PersonDocument)
-                        .ThenInclude(pd => pd.DocumentTypeNavigation)
+                    .ThenInclude(p => p.PersonDocument)
+                        .ThenInclude(d => d.DocumentTypeNavigation)
+                .Include(p => p.PersonNavigation)
+                    .ThenInclude(p => p.ClinicalHistory)
                 .ToListAsync();
 
             return patients.Select(MapToDTO).ToList();
@@ -98,9 +100,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(p => p.PersonNavigation)
                     .ThenInclude(p => p.PersonDocument)
                         .ThenInclude(d => d.DocumentTypeNavigation)
-                .Include(p => p.PersonNavigation)
-                    .ThenInclude(p => p.ClinicalHistory)
-                .Where(p => p.PersonNavigation.ClinicalHistory != null)
+                .Include(p => p.ClinicalHistory)  // incluir aquí la navegación directa
+                .Where(p => p.ClinicalHistory != null)  // filtrar directamente
                 .ToListAsync();
 
             return patientsWithHistory.Select(MapToDTO).ToList();

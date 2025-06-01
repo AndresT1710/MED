@@ -91,20 +91,20 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // ✅ Nuevo método especializado corregido
+        // Nuevo método especializado corregido
         public async Task<List<PatientDTO>> GetPatientsWithHistoryAsync()
         {
             var patientsWithHistory = await _context.Patients
                 .Include(p => p.PersonNavigation)
                     .ThenInclude(p => p.PersonDocument)
                         .ThenInclude(d => d.DocumentTypeNavigation)
-                .Include(p => p.PersonNavigation)
-                    .ThenInclude(p => p.ClinicalHistory)
-                .Where(p => p.PersonNavigation.ClinicalHistory != null)
+                .Include(p => p.ClinicalHistory)  // incluir aquí la navegación directa
+                .Where(p => p.ClinicalHistory != null)  // filtrar directamente
                 .ToListAsync();
 
             return patientsWithHistory.Select(MapToDTO).ToList();
         }
+
 
         private PatientDTO MapToDTO(Patient entity)
         {

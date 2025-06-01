@@ -4,52 +4,98 @@
 @using SMED.Shared.DTOs
 @inject DiseaseService DiseaseService
 @inject PersonalHistoryService PersonalHistoryService
+@inject IJSRuntime JSRuntime
 
 <TabContainer>
     <h4>Historia Clínica - General</h4>
 
-    <PatientSelector @bind-Value="clinicalHistoryId" />
+    <PatientSelector Value="clinicalHistoryId" ValueChanged="OnPatientChanged" />
 
     @if (clinicalHistoryId > 0)
     {
-        <div class="editable-table-wrapper">
-            <EditableTable 
-                Title="Antecedentes Personales"
-                ColumnHeaders="@headersPersonales"
-                Rows="@personalesRows"
-                ColumnOptions="@optionsPersonales"
-                OnCellChanged="OnPersonalHistoryCellChanged"
-                OnRowAdded="OnPersonalHistoryRowAdded"
-                OnRowUpdated="OnPersonalHistoryRowUpdated"
-                OnRowDeleted="OnPersonalHistoryRowDeleted"
-                DiseaseTypes="@diseaseTypes"
-                GetDiseaseNamesByType="GetDiseaseNamesByType" />
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link @(activeTab == "personal" ? "active" : "")"
+                                        @onclick='() => activeTab = "personal"'>
+                                    Antecedentes Personales
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body">
+                        @if (activeTab == "personal")
+                        {
+                            <EditableTable Title="Antecedentes Personales"
+                                           ColumnHeaders="@headersPersonales"
+                                           Rows="@personalesRows"
+                                           OnRowAdded="OnPersonalHistoryRowAdded"
+                                           OnRowUpdated="OnPersonalHistoryRowUpdated"
+                                           OnRowDeleted="OnPersonalHistoryRowDeleted"
+                                           DiseaseTypes="@diseaseTypes"
+                                           GetDiseaseNamesByType="GetDiseaseNamesByType" />
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     }
     else
     {
-        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes personales.</p>
+        <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle me-2"></i>
+            Seleccione un paciente con historia clínica para mostrar los antecedentes.
+        </div>
     }
 </TabContainer>
 
 @code {
     private int clinicalHistoryId = 0;
+    private string activeTab = "personal";
+
+    // Antecedentes Personales
     private List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
     private List<List<string>> personalesRows = new();
-    private Dictionary<string, List<string>> optionsPersonales = new();
-    private Dictionary<string, int> enfermedadNombreToId = new();
-    private List<DiseaseTypeDTO> diseaseTypes = new();
     private List<PersonalHistoryDTO> currentPersonalHistories = new();
+
+    // Antecedentes Familiares
+    private List<string> headersFamiliares = new() { "Tipo de Enfermedad", "Enfermedad" };
+    private List<List<string>> familiaresRows = new();
+
+    // Datos compartidos
+    private List<DiseaseTypeDTO> diseaseTypes = new();
+    private Dictionary<string, int> enfermedadNombreToId = new();
+    private Dictionary<int, string> enfermedadIdToNombre = new();
 
     protected override async Task OnInitializedAsync()
     {
-        diseaseTypes = await DiseaseService.GetAllAsyncDiseaseTypes();
-        optionsPersonales["Tipo de Enfermedad"] = diseaseTypes.Select(dt => dt.Name).ToList();
-        optionsPersonales["Enfermedad"] = new List<string>();
+        try
+        {
+            // Cargar tipos de enfermedades
+            diseaseTypes = await DiseaseService.GetAllAsyncDiseaseTypes();
+
+            // Cargar todas las enfermedades para mapeo
+            var allDiseases = await DiseaseService.GetAllAsync();
+            foreach (var disease in allDiseases)
+            {
+                enfermedadNombreToId[disease.Name] = disease.DiseaseId;
+                enfermedadIdToNombre[disease.DiseaseId] = disease.Name;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error al inicializar: " + ex.Message);
+        }
     }
 
-    protected override async Task OnParametersSetAsync()
+    private async Task OnPatientChanged(int newId)
     {
+        clinicalHistoryId = newId;
+
         if (clinicalHistoryId > 0)
         {
             await LoadPersonalHistoryAsync();
@@ -58,155 +104,159 @@
         {
             personalesRows.Clear();
             currentPersonalHistories.Clear();
+            familiaresRows.Clear();
         }
+
+        StateHasChanged();
     }
 
     private async Task<List<string>> GetDiseaseNamesByType(int diseaseTypeId)
     {
-        return await DiseaseService.GetNamesByTypeIdAsync(diseaseTypeId);
+        var diseases = await DiseaseService.GetByTypeIdAsync(diseaseTypeId);
+        return diseases.Select(d => d.Name).ToList();
     }
 
+
+    #region Antecedentes Personales
     private async Task LoadPersonalHistoryAsync()
     {
         personalesRows.Clear();
-        enfermedadNombreToId.Clear();
         currentPersonalHistories.Clear();
 
-        currentPersonalHistories = await PersonalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
-
-        foreach (var ph in currentPersonalHistories)
+        try
         {
-            if (ph.DiseaseId.HasValue)
-            {
-                var disease = await DiseaseService.GetByIdAsync(ph.DiseaseId.Value);
-                if (disease != null)
-                {
-                    var diseaseType = diseaseTypes.FirstOrDefault(dt => dt.DiseaseTypeId == disease.DiseaseTypeId);
-                    string tipo = diseaseType?.Name ?? "Desconocido";
-                    string nombre = disease.Name;
+            currentPersonalHistories = await PersonalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
 
-                    personalesRows.Add(new List<string> { tipo, nombre });
-                    enfermedadNombreToId[nombre] = disease.DiseaseId;
+            foreach (var ph in currentPersonalHistories)
+            {
+                if (ph.DiseaseId.HasValue)
+                {
+                    var disease = await DiseaseService.GetByIdAsync(ph.DiseaseId.Value);
+                    if (disease != null)
+                    {
+                        var diseaseType = diseaseTypes.FirstOrDefault(dt => dt.DiseaseTypeId == disease.DiseaseTypeId);
+                        string tipo = diseaseType?.Name ?? "Desconocido";
+                        string nombre = disease.Name;
+
+                        personalesRows.Add(new List<string> { tipo, nombre });
+                    }
                 }
             }
         }
-
-        if (personalesRows.Count == 0)
+        catch (Exception ex)
         {
-            personalesRows.Add(new List<string> { "", "" });
+            await JSRuntime.InvokeVoidAsync("console.error", "Error al cargar antecedentes personales: " + ex.Message);
         }
     }
 
-    private async Task OnPersonalHistoryCellChanged((int rowIndex, int columnIndex, string selectedValue) args)
-    {
-        // Manejar cambios en el modal (rowIndex = -1)
-        if (args.rowIndex == -1 && args.columnIndex == 0)
-        {
-            var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == args.selectedValue);
-            if (tipoDto != null)
-            {
-                // Precargar enfermedades para este tipo
-                var enfermedades = await DiseaseService.GetNamesByTypeIdAsync(tipoDto.DiseaseTypeId);
-                optionsPersonales["Enfermedad"] = enfermedades;
-                StateHasChanged();
-            }
-        }
-    }
-
-    private async Task OnPersonalHistoryRowAdded(List<string> newRow)
+    private async Task OnPersonalHistoryRowAdded((string diseaseType, string disease) args)
     {
         if (clinicalHistoryId <= 0) return;
 
-        var enfermedadNombre = newRow[1];
-        if (string.IsNullOrWhiteSpace(enfermedadNombre)) return;
-
-        if (!enfermedadNombreToId.TryGetValue(enfermedadNombre, out int enfermedadId))
+        try
         {
-            // Si no está en el diccionario, buscar la enfermedad
-            var allDiseases = await DiseaseService.GetAllAsync();
-            var tipoNombre = newRow[0];
-            var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == tipoNombre);
-            
-            if (tipoDto != null)
+            var enfermedadNombre = args.disease;
+            if (string.IsNullOrWhiteSpace(enfermedadNombre)) return;
+
+            if (!enfermedadNombreToId.TryGetValue(enfermedadNombre, out int enfermedadId))
             {
-                var enfermedadDto = allDiseases.FirstOrDefault(d => 
-                    d.Name == enfermedadNombre && 
-                    d.DiseaseTypeId == tipoDto.DiseaseTypeId);
-                
-                if (enfermedadDto != null)
+                // Si no está en el diccionario, buscar la enfermedad
+                var allDiseases = await DiseaseService.GetAllAsync();
+                var tipoNombre = args.diseaseType;
+                var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == tipoNombre);
+
+                if (tipoDto != null)
                 {
-                    enfermedadId = enfermedadDto.DiseaseId;
-                    enfermedadNombreToId[enfermedadNombre] = enfermedadId;
+                    var enfermedadDto = allDiseases.FirstOrDefault(d =>
+                        d.Name == enfermedadNombre &&
+                        d.DiseaseTypeId == tipoDto.DiseaseTypeId);
+
+                    if (enfermedadDto != null)
+                    {
+                        enfermedadId = enfermedadDto.DiseaseId;
+                        enfermedadNombreToId[enfermedadNombre] = enfermedadId;
+                    }
+                    else
+                    {
+                        return; // No se encontró la enfermedad
+                    }
                 }
                 else
                 {
-                    return; // No se encontró la enfermedad
+                    return; // No se encontró el tipo
                 }
             }
-            else
+
+            var dto = new PersonalHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    DiseaseId = enfermedadId,
+                    Description = $"{args.diseaseType} - {args.disease}",
+                    RegistrationDate = DateTime.Now
+                };
+
+            var created = await PersonalHistoryService.CreateAsync(dto);
+            if (created != null)
             {
-                return; // No se encontró el tipo
+                await LoadPersonalHistoryAsync();
             }
         }
-
-        var dto = new PersonalHistoryDTO
+        catch (Exception ex)
         {
-            ClinicalHistoryId = clinicalHistoryId,
-            DiseaseId = enfermedadId,
-            Description = $"{newRow[0]} - {newRow[1]}",
-            RegistrationDate = DateTime.Now
-        };
-
-        var created = await PersonalHistoryService.CreateAsync(dto);
-        if (created != null)
-        {
-            await LoadPersonalHistoryAsync();
+            await JSRuntime.InvokeVoidAsync("console.error", "Error al agregar antecedente personal: " + ex.Message);
         }
     }
 
-    private async Task OnPersonalHistoryRowUpdated((int rowIndex, List<string> updatedRow) args)
+    private async Task OnPersonalHistoryRowUpdated((int rowIndex, string diseaseType, string disease) args)
     {
         if (clinicalHistoryId <= 0 || args.rowIndex < 0 || args.rowIndex >= currentPersonalHistories.Count)
             return;
 
-        var enfermedadNombre = args.updatedRow[1];
-        if (string.IsNullOrWhiteSpace(enfermedadNombre)) return;
-
-        if (!enfermedadNombreToId.TryGetValue(enfermedadNombre, out int enfermedadId))
+        try
         {
-            // Si no está en el diccionario, buscar la enfermedad
-            var allDiseases = await DiseaseService.GetAllAsync();
-            var tipoNombre = args.updatedRow[0];
-            var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == tipoNombre);
-            
-            if (tipoDto != null)
+            var enfermedadNombre = args.disease;
+            if (string.IsNullOrWhiteSpace(enfermedadNombre)) return;
+
+            if (!enfermedadNombreToId.TryGetValue(enfermedadNombre, out int enfermedadId))
             {
-                var enfermedadDto = allDiseases.FirstOrDefault(d => 
-                    d.Name == enfermedadNombre && 
-                    d.DiseaseTypeId == tipoDto.DiseaseTypeId);
-                
-                if (enfermedadDto != null)
+                // Si no está en el diccionario, buscar la enfermedad
+                var allDiseases = await DiseaseService.GetAllAsync();
+                var tipoNombre = args.diseaseType;
+                var tipoDto = diseaseTypes.FirstOrDefault(dt => dt.Name == tipoNombre);
+
+                if (tipoDto != null)
                 {
-                    enfermedadId = enfermedadDto.DiseaseId;
-                    enfermedadNombreToId[enfermedadNombre] = enfermedadId;
+                    var enfermedadDto = allDiseases.FirstOrDefault(d =>
+                        d.Name == enfermedadNombre &&
+                        d.DiseaseTypeId == tipoDto.DiseaseTypeId);
+
+                    if (enfermedadDto != null)
+                    {
+                        enfermedadId = enfermedadDto.DiseaseId;
+                        enfermedadNombreToId[enfermedadNombre] = enfermedadId;
+                    }
+                    else
+                    {
+                        return; // No se encontró la enfermedad
+                    }
                 }
                 else
                 {
-                    return; // No se encontró la enfermedad
+                    return; // No se encontró el tipo
                 }
             }
-            else
-            {
-                return; // No se encontró el tipo
-            }
+
+            var phToUpdate = currentPersonalHistories[args.rowIndex];
+            phToUpdate.DiseaseId = enfermedadId;
+            phToUpdate.Description = $"{args.diseaseType} - {args.disease}";
+
+            await PersonalHistoryService.UpdateAsync(phToUpdate);
+            await LoadPersonalHistoryAsync();
         }
-
-        var phToUpdate = currentPersonalHistories[args.rowIndex];
-        phToUpdate.DiseaseId = enfermedadId;
-        phToUpdate.Description = $"{args.updatedRow[0]} - {args.updatedRow[1]}";
-
-        await PersonalHistoryService.UpdateAsync(phToUpdate);
-        await LoadPersonalHistoryAsync();
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error al actualizar antecedente personal: " + ex.Message);
+        }
     }
 
     private async Task OnPersonalHistoryRowDeleted(int rowIndex)
@@ -214,10 +264,24 @@
         if (rowIndex < 0 || rowIndex >= currentPersonalHistories.Count)
             return;
 
-        var phToDelete = currentPersonalHistories[rowIndex];
-        if (await PersonalHistoryService.DeleteAsync(phToDelete.PersonalHistoryId))
+        try
         {
-            await LoadPersonalHistoryAsync();
+            var phToDelete = currentPersonalHistories[rowIndex];
+            if (await PersonalHistoryService.DeleteAsync(phToDelete.PersonalHistoryId))
+            {
+                await LoadPersonalHistoryAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error al eliminar antecedente personal: " + ex.Message);
         }
     }
+    #endregion
+
+    
+
+    
+
+  
 }

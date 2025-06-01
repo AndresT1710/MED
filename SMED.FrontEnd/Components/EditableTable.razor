@@ -25,29 +25,10 @@
                         <tr>
                             @for (int colIndex = 0; colIndex < Rows[rowIndex].Count; colIndex++)
                             {
-                                <td>
-                                    @if (IsEditingRow(rowIndex))
-                                    {
-                                        <select class="editable-table-form-select"
-                                                value="@Rows[rowIndex][colIndex]"
-                                                @onchange="e => HandleSelectChange(rowIndex, colIndex, e.Value?.ToString())">
-                                            <option value="">Seleccione una opción</option>
-                                            @foreach (var option in GetOptionsForColumn(colIndex, rowIndex))
-                                            {
-                                                <option value="@option">@option</option>
-                                            }
-                                        </select>
-                                    }
-                                    else
-                                    {
-                                        @Rows[rowIndex][colIndex]
-                                    }
-                                </td>
+                                <td>@Rows[rowIndex][colIndex]</td>
                             }
                             <td class="action-column">
-                                <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(rowIndex)">
-                                    @(IsEditingRow(rowIndex) ? "Actualizar" : "Editar")
-                                </button>
+                                <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(rowIndex)">Editar</button>
                                 <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(rowIndex)">Eliminar</button>
                             </td>
                         </tr>
@@ -67,34 +48,48 @@
 
     @if (showAddModal)
     {
-        <div class="editable-table-modal-backdrop"></div>
+        <div class="editable-table-modal-backdrop" @onclick="CloseModal"></div>
         <div class="editable-table-modal-container">
-            <div class="editable-table-modal-dialog">
+            <div class="editable-table-modal-dialog" @onclick:stopPropagation="true">
                 <div class="editable-table-modal-content">
                     <div class="editable-table-modal-header">
                         <h5 class="editable-table-modal-title">@((editingIndex == -1) ? "Agregar Registro" : "Editar Registro")</h5>
                         <button type="button" class="btn-close" @onclick="CloseModal"></button>
                     </div>
                     <div class="editable-table-modal-body">
-                        @for (int i = 0; i < ColumnHeaders.Count; i++)
-                        {
-                            <div class="editable-table-form-group">
-                                <label class="editable-table-form-label">@ColumnHeaders[i]</label>
-                                <select class="editable-table-form-select"
-                                        value="@GetCurrentModalValue(i)"
-                                        @onchange="async e => await HandleModalSelectChange(i, e.Value?.ToString())">
-                                    <option value="">Seleccione una opción</option>
-                                    @foreach (var option in GetModalOptions(i))
+                        <div class="editable-table-form-group">
+                            <label class="editable-table-form-label">Tipo de Enfermedad</label>
+                            <select class="editable-table-form-select" @onchange="DiseaseTypeChanged">
+                                <option value="">Seleccione un tipo de enfermedad</option>
+                                @foreach (var type in DiseaseTypes)
+                                {
+                                    <option value="@type.DiseaseTypeId">@type.Name</option>
+                                }
+                            </select>
+
+                        </div>
+                        
+                        <div class="editable-table-form-group">
+                            <label class="editable-table-form-label">Enfermedad</label>
+                            <select class="editable-table-form-select" @bind="selectedDisease" disabled="@(selectedDiseaseType == 0)">
+                                <option value="">@(selectedDiseaseType == 0 ? "Primero seleccione un tipo" : "Seleccione una enfermedad")</option>
+                                @if (selectedDiseaseType > 0 && availableDiseases != null)
+                                {
+                                    @foreach (var disease in availableDiseases)
                                     {
-                                        <option value="@option">@option</option>
+                                        <option value="@disease">@disease</option>
                                     }
-                                </select>
-                            </div>
-                        }
+                                }
+                            </select>
+                            @if (isLoadingDiseases)
+                            {
+                                <div class="mt-2">Cargando enfermedades...</div>
+                            }
+                        </div>
                     </div>
                     <div class="editable-table-modal-footer">
                         <button class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
-                        <button class="btn btn-primary" @onclick="SaveRow">Guardar</button>
+                        <button class="btn btn-primary" @onclick="SaveRow" disabled="@(string.IsNullOrEmpty(selectedDisease))">Guardar</button>
                     </div>
                 </div>
             </div>
@@ -103,9 +98,9 @@
 
     @if (showDeleteConfirm)
     {
-        <div class="editable-table-modal-backdrop"></div>
+        <div class="editable-table-modal-backdrop" @onclick="() => showDeleteConfirm = false"></div>
         <div class="editable-table-modal-container">
-            <div class="editable-table-modal-dialog editable-table-modal-sm">
+            <div class="editable-table-modal-dialog editable-table-modal-sm" @onclick:stopPropagation="true">
                 <div class="editable-table-modal-content">
                     <div class="editable-table-modal-header">
                         <h5 class="editable-table-modal-title">Confirmar Eliminación</h5>
@@ -128,115 +123,81 @@
     [Parameter] public string Title { get; set; } = "Editable Table";
     [Parameter] public List<string> ColumnHeaders { get; set; } = new();
     [Parameter] public List<List<string>> Rows { get; set; } = new();
-    [Parameter] public Dictionary<string, List<string>> ColumnOptions { get; set; } = new();
     [Parameter] public EventCallback<(int rowIndex, int columnIndex, string selectedValue)> OnCellChanged { get; set; }
-    [Parameter] public EventCallback<List<string>> OnRowAdded { get; set; }
-    [Parameter] public EventCallback<(int rowIndex, List<string> updatedRow)> OnRowUpdated { get; set; }
+    [Parameter] public EventCallback<(string diseaseType, string disease)> OnRowAdded { get; set; }
+    [Parameter] public EventCallback<(int rowIndex, string diseaseType, string disease)> OnRowUpdated { get; set; }
     [Parameter] public EventCallback<int> OnRowDeleted { get; set; }
     [Parameter] public List<DiseaseTypeDTO> DiseaseTypes { get; set; } = new();
-    [Parameter] public Func<int, Task<List<string>>> GetDiseaseNamesByType { get; set; }
+    [Parameter] public Func<int, Task<List<string>>>? GetDiseaseNamesByType { get; set; }
 
     private bool showAddModal = false;
     private bool showDeleteConfirm = false;
     private int editingIndex = -1;
     private int deleteIndex = -1;
-    private List<string> currentModalRow = new();
-    private Dictionary<int, List<string>> diseasesByType = new();
+    private bool isLoadingDiseases = false;
+    
+    // Variables para el modal
+    private int selectedDiseaseType = 0;
+    private string selectedDisease = "";
+    private string selectedDiseaseTypeName = "";
+    private List<string> availableDiseases = new();
 
-    private bool IsEditingRow(int rowIndex) => editingIndex == rowIndex;
-
-    private List<string> GetOptionsForColumn(int columnIndex, int rowIndex)
+    private async Task DiseaseTypeChanged(ChangeEventArgs e)
     {
-        if (columnIndex < 0 || columnIndex >= ColumnHeaders.Count)
-            return new List<string>();
 
-        // Para columna de enfermedades (índice 1), devolver enfermedades del tipo seleccionado
-        if (columnIndex == 1 && rowIndex < Rows.Count && Rows[rowIndex].Count > 0)
+
+        if (int.TryParse(e.Value?.ToString(), out int typeId) && typeId > 0)
         {
-            var selectedType = Rows[rowIndex][0];
-            var type = DiseaseTypes.FirstOrDefault(dt => dt.Name == selectedType);
-            if (type != null && diseasesByType.ContainsKey(type.DiseaseTypeId))
+            selectedDiseaseType = typeId;
+            selectedDisease = ""; // Limpiar selección anterior
+            
+            Console.WriteLine($"Llamando GetDiseaseNamesByType con id: {typeId}");
+
+            var type = DiseaseTypes.FirstOrDefault(t => t.DiseaseTypeId == typeId);
+            if (type != null)
             {
-                return diseasesByType[type.DiseaseTypeId];
+                selectedDiseaseTypeName = type.Name;
             }
-        }
-
-        var header = ColumnHeaders[columnIndex];
-        return ColumnOptions.TryGetValue(header, out var options) ? options : new List<string>();
-    }
-
-    private List<string> GetModalOptions(int columnIndex)
-    {
-        if (columnIndex < 0 || columnIndex >= ColumnHeaders.Count)
-            return new List<string>();
-
-        // Para columna de enfermedades (índice 1), devolver enfermedades del tipo seleccionado en el modal
-        if (columnIndex == 1 && currentModalRow.Count > 0)
-        {
-            var selectedType = currentModalRow[0];
-            var type = DiseaseTypes.FirstOrDefault(dt => dt.Name == selectedType);
-            if (type != null && diseasesByType.ContainsKey(type.DiseaseTypeId))
-            {
-                return diseasesByType[type.DiseaseTypeId];
-            }
-        }
-
-        var header = ColumnHeaders[columnIndex];
-        return ColumnOptions.TryGetValue(header, out var options) ? options : new List<string>();
-    }
-
-    private string GetCurrentModalValue(int columnIndex)
-    {
-        return columnIndex < currentModalRow.Count ? currentModalRow[columnIndex] : "";
-    }
-
-    private async Task HandleSelectChange(int rowIndex, int columnIndex, string? selectedValue)
-    {
-        if (selectedValue == null) return;
-
-        if (rowIndex >= 0 && rowIndex < Rows.Count && columnIndex >= 0 && columnIndex < Rows[rowIndex].Count)
-        {
-            Rows[rowIndex][columnIndex] = selectedValue;
-            if (OnCellChanged.HasDelegate)
-            {
-                await OnCellChanged.InvokeAsync((rowIndex, columnIndex, selectedValue));
-            }
-        }
-    }
-
-    private async Task HandleModalSelectChange(int columnIndex, string? selectedValue)
-    {
-        if (selectedValue == null) return;
-
-        while (currentModalRow.Count <= columnIndex)
-        {
-            currentModalRow.Add("");
-        }
-
-        currentModalRow[columnIndex] = selectedValue;
-
-        // Si cambió el tipo de enfermedad, cargar las enfermedades correspondientes
-        if (columnIndex == 0 && GetDiseaseNamesByType != null)
-        {
-            var type = DiseaseTypes.FirstOrDefault(dt => dt.Name == selectedValue);
-            if (type != null && !diseasesByType.ContainsKey(type.DiseaseTypeId))
-            {
-                var diseases = await GetDiseaseNamesByType(type.DiseaseTypeId);
-                diseasesByType[type.DiseaseTypeId] = diseases;
-            }
-
-            // Limpiar selección de enfermedad si cambió el tipo
-            if (currentModalRow.Count > 1)
-            {
-                currentModalRow[1] = "";
-            }
-
+            
+            isLoadingDiseases = true;
             StateHasChanged();
-        }
+            
+            try
+            {
+                if (GetDiseaseNamesByType != null)
+                {
+                    var diseases = await GetDiseaseNamesByType(selectedDiseaseType);
+                    if (diseases != null)
+                    {
+                        availableDiseases.AddRange(diseases);
 
-        if (OnCellChanged.HasDelegate)
+                        // 🟢 Aquí agregas la línea para ver qué enfermedades se obtuvieron
+                        Console.WriteLine($"Enfermedades encontradas: {string.Join(", ", availableDiseases)}");
+                    }
+                }
+
+                else
+                {
+                    availableDiseases = new List<string>();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al cargar enfermedades: {ex.Message}");
+                availableDiseases = new List<string>();
+            }
+            finally
+            {
+                isLoadingDiseases = false;
+                StateHasChanged();
+            }
+        }
+        else
         {
-            await OnCellChanged.InvokeAsync((editingIndex, columnIndex, selectedValue));
+            selectedDiseaseType = 0;
+            selectedDisease = "";
+            selectedDiseaseTypeName = "";
+            availableDiseases = new List<string>();
         }
     }
 
@@ -245,14 +206,58 @@
         if (index < 0 || index >= Rows.Count) return;
 
         editingIndex = index;
-        currentModalRow = new List<string>(Rows[index]);
+        
+        // Obtener valores de la fila seleccionada
+        var diseaseTypeName = Rows[index][0];
+        var diseaseName = Rows[index][1];
+        
+        // Buscar el tipo de enfermedad por nombre
+        var type = DiseaseTypes.FirstOrDefault(t => t.Name == diseaseTypeName);
+        if (type != null)
+        {
+            selectedDiseaseType = type.DiseaseTypeId;
+            selectedDiseaseTypeName = type.Name;
+            
+            // Cargar enfermedades para este tipo
+            _ = LoadDiseasesForType(selectedDiseaseType);
+            
+            // Establecer la enfermedad seleccionada
+            selectedDisease = diseaseName;
+        }
+        
         showAddModal = true;
+    }
+
+    private async Task LoadDiseasesForType(int typeId)
+    {
+        if (typeId <= 0 || GetDiseaseNamesByType == null) return;
+        
+        isLoadingDiseases = true;
+        StateHasChanged();
+        
+        try
+        {
+            availableDiseases = await GetDiseaseNamesByType(typeId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar enfermedades: {ex.Message}");
+            availableDiseases = new List<string>();
+        }
+        finally
+        {
+            isLoadingDiseases = false;
+            StateHasChanged();
+        }
     }
 
     private void OpenAddModal()
     {
         editingIndex = -1;
-        currentModalRow = ColumnHeaders.Select(_ => "").ToList();
+        selectedDiseaseType = 0;
+        selectedDisease = "";
+        selectedDiseaseTypeName = "";
+        availableDiseases = new List<string>();
         showAddModal = true;
     }
 
@@ -271,32 +276,32 @@
             {
                 await OnRowDeleted.InvokeAsync(deleteIndex);
             }
-            Rows.RemoveAt(deleteIndex);
         }
         showDeleteConfirm = false;
     }
 
     private async Task SaveRow()
     {
-        if (currentModalRow.Count != ColumnHeaders.Count || currentModalRow.Any(string.IsNullOrWhiteSpace))
+        if (selectedDiseaseType <= 0 || string.IsNullOrEmpty(selectedDisease))
         {
             return;
         }
 
+        var type = DiseaseTypes.FirstOrDefault(t => t.DiseaseTypeId == selectedDiseaseType);
+        if (type == null) return;
+
         if (editingIndex >= 0)
         {
-            Rows[editingIndex] = new List<string>(currentModalRow);
             if (OnRowUpdated.HasDelegate)
             {
-                await OnRowUpdated.InvokeAsync((editingIndex, new List<string>(currentModalRow)));
+                await OnRowUpdated.InvokeAsync((editingIndex, type.Name, selectedDisease));
             }
         }
         else
         {
-            Rows.Add(new List<string>(currentModalRow));
             if (OnRowAdded.HasDelegate)
             {
-                await OnRowAdded.InvokeAsync(new List<string>(currentModalRow));
+                await OnRowAdded.InvokeAsync((type.Name, selectedDisease));
             }
         }
 
@@ -307,6 +312,10 @@
     {
         showAddModal = false;
         editingIndex = -1;
-        currentModalRow.Clear();
+        selectedDiseaseType = 0;
+        selectedDisease = "";
+        selectedDiseaseTypeName = "";
+        availableDiseases = new List<string>();
+        isLoadingDiseases = false;
     }
 }

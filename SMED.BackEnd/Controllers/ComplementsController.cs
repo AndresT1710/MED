@@ -52,7 +52,8 @@ namespace SMED.BackEnd.Controllers
                 .Select(d => new DiseaseDTO
                 {
                     DiseaseId = d.DiseaseId,
-                    Name = d.Name
+                    Name = d.Name,
+                    DiseaseTypeId = d.DiseaseTypeId
                 })
                 .ToListAsync();
 

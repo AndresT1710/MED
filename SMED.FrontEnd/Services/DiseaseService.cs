@@ -23,18 +23,19 @@ namespace SMED.FrontEnd.Services
             return result ?? new List<DiseaseDTO>();
         }
 
-        public async Task<List<string>> GetNamesByTypeIdAsync(int diseaseTypeId)
+        public async Task<List<DiseaseDTO>> GetByTypeIdAsync(int diseaseTypeId)
         {
             try
             {
-                var response = await _http.GetFromJsonAsync<List<string>>($"api/disease/names/by-type-id/{diseaseTypeId}");
-                return response ?? new List<string>();
+                var response = await _http.GetFromJsonAsync<List<DiseaseDTO>>($"api/Complements/disease/{diseaseTypeId}");
+                return response ?? new List<DiseaseDTO>();
             }
             catch
             {
-                return new List<string>();
+                return new List<DiseaseDTO>();
             }
         }
+
 
         public async Task<List<DiseaseTypeDTO>> GetAllAsyncDiseaseTypes()
         {

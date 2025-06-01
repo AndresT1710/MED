@@ -16,6 +16,8 @@ namespace SMED.Shared.DTOs
         public string? GeneralObservations { get; set; }
 
         public string PatientFullName { get; set; }
+        public string? DocumentNumber { get; set; }
+
 
         public PatientDTO Patient { get; set; } = new PatientDTO();
     }

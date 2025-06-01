@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 @using System.Text.Json;
+@using System.Text.Json.Serialization;
 
 
 <EditForm Model="History" OnValidSubmit="HandleSave">
@@ -20,7 +21,7 @@
             else
             {
                 <div class="input-group">
-                    <InputSelect id="patient" class="form-select" @bind-Value="History.Patient.PersonId">
+                    <InputSelect id="patient" class="form-select" @bind-Value="selectedPersonId">
                         <option value="">Seleccione un paciente</option>
                         @foreach (var patient in Patients)
                         {
@@ -28,9 +29,8 @@
                                 @GetPatientDisplayName(patient)
                             </option>
                         }
-
-
                     </InputSelect>
+
                     <button class="btn btn-outline-secondary" type="button" @onclick="SearchPatient">
                         <i class="fas fa-search"></i>
                     </button>
@@ -111,6 +111,7 @@
         try
         {
             Patients = await Http.GetFromJsonAsync<List<PatientDTO>>("api/patient") ?? new();
+            await JS.InvokeVoidAsync("console.log", "Pacientes cargados:", Patients);
         }
         catch (Exception ex)
         {
@@ -121,6 +122,7 @@
             isLoadingPatients = false;
         }
     }
+
 
     private string GetDocumentNumber(PersonDTO person)
     {
@@ -139,25 +141,60 @@
 
         try
         {
-            // Validación mínima (opcional)
             if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
             {
                 await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
                 return;
             }
 
-            var json = JsonSerializer.Serialize(History, new JsonSerializerOptions { WriteIndented = true });
+            // Limpiar referencias circulares y preparar datos obligatorios
+            if (History.Patient?.Person != null)
+            {
+                History.Patient.Person.ClinicalHistory = null;
+
+                if (History.Patient.Person.MaritalStatus == null)
+                {
+                    History.Patient.Person.MaritalStatus = new MaritalStatusDTO
+                        {
+                            Id = 1,
+                            Name = "Soltero"
+                        };
+                }
+
+                if (History.Patient.Person.Professions == null || !History.Patient.Person.Professions.Any())
+                {
+                    History.Patient.Person.Professions = new List<ProfessionDTO>();
+                    // Agrega profesiones válidas si tienes
+                }
+            }
+
+            var json = JsonSerializer.Serialize(History, new JsonSerializerOptions
+                {
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    WriteIndented = true
+                });
+
             await JS.InvokeVoidAsync("console.log", json);
+
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response;
 
             if (History.ClinicalHistoryId == 0)
             {
-                // Crear nuevo
-                await Http.PostAsJsonAsync("api/ClinicalHistory", History);
+                response = await Http.PostAsync("api/ClinicalHistory", content);
             }
             else
             {
-                // Editar existente
-                await Http.PutAsJsonAsync($"api/ClinicalHistory/{History.ClinicalHistoryId}", History);
+                response = await Http.PutAsync($"api/ClinicalHistory/{History.ClinicalHistoryId}", content);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("console.error", $"Error en API: {error}");
+                await JS.InvokeVoidAsync("alert", $"Error al guardar: {error}");
+                return;
             }
 
             await OnSaved.InvokeAsync(History);
@@ -165,12 +202,17 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", $"Error al guardar: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
         }
         finally
         {
             isSaving = false;
         }
     }
+
+
+
+
 
     private async Task HandleCancel()
     {
@@ -195,4 +237,31 @@
         get => History.IsActive.GetValueOrDefault();  // Si es null, se asume false
         set => History.IsActive = value;
     }
+
+    private int? selectedPersonId
+    {
+        get => History.Patient?.PersonId;
+        set
+        {
+            if (History.Patient == null)
+            {
+                History.Patient = new PatientDTO();
+            }
+            History.Patient.PersonId = value ?? 0;
+
+            // Asignar PatientFullName basado en la selección
+            var paciente = Patients.FirstOrDefault(p => p.PersonId == History.Patient.PersonId);
+            if (paciente != null)
+            {
+                var person = paciente.Person;
+                History.PatientFullName = $"{person?.FirstName} {person?.LastName}".Trim();
+            }
+            else
+            {
+                History.PatientFullName = null;
+            }
+        }
+    }
+
+
 }

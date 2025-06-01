@@ -60,21 +60,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-12 text-end">
-            <button class="btn btn-primary" @onclick="EditHistory">
-                <i class="fas fa-edit"></i> Editar
-            </button>
-        </div>
-    </div>
 </div>
 
 @code {
     [Parameter] public ClinicalHistoryDTO History { get; set; }
-    [Parameter] public EventCallback OnEdit { get; set; }
 
-    private void EditHistory()
-    {
-        OnEdit.InvokeAsync();
-    }
 }

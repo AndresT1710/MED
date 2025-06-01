@@ -21,6 +21,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var histories = await _context.ClinicalHistories
                 .Include(ch => ch.Patient)
                     .ThenInclude(p => p.PersonNavigation)
+                        .ThenInclude(p => p.PersonDocument)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -31,6 +32,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var history = await _context.ClinicalHistories
                 .Include(ch => ch.Patient)
                     .ThenInclude(p => p.PersonNavigation)
+                                            .ThenInclude(p => p.PersonDocument)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -83,6 +85,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             // Buscar la entidad por su ID correcto
             var entity = await _context.ClinicalHistories
                     .Include(ch => ch.Patient)
+                        .ThenInclude(p => p.PersonNavigation)
                     .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == dto.ClinicalHistoryId);
 
             if (entity == null)
@@ -169,10 +172,19 @@ namespace SMED.BackEnd.Repositories.Implementations
                         LastName = entity.Patient.PersonNavigation.LastName,
                         SecondLastName = entity.Patient.PersonNavigation.SecondLastName,
                         BirthDate = entity.Patient.PersonNavigation.BirthDate,
-                        Email = entity.Patient.PersonNavigation.Email
+                        Email = entity.Patient.PersonNavigation.Email,
+                        Document = entity.Patient.PersonNavigation.PersonDocument != null ? new PersonDocumentDTO
+                        {
+                            DocumentNumber = entity.Patient.PersonNavigation.PersonDocument.DocumentNumber,
+                            DocumentTypeId = entity.Patient.PersonNavigation.PersonDocument.DocumentTypeId
+                        } : null,
                         // Agrega otras propiedades según necesites
                     } : null
-                }
+                },
+                PatientFullName = entity.Patient?.PersonNavigation != null
+                    ? $"{entity.Patient.PersonNavigation.FirstName} {entity.Patient.PersonNavigation.MiddleName} {entity.Patient.PersonNavigation.LastName} {entity.Patient.PersonNavigation.SecondLastName}"
+                    : string.Empty,
+                DocumentNumber = entity.Patient?.PersonNavigation?.PersonDocument?.DocumentNumber
             };
         }
 

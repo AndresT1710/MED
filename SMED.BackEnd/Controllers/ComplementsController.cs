@@ -43,6 +43,22 @@ namespace SMED.BackEnd.Controllers
             }).ToList();
         }
 
+        //DISEASES BY TYPE
+        [HttpGet("disease/{diseaseTypeId}")]
+        public async Task<ActionResult<IEnumerable<DiseaseDTO>>> GetDiseasesByType(int diseaseTypeId)
+        {
+            var diseases = await _context.Diseases
+                .Where(d => d.DiseaseTypeId == diseaseTypeId)
+                .Select(d => new DiseaseDTO
+                {
+                    DiseaseId = d.DiseaseId,
+                    Name = d.Name
+                })
+                .ToListAsync();
+
+            return Ok(diseases);
+        }
+
         // CITY BY PROVINCE
         [HttpGet("city/{provinceId}")]
         public async Task<ActionResult<IEnumerable<CityDTO>>> GetCitiesByProvince(int provinceId)

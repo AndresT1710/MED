@@ -28,5 +28,8 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<PersonService>();
 builder.Services.AddScoped<ClinicalHistoryService>();
+builder.Services.AddScoped<DiseaseService>();
+builder.Services.AddScoped<PersonalHistoryService>();
+
 
 await builder.Build().RunAsync();

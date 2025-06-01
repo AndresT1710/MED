@@ -1,5 +1,4 @@
-﻿@* Componente genérico para tablas editables *@
-@* Mantiene la funcionalidad pero de forma genérica *@
+﻿@* COMPONENTE: EditableTable.razor *@
 
 <div class="editable-table">
     <div class="editable-table-header">
@@ -25,10 +24,11 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Rows?.Count > 0)
+                @if (HasData)
                 {
                     @for (int i = 0; i < Rows.Count; i++)
                     {
+                        var rowId = i < RowIds.Count ? RowIds[i] : -1;
                         <tr>
                             @foreach (var cell in Rows[i])
                             {
@@ -39,11 +39,11 @@
                                 <td class="action-column">
                                     @if (ShowEditButton)
                                     {
-                                        <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(i)">Editar</button>
+                                        <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(rowId)" disabled="@(rowId < 0)">Editar</button>
                                     }
                                     @if (ShowDeleteButton)
                                     {
-                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(i)">Eliminar</button>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(rowId)" disabled="@(rowId < 0)">Eliminar</button>
                                     }
                                 </td>
                             }
@@ -53,7 +53,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="@(ColumnHeaders.Count + (ShowActions ? 1 : 0))" class="editable-table-empty">
+                        <td colspan="@TotalColumns" class="editable-table-empty">
                             @EmptyMessage
                         </td>
                     </tr>
@@ -62,7 +62,6 @@
         </table>
     </div>
 
-    @* Modal de Agregar/Editar *@
     @if (showAddModal)
     {
         <div class="editable-table-modal-backdrop" @onclick="CloseModal"></div>
@@ -70,7 +69,7 @@
             <div class="editable-table-modal-dialog" @onclick:stopPropagation="true">
                 <div class="editable-table-modal-content">
                     <div class="editable-table-modal-header">
-                        <h5>@(editingIndex == -1 ? "Agregar Registro" : "Editar Registro")</h5>
+                        <h5>@(editingId == -1 ? "Agregar Registro" : "Editar Registro")</h5>
                         <button class="btn-close" @onclick="CloseModal"></button>
                     </div>
                     <div class="editable-table-modal-body">
@@ -85,7 +84,6 @@
         </div>
     }
 
-    @* Modal de Confirmación de Eliminación *@
     @if (showDeleteConfirm)
     {
         <div class="editable-table-modal-backdrop" @onclick="() => showDeleteConfirm = false"></div>
@@ -101,7 +99,7 @@
                     </div>
                     <div class="editable-table-modal-footer">
                         <button class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
-                        <button class="btn btn-danger" @onclick="DeleteRow">Eliminar</button>
+                        <button class="btn btn-danger" @onclick="() => DeleteConfirmed()">Eliminar</button>
                     </div>
                 </div>
             </div>
@@ -110,58 +108,63 @@
 </div>
 
 @code {
-    // Parámetros básicos de configuración
     [Parameter] public string Title { get; set; } = "Tabla Editable";
     [Parameter] public List<string> ColumnHeaders { get; set; } = new();
     [Parameter] public List<List<string>> Rows { get; set; } = new();
+    [Parameter] public List<int> RowIds { get; set; } = new();
     [Parameter] public string EmptyMessage { get; set; } = "No hay datos disponibles";
     [Parameter] public string DeleteConfirmationMessage { get; set; } = "¿Está seguro que desea eliminar este registro?";
 
-    // Parámetros para controlar qué botones mostrar
     [Parameter] public bool ShowAddButton { get; set; } = true;
     [Parameter] public bool ShowEditButton { get; set; } = true;
     [Parameter] public bool ShowDeleteButton { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
 
-    // Contenido personalizado para el modal de edición
     [Parameter] public RenderFragment EditModalContent { get; set; }
 
-    // Eventos para comunicación con el padre
     [Parameter] public EventCallback<int> OnEditRequested { get; set; }
     [Parameter] public EventCallback<int> OnDeleteRequested { get; set; }
     [Parameter] public EventCallback OnAddRequested { get; set; }
     [Parameter] public EventCallback OnSaveRequested { get; set; }
     [Parameter] public Func<bool> IsValidForm { get; set; } = () => true;
 
-    // Estado interno del componente
-    private int editingIndex = -1;
+    private int editingId = -1;
     private bool showAddModal = false;
     private bool showDeleteConfirm = false;
 
+    private bool HasData => Rows?.Count > 0 && RowIds?.Count > 0 && Rows.Count == RowIds.Count;
+    private int TotalColumns => ColumnHeaders.Count + (ShowActions ? 1 : 0);
+
     private void OpenAddModal()
     {
-        editingIndex = -1;
+        editingId = -1;
         showAddModal = true;
         OnAddRequested.InvokeAsync();
     }
 
-    private void EditRow(int index)
+    private void EditRow(int id)
     {
-        editingIndex = index;
+        if (id < 0) return;
+        editingId = id;
         showAddModal = true;
-        OnEditRequested.InvokeAsync(index);
+        OnEditRequested.InvokeAsync(id);
     }
 
-    private void ConfirmDelete(int index)
+    private void ConfirmDelete(int id)
     {
-        editingIndex = index;
+        if (id < 0) return;
+        editingId = id;
         showDeleteConfirm = true;
     }
 
-    private async Task DeleteRow()
+    private async Task DeleteConfirmed()
     {
         showDeleteConfirm = false;
-        await OnDeleteRequested.InvokeAsync(editingIndex);
+        if (editingId >= 0)
+        {
+            await OnDeleteRequested.InvokeAsync(editingId);
+        }
+        editingId = -1;
     }
 
     private async Task SaveRow()
@@ -176,6 +179,6 @@
     private void CloseModal()
     {
         showAddModal = false;
-        editingIndex = -1;
+        editingId = -1;
     }
 }

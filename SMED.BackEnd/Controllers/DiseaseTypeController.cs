@@ -48,6 +48,14 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
+
+
+        [HttpGet("list")]
+        public async Task<ActionResult<List<DiseaseTypeDTO>>> GetAllTypes()
+        {
+            var types = await _repository.GetAllAsync();
+            return Ok(types.OrderBy(t => t.Name).ToList());
+        }
     }
 
 }

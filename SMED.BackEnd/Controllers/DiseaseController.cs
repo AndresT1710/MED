@@ -37,7 +37,6 @@ namespace SMED.BackEnd.Controllers
         public async Task<IActionResult> Update(int id, DiseaseDTO dto)
         {
             if (id != dto.DiseaseId) return BadRequest();
-
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
         }
@@ -48,6 +47,17 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
-    }
 
+        [HttpGet("names/by-type-id/{typeId}")]
+        public async Task<ActionResult<List<string>>> GetDiseaseNamesByTypeId(int typeId)
+        {
+            var diseases = await _repository.GetAllAsync();
+            return Ok(diseases
+                .Where(d => d.DiseaseTypeId == typeId)
+                .Select(d => d.Name)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList());
+        }
+    }
 }

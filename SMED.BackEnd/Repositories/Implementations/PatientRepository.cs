@@ -98,8 +98,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(p => p.PersonNavigation)
                     .ThenInclude(p => p.PersonDocument)
                         .ThenInclude(d => d.DocumentTypeNavigation)
-                .Include(p => p.ClinicalHistory)  // incluir aquí la navegación directa
-                .Where(p => p.ClinicalHistory != null)  // filtrar directamente
+                .Include(p => p.PersonNavigation)
+                    .ThenInclude(p => p.ClinicalHistory)
+                .Where(p => p.PersonNavigation.ClinicalHistory != null)
                 .ToListAsync();
 
             return patientsWithHistory.Select(MapToDTO).ToList();

@@ -1,6 +1,6 @@
 ﻿@using SMED.FrontEnd.Services
 @using SMED.Shared.DTOs
-@inject PersonService PersonaService
+@inject PersonService PersonService
 
 <div class="patient-selector-container">
     <div class="patient-selector-filters">
@@ -42,6 +42,13 @@
 </div>
 
 @code {
+    // Parámetro de dos vías para pasar ClinicalHistoryId al padre
+    [Parameter]
+    public int Value { get; set; }
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
     private string SearchBy { get; set; } = "";
     private string SearchTerm { get; set; } = "";
     private PatientDTO? FoundPatient { get; set; }
@@ -52,7 +59,7 @@
         HasSearched = false;
         FoundPatient = null;
 
-        var patients = await PersonaService.GetPatientsWithHistoryAsync();
+        var patients = await PersonService.GetPatientsWithHistoryAsync();
         var term = SearchTerm.Trim().ToLower();
 
         FoundPatient = SearchBy switch
@@ -69,6 +76,16 @@
             _ => null
         };
 
+        if (FoundPatient != null && FoundPatient.Person.ClinicalHistory != null)
+        {
+            // Actualizamos el valor y notificamos al padre
+            await SetClinicalHistoryIdAsync(FoundPatient.Person.ClinicalHistory.ClinicalHistoryId);
+        }
+        else
+        {
+            await SetClinicalHistoryIdAsync(0);
+        }
+
         HasSearched = true;
     }
 
@@ -78,10 +95,18 @@
         SearchTerm = "";
         FoundPatient = null;
         HasSearched = false;
+        _ = SetClinicalHistoryIdAsync(0);
         StateHasChanged();
     }
 
-    private bool IsFormValid =>
-        !string.IsNullOrWhiteSpace(SearchBy) &&
-        !string.IsNullOrWhiteSpace(SearchTerm);
+    private bool IsFormValid => !string.IsNullOrEmpty(SearchBy) && !string.IsNullOrWhiteSpace(SearchTerm);
+
+    private async Task SetClinicalHistoryIdAsync(int id)
+    {
+        if (Value != id)
+        {
+            Value = id;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
 }

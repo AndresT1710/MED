@@ -4,6 +4,8 @@
 @using SMED.Shared.DTOs
 @inject PersonalHistoryService PersonalHistoryService
 @inject DiseaseService DiseaseService
+@inject SurgeryService SurgeryService
+@inject SurgeryHistoryService SurgeryHistoryService
 @inject ILogger<General> Logger
 
 <TabContainer>
@@ -14,6 +16,7 @@
 
     @if (clinicalHistoryId > 0)
     {
+        <!-- SECCIÓN: ANTECEDENTES PERSONALES -->
         <div class="editable-table-wrapper">
             <EditableTable Title="Antecedentes Personales"
                            ColumnHeaders="@headersPersonales"
@@ -60,10 +63,54 @@
                 </EditModalContent>
             </EditableTable>
         </div>
+
+        <!-- SECCIÓN: ANTECEDENTES QUIRÚRGICOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes Quirúrgicos"
+                           ColumnHeaders="@headersQuirurgicos"
+                           Rows="@quirurgicosData.Select(d => d.Values).ToList()"
+                           RowIds="@quirurgicosData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddSurgery"
+                           OnEditRequested="PrepareForEditSurgery"
+                           OnDeleteRequested="HandleSurgeryRowDeleted"
+                           OnSaveRequested="SaveSurgeryChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedSurgery) && surgeryDate != default"
+                           EmptyMessage="@(isLoadingSurgeries ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingSurgeryId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Cirugía</label>
+                        <select class="form-select" @bind="selectedSurgery">
+                            <option value="">Seleccione una cirugía</option>
+                            @foreach (var surgery in availableSurgeries)
+                            {
+                                <option value="@surgery">@surgery</option>
+                            }
+                        </select>
+                        @if (isLoadingSurgeries)
+                        {
+                            <div class="text-muted mt-1">Cargando cirugías...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha de Cirugía</label>
+                        <input type="date" class="form-control" @bind="surgeryDate" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Secuelas</label>
+                        <textarea class="form-control" @bind="surgeryDescription" rows="2"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
     }
     else
     {
-        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes personales.</p>
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes.</p>
     }
 
     @if (!string.IsNullOrEmpty(errorMessage))
@@ -81,6 +128,9 @@
     private string errorMessage = string.Empty;
     private bool isLoading = false;
 
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES PERSONALES
+    // ==========================================
     private readonly List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
     private List<PersonalRow> personalesData = new();
     private List<PersonalHistoryDTO> currentPersonalHistories = new();
@@ -99,17 +149,42 @@
         public List<string> Values { get; set; } = new();
     }
 
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES QUIRÚRGICOS
+    // ==========================================
+    private readonly List<string> headersQuirurgicos = new() { "Cirugía", "Fecha", "Secuelas" };
+    private List<SurgeryRow> quirurgicosData = new();
+    private List<SurgeryHistoryDTO> currentSurgeryHistories = new();
+    private List<SurgeryDTO> surgeries = new();
+    private List<string> availableSurgeries = new();
+
+    private string selectedSurgery = "";
+    private DateTime surgeryDate = DateTime.Now;
+    private string surgeryDescription = "";
+    private int editingSurgeryId = -1;
+    private bool isLoadingSurgeries = false;
+
+    private class SurgeryRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             isLoading = true;
             diseaseTypes = await DiseaseService.GetAllAsyncDiseaseTypes() ?? new();
+
+            // Cargar cirugías disponibles
+            surgeries = await SurgeryService.GetAllAsync() ?? new();
+            availableSurgeries = surgeries.Select(s => s.Name).ToList();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al cargar tipos de enfermedad");
-            errorMessage = "Error al cargar los tipos de enfermedad.";
+            Logger.LogError(ex, "Error al cargar datos iniciales");
+            errorMessage = "Error al cargar los datos iniciales.";
         }
         finally
         {
@@ -117,6 +192,9 @@
         }
     }
 
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES PERSONALES
+    // ==========================================
     private async Task LoadHistories()
     {
         errorMessage = string.Empty;
@@ -311,6 +389,190 @@
         errorMessage = string.Empty;
     }
 
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES QUIRÚRGICOS
+    // ==========================================
+    private async Task LoadSurgeryHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingSurgeries = true;
+
+        try
+        {
+            var result = await SurgeryHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentSurgeryHistories = result ?? new();
+            quirurgicosData = new();
+
+            foreach (var sh in currentSurgeryHistories)
+            {
+                quirurgicosData.Add(new SurgeryRow
+                    {
+                        Id = sh.SurgeryHistoryId,
+                        Values = new()
+                {
+                    GetSurgeryName(sh.SurgeryId ?? 0), // CORRECCIÓN LÍNEA 413
+                    sh.SurgeryDate?.ToShortDateString() ?? "Sin fecha",
+                    sh.Description ?? "Sin descripción"
+                }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias quirúrgicas");
+            errorMessage = "Error al cargar los antecedentes quirúrgicos.";
+        }
+        finally
+        {
+            isLoadingSurgeries = false;
+        }
+    }
+
+    private string GetSurgeryName(int surgeryId)
+    {
+        if (surgeryId == 0) return "Sin especificar";
+        return surgeries.FirstOrDefault(s => s.SurgeryId == surgeryId)?.Name ?? "Desconocida";
+    }
+
+    private async Task PrepareForEditSurgery(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentSurgeryHistories.FirstOrDefault(s => s.SurgeryHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente quirúrgico con ID {id}";
+                return;
+            }
+
+            editingSurgeryId = id;
+            selectedSurgery = GetSurgeryName(dto.SurgeryId ?? 0); // CORRECCIÓN LÍNEA 451
+            surgeryDate = dto.SurgeryDate ?? DateTime.Now;
+            surgeryDescription = dto.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente quirúrgico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleSurgeryRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await SurgeryHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadSurgeryHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente quirúrgico");
+            errorMessage = "Error al eliminar el antecedente quirúrgico.";
+        }
+    }
+
+    private async Task SaveSurgeryChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedSurgery))
+            {
+                errorMessage = "Debe seleccionar una cirugía.";
+                return;
+            }
+
+            if (surgeryDate == default)
+            {
+                errorMessage = "Debe seleccionar una fecha válida.";
+                return;
+            }
+
+            var cirugia = surgeries.FirstOrDefault(s => s.Name == selectedSurgery);
+            if (cirugia == null)
+            {
+                errorMessage = "Cirugía no encontrada.";
+                return;
+            }
+
+            if (editingSurgeryId == -1)
+            {
+                var nuevo = new SurgeryHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        SurgeryId = cirugia.SurgeryId,
+                        Description = string.IsNullOrWhiteSpace(surgeryDescription) ?
+                                         $"Cirugía: {selectedSurgery}" : surgeryDescription,
+                        SurgeryDate = surgeryDate,
+                        RegistrationDate = DateTime.Now,
+                    // ⭐ CORRECCIÓN: Usar el número de historia médica del paciente
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await SurgeryHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente quirúrgico: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentSurgeryHistories.FirstOrDefault(s => s.SurgeryHistoryId == editingSurgeryId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.SurgeryId = cirugia.SurgeryId;
+                dto.Description = string.IsNullOrWhiteSpace(surgeryDescription) ?
+                                 $"Cirugía: {selectedSurgery}" : surgeryDescription;
+                dto.SurgeryDate = surgeryDate;
+
+                var (success, error) = await SurgeryHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente quirúrgico: {error}";
+                    return;
+                }
+            }
+
+            // ⭐ IMPORTANTE: Recargar los datos después de guardar
+            await LoadSurgeryHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente quirúrgico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddSurgery()
+    {
+        editingSurgeryId = -1;
+        selectedSurgery = "";
+        surgeryDate = DateTime.Now;
+        surgeryDescription = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingSurgeryId() => editingSurgeryId == -1 ? "Nuevo" : editingSurgeryId.ToString();
+
+    // ==========================================
+    // MÉTODOS COMUNES
+    // ==========================================
     private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
     {
         clinicalHistoryId = patient.ClinicalHistoryId;
@@ -319,6 +581,7 @@
         if (clinicalHistoryId > 0)
         {
             await LoadHistories();
+            await LoadSurgeryHistories();
         }
     }
 

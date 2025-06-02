@@ -10,6 +10,8 @@
 @inject AllergyHistoryService AllergyHistoryService
 @inject HabitService HabitService
 @inject HabitHistoryService HabitHistoryService
+@inject RelationshipService RelationshipService
+@inject FamilyHistoryDetailService FamilyHistoryDetailService
 @inject ILogger<General> Logger
 
 <TabContainer>
@@ -183,6 +185,76 @@
                 </EditModalContent>
             </EditableTable>
         </div>
+
+        <!-- SECCIÓN: ANTECEDENTES FAMILIARES -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes Familiares"
+                           ColumnHeaders="@headersFamiliares"
+                           Rows="@familiaresData.Select(d => d.Values).ToList()"
+                           RowIds="@familiaresData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddFamily"
+                           OnEditRequested="PrepareForEditFamily"
+                           OnDeleteRequested="HandleFamilyRowDeleted"
+                           OnSaveRequested="SaveFamilyChanges"
+                           IsValidForm="() => selectedRelationshipId > 0 && selectedFamilyDiseaseType > 0 && !string.IsNullOrEmpty(selectedFamilyDisease) && familyAppearanceAge > 0"
+                           EmptyMessage="@(isLoadingFamily ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingFamilyId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Parentesco</label>
+                        <select class="form-select" @bind="selectedRelationshipId">
+                            <option value="0">Seleccione un parentesco</option>
+                            @foreach (var relationship in availableRelationships)
+                            {
+                                <option value="@relationship.Id">@relationship.Name</option>
+                            }
+                        </select>
+                        @if (isLoadingRelationships)
+                        {
+                            <div class="text-muted mt-1">Cargando parentescos...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Tipo de Enfermedad</label>
+                        <select class="form-select" @onchange="OnFamilyDiseaseTypeChanged">
+                            <option value="0">Seleccione un tipo</option>
+                            @foreach (var type in diseaseTypes)
+                            {
+                                <option value="@type.DiseaseTypeId" selected="@(selectedFamilyDiseaseType == type.DiseaseTypeId)">
+                                    @type.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Enfermedad</label>
+                        <select class="form-select" @bind="selectedFamilyDisease" disabled="@(!canSelectFamilyDisease)">
+                            <option value="">@(canSelectFamilyDisease ? "Seleccione una enfermedad" : "Seleccione primero el tipo")</option>
+                            @foreach (var disease in availableFamilyDiseases)
+                            {
+                                <option value="@disease">@disease</option>
+                            }
+                        </select>
+                        @if (isLoadingFamilyDiseases)
+                        {
+                            <div class="text-muted mt-1">Cargando enfermedades...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Edad de Aparición</label>
+                        <input type="number" class="form-control" @bind="familyAppearanceAge" min="0" max="120" placeholder="Ingrese la edad" />
+                        @if (familyAppearanceAge <= 0)
+                        {
+                            <div class="text-muted mt-1">Debe ingresar una edad válida (mayor a 0)</div>
+                        }
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
     }
     else
     {
@@ -284,6 +356,32 @@
         public List<string> Values { get; set; } = new();
     }
 
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES FAMILIARES
+    // ==========================================
+    private readonly List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Edad de Aparición" };
+    private List<FamilyRow> familiaresData = new();
+    private List<FamilyHistoryDetailDTO> currentFamilyHistories = new();
+    private List<RelationshipDTO> relationships = new();
+    private List<RelationshipDTO> availableRelationships = new();
+    private List<string> availableFamilyDiseases = new();
+
+    private int selectedRelationshipId = 0;
+    private int selectedFamilyDiseaseType = 0;
+    private string selectedFamilyDisease = "";
+    private int familyAppearanceAge = 0;
+    private int editingFamilyId = -1;
+    private bool isLoadingFamily = false;
+    private bool isLoadingRelationships = false;
+    private bool isLoadingFamilyDiseases = false;
+    private bool canSelectFamilyDisease => selectedFamilyDiseaseType > 0 && !isLoadingFamilyDiseases;
+
+    private class FamilyRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -302,6 +400,10 @@
             // Cargar hábitos disponibles
             habits = await HabitService.GetAllAsync() ?? new();
             availableHabits = habits.Select(h => h.Name).ToList();
+
+            // Cargar parentescos disponibles
+            relationships = await RelationshipService.GetAllAsync() ?? new();
+            availableRelationships = relationships.ToList();
         }
         catch (Exception ex)
         {
@@ -1014,6 +1116,279 @@
     private string GetCurrentEditingHabitId() => editingHabitId == -1 ? "Nuevo" : editingHabitId.ToString();
 
     // ==========================================
+    // MÉTODOS: ANTECEDENTES FAMILIARES
+    // ==========================================
+    private async Task LoadFamilyHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingFamily = true;
+
+        try
+        {
+            var result = await FamilyHistoryDetailService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentFamilyHistories = result ?? new();
+            familiaresData = new();
+
+            foreach (var fh in currentFamilyHistories)
+            {
+                familiaresData.Add(new FamilyRow
+                    {
+                        Id = fh.FamilyHistoryDetailId,
+                        Values = new()
+                    {
+                        GetRelationshipName(fh.RelationshipId),
+                        await GetDiseaseTypeName(fh.DiseaseId ?? 0),
+                        await GetDiseaseName(fh.DiseaseId ?? 0),
+                        fh.appearanceAge?.ToString() ?? "No especificada"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias familiares");
+            errorMessage = "Error al cargar los antecedentes familiares.";
+        }
+        finally
+        {
+            isLoadingFamily = false;
+        }
+    }
+
+    private string GetRelationshipName(int relationshipId)
+    {
+        return relationships.FirstOrDefault(r => r.Id == relationshipId)?.Name ?? "Desconocido";
+    }
+
+    private async Task<string> GetDiseaseTypeName(int diseaseId)
+    {
+        if (diseaseId == 0) return "Sin especificar";
+
+        try
+        {
+            var disease = await DiseaseService.GetByIdAsync(diseaseId);
+            if (disease != null)
+            {
+                var diseaseType = diseaseTypes.FirstOrDefault(dt => dt.DiseaseTypeId == disease.DiseaseTypeId);
+                return diseaseType?.Name ?? "Desconocido";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al obtener tipo de enfermedad");
+        }
+
+        return "Desconocido";
+    }
+
+    private async Task<string> GetDiseaseName(int diseaseId)
+    {
+        if (diseaseId == 0) return "Sin especificar";
+
+        try
+        {
+            var disease = await DiseaseService.GetByIdAsync(diseaseId);
+            return disease?.Name ?? "Desconocida";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al obtener nombre de enfermedad");
+            return "Desconocida";
+        }
+    }
+
+    private async Task PrepareForEditFamily(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentFamilyHistories.FirstOrDefault(f => f.FamilyHistoryDetailId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente familiar con ID {id}";
+                return;
+            }
+
+            editingFamilyId = id;
+            selectedRelationshipId = dto.RelationshipId;
+            familyAppearanceAge = dto.appearanceAge ?? 0;
+            selectedFamilyDiseaseType = 0;
+            selectedFamilyDisease = "";
+            availableFamilyDiseases = new();
+
+            if (dto.DiseaseId.HasValue)
+            {
+                var disease = await DiseaseService.GetByIdAsync(dto.DiseaseId.Value);
+                if (disease != null)
+                {
+                    selectedFamilyDiseaseType = disease.DiseaseTypeId;
+                    await LoadFamilyDiseasesByType(selectedFamilyDiseaseType);
+                    selectedFamilyDisease = disease.Name;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente familiar");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task LoadFamilyDiseasesByType(int typeId)
+    {
+        isLoadingFamilyDiseases = true;
+        try
+        {
+            var diseases = await DiseaseService.GetDiseasesByTypeAsync(typeId);
+            availableFamilyDiseases = diseases?.Select(d => d.Name).ToList() ?? new();
+        }
+        finally
+        {
+            isLoadingFamilyDiseases = false;
+        }
+    }
+
+    private async Task HandleFamilyRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await FamilyHistoryDetailService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadFamilyHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente familiar");
+            errorMessage = "Error al eliminar el antecedente familiar.";
+        }
+    }
+
+    private async Task SaveFamilyChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (selectedRelationshipId <= 0)
+            {
+                errorMessage = "Debe seleccionar un parentesco.";
+                return;
+            }
+
+            if (selectedFamilyDiseaseType <= 0)
+            {
+                errorMessage = "Debe seleccionar un tipo de enfermedad.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedFamilyDisease))
+            {
+                errorMessage = "Debe seleccionar una enfermedad.";
+                return;
+            }
+
+            if (familyAppearanceAge <= 0)
+            {
+                errorMessage = "Debe ingresar una edad válida (mayor a 0).";
+                return;
+            }
+
+            var diseaseList = await DiseaseService.GetDiseasesByTypeAsync(selectedFamilyDiseaseType);
+            var enfermedad = diseaseList?.FirstOrDefault(d => d.Name == selectedFamilyDisease);
+            if (enfermedad == null)
+            {
+                errorMessage = "Enfermedad no encontrada.";
+                return;
+            }
+
+            var relationshipName = GetRelationshipName(selectedRelationshipId);
+            var diseaseTypeName = diseaseTypes.FirstOrDefault(dt => dt.DiseaseTypeId == selectedFamilyDiseaseType)?.Name ?? "Desconocido";
+
+            if (editingFamilyId == -1)
+            {
+                var nuevo = new FamilyHistoryDetailDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        RelationshipId = selectedRelationshipId,
+                        DiseaseId = enfermedad.DiseaseId,
+                        appearanceAge = familyAppearanceAge,
+                        Description = $"{relationshipName} - {diseaseTypeName} - {selectedFamilyDisease} (Edad: {familyAppearanceAge})",
+                        RegistrationDate = DateTime.Now,
+                        MedicalRecordNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await FamilyHistoryDetailService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente familiar: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentFamilyHistories.FirstOrDefault(f => f.FamilyHistoryDetailId == editingFamilyId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.RelationshipId = selectedRelationshipId;
+                dto.DiseaseId = enfermedad.DiseaseId;
+                dto.appearanceAge = familyAppearanceAge;
+                dto.Description = $"{relationshipName} - {diseaseTypeName} - {selectedFamilyDisease} (Edad: {familyAppearanceAge})";
+
+                var (success, error) = await FamilyHistoryDetailService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente familiar: {error}";
+                    return;
+                }
+            }
+
+            await LoadFamilyHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente familiar");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private async Task OnFamilyDiseaseTypeChanged(ChangeEventArgs e)
+    {
+        errorMessage = string.Empty;
+
+        if (int.TryParse(e.Value?.ToString(), out var typeId))
+        {
+            selectedFamilyDiseaseType = typeId;
+            selectedFamilyDisease = "";
+            await LoadFamilyDiseasesByType(typeId);
+        }
+    }
+
+    private void PrepareForAddFamily()
+    {
+        editingFamilyId = -1;
+        selectedRelationshipId = 0;
+        selectedFamilyDiseaseType = 0;
+        selectedFamilyDisease = "";
+        familyAppearanceAge = 0;
+        availableFamilyDiseases = new();
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingFamilyId() => editingFamilyId == -1 ? "Nuevo" : editingFamilyId.ToString();
+
+    // ==========================================
     // MÉTODOS COMUNES
     // ==========================================
     private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
@@ -1027,6 +1402,7 @@
             await LoadSurgeryHistories();
             await LoadAllergyHistories();
             await LoadHabitHistories();
+            await LoadFamilyHistories();
         }
     }
 

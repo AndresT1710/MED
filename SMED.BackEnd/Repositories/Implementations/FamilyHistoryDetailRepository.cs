@@ -46,6 +46,8 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.RegistrationDate = dto.RegistrationDate;
             entity.DiseaseId = dto.DiseaseId;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
+            entity.appearanceAge = dto.appearanceAge;
+            entity.RelationshipId = dto.RelationshipId;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -71,7 +73,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Description = entity.Description,
                 RegistrationDate = entity.RegistrationDate,
                 DiseaseId = entity.DiseaseId,
-                ClinicalHistoryId = entity.ClinicalHistoryId
+                ClinicalHistoryId = entity.ClinicalHistoryId,
+                appearanceAge = entity.appearanceAge,
+                RelationshipId = entity.RelationshipId
             };
         }
 
@@ -84,7 +88,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Description = dto.Description,
                 RegistrationDate = dto.RegistrationDate,
                 DiseaseId = dto.DiseaseId,
-                ClinicalHistoryId = dto.ClinicalHistoryId
+                ClinicalHistoryId = dto.ClinicalHistoryId,
+                appearanceAge= dto.appearanceAge,
+                RelationshipId = dto.RelationshipId
             };
         }
     }

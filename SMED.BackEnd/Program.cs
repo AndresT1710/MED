@@ -43,8 +43,7 @@ builder.Services.AddScoped<IRepository<PatientDTO, int>, PatientRepository>();
 builder.Services.AddScoped<IClinicalHistoryPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IRepository<HabitsDTO, int>, HabitsRepository>();
 builder.Services.AddScoped<IRepository<HabitHistoryDTO, int>, HabitHistoryRepository>();
-
-
+builder.Services.AddScoped<IRepository<RelationshipDTO, int>, RelationshipRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

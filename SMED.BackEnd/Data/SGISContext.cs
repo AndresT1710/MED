@@ -60,6 +60,7 @@ namespace SGIS.Models
         public DbSet<DiseaseType> DiseaseTypes { get; set; }
         public DbSet<Disease> Diseases { get; set; }
         public DbSet<FamilyHistoryDetail> FamilyHistoryDetails { get; set; }
+
         public DbSet<GynecologicalHistory> GynecologicalHistories { get; set; }
         public DbSet<ToxicHabit> ToxicHabits { get; set; }
         public DbSet<ToxicHabitBackground> ToxicHabitHistories { get; set; }

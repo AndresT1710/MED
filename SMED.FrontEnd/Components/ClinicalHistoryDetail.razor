@@ -168,6 +168,35 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Familiares</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.FamilyHistories != null && History.FamilyHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var family in History.FamilyHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Parentesco:</strong> @family.RelationshipName <br />
+                                    <strong>Nombre de Enfermedad:</strong> @family.DiseaseName <br />
+                                    <strong>Tipo de Enfermedad:</strong> @family.DiseaseTypeName <br />
+                                    <strong>Edad de Aparición:</strong> @family.appearanceAge <br />
+                                    <strong>Descripción:</strong> @family.Description <br />
+                                    <strong>Fecha de Registro:</strong> @family.RegistrationDate?.ToShortDateString()
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes familiares registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 </div>

@@ -40,7 +40,7 @@
         </div>
         <div class="col-md-6">
             <label for="historyNumber" class="form-label">Número de Historia *</label>
-            <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" />
+            <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" readonly="@IsEditMode" />
             <ValidationMessage For="@(() => History.HistoryNumber)" />
         </div>
     </div>
@@ -92,6 +92,9 @@
     [Parameter] public ClinicalHistoryDTO History { get; set; } = new();
     [Parameter] public EventCallback<ClinicalHistoryDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool IsEditMode => History.ClinicalHistoryId != 0;
+
 
     private List<PatientDTO> Patients { get; set; } = new();
     private bool isLoadingPatients = true;

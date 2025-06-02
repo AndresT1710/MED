@@ -29,6 +29,7 @@ namespace SMED.Shared.DTOs
 
         public List<HabitHistoryDTO>? HabitHistories { get; set; } = new();
 
+        public List<FamilyHistoryDetailDTO>? FamilyHistories { get; set; } = new();
     }
 
 }

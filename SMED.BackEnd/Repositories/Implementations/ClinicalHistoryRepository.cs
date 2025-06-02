@@ -31,6 +31,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(ah => ah.AllergyNavigation)
                 .Include(ch => ch.HabitHistories)
                     .ThenInclude(hh => hh.Habit)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.RelationshipNavigation)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.DiseaseNavigation)
+                        .ThenInclude(t => t.DiseaseTypeNavigation)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -51,6 +56,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(ah => ah.AllergyNavigation)
                 .Include(ch => ch.HabitHistories)
                     .ThenInclude(hh => hh.Habit)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.RelationshipNavigation)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.DiseaseNavigation)
+                        .ThenInclude(t => t.DiseaseTypeNavigation)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -247,6 +257,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                 {
                     HabitName = hh.Habit.Name,
                     RecordDate = hh.RecordDate
+                }).ToList(),
+
+                FamilyHistories = entity.FamilyHistoryDetails.Select(fh => new FamilyHistoryDetailDTO
+                {
+                    RelationshipName = fh.RelationshipNavigation?.Name ?? "N/D",
+                    DiseaseName = fh.DiseaseNavigation?.Name ?? "N/D",
+                    DiseaseTypeName = fh.DiseaseNavigation?.DiseaseTypeNavigation?.Name ?? "N/D",
+                    appearanceAge = fh.appearanceAge,
+                    Description = fh.Description,
+                    RegistrationDate = fh.RegistrationDate
                 }).ToList()
 
             };

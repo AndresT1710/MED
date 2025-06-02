@@ -23,5 +23,11 @@ namespace SMED.Shared.DTOs
         public int ClinicalHistoryId { get; set; }
 
         public int RelationshipId { get; set; }
+
+        public string? RelationshipName { get; set; }
+
+        public string? DiseaseName { get; set; }
+
+        public string? DiseaseTypeName { get; set; }
     }
 }

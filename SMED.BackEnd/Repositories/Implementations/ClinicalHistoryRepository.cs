@@ -25,6 +25,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.PersonalHistories)
                     .ThenInclude(ph => ph.DiseaseNavigation)
                         .ThenInclude(d => d.DiseaseTypeNavigation)
+                .Include(ch => ch.SurgeryHistories)
+                    .ThenInclude(sh => sh.SurgeryNavigation)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -39,6 +41,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.PersonalHistories)
                     .ThenInclude(ph => ph.DiseaseNavigation)
                         .ThenInclude(d => d.DiseaseTypeNavigation)
+                .Include(ch => ch.SurgeryHistories)
+                    .ThenInclude(sh => sh.SurgeryNavigation)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -198,6 +202,14 @@ namespace SMED.BackEnd.Repositories.Implementations
                     RegistrationDate = ph.RegistrationDate,
                     DiseaseTypeName = ph.DiseaseNavigation.DiseaseTypeNavigation.Name,
                     DiseaseName = ph.DiseaseNavigation.Name,
+                }).ToList(),
+                SurgeryHistories = entity.SurgeryHistories.Select(sh => new SurgeryHistoryDTO
+                {
+                    HistoryNumber = sh.HistoryNumber,
+                    Description = sh.Description,
+                    RegistrationDate = sh.RegistrationDate,
+                    SurgeryName = sh.SurgeryNavigation.Name,
+                    SurgeryDate = sh.SurgeryDate
                 }).ToList()
             };
         }

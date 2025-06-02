@@ -39,6 +39,8 @@ builder.Services.AddScoped<AllergyHistoryService>();
 builder.Services.AddScoped<AllergyService>();
 builder.Services.AddScoped<HabitService>();
 builder.Services.AddScoped<HabitHistoryService>();
+builder.Services.AddScoped<RelationshipService>();
+builder.Services.AddScoped<FamilyHistoryDetailService>();
 builder.Services.AddLogging();
 
 

@@ -17,13 +17,21 @@ namespace SMED.BackEnd.Controllers
 
         [HttpGet]
         public async Task<ActionResult<List<FamilyHistoryDetailDTO>>> GetAll() =>
-        Ok(await _repository.GetAllAsync());
+            Ok(await _repository.GetAllAsync());
 
         [HttpGet("{id}")]
         public async Task<ActionResult<FamilyHistoryDetailDTO>> GetById(int id)
         {
             var dto = await _repository.GetByIdAsync(id);
             return dto != null ? Ok(dto) : NotFound();
+        }
+
+        [HttpGet("by-clinical-history/{clinicalHistoryId}")]
+        public async Task<ActionResult<List<FamilyHistoryDetailDTO>>> GetByClinicalHistoryId(int clinicalHistoryId)
+        {
+            var allRecords = await _repository.GetAllAsync();
+            var filtered = allRecords?.Where(x => x.ClinicalHistoryId == clinicalHistoryId).ToList() ?? new List<FamilyHistoryDetailDTO>();
+            return Ok(filtered);
         }
 
         [HttpPost]
@@ -49,5 +57,4 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
-
 }

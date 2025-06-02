@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
@@ -17,8 +13,10 @@ namespace SMED.Shared.Entity
         [StringLength(100)]
         public string? Name { get; set; }
 
-        [InverseProperty("Relationship")]
+        [InverseProperty("RelationshipNavigation")] // ← nombre debe coincidir con la propiedad de navegación en FamilyHistoryDetail
+        public virtual ICollection<FamilyHistoryDetail> FamilyHistoryDetails { get; set; } = new List<FamilyHistoryDetail>();
+
+        [InverseProperty("Relationship")] // ← Esto es para la otra relación, como PatientRelationship
         public virtual ICollection<PatientRelationship> PatientRelationships { get; set; } = new List<PatientRelationship>();
     }
-
 }

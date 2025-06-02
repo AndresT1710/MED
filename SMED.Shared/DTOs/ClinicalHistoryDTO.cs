@@ -25,5 +25,9 @@ namespace SMED.Shared.DTOs
 
         public List<SurgeryHistoryDTO> SurgeryHistories { get; set; } = new();
 
+        public List<AllergyHistoryDTO> AllergyHistories { get; set; } = new();
+
+        public List<HabitHistoryDTO> HabitHistories { get; set; } = new();
+
     }
 }

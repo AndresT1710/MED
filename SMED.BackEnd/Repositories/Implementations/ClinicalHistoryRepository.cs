@@ -27,6 +27,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                         .ThenInclude(d => d.DiseaseTypeNavigation)
                 .Include(ch => ch.SurgeryHistories)
                     .ThenInclude(sh => sh.SurgeryNavigation)
+                .Include(ch => ch.AllergyHistories)
+                    .ThenInclude(ah => ah.AllergyNavigation)
+                .Include(ch => ch.HabitHistories)
+                    .ThenInclude(hh => hh.Habit)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -43,6 +47,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                         .ThenInclude(d => d.DiseaseTypeNavigation)
                 .Include(ch => ch.SurgeryHistories)
                     .ThenInclude(sh => sh.SurgeryNavigation)
+                .Include(ch => ch.AllergyHistories)
+                    .ThenInclude(ah => ah.AllergyNavigation)
+                .Include(ch => ch.HabitHistories)
+                    .ThenInclude(hh => hh.Habit)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -203,6 +211,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     DiseaseTypeName = ph.DiseaseNavigation.DiseaseTypeNavigation.Name,
                     DiseaseName = ph.DiseaseNavigation.Name,
                 }).ToList(),
+
                 SurgeryHistories = entity.SurgeryHistories.Select(sh => new SurgeryHistoryDTO
                 {
                     HistoryNumber = sh.HistoryNumber,
@@ -210,7 +219,20 @@ namespace SMED.BackEnd.Repositories.Implementations
                     RegistrationDate = sh.RegistrationDate,
                     SurgeryName = sh.SurgeryNavigation.Name,
                     SurgeryDate = sh.SurgeryDate
+                }).ToList(),
+
+                AllergyHistories = entity.AllergyHistories.Select(ah => new AllergyHistoryDTO
+                {
+                    AllergyName = ah.AllergyNavigation.Name,
+                    RegistrationDate = ah.RegistrationDate
+                }).ToList(),
+
+                HabitHistories = entity.HabitHistories.Select(hh => new HabitHistoryDTO
+                {
+                    HabitName = hh.Habit.Name,
+                    RecordDate = hh.RecordDate
                 }).ToList()
+
             };
         }
 

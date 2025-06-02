@@ -116,6 +116,58 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes de Alergias</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.AllergyHistories != null && History.AllergyHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var allergy in History.AllergyHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Nombre de Alergia:</strong> @allergy.AllergyName <br />
+                                    <strong>Fecha de Registro:</strong> @allergy.RegistrationDate?.ToShortDateString()
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes de alergias registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes de Hábitos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.HabitHistories != null && History.HabitHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var habit in History.HabitHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Nombre de Hábito:</strong> @habit.HabitName <br />
+                                    <strong>Fecha de Registro:</strong> @habit.RecordDate?.ToShortDateString()
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes de hábitos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
 </div>

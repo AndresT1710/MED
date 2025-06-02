@@ -23,11 +23,11 @@ namespace SMED.Shared.DTOs
 
         public List<PersonalHistoryDTO> PersonalHistories { get; set; } = new();
 
-        public List<SurgeryHistoryDTO> SurgeryHistories { get; set; } = new();
+        public List<SurgeryHistoryDTO>? SurgeryHistories { get; set; } = new();
 
-        public List<AllergyHistoryDTO> AllergyHistories { get; set; } = new();
+        public List<AllergyHistoryDTO>? AllergyHistories { get; set; } = new();
 
-        public List<HabitHistoryDTO> HabitHistories { get; set; } = new();
+        public List<HabitHistoryDTO>? HabitHistories { get; set; } = new();
 
     }
 }

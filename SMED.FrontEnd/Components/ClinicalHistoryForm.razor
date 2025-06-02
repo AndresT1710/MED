@@ -40,7 +40,14 @@
         </div>
         <div class="col-md-6">
             <label for="historyNumber" class="form-label">Número de Historia *</label>
-            <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" />
+            @if (IsEditMode)
+            {
+                <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" disabled />
+            }
+            else
+            {
+                <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" />
+            }
             <ValidationMessage For="@(() => History.HistoryNumber)" />
         </div>
     </div>
@@ -96,6 +103,8 @@
     private List<PatientDTO> Patients { get; set; } = new();
     private bool isLoadingPatients = true;
     private bool isSaving = false;
+
+    private bool IsEditMode => History.ClinicalHistoryId > 0;
 
     protected override async Task OnInitializedAsync()
     {

@@ -35,6 +35,8 @@ builder.Services.AddScoped<DiseaseService>();
 builder.Services.AddScoped<PersonalHistoryService>();
 builder.Services.AddScoped<SurgeryService>();
 builder.Services.AddScoped<SurgeryHistoryService>();
+builder.Services.AddScoped<AllergyService>();
+builder.Services.AddScoped<AllergyHistoryService>();
 builder.Services.AddLogging();
 
 

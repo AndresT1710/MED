@@ -52,5 +52,24 @@ namespace SMED.BackEnd.Controllers
             if (!deleted) return NotFound();
             return NoContent();
         }
+
+        // ⭐ MÉTODO FALTANTE - AGREGAR ESTE ⭐
+        [HttpGet("by-history/{clinicalHistoryId}")]
+        public async Task<ActionResult<List<AllergyHistoryDTO>>> GetByClinicalHistoryId(int clinicalHistoryId)
+        {
+            try
+            {
+                var allAllergyHistories = await _repository.GetAllAsync();
+                var filteredHistories = allAllergyHistories
+                    .Where(ah => ah.ClinicalHistoryId == clinicalHistoryId)
+                    .ToList();
+
+                return Ok(filteredHistories);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
     }
 }

@@ -22,6 +22,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.Patient)
                     .ThenInclude(p => p.PersonNavigation)
                         .ThenInclude(p => p.PersonDocument)
+                .Include(ch => ch.PersonalHistories)
+                    .ThenInclude(ph => ph.DiseaseNavigation)
+                        .ThenInclude(d => d.DiseaseTypeNavigation)
+                .Include(ch => ch.SurgeryHistories)
+                    .ThenInclude(sh => sh.SurgeryNavigation)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -33,6 +38,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.Patient)
                     .ThenInclude(p => p.PersonNavigation)
                                             .ThenInclude(p => p.PersonDocument)
+                .Include(ch => ch.PersonalHistories)
+                    .ThenInclude(ph => ph.DiseaseNavigation)
+                        .ThenInclude(d => d.DiseaseTypeNavigation)
+                .Include(ch => ch.SurgeryHistories)
+                    .ThenInclude(sh => sh.SurgeryNavigation)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -184,7 +194,23 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PatientFullName = entity.Patient?.PersonNavigation != null
                     ? $"{entity.Patient.PersonNavigation.FirstName} {entity.Patient.PersonNavigation.MiddleName} {entity.Patient.PersonNavigation.LastName} {entity.Patient.PersonNavigation.SecondLastName}"
                     : string.Empty,
-                DocumentNumber = entity.Patient?.PersonNavigation?.PersonDocument?.DocumentNumber
+                DocumentNumber = entity.Patient?.PersonNavigation?.PersonDocument?.DocumentNumber,
+                PersonalHistories = entity.PersonalHistories.Select(ph => new PersonalHistoryDTO
+                {
+                    MedicalRecordNumber = ph.MedicalRecordNumber,
+                    Description = ph.Description,
+                    RegistrationDate = ph.RegistrationDate,
+                    DiseaseTypeName = ph.DiseaseNavigation.DiseaseTypeNavigation.Name,
+                    DiseaseName = ph.DiseaseNavigation.Name,
+                }).ToList(),
+                SurgeryHistories = entity.SurgeryHistories.Select(sh => new SurgeryHistoryDTO
+                {
+                    HistoryNumber = sh.HistoryNumber,
+                    Description = sh.Description,
+                    RegistrationDate = sh.RegistrationDate,
+                    SurgeryName = sh.SurgeryNavigation.Name,
+                    SurgeryDate = sh.SurgeryDate
+                }).ToList()
             };
         }
 

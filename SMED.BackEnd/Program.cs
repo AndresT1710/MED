@@ -41,7 +41,8 @@ builder.Services.AddScoped<IRepository<FoodIntoleranceHistoryDTO, int>, FoodInto
 builder.Services.AddScoped<IClinicalHistoryRepository, ClinicalHistoryRepository>();
 builder.Services.AddScoped<IRepository<PatientDTO, int>, PatientRepository>();
 builder.Services.AddScoped<IClinicalHistoryPatientRepository, PatientRepository>();
-
+builder.Services.AddScoped<IRepository<HabitsDTO, int>, HabitsRepository>();
+builder.Services.AddScoped<IRepository<HabitHistoryDTO, int>, HabitHistoryRepository>();
 
 
 

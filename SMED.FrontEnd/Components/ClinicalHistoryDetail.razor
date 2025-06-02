@@ -60,9 +60,66 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Personales</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PersonalHistories != null && History.PersonalHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var item in History.PersonalHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Enfermedad:</strong> @item.DiseaseName <br />
+                                    <strong>Tipo:</strong> @item.DiseaseTypeName <br />
+                                    <strong>Descripción:</strong> @item.Description <br />
+									<strong>Fecha:</strong> @item.RegistrationDate <br />
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes personales registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Quirúrgicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.SurgeryHistories != null && History.SurgeryHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var surgery in History.SurgeryHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Nombre de Cirugía:</strong> @surgery.SurgeryName <br />
+                                    <strong>Descripción:</strong> @surgery.Description <br />
+                                    <strong>Fecha de Registro:</strong> @surgery.RegistrationDate?.ToShortDateString() <br />
+                                    <strong>Fecha de Cirugía:</strong> @surgery.SurgeryDate?.ToShortDateString()
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes quirúrgicos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
 </div>
 
 @code {
     [Parameter] public ClinicalHistoryDTO History { get; set; }
-
 }

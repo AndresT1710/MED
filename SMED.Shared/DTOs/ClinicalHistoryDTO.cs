@@ -20,5 +20,8 @@ namespace SMED.Shared.DTOs
 
 
         public PatientDTO Patient { get; set; } = new PatientDTO();
+
+        public List<PersonalHistoryDTO> PersonalHistories { get; set; } = new();
+
     }
 }

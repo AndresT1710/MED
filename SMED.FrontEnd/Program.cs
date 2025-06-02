@@ -33,6 +33,8 @@ builder.Services.AddScoped<PersonService>();
 builder.Services.AddScoped<ClinicalHistoryService>();
 builder.Services.AddScoped<DiseaseService>();
 builder.Services.AddScoped<PersonalHistoryService>();
+builder.Services.AddScoped<SurgeryService>();
+builder.Services.AddScoped<SurgeryHistoryService>();
 builder.Services.AddLogging();
 
 

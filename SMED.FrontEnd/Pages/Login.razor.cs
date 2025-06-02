@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
+using SMED.Shared.DTOs;
 
 namespace SMED.FrontEnd.Pages
 {
@@ -27,23 +28,32 @@ namespace SMED.FrontEnd.Pages
             try
             {
                 var response = await Http.PostAsJsonAsync("api/auth/login", loginModel);
-                if (response.IsSuccessStatusCode)
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDTO>();
-                    if (loginResponse != null && loginResponse.IsAuthenticated)
-                    {
-                        await JS.InvokeVoidAsync("localStorage.setItem", "authToken", loginResponse.Token);
-                        NavigationManager.NavigateTo("/home");
-                    }
-                    else
-                    {
-                        ErrorMessage = loginResponse?.Message ?? "Credenciales incorrectas.";
-                    }
+                    ErrorMessage = $"Error del servidor ({(int)response.StatusCode}): {response.ReasonPhrase}";
+                    return;
+                }
+
+                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDTO>();
+
+                if (loginResponse?.IsAuthenticated == true &&
+                    !string.IsNullOrWhiteSpace(loginResponse.Token))
+                {
+                    // Guardar token y nombre del usuario en localStorage
+                    await JS.InvokeVoidAsync("localStorage.setItem", "authToken", loginResponse.Token);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "userName", loginResponse.User?.Name ?? "Usuario");
+
+                    NavigationManager.NavigateTo("/home", true);
                 }
                 else
                 {
-                    ErrorMessage = "No se pudo conectar con el servidor.";
+                    ErrorMessage = loginResponse?.Message ?? "Credenciales incorrectas.";
                 }
+            }
+            catch (HttpRequestException)
+            {
+                ErrorMessage = "No se pudo conectar con el servidor. Intenta nuevamente más tarde.";
             }
             catch (Exception ex)
             {
@@ -53,19 +63,6 @@ namespace SMED.FrontEnd.Pages
             {
                 IsLoading = false;
             }
-        }
-
-        public class LoginRequestDTO
-        {
-            public string Email { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
-        }
-
-        public class LoginResponseDTO
-        {
-            public bool IsAuthenticated { get; set; }
-            public string? Token { get; set; }
-            public string? Message { get; set; }
         }
     }
 }

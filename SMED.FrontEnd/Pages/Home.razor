@@ -1,6 +1,8 @@
 ﻿@page "/home"
 @layout MainLayout
 @using SMED.FrontEnd.Components
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <div class="container py-4">
     <div class="row mb-4">
@@ -69,3 +71,15 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            Navigation.NavigateTo("/login", true);
+        }
+    }
+}

@@ -67,7 +67,7 @@
             {
                 <li>
                     @prof.Name
-                    <button class="btn btn-sm btn-danger ml-2" @onclick="@(() => QuitarProfesion(prof.Id))">Quitar</button>
+                    <button type="button" class="btn btn-sm btn-danger ml-2" @onclick="@(() => QuitarProfesion(prof.Id))">Quitar</button>
                 </li>
             }
         </ul>
@@ -92,7 +92,7 @@
         {
             <li>
                 @s.Name
-                <button class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">Quitar</button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">Quitar</button>
             </li>
         }
     </ul>
@@ -128,7 +128,7 @@
         {
             <li>
                 @s.Name
-                <button class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">Quitar</button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">Quitar</button>
             </li>
         }
     </ul>

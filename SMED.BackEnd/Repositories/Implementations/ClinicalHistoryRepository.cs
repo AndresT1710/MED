@@ -98,9 +98,8 @@ namespace SMED.BackEnd.Repositories.Implementations
 
 
 
-        public async Task<ClinicalHistoryDTO?> UpdateAsync(ClinicalHistoryDTO dto)
+        public async Task<ClinicalHistoryDTO?> UpdateAsync(BasicClinicalHistroyDTO dto)
         {
-            // Buscar la entidad por su ID correcto
             var entity = await _context.ClinicalHistories
                     .Include(ch => ch.Patient)
                         .ThenInclude(p => p.PersonNavigation)
@@ -109,7 +108,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null)
                 return null;
 
-            // Validar que no exista otro registro con el mismo HistoryNumber (excluyendo el actual)
+            // Validar duplicado
             bool duplicateExists = await _context.ClinicalHistories
                 .AnyAsync(ch => ch.HistoryNumber == dto.HistoryNumber && ch.ClinicalHistoryId != dto.ClinicalHistoryId);
 
@@ -126,6 +125,23 @@ namespace SMED.BackEnd.Repositories.Implementations
             await _context.SaveChangesAsync();
 
             return MapToDTO(entity);
+        }
+
+
+        public async Task<ClinicalHistoryDTO?> UpdateAsync(ClinicalHistoryDTO dto)
+        {
+            return await UpdateAsync(new BasicClinicalHistroyDTO
+            {
+                ClinicalHistoryId = dto.ClinicalHistoryId,
+                HistoryNumber = dto.HistoryNumber,
+                CreationDate = dto.CreationDate,
+                IsActive = dto.IsActive,
+                GeneralObservations = dto.GeneralObservations,
+                Patient = new PatientDTO
+                {
+                    PersonId = dto.Patient.PersonId
+                }
+            });
         }
 
 

@@ -3,32 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SMED.Shared.Entity;
 
 namespace SMED.Shared.DTOs
 {
-    public class ClinicalHistoryDTO
+    public class BasicClinicalHistroyDTO
     {
         public int ClinicalHistoryId { get; set; }
         public string HistoryNumber { get; set; } = null!;
         public DateTime? CreationDate { get; set; }
         public bool? IsActive { get; set; }
         public string? GeneralObservations { get; set; }
-
         public string PatientFullName { get; set; }
         public string? DocumentNumber { get; set; }
 
-
         public PatientDTO Patient { get; set; } = new PatientDTO();
 
-        public List<PersonalHistoryDTO>? PersonalHistories { get; set; } = new();
-
-        public List<SurgeryHistoryDTO>? SurgeryHistories { get; set; } = new();
-
-        public List<AllergyHistoryDTO>? AllergyHistories { get; set; } = new();
-
-        public List<HabitHistoryDTO>? HabitHistories { get; set; } = new();
-
     }
-
 }

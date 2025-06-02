@@ -57,14 +57,24 @@ namespace SMED.BackEnd.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<ClinicalHistoryDTO>> Update(int id, ClinicalHistoryDTO dto)
+        public async Task<ActionResult<ClinicalHistoryDTO>> Update(int id, BasicClinicalHistroyDTO dto)
         {
             if (id != dto.ClinicalHistoryId)
                 return BadRequest("ID mismatch.");
 
             try
             {
-                var updated = await _clinicalHistoryRepository.UpdateAsync(dto);
+                var clinicalDto = new ClinicalHistoryDTO
+                {
+                    ClinicalHistoryId = dto.ClinicalHistoryId,
+                    HistoryNumber = dto.HistoryNumber,
+                    CreationDate = dto.CreationDate,
+                    IsActive = dto.IsActive,
+                    GeneralObservations = dto.GeneralObservations,
+                    Patient = new PatientDTO { PersonId = dto.Patient.PersonId }
+                };
+
+                var updated = await _clinicalHistoryRepository.UpdateAsync(clinicalDto);
                 if (updated == null)
                     return NotFound();
 

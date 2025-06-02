@@ -240,7 +240,7 @@ namespace SGIS.Models
 
             //PERSONLABORACTIVITY
             modelBuilder.Entity<PersonLaborActivity>()
-                .HasKey(pl => pl.PersonId);
+    .HasKey(pl => new { pl.PersonId, pl.LaborActivityId }); // Clave compuesta
 
             modelBuilder.Entity<PersonLaborActivity>()
                 .HasOne(pl => pl.PersonNavigation)
@@ -251,6 +251,7 @@ namespace SGIS.Models
                 .HasOne(pl => pl.LaborActivityNavigation)
                 .WithMany(la => la.PersonLaborActivities)
                 .HasForeignKey(pl => pl.LaborActivityId);
+
 
             //PERSONADDRESS
             modelBuilder.Entity<PersonAddress>()

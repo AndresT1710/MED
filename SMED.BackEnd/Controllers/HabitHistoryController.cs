@@ -53,16 +53,23 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-        // Endpoint adicional para obtener historiales por ClinicalHistoryId
-        [HttpGet("byClinicalHistory/{clinicalHistoryId}")]
+        // ⭐ CORRECCIÓN: Cambiar el endpoint para que coincida con el patrón
+        [HttpGet("by-history/{clinicalHistoryId}")]
         public async Task<ActionResult<List<HabitHistoryDTO>>> GetByClinicalHistoryId(int clinicalHistoryId)
         {
-            var histories = await _repository.GetAllAsync();
-            var filteredHistories = histories
-                .Where(h => h.ClinicalHistoryId == clinicalHistoryId)
-                .ToList();
+            try
+            {
+                var histories = await _repository.GetAllAsync();
+                var filteredHistories = histories
+                    .Where(h => h.ClinicalHistoryId == clinicalHistoryId)
+                    .ToList();
 
-            return Ok(filteredHistories);
+                return Ok(filteredHistories);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
         }
     }
 }

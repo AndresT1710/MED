@@ -8,6 +8,8 @@
 @inject SurgeryHistoryService SurgeryHistoryService
 @inject AllergyService AllergyService
 @inject AllergyHistoryService AllergyHistoryService
+@inject HabitService HabitService
+@inject HabitHistoryService HabitHistoryService
 @inject ILogger<General> Logger
 
 <TabContainer>
@@ -142,11 +144,42 @@
                             <div class="text-muted mt-1">Cargando alergias...</div>
                         }
                     </div>
-                    @* COMENTADO: Campo de descripción opcional
-                        <div class="form-group mb-3">
-                         <label>Descripción</label>
-                        <textarea class="form-control" @bind="allergyDescription" rows="2" placeholder="Descripción adicional (opcional)"></textarea>
-                      </div> *@
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES DE HÁBITOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Hábitos"
+                           ColumnHeaders="@headersHabitos"
+                           Rows="@habitosData.Select(d => d.Values).ToList()"
+                           RowIds="@habitosData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddHabit"
+                           OnEditRequested="PrepareForEditHabit"
+                           OnDeleteRequested="HandleHabitRowDeleted"
+                           OnSaveRequested="SaveHabitChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedHabit)"
+                           EmptyMessage="@(isLoadingHabits ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingHabitId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Hábito</label>
+                        <select class="form-select" @bind="selectedHabit">
+                            <option value="">Seleccione un hábito</option>
+                            @foreach (var habit in availableHabits)
+                            {
+                                <option value="@habit">@habit</option>
+                            }
+                        </select>
+                        @if (isLoadingHabits)
+                        {
+                            <div class="text-muted mt-1">Cargando hábitos...</div>
+                        }
+                    </div>
                 </EditModalContent>
             </EditableTable>
         </div>
@@ -216,18 +249,36 @@
     // ==========================================
     // SECCIÓN: ANTECEDENTES DE ALERGIAS
     // ==========================================
-    private readonly List<string> headersAlergias = new() { "Alérgeno" };
+    private readonly List<string> headersAlergias = new() { "Alergia" };
     private List<AllergyRow> alergiasData = new();
     private List<AllergyHistoryDTO> currentAllergyHistories = new();
     private List<AllergyDTO> allergies = new();
     private List<string> availableAllergies = new();
 
     private string selectedAllergy = "";
-    //private string allergyDescription = "";
     private int editingAllergyId = -1;
     private bool isLoadingAllergies = false;
 
     private class AllergyRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE HÁBITOS
+    // ==========================================
+    private readonly List<string> headersHabitos = new() { "Hábito" };
+    private List<HabitRow> habitosData = new();
+    private List<HabitHistoryDTO> currentHabitHistories = new();
+    private List<HabitsDTO> habits = new();
+    private List<string> availableHabits = new();
+
+    private string selectedHabit = "";
+    private int editingHabitId = -1;
+    private bool isLoadingHabits = false;
+
+    private class HabitRow
     {
         public int Id { get; set; }
         public List<string> Values { get; set; } = new();
@@ -247,6 +298,10 @@
             // Cargar alergias disponibles
             allergies = await AllergyService.GetAllAsync() ?? new();
             availableAllergies = allergies.Select(a => a.Name).ToList();
+
+            // Cargar hábitos disponibles
+            habits = await HabitService.GetAllAsync() ?? new();
+            availableHabits = habits.Select(h => h.Name).ToList();
         }
         catch (Exception ex)
         {
@@ -693,7 +748,6 @@
 
             editingAllergyId = id;
             selectedAllergy = GetAllergyName(dto.AllergyId ?? 0);
-            //allergyDescription = dto.Description ?? "";
         }
         catch (Exception ex)
         {
@@ -749,8 +803,7 @@
                     {
                         ClinicalHistoryId = clinicalHistoryId,
                         AllergyId = alergia.AllergyId,
-                        //Description = string.IsNullOrWhiteSpace(allergyDescription) ?
-                        //                 $"Alergia: {selectedAllergy}" : allergyDescription,
+                        Description = $"Alergia: {selectedAllergy}",
                         RegistrationDate = DateTime.Now,
                         HistoryNumber = medicalRecordNumber
                     };
@@ -772,8 +825,7 @@
                 }
 
                 dto.AllergyId = alergia.AllergyId;
-               // dto.Description = string.IsNullOrWhiteSpace(allergyDescription) ?
-                                // $"Alergia: {selectedAllergy}" : allergyDescription;
+                dto.Description = $"Alergia: {selectedAllergy}";
 
                 var (success, error) = await AllergyHistoryService.UpdateAsync(dto);
                 if (!success)
@@ -796,11 +848,170 @@
     {
         editingAllergyId = -1;
         selectedAllergy = "";
-       // allergyDescription = "";
         errorMessage = string.Empty;
     }
 
     private string GetCurrentEditingAllergyId() => editingAllergyId == -1 ? "Nuevo" : editingAllergyId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE HÁBITOS
+    // ==========================================
+    private async Task LoadHabitHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingHabits = true;
+
+        try
+        {
+            var result = await HabitHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentHabitHistories = result ?? new();
+            habitosData = new();
+
+            foreach (var hh in currentHabitHistories)
+            {
+                habitosData.Add(new HabitRow
+                    {
+                        Id = hh.HabitHistoryId,
+                        Values = new()
+                    {
+                        GetHabitName(hh.HabitId)
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de hábitos");
+            errorMessage = "Error al cargar los antecedentes de hábitos.";
+        }
+        finally
+        {
+            isLoadingHabits = false;
+        }
+    }
+
+    private string GetHabitName(int habitId)
+    {
+        return habits.FirstOrDefault(h => h.HabitId == habitId)?.Name ?? "Desconocido";
+    }
+
+    private async Task PrepareForEditHabit(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentHabitHistories.FirstOrDefault(h => h.HabitHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de hábito con ID {id}";
+                return;
+            }
+
+            editingHabitId = id;
+            selectedHabit = GetHabitName(dto.HabitId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de hábito");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleHabitRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await HabitHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadHabitHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de hábito");
+            errorMessage = "Error al eliminar el antecedente de hábito.";
+        }
+    }
+
+    private async Task SaveHabitChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedHabit))
+            {
+                errorMessage = "Debe seleccionar un hábito.";
+                return;
+            }
+
+            var habito = habits.FirstOrDefault(h => h.Name == selectedHabit);
+            if (habito == null)
+            {
+                errorMessage = "Hábito no encontrado.";
+                return;
+            }
+
+            if (editingHabitId == -1)
+            {
+                var nuevo = new HabitHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        HabitId = habito.HabitId,
+                        RecordDate = DateTime.Now,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await HabitHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de hábito: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentHabitHistories.FirstOrDefault(h => h.HabitHistoryId == editingHabitId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.HabitId = habito.HabitId;
+
+                var (success, error) = await HabitHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de hábito: {error}";
+                    return;
+                }
+            }
+
+            await LoadHabitHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de hábito");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddHabit()
+    {
+        editingHabitId = -1;
+        selectedHabit = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingHabitId() => editingHabitId == -1 ? "Nuevo" : editingHabitId.ToString();
 
     // ==========================================
     // MÉTODOS COMUNES
@@ -815,6 +1026,7 @@
             await LoadHistories();
             await LoadSurgeryHistories();
             await LoadAllergyHistories();
+            await LoadHabitHistories();
         }
     }
 

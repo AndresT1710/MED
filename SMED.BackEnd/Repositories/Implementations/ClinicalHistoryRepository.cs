@@ -36,6 +36,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FamilyHistoryDetails)
                     .ThenInclude(fh => fh.DiseaseNavigation)
                         .ThenInclude(t => t.DiseaseTypeNavigation)
+                .Include(ch => ch.ObstetricHistories)
+                .Include(ch => ch.GynecologicalHistories)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -61,6 +63,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FamilyHistoryDetails)
                     .ThenInclude(fh => fh.DiseaseNavigation)
                         .ThenInclude(t => t.DiseaseTypeNavigation)
+                .Include(ch => ch.ObstetricHistories)
+                .Include(ch => ch.GynecologicalHistories)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -267,7 +271,38 @@ namespace SMED.BackEnd.Repositories.Implementations
                     appearanceAge = fh.appearanceAge,
                     Description = fh.Description,
                     RegistrationDate = fh.RegistrationDate
-                }).ToList()
+                }).ToList(),
+
+                ObstetricHistory = entity.ObstetricHistories.FirstOrDefault() != null ? new ObstetricHistoryDTO
+                {
+                    ObstetricHistoryId = entity.ObstetricHistories.First().ObstetricHistoryId,
+                    HistoryNumber = entity.ObstetricHistories.First().HistoryNumber,
+                    ClinicalHistoryId = entity.ObstetricHistories.First().ClinicalHistoryId,
+                    CurrentPregnancy = entity.ObstetricHistories.First().CurrentPregnancy,
+                    PreviousPregnancies = entity.ObstetricHistories.First().PreviousPregnancies,
+                    Deliveries = entity.ObstetricHistories.First().Deliveries,
+                    Abortions = entity.ObstetricHistories.First().Abortions,
+                    CSections = entity.ObstetricHistories.First().CSections,
+                    LiveBirths = entity.ObstetricHistories.First().LiveBirths,
+                    Stillbirths = entity.ObstetricHistories.First().Stillbirths,
+                    LivingChildren = entity.ObstetricHistories.First().LivingChildren,
+                    Breastfeeding = entity.ObstetricHistories.First().Breastfeeding,
+                    GestionalAge = entity.ObstetricHistories.First().GestionalAge,
+                    ExpectedDeliveryDate = entity.ObstetricHistories.First().ExpectedDeliveryDate
+                } : null,
+                GynecologicalHistory = entity.GynecologicalHistories.FirstOrDefault() != null ? new GynecologicalHistoryDTO
+                {
+                    GynecologicalHistoryId = entity.GynecologicalHistories.First().GynecologicalHistoryId,
+                    MedicalRecordNumber = entity.GynecologicalHistories.First().MedicalRecordNumber,
+                    GynecologicalDevelopment = entity.GynecologicalHistories.First().GynecologicalDevelopment,
+                    Menarche = entity.GynecologicalHistories.First().Menarche,
+                    Pubarche = entity.GynecologicalHistories.First().Pubarche,
+                    MenstrualCycles = entity.GynecologicalHistories.First().MenstrualCycles,
+                    LastMenstruation = entity.GynecologicalHistories.First().LastMenstruation,
+                    ContraceptiveMethods = entity.GynecologicalHistories.First().ContraceptiveMethods,
+                    ClinicalHistoryId = entity.GynecologicalHistories.First().ClinicalHistoryId
+                } : null,
+
 
             };
         }

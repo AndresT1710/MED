@@ -26,6 +26,14 @@ namespace SMED.BackEnd.Controllers
             return dto != null ? Ok(dto) : NotFound();
         }
 
+        [HttpGet("by-clinical-history/{clinicalHistoryId}")]
+        public async Task<ActionResult<GynecologicalHistoryDTO>> GetByClinicalHistoryId(int clinicalHistoryId)
+        {
+            var allRecords = await _repository.GetAllAsync();
+            var record = allRecords?.FirstOrDefault(x => x.ClinicalHistoryId == clinicalHistoryId);
+            return record != null ? Ok(record) : NotFound();
+        }
+
         [HttpPost]
         public async Task<ActionResult<GynecologicalHistoryDTO>> Create(GynecologicalHistoryDTO dto)
         {

@@ -43,6 +43,11 @@
     </div>
 
     <div class="row mb-3">
+        <h4 class="text-center">Generales</h4>
+    </div>
+
+
+    <div class="row mb-3">
         <div class="col-md-12">
             <h5>Observaciones Generales</h5>
             <div class="card">
@@ -192,6 +197,73 @@
                     else
                     {
                         <span class="text-muted">No hay antecedentes familiares registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <h4 class="text-center">Obstétricos</h4>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Obstétricos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.ObstetricHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Embarazo Actual:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.CurrentPregnancy.Value ? "Sí" : "No")<br />
+                                <strong>Embarazos Anteriores:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.PreviousPregnancies.Value ? "Sí" : "No") <br />
+                                <strong>Partos:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Deliveries.Value ? "Sí" : "No") <br />
+                                <strong>Abortos:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Abortions.Value ? "Sí" : "No") <br />
+                                <strong>Cesáreas:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.CSections.Value ? "Sí" : "No") <br />
+                                <strong>Nacidos Vivos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.LiveBirths.Value > 0 ? "Sí" : "No") <br />
+                                <strong>Nacidos Muertos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.Stillbirths.Value > 0 ? "Sí" : "No") <br />
+                                <strong>Hijos Vivos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.LivingChildren.Value > 0 ? "Sí" : "No") <br />
+                                <strong>Lactancia:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Breastfeeding.Value ? "Sí" : "No") <br />
+                                <strong>Edad Gestacional:</strong> @History.ObstetricHistory.GestionalAge semanas<br />
+                                <strong>Fecha Estimada de Parto:</strong> @History.ObstetricHistory.ExpectedDeliveryDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes obstétricos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <h4 class="text-center">Ginecológicos</h4>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Ginecológicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.GynecologicalHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Desarrollo Ginecológico:</strong> @History.GynecologicalHistory.GynecologicalDevelopment <br />
+                                <strong>Menarquia:</strong> @(History.GynecologicalHistory.Menarche.HasValue ? History.GynecologicalHistory.Menarche.Value.ToShortDateString() : "No registrado") <br />
+                                <strong>Pubarquia:</strong> @(History.GynecologicalHistory.Pubarche.HasValue ? History.GynecologicalHistory.Pubarche.Value.ToShortDateString() : "No registrado") <br />
+                                <strong>Ciclos Menstruales:</strong> @History.GynecologicalHistory.MenstrualCycles <br />
+                                <strong>Última Menstruación:</strong> @(History.GynecologicalHistory.LastMenstruation.HasValue ? History.GynecologicalHistory.LastMenstruation.Value.ToShortDateString() : "No registrado") <br />
+                                <strong>Métodos Anticonceptivos:</strong> @History.GynecologicalHistory.ContraceptiveMethods
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes ginecológicos registrados</span>
                     }
                 </div>
             </div>

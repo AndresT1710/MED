@@ -1,38 +1,240 @@
 ﻿@page "/medical-history/gynecological"
 @using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
 
-<TabContainer OnSave="GuardarDatos">
+@inject GynecologicalHistoryService GynecologicalHistoryService
+@inject ILogger<Gynecological> Logger
+
+<TabContainer>
     <h4>Historia Clínica - Ginecología</h4>
-    <PatientSelector />
-    
-    <div class="containerbox1-grid">
-        <ContainerBox1 Title="Desarrollo Ginecológico" Width="full" />
-    </div>
 
-    <div class="containerbox2-grid">
-        <ContainerBox2 Title="Menarquia" Width="half" />
-        <ContainerBox2 Title="Pubarquia" Width="half" />
-    </div>
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
 
-    <div class="containerbox1-grid">
-        <ContainerBox1 Title="Ciclos Menstruales" Width="full" />
-    </div>
+    @if (clinicalHistoryId > 0)
+    {
+        <div class="containerbox1-grid">
+            <ContainerBox1 Title="Desarrollo Ginecológico"
+                           Width="full"
+                           @bind-Content="gynecologicalDevelopmentContent" />
+        </div>
 
-    <div class="containerbox2-grid">
-        <ContainerBox2 Title="Última Menstruación" Width="half" />
-    </div>
+        <div class="containerbox2-grid">
+            <ContainerBox2 Title="Menarquia"
+                           Width="half"
+                           @bind-SelectedDate="menarcheDate" />
 
-    <div class="containerbox1-grid">
-        <ContainerBox1 Title="Métodos Anticonceptivoscd" Width="full" />
-    </div>
+            <ContainerBox2 Title="Pubarquia"
+                           Width="half"
+                           @bind-SelectedDate="pubarcheDate" />
+        </div>
 
+        <div class="containerbox1-grid">
+            <ContainerBox1 Title="Ciclos Menstruales"
+                           Width="full"
+                           @bind-Content="menstrualCyclesContent" />
+        </div>
 
+        <div class="containerbox2-grid">
+            <ContainerBox2 Title="Última Menstruación"
+                           Width="half"
+                           @bind-SelectedDate="lastMenstruationDate" />
+        </div>
+
+        <div class="containerbox1-grid">
+            <ContainerBox1 Title="Métodos Anticonceptivos"
+                           Width="full"
+                           @bind-Content="contraceptiveMethodsContent" />
+        </div>
+
+        <!-- ✅ BOTÓN DE GUARDADO DIRECTO EN LA PÁGINA -->
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatos"
+                    disabled="@(isLoading || clinicalHistoryId <= 0)">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Guardando...</span>
+                }
+                else
+                {
+                    <i class="fas fa-save me-2"></i>
+                    <span>Guardar Datos Ginecológicos</span>
+                }
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success mt-3">
+                @successMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes ginecológicos.</p>
+    }
 </TabContainer>
 
 @code {
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private GynecologicalHistoryDTO gynecological = new();
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
+
+    // Variables para ContainerBox1
+    private string gynecologicalDevelopmentContent = "";
+    private string menstrualCyclesContent = "";
+    private string contraceptiveMethodsContent = "";
+
+    // Variables para ContainerBox2 (fechas)
+    private DateTime? menarcheDate = null;
+    private DateTime? pubarcheDate = null;
+    private DateTime? lastMenstruationDate = null;
+
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadGynecologicalHistory();
+        }
+    }
+
+    private async Task LoadGynecologicalHistory()
+    {
+        errorMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            var result = await GynecologicalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            if (result != null)
+            {
+                gynecological = result;
+
+                // Cargar datos en ContainerBox
+                gynecologicalDevelopmentContent = gynecological.GynecologicalDevelopment ?? "";
+                menstrualCyclesContent = gynecological.MenstrualCycles ?? "";
+                contraceptiveMethodsContent = gynecological.ContraceptiveMethods ?? "";
+
+                // Convertir DateOnly a DateTime para los ContainerBox2
+                menarcheDate = gynecological.Menarche?.ToDateTime(TimeOnly.MinValue);
+                pubarcheDate = gynecological.Pubarche?.ToDateTime(TimeOnly.MinValue);
+                lastMenstruationDate = gynecological.LastMenstruation?.ToDateTime(TimeOnly.MinValue);
+            }
+            else
+            {
+                // Crear nuevo registro si no existe
+                gynecological = new GynecologicalHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        MedicalRecordNumber = medicalRecordNumber
+                    };
+
+                // Limpiar ContainerBox
+                gynecologicalDevelopmentContent = "";
+                menstrualCyclesContent = "";
+                contraceptiveMethodsContent = "";
+                menarcheDate = null;
+                pubarcheDate = null;
+                lastMenstruationDate = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historia ginecológica");
+            errorMessage = "Error al cargar los datos ginecológicos.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
     private async Task GuardarDatos()
     {
-        Console.WriteLine("Guardando datos del historial ginecológico...");
-        // Lógica real de guardado aquí
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            if (clinicalHistoryId <= 0)
+            {
+                errorMessage = "Debe seleccionar un paciente válido.";
+                return;
+            }
+
+            // Actualizar DTO con datos de ContainerBox
+            gynecological.GynecologicalDevelopment = string.IsNullOrWhiteSpace(gynecologicalDevelopmentContent) ? null : gynecologicalDevelopmentContent;
+            gynecological.MenstrualCycles = string.IsNullOrWhiteSpace(menstrualCyclesContent) ? null : menstrualCyclesContent;
+            gynecological.ContraceptiveMethods = string.IsNullOrWhiteSpace(contraceptiveMethodsContent) ? null : contraceptiveMethodsContent;
+
+            // Convertir DateTime a DateOnly para las fechas
+            gynecological.Menarche = menarcheDate.HasValue ? DateOnly.FromDateTime(menarcheDate.Value) : null;
+            gynecological.Pubarche = pubarcheDate.HasValue ? DateOnly.FromDateTime(pubarcheDate.Value) : null;
+            gynecological.LastMenstruation = lastMenstruationDate.HasValue ? DateOnly.FromDateTime(lastMenstruationDate.Value) : null;
+
+            // Asegurar que los datos básicos estén establecidos
+            gynecological.ClinicalHistoryId = clinicalHistoryId;
+            gynecological.MedicalRecordNumber = medicalRecordNumber;
+
+            bool success;
+            string error;
+
+            if (gynecological.GynecologicalHistoryId == 0)
+            {
+                // Crear nuevo registro
+                var (createSuccess, _, createError) = await GynecologicalHistoryService.CreateAsync(gynecological);
+                success = createSuccess;
+                error = createError;
+            }
+            else
+            {
+                // Actualizar registro existente
+                var (updateSuccess, updateError) = await GynecologicalHistoryService.UpdateAsync(gynecological);
+                success = updateSuccess;
+                error = updateError;
+            }
+
+            if (success)
+            {
+                successMessage = "Datos ginecológicos guardados correctamente.";
+                await LoadGynecologicalHistory(); // Recargar para obtener el ID actualizado
+            }
+            else
+            {
+                errorMessage = $"Error al guardar: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar datos ginecológicos");
+            errorMessage = "Error inesperado al guardar los datos.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
+    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

@@ -31,13 +31,7 @@ namespace SMED.Shared.Entity
         [StringLength(255)]
         public string? ContraceptiveMethods { get; set; }
 
-        public int? DiseaseId { get; set; }
-
         public int ClinicalHistoryId { get; set; }
-
-        [ForeignKey("DiseaseId")]
-        [InverseProperty("GynecologicalHistories")]
-        public virtual Disease? DiseaseNavigation { get; set; }
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("GynecologicalHistories")]

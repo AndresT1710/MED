@@ -47,7 +47,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.MenstrualCycles = dto.MenstrualCycles;
             entity.LastMenstruation = dto.LastMenstruation;
             entity.ContraceptiveMethods = dto.ContraceptiveMethods;
-            entity.DiseaseId = dto.DiseaseId;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
 
             await _context.SaveChangesAsync();
@@ -77,7 +76,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 MenstrualCycles = entity.MenstrualCycles,
                 LastMenstruation = entity.LastMenstruation,
                 ContraceptiveMethods = entity.ContraceptiveMethods,
-                DiseaseId = entity.DiseaseId,
                 ClinicalHistoryId = entity.ClinicalHistoryId
             };
         }
@@ -94,7 +92,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 MenstrualCycles = dto.MenstrualCycles,
                 LastMenstruation = dto.LastMenstruation,
                 ContraceptiveMethods = dto.ContraceptiveMethods,
-                DiseaseId = dto.DiseaseId,
                 ClinicalHistoryId = dto.ClinicalHistoryId
             };
         }

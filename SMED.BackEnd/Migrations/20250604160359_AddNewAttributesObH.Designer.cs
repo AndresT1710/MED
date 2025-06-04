@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250604160359_AddNewAttributesObH")]
+    partial class AddNewAttributesObH
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -408,6 +411,9 @@ namespace SMED.BackEnd.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("DiseaseId")
+                        .HasColumnType("int");
+
                     b.Property<string>("GynecologicalDevelopment")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -433,6 +439,8 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("GynecologicalHistoryId");
 
                     b.HasIndex("ClinicalHistoryId");
+
+                    b.HasIndex("DiseaseId");
 
                     b.ToTable("GynecologicalHistories");
                 });
@@ -1308,6 +1316,13 @@ namespace SMED.BackEnd.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SMED.Shared.Entity.Disease", "DiseaseNavigation")
+                        .WithMany("GynecologicalHistories")
+                        .HasForeignKey("DiseaseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DiseaseNavigation");
+
                     b.Navigation("MedicalRecordNavigation");
                 });
 
@@ -1721,6 +1736,8 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.Disease", b =>
                 {
                     b.Navigation("FamilyHistoryDetails");
+
+                    b.Navigation("GynecologicalHistories");
 
                     b.Navigation("PersonalHistories");
                 });

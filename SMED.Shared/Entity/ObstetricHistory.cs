@@ -29,11 +29,8 @@ namespace SMED.Shared.Entity
 
         public bool? Breastfeeding { get; set; }
 
-        public int? DiseaseId { get; set; }
-
-        [ForeignKey("DiseaseId")]
-        [InverseProperty("ObstetricHistories")]
-        public virtual Disease? DiseaseNavigation { get; set; }
+        public string? GestionalAge { get; set; }
+        public DateTime? ExpectedDeliveryDate { get; set; }
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("ObstetricHistories")]

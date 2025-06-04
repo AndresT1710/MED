@@ -482,11 +482,6 @@ namespace SGIS.Models
                     .HasMaxLength(50)
                     .IsUnicode(false);
 
-                entity.HasOne(d => d.DiseaseNavigation)
-                    .WithMany(p => p.ObstetricHistories)
-                    .HasForeignKey(d => d.DiseaseId)
-                    .HasConstraintName("FK_ObstetricHistory_Disease");
-
                 entity.HasOne(d => d.HistoryNavigation)
                     .WithMany(p => p.ObstetricHistories)
                     .HasForeignKey(d => d.ClinicalHistoryId)
@@ -540,11 +535,6 @@ namespace SGIS.Models
                     .HasForeignKey(gh => gh.ClinicalHistoryId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-
-                entity.HasOne(gh => gh.DiseaseNavigation)
-                    .WithMany(d => d.GynecologicalHistories)
-                    .HasForeignKey(gh => gh.DiseaseId)
-                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<HabitHistory>(entity =>

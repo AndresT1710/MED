@@ -1,41 +1,254 @@
 ﻿@page "/medical-history/obstetric"
 @using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
 
-<TabContainer OnSave="GuardarDatos">
+@inject ObstetricHistoryService ObstetricHistoryService
+@inject ILogger<Obstetric> Logger
+
+<TabContainer>
     <h4>Historia Clínica - Obstétrico</h4>
-    <PatientSelector />
 
-    <div class="d-flex flex-wrap">
-        <Check Title="Embarazo actual" />
-        <Check Title="Gestas Previas" />
-        <Check Title="Partos" />
-        <Check Title="Antecedentes de aborto espontáneo" />
-        <Check Title="Cesáreas" />
-        <Check Title="Lactando" />
-    </div>
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
 
+    @if (clinicalHistoryId > 0)
+    {
+        <div class="d-flex flex-wrap">
+            <Check Title="Embarazo actual"
+                   @bind-Value="obstetric.CurrentPregnancy" />
 
-    <div class="containerbox1-grid">
-        <ContainerBox1 Title="Nacidos Vivos" Width="half" />
-        <ContainerBox1 Title="Nacidos Muertos" Width="half" />
-        <ContainerBox1 Title="Hijos Vivos" Width="half" />
-        <ContainerBox1 Title="Edad Gestacionaria" Width="half" />
-    </div>
+            <Check Title="Embarazos previos"
+                   @bind-Value="obstetric.PreviousPregnancies" />
 
-    <div class="containerbox2-grid">
-        <ContainerBox2 Title="Fecha probable de parto" Width="half" />
-        <!-- otro ContainerBox2 con half para que entren dos -->
-    </div>
+            <Check Title="Partos"
+                   @bind-Value="obstetric.Deliveries" />
 
+            <Check Title="Antecedentes de aborto espontáneo"
+                   @bind-Value="obstetric.Abortions" />
 
+            <Check Title="Cesáreas"
+                   @bind-Value="obstetric.CSections" />
 
+            <Check Title="Lactando"
+                   @bind-Value="obstetric.Breastfeeding" />
+        </div>
 
+        <div class="containerbox1-grid">
+            <ContainerBox1 Title="Nacidos Vivos"
+                           Width="half"
+                           @bind-Content="liveBirthsContent" />
+
+            <ContainerBox1 Title="Nacidos Muertos"
+                           Width="half"
+                           @bind-Content="stillbirthsContent" />
+
+            <ContainerBox1 Title="Hijos Vivos"
+                           Width="half"
+                           @bind-Content="livingChildrenContent" />
+
+            <ContainerBox1 Title="Edad Gestacional"
+                           Width="half"
+                           @bind-Content="gestationalAgeContent" />
+        </div>
+
+        <div class="containerbox2-grid">
+            <ContainerBox2 Title="Fecha probable de parto"
+                           Width="half"
+                           @bind-SelectedDate="expectedDeliveryDate" />
+        </div>
+
+        <!-- ✅ BOTÓN DE GUARDADO DIRECTO EN LA PÁGINA -->
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatos"
+                    disabled="@(isLoading || clinicalHistoryId <= 0)">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Guardando...</span>
+                }
+                else
+                {
+                    <i class="fas fa-save me-2"></i>
+                    <span>Guardar Datos</span>
+                }
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success mt-3">
+                @successMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes obstétricos.</p>
+    }
 </TabContainer>
 
 @code {
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private ObstetricHistoryDTO obstetric = new();
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
+
+    // Variables para ContainerBox1
+    private string liveBirthsContent = "";
+    private string stillbirthsContent = "";
+    private string livingChildrenContent = "";
+    private string gestationalAgeContent = "";
+
+    // Variables para ContainerBox2
+    private DateTime? expectedDeliveryDate = null;
+
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadObstetricHistory();
+        }
+    }
+
+    private async Task LoadObstetricHistory()
+    {
+        errorMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            var result = await ObstetricHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            if (result != null)
+            {
+                obstetric = result;
+
+                // Cargar datos en ContainerBox
+                liveBirthsContent = obstetric.LiveBirths?.ToString() ?? "";
+                stillbirthsContent = obstetric.Stillbirths?.ToString() ?? "";
+                livingChildrenContent = obstetric.LivingChildren?.ToString() ?? "";
+                gestationalAgeContent = obstetric.GestionalAge ?? "";
+                expectedDeliveryDate = obstetric.ExpectedDeliveryDate;
+            }
+            else
+            {
+                // Crear nuevo registro si no existe
+                obstetric = new ObstetricHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                // Limpiar ContainerBox
+                liveBirthsContent = "";
+                stillbirthsContent = "";
+                livingChildrenContent = "";
+                gestationalAgeContent = "";
+                expectedDeliveryDate = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historia obstétrica");
+            errorMessage = "Error al cargar los datos obstétricos.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
     private async Task GuardarDatos()
     {
-        Console.WriteLine("Guardando datos del historial obstétrico...");
-        // Lógica real de guardado aquí
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            if (clinicalHistoryId <= 0)
+            {
+                errorMessage = "Debe seleccionar un paciente válido.";
+                return;
+            }
+
+            // Actualizar DTO con datos de ContainerBox
+            if (int.TryParse(liveBirthsContent, out var liveBirths))
+                obstetric.LiveBirths = liveBirths;
+            else
+                obstetric.LiveBirths = null;
+
+            if (int.TryParse(stillbirthsContent, out var stillbirths))
+                obstetric.Stillbirths = stillbirths;
+            else
+                obstetric.Stillbirths = null;
+
+            if (int.TryParse(livingChildrenContent, out var livingChildren))
+                obstetric.LivingChildren = livingChildren;
+            else
+                obstetric.LivingChildren = null;
+
+            obstetric.GestionalAge = string.IsNullOrWhiteSpace(gestationalAgeContent) ? null : gestationalAgeContent;
+            obstetric.ExpectedDeliveryDate = expectedDeliveryDate;
+
+            // Asegurar que los datos básicos estén establecidos
+            obstetric.ClinicalHistoryId = clinicalHistoryId;
+            obstetric.HistoryNumber = medicalRecordNumber;
+
+            bool success;
+            string error;
+
+            if (obstetric.ObstetricHistoryId == 0)
+            {
+                // Crear nuevo registro
+                var (createSuccess, _, createError) = await ObstetricHistoryService.CreateAsync(obstetric);
+                success = createSuccess;
+                error = createError;
+            }
+            else
+            {
+                // Actualizar registro existente
+                var (updateSuccess, updateError) = await ObstetricHistoryService.UpdateAsync(obstetric);
+                success = updateSuccess;
+                error = updateError;
+            }
+
+            if (success)
+            {
+                successMessage = "Datos obstétricos guardados correctamente.";
+                await LoadObstetricHistory(); // Recargar para obtener el ID actualizado
+            }
+            else
+            {
+                errorMessage = $"Error al guardar: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar datos obstétricos");
+            errorMessage = "Error inesperado al guardar los datos.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
+    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

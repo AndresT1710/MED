@@ -16,7 +16,6 @@ namespace SMED.Shared.DTOs
         public string? MenstrualCycles { get; set; }
         public DateOnly? LastMenstruation { get; set; }
         public string? ContraceptiveMethods { get; set; }
-        public int? DiseaseId { get; set; }
         public int ClinicalHistoryId { get; set; }
     }
 }

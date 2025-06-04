@@ -1,4 +1,7 @@
-﻿<div class="check-container">
+﻿@using System.Linq.Expressions
+@typeparam T
+
+<div class="check-container">
     <label class="check-label">
         <input type="checkbox"
                class="check-input"
@@ -23,47 +26,60 @@
 
 @code {
     [Parameter] public string Title { get; set; } = "Título del Check";
-    [Parameter] public bool IsChecked { get; set; } = false;
+
+    [Parameter] public T Value { get; set; }
+    [Parameter] public EventCallback<T> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<T>> ValueExpression { get; set; }
 
     private ElementReference CheckboxRef;
-    private bool InternalChecked;
     private bool ShowConfirmModal = false;
 
-    protected override void OnAfterRender(bool firstRender)
+    // ✅ Agregar esta variable para controlar la sincronización
+    private bool _isUpdatingCheckbox = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender || !_isUpdatingCheckbox)
         {
-            _ = SetCheckbox(InternalChecked = IsChecked);
+            await SyncCheckboxWithValue();
         }
+        _isUpdatingCheckbox = false;
     }
 
-    private async Task SetCheckbox(bool value)
+    // ✅ Nuevo método para sincronizar cuando cambie el valor desde el padre
+    protected override async Task OnParametersSetAsync()
     {
-        await JS.InvokeVoidAsync("setCheckboxState", CheckboxRef, value);
+        await SyncCheckboxWithValue();
+    }
+
+    // ✅ Método para sincronizar el checkbox con el valor actual
+    private async Task SyncCheckboxWithValue()
+    {
+        if (CheckboxRef.Id != null) // Verificar que el elemento existe
+        {
+            await SetCheckbox(IsChecked());
+        }
     }
 
     private async Task InterceptClick(MouseEventArgs e)
     {
-        if (InternalChecked)
+        if (IsChecked())
         {
             ShowConfirmModal = true;
             StateHasChanged();
+            // Mantener el checkbox marcado mientras se muestra el modal
             await SetCheckbox(true);
         }
         else
         {
-            InternalChecked = true;
-            IsChecked = true;
-            await SetCheckbox(true);
+            await UpdateCheckboxState(true);
         }
     }
 
     private async Task ConfirmUncheck()
     {
-        InternalChecked = false;
-        IsChecked = false;
         ShowConfirmModal = false;
-        await SetCheckbox(false);
+        await UpdateCheckboxState(false);
     }
 
     private async Task CancelUncheck()
@@ -75,6 +91,50 @@
     private async Task CloseModal()
     {
         await CancelUncheck();
+    }
+
+    private async Task SetCheckbox(bool value)
+    {
+        try
+        {
+            _isUpdatingCheckbox = true;
+            await JS.InvokeVoidAsync("setCheckboxState", CheckboxRef, value);
+        }
+        catch (Exception)
+        {
+            // Ignorar errores de JS si el elemento no existe aún
+        }
+    }
+
+    private async Task UpdateCheckboxState(bool newValue)
+    {
+        if (typeof(T) == typeof(bool))
+        {
+            await ValueChanged.InvokeAsync((T)(object)newValue);
+        }
+        else if (typeof(T) == typeof(bool?))
+        {
+            await ValueChanged.InvokeAsync((T)(object)(bool?)newValue);
+        }
+
+        await SetCheckbox(newValue);
+    }
+
+    private bool IsChecked()
+    {
+        if (Value == null) return false;
+
+        if (typeof(T) == typeof(bool))
+        {
+            return (bool)(object)Value;
+        }
+        else if (typeof(T) == typeof(bool?))
+        {
+            var nullableBool = (bool?)(object)Value;
+            return nullableBool.HasValue && nullableBool.Value;
+        }
+
+        return false;
     }
 
     [Inject] private IJSRuntime JS { get; set; }

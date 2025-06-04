@@ -482,11 +482,6 @@ namespace SGIS.Models
                     .HasMaxLength(50)
                     .IsUnicode(false);
 
-                entity.HasOne(d => d.DiseaseNavigation)
-                    .WithMany(p => p.ObstetricHistories)
-                    .HasForeignKey(d => d.DiseaseId)
-                    .HasConstraintName("FK_ObstetricHistory_Disease");
-
                 entity.HasOne(d => d.HistoryNavigation)
                     .WithMany(p => p.ObstetricHistories)
                     .HasForeignKey(d => d.ClinicalHistoryId)

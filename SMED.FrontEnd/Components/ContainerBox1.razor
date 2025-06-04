@@ -49,7 +49,10 @@
     [Parameter] public string Title { get; set; } = "Celda editable";
     [Parameter] public string Width { get; set; } = "full"; // "full", "half", "third"
 
-    private string Content = "";
+    // ✅ Binding bidireccional
+    [Parameter] public string Content { get; set; } = "";
+    [Parameter] public EventCallback<string> ContentChanged { get; set; }
+
     private string TempContent = "";
     private bool IsModalVisible = false;
     private bool ShowConfirmExit = false;
@@ -61,15 +64,25 @@
         _ => "containerbox1-full"
     };
 
+    protected override void OnParametersSet()
+    {
+        // Sincronizar cuando cambie desde el padre
+        if (TempContent != Content && !IsModalVisible)
+        {
+            TempContent = Content;
+        }
+    }
+
     private void ShowModal()
     {
         TempContent = Content;
         IsModalVisible = true;
     }
 
-    private void Save()
+    private async Task Save()
     {
         Content = TempContent;
+        await ContentChanged.InvokeAsync(Content);
         IsModalVisible = false;
     }
 

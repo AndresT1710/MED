@@ -51,7 +51,8 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.Stillbirths = dto.Stillbirths;
             entity.LivingChildren = dto.LivingChildren;
             entity.Breastfeeding = dto.Breastfeeding;
-            entity.DiseaseId = dto.DiseaseId;
+            entity.ExpectedDeliveryDate = dto.ExpectedDeliveryDate;
+            entity.GestionalAge = dto.GestionalAge;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -84,7 +85,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Stillbirths = entity.Stillbirths,
                 LivingChildren = entity.LivingChildren,
                 Breastfeeding = entity.Breastfeeding,
-                DiseaseId = entity.DiseaseId
+                ExpectedDeliveryDate = entity.ExpectedDeliveryDate,
+                GestionalAge = entity.GestionalAge
             };
         }
 
@@ -104,7 +106,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Stillbirths = dto.Stillbirths,
                 LivingChildren = dto.LivingChildren,
                 Breastfeeding = dto.Breastfeeding,
-                DiseaseId = dto.DiseaseId
+                ExpectedDeliveryDate = dto.ExpectedDeliveryDate,
+                GestionalAge = dto.GestionalAge
             };
         }
     }

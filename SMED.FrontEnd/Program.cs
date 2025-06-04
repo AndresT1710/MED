@@ -41,6 +41,7 @@ builder.Services.AddScoped<HabitService>();
 builder.Services.AddScoped<HabitHistoryService>();
 builder.Services.AddScoped<RelationshipService>();
 builder.Services.AddScoped<FamilyHistoryDetailService>();
+builder.Services.AddScoped<ObstetricHistoryService>();
 builder.Services.AddLogging();
 
 

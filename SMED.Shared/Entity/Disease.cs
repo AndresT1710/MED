@@ -25,9 +25,6 @@ namespace SMED.Shared.Entity
         public virtual ICollection<GynecologicalHistory> GynecologicalHistories { get; set; } = new List<GynecologicalHistory>();
 
         [InverseProperty("DiseaseNavigation")]
-        public virtual ICollection<ObstetricHistory> ObstetricHistories { get; set; } = new List<ObstetricHistory>();
-
-        [InverseProperty("DiseaseNavigation")]
         public virtual ICollection<PersonalHistory> PersonalHistories { get; set; } = new List<PersonalHistory>();
 
         [ForeignKey("DiseaseTypeId")]

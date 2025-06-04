@@ -49,7 +49,10 @@
     [Parameter] public string Title { get; set; } = "Fecha editable";
     [Parameter] public string Width { get; set; } = "full"; // "full", "half", "third"
 
-    private DateTime? SelectedDate = null;
+    // ✅ Binding bidireccional
+    [Parameter] public DateTime? SelectedDate { get; set; } = null;
+    [Parameter] public EventCallback<DateTime?> SelectedDateChanged { get; set; }
+
     private DateTime? TempDate = null;
     private bool IsModalVisible = false;
     private bool ShowConfirmExit = false;
@@ -61,15 +64,25 @@
         _ => "containerbox2-full"
     };
 
+    protected override void OnParametersSet()
+    {
+        // Sincronizar cuando cambie desde el padre
+        if (TempDate != SelectedDate && !IsModalVisible)
+        {
+            TempDate = SelectedDate;
+        }
+    }
+
     private void ShowModal()
     {
         TempDate = SelectedDate;
         IsModalVisible = true;
     }
 
-    private void Save()
+    private async Task Save()
     {
         SelectedDate = TempDate;
+        await SelectedDateChanged.InvokeAsync(SelectedDate);
         IsModalVisible = false;
     }
 

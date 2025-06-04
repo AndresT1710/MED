@@ -20,6 +20,7 @@ namespace SMED.Shared.DTOs
         public int? Stillbirths { get; set; }
         public int? LivingChildren { get; set; }
         public bool? Breastfeeding { get; set; }
-        public int? DiseaseId { get; set; }
+        public string? GestionalAge { get; set; }
+        public DateTime? ExpectedDeliveryDate { get; set; }
     }
 }

@@ -19,5 +19,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("FoodNavigation")]
         public virtual ICollection<FoodIntoleranceHistory> FoodIntoleranceHistories { get; set; } = new List<FoodIntoleranceHistory>();
+
+        [InverseProperty("FoodNavigation")]
+        public virtual ICollection<FoodConsumptionHistory> FoodConsumptionHistories { get; set; } = new List<FoodConsumptionHistory>();
+
     }
 }

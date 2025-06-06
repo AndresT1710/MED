@@ -71,6 +71,16 @@ namespace SGIS.Models
         public DbSet<Habits> Habits { get; set; }
         public DbSet<HabitHistory> HabitHistories { get; set; }
 
+        public DbSet<SportsActivities> SportsActivities { get; set; }
+        public DbSet<SportsActivitiesHistory> SportsActivitiesHistories { get; set; }
+        public DbSet<LifeStyle> LifeStyles { get; set; }
+        public DbSet<LifeStyleHistory> LifeStyleHistories { get; set; }
+        public DbSet<DietaryHabitsHistory> DietaryHabitHistories { get; set; }
+        public DbSet<SleepHabit> SleepHabits { get; set; }
+        public DbSet<SleepHabitHistory> SleepHabitHistories { get; set; }
+        public DbSet<FoodConsumptionHistory> FoodConsumptionHistories { get; set; }
+        public DbSet<WaterConsumptionHistory> WaterConsumptionHistories { get; set; }
+
         // Atención médica
         public DbSet<MedicalVisit> MedicalVisits { get; set; }
         public DbSet<Progress> Progresses { get; set; }
@@ -241,7 +251,7 @@ namespace SGIS.Models
 
             //PERSONLABORACTIVITY
             modelBuilder.Entity<PersonLaborActivity>()
-    .HasKey(pl => new { pl.PersonId, pl.LaborActivityId }); // Clave compuesta
+                .HasKey(pl => new { pl.PersonId, pl.LaborActivityId });
 
             modelBuilder.Entity<PersonLaborActivity>()
                 .HasOne(pl => pl.PersonNavigation)
@@ -551,6 +561,40 @@ namespace SGIS.Models
                     .HasConstraintName("FK_HabitHistory_ClinicalHistory");
             });
 
+            modelBuilder.Entity<SportsActivitiesHistory>(entity =>
+            {
+                entity.ToTable("SportsActivitiesHistory");
+            });
+
+            modelBuilder.Entity<LifeStyle>(entity =>
+            {
+                entity.ToTable("LifeStyle");
+            });
+            modelBuilder.Entity<LifeStyleHistory>(entity =>
+            {
+                entity.ToTable("LifeStyleHistory");
+            });
+            modelBuilder.Entity<DietaryHabitsHistory>(entity =>
+            {
+                entity.ToTable("DietaryHabitsHistory");
+            });
+            modelBuilder.Entity<SleepHabit>(entity =>
+            {
+                entity.ToTable("SleepHabit");
+            });
+
+            modelBuilder.Entity<SleepHabitHistory>(entity =>
+            {
+                entity.ToTable("SleepHabitHistory");
+            });
+            modelBuilder.Entity<FoodConsumptionHistory>(entity =>
+            {
+                entity.ToTable("FoodConsumptionHistory");
+            });
+            modelBuilder.Entity<WaterConsumptionHistory>(entity =>
+            {
+                entity.ToTable("WaterConsumptionHistory");
+            });
             base.OnModelCreating(modelBuilder);
         }
     }

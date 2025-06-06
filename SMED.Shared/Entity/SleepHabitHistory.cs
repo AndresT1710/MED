@@ -16,19 +16,17 @@ namespace SMED.Shared.Entity
 
         public DateTime? RecordDate { get; set; }
         public int SleepHabitId { get; set; }
+        public string Description { get; set; } = null!;
 
         public int ClinicalHistoryId { get; set; }
 
 
         [ForeignKey("SleepHabitId")]
         [InverseProperty("SleepHabitHistories")]
-        public virtual Habits Habit { get; set; } = null!;
+        public virtual SleepHabit SleepHabitNavigation { get; set; } = null!;
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("SleepHabitHistories")]
         public virtual ClinicalHistory HistoryNavigation { get; set; } = null!;
-
-
-
     }
 }

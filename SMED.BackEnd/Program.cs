@@ -44,6 +44,15 @@ builder.Services.AddScoped<IClinicalHistoryPatientRepository, PatientRepository>
 builder.Services.AddScoped<IRepository<HabitsDTO, int>, HabitsRepository>();
 builder.Services.AddScoped<IRepository<HabitHistoryDTO, int>, HabitHistoryRepository>();
 builder.Services.AddScoped<IRepository<RelationshipDTO, int>, RelationshipRepository>();
+builder.Services.AddScoped<IRepository<SportsActivitiesDTO, int>, SportsActivitiesRepository>();
+builder.Services.AddScoped<IRepository<SportsActivitiesHistoryDTO, int>, SportsActivitiesHistoryRepository>();
+builder.Services.AddScoped<IRepository<LifeStyleDTO, int>, LifeStyleRepository>();
+builder.Services.AddScoped<IRepository<LifeStyleHistoryDTO, int>, LifeStyleHistoryRepository>();
+builder.Services.AddScoped<IRepository<DietaryHabitsHistoryDTO, int>, DietaryHabitsHistoryRepository>();
+builder.Services.AddScoped<IRepository<SleepHabitDTO, int>, SleepHabitRepository>();
+builder.Services.AddScoped<IRepository<SleepHabitHistoryDTO, int>, SleepHabitHistoryRepository>();
+builder.Services.AddScoped<IRepository<FoodConsumptionHistoryDTO, int>, FoodConsumptionHistoryRepository>();
+builder.Services.AddScoped<IRepository<WaterConsumptionHistoryDTO, int>, WaterConsumptionHistoryRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

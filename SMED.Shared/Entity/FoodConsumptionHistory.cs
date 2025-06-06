@@ -27,6 +27,7 @@ namespace SMED.Shared.Entity
         [Column(TypeName = "decimal(10,2)")]
         public decimal? Amount { get; set; }
 
+        public string Description { get; set; } = null!;
 
 
         [Column(TypeName = "datetime")]

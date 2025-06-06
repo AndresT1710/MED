@@ -50,6 +50,26 @@ namespace SMED.Shared.Entity
         [InverseProperty("ClinicalHistory")]
         public virtual ICollection<HabitHistory> HabitHistories { get; set; } = new List<HabitHistory>();
 
+        [InverseProperty("HistoryNavigation")]
+        public virtual ICollection<SleepHabitHistory> SleepHabitHistories { get; set; } = new List<SleepHabitHistory>();
+
+        [InverseProperty("HistoryNavigation")]
+        public virtual ICollection<SportsActivitiesHistory> SportsActivitiesHistories { get; set; } = new List<SportsActivitiesHistory>();
+
+
+        [InverseProperty("HistoryNavigation")]
+        public virtual ICollection<LifeStyleHistory> LifeStyleHistories { get; set; } = new List<LifeStyleHistory>();
+
+        [InverseProperty("MedicalRecordNavigation")]
+        public virtual ICollection<DietaryHabitsHistory> DietaryHabitHistories { get; set; } = new List<DietaryHabitsHistory>();
+
+        [InverseProperty("HistoryNavigation")]
+        public virtual ICollection<FoodConsumptionHistory> FoodConsumptionHistories { get; set; } = new List<FoodConsumptionHistory>();
+
+        [InverseProperty("MedicalRecordNavigation")]
+        public virtual ICollection<WaterConsumptionHistory> WaterConsumptionHistories { get; set; } = new List<WaterConsumptionHistory>();
+
+
         [ForeignKey("PatientId")]
         [InverseProperty("ClinicalHistory")]
         public virtual Patient? Patient { get; set; }

@@ -47,5 +47,12 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
+        [HttpGet("by-clinical-history/{clinicalHistoryId}")]
+        public async Task<ActionResult<List<SportsActivitiesHistoryDTO>>> GetByClinicalHistoryId(int clinicalHistoryId)
+        {
+            var allRecords = await _repository.GetAllAsync();
+            var filtered = allRecords?.Where(x => x.ClinicalHistoryId == clinicalHistoryId).ToList() ?? new List<SportsActivitiesHistoryDTO>();
+            return Ok(filtered);
+        }
     }
 }

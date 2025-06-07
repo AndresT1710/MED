@@ -14,12 +14,14 @@ namespace SMED.Shared.DTOs
 
         [StringLength(50)]
         public string HistoryNumber { get; set; } = null!;
-
+        public int MinutesPerDay { get; set; }
+        public int NumberOfDays { get; set; }
         public string Description { get; set; } = null!;
 
         [Column(TypeName = "datetime")]
         public DateTime? RegistrationDate { get; set; }
         public int ClinicalHistoryId { get; set; }
+        public string? SportActivityName { get; set; } = null!;
         public int? SportActivityId { get; set; }
     }
 }

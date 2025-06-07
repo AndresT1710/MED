@@ -43,6 +43,17 @@ builder.Services.AddScoped<RelationshipService>();
 builder.Services.AddScoped<FamilyHistoryDetailService>();
 builder.Services.AddScoped<ObstetricHistoryService>();
 builder.Services.AddScoped<GynecologicalHistoryService>();
+builder.Services.AddScoped<SportsActivitiesService>();
+builder.Services.AddScoped<SportsActivitiesHistoryService>();
+builder.Services.AddScoped<LifeStyleService>();
+builder.Services.AddScoped<LifeStyleHistoryService>();
+builder.Services.AddScoped<DietaryHabitsHistoryService>();
+builder.Services.AddScoped<SleepHabitService>();
+builder.Services.AddScoped<SleepHabitHistoryService>();
+builder.Services.AddScoped<FoodService>();
+builder.Services.AddScoped<FoodConsumptionHistoryService>();
+builder.Services.AddScoped<WaterConsumptionHistoryService>();
+
 builder.Services.AddLogging();
 
 

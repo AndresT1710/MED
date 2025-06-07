@@ -18,6 +18,8 @@ namespace SMED.Shared.Entity
         public string HistoryNumber { get; set; } = null!;
 
         public string Description { get; set; } = null!;
+        public int MinutesPerDay { get; set; }
+        public int NumberOfDays { get; set; }
 
         [Column(TypeName = "datetime")]
         public DateTime? RegistrationDate { get; set; }

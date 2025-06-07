@@ -34,6 +34,18 @@ namespace SMED.Shared.DTOs
         public ObstetricHistoryDTO? ObstetricHistory { get; set; } = new();
 
         public GynecologicalHistoryDTO? GynecologicalHistory { get; set; } = new();
+
+        public SportsActivitiesHistoryDTO? SportsActivitiesHistory { get; set; } = new();
+
+        public LifeStyleHistoryDTO? LifeStyleHistory { get; set; } = new();
+
+        public DietaryHabitsHistoryDTO? DietaryHabitsHistory { get; set; } = new();
+
+        public SleepHabitHistoryDTO? SleepHabitHistory { get; set; } = new();
+
+        public FoodConsumptionHistoryDTO? FoodConsumptionHistory { get; set; } = new();
+
+        public WaterConsumptionHistoryDTO? WaterConsumptionHistory { get; set; } = new();
     }
 
 }

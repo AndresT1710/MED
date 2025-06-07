@@ -61,5 +61,13 @@ namespace SMED.BackEnd.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("by-clinical-history/{clinicalHistoryId}")]
+        public async Task<ActionResult<List<WaterConsumptionHistoryDTO>>> GetByClinicalHistoryId(int clinicalHistoryId)
+        {
+            var allRecords = await _repository.GetAllAsync();
+            var filtered = allRecords?.Where(x => x.ClinicalHistoryId == clinicalHistoryId).ToList() ?? new List<WaterConsumptionHistoryDTO>();
+            return Ok(filtered);
+        }
     }
 }

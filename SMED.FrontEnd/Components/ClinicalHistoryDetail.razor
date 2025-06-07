@@ -270,6 +270,160 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <h4 class="text-center">Nutricionistas</h4>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Actividades Deportivas</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.SportsActivitiesHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Descripción:</strong> @History.SportsActivitiesHistory.Description <br />
+                                <strong>Minutos por Día:</strong> @History.SportsActivitiesHistory.MinutesPerDay minutos <br />
+                                <strong>Número de Días por Semana:</strong> @History.SportsActivitiesHistory.NumberOfDays días <br />
+                                <strong>Fecha de Registro:</strong> @History.SportsActivitiesHistory.RegistrationDate?.ToShortDateString() <br />
+								<strong>Actividad Física:</strong> @History.SportsActivitiesHistory.SportActivityName <br />
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes de actividad física registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Estilo de Vida</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.LifeStyleHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Estilo de Vida:</strong> @History.LifeStyleHistory.LifeStyleName <br />
+                                <strong>Descripción:</strong> @History.LifeStyleHistory.Description <br />
+                                <strong>Fecha de Registro:</strong> @History.LifeStyleHistory.RegistrationDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay datos registrados sobre el estilo de vida</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Hábitos Dietéticos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.DietaryHabitsHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Descripción:</strong> @History.DietaryHabitsHistory.Description <br />
+                                <strong>Fecha de Registro:</strong> @History.DietaryHabitsHistory.RegistrationDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay datos registrados sobre los hábitos alimenticios</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Hábitos de Sueño</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.SleepHabitHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Hábito de Sueño:</strong> @History.SleepHabitHistory.SleepHabitName <br />
+                                <strong>Descripción:</strong> @History.SleepHabitHistory.Description <br />
+                                <strong>Fecha de Registro:</strong> @History.SleepHabitHistory.RecordDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay datos registrados sobre los hábitos de sueño</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Consumo de Alimentos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.FoodConsumptionHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Nombre del Alimento:</strong> @History.FoodConsumptionHistory.FoodName <br />
+                                <strong>Hora:</strong> @History.FoodConsumptionHistory.Hour <br />
+                                <strong>Lugar:</strong> @History.FoodConsumptionHistory.Place <br />
+                                <strong>Cantidad:</strong> @History.FoodConsumptionHistory.Amount <br />
+                                <strong>Descripción:</strong> @History.FoodConsumptionHistory.Description <br />
+                                <strong>Fecha de Registro:</strong> @History.FoodConsumptionHistory.RegistrationDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay datos registrados sobre el consumo de alimentos</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Consumo de Agua</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.WaterConsumptionHistory != null)
+                    {
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Cantidad:</strong> @History.WaterConsumptionHistory.Amount <br />
+								<strong>Frecuencia:</strong> @History.WaterConsumptionHistory.Frequency <br />
+                                <strong>Descripción:</strong> @History.WaterConsumptionHistory.Description <br />
+                                <strong>Fecha de Registro:</strong> @History.WaterConsumptionHistory.RegistrationDate?.ToShortDateString()
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay datos registrados sobre el consumo de agua</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
 
 </div>
 

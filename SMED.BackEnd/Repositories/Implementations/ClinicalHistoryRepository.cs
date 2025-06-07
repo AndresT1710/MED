@@ -38,6 +38,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                         .ThenInclude(t => t.DiseaseTypeNavigation)
                 .Include(ch => ch.ObstetricHistories)
                 .Include(ch => ch.GynecologicalHistories)
+                .Include(ch => ch.SportsActivitiesHistories)
+                    .ThenInclude(sp => sp.SportActivityNavigation)
+                .Include(ch => ch.LifeStyleHistories)
+                    .ThenInclude(lsh => lsh.LifeStyleNavigation)
+                .Include(ch => ch.DietaryHabitHistories)
+                .Include(ch => ch.SleepHabitHistories)
+                    .ThenInclude(sh => sh.SleepHabitNavigation)
+                .Include(ch => ch.FoodConsumptionHistories)
+                    .ThenInclude(fd => fd.FoodNavigation)
+                .Include(ch => ch.WaterConsumptionHistories)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -65,6 +75,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                         .ThenInclude(t => t.DiseaseTypeNavigation)
                 .Include(ch => ch.ObstetricHistories)
                 .Include(ch => ch.GynecologicalHistories)
+                .Include(ch => ch.SportsActivitiesHistories)
+                    .ThenInclude(sp => sp.SportActivityNavigation)
+                .Include(ch => ch.LifeStyleHistories)
+                    .ThenInclude(lsh => lsh.LifeStyleNavigation)
+                .Include(ch => ch.DietaryHabitHistories)
+                .Include(ch => ch.SleepHabitHistories)
+                    .ThenInclude(sh => sh.SleepHabitNavigation)
+                .Include(ch => ch.FoodConsumptionHistories)
+                    .ThenInclude(fd => fd.FoodNavigation)
+                .Include(ch => ch.WaterConsumptionHistories)
+
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -302,6 +323,61 @@ namespace SMED.BackEnd.Repositories.Implementations
                     ContraceptiveMethods = entity.GynecologicalHistories.First().ContraceptiveMethods,
                     ClinicalHistoryId = entity.GynecologicalHistories.First().ClinicalHistoryId
                 } : null,
+                SportsActivitiesHistory = entity.SportsActivitiesHistories.FirstOrDefault() != null ? new SportsActivitiesHistoryDTO
+                {
+                    SportActivityHistoryId = entity.SportsActivitiesHistories.First().SportActivityHistoryId,
+                    HistoryNumber = entity.SportsActivitiesHistories.First().HistoryNumber,
+                    ClinicalHistoryId = entity.SportsActivitiesHistories.First().ClinicalHistoryId,
+                    MinutesPerDay = entity.SportsActivitiesHistories.First().MinutesPerDay,
+                    NumberOfDays = entity.SportsActivitiesHistories.First().NumberOfDays,
+                    Description = entity.SportsActivitiesHistories.First().Description,
+                    RegistrationDate = entity.SportsActivitiesHistories.First().RegistrationDate,
+                    SportActivityId = entity.SportsActivitiesHistories.First().SportActivityId,
+                    SportActivityName = entity.SportsActivitiesHistories.First().SportActivityNavigation?.Name ?? string.Empty
+                } :null,
+                LifeStyleHistory = entity.LifeStyleHistories.FirstOrDefault() != null ? new LifeStyleHistoryDTO
+                {
+                    LifeStyleHistoryId = entity.LifeStyleHistories.First().LifeStyleHistoryId,
+                    ClinicalHistoryId = entity.LifeStyleHistories.First().ClinicalHistoryId,
+                    LifeStyleName = entity.LifeStyleHistories.First().LifeStyleNavigation?.Name ?? string.Empty,
+                    Description = entity.LifeStyleHistories.First().Description,
+                    RegistrationDate = entity.LifeStyleHistories.First().RegistrationDate
+                } : null,
+                DietaryHabitsHistory = entity.DietaryHabitHistories.FirstOrDefault() != null ? new DietaryHabitsHistoryDTO
+                {
+                    DietaryHabitHistoryId = entity.DietaryHabitHistories.First().DietaryHabitHistoryId,
+                    ClinicalHistoryId = entity.DietaryHabitHistories.First().ClinicalHistoryId,
+                    Description = entity.DietaryHabitHistories.First().Description,
+                    RegistrationDate = entity.DietaryHabitHistories.First().RegistrationDate
+                } : null,
+                SleepHabitHistory = entity.SleepHabitHistories.FirstOrDefault() != null ? new SleepHabitHistoryDTO
+                {
+                    HabitSleepHistoryId = entity.SleepHabitHistories.First().HabitSleepHistoryId,
+                    ClinicalHistoryId = entity.SleepHabitHistories.First().ClinicalHistoryId,
+                    SleepHabitName = entity.SleepHabitHistories.First().SleepHabitNavigation?.Name ?? string.Empty,
+                    Description = entity.SleepHabitHistories.First().Description,
+                    RecordDate = entity.SleepHabitHistories.First().RecordDate
+                }:null,
+                FoodConsumptionHistory = entity.FoodConsumptionHistories.FirstOrDefault() != null ? new FoodConsumptionHistoryDTO
+                {
+                    FoodConsumptionHistoryId = entity.FoodConsumptionHistories.First().FoodConsumptionHistoryId,
+                    ClinicalHistoryId = entity.FoodConsumptionHistories.First().ClinicalHistoryId,
+                    FoodName = entity.FoodConsumptionHistories.First().FoodNavigation?.Name ?? string.Empty,
+                    Hour = entity.FoodConsumptionHistories.First().Hour,
+                    Place = entity.FoodConsumptionHistories.First().Place,
+                    Amount = entity.FoodConsumptionHistories.First().Amount,
+                    Description = entity.FoodConsumptionHistories.First().Description,
+                    RegistrationDate = entity.FoodConsumptionHistories.First().RegistrationDate
+                } : null,
+                WaterConsumptionHistory = entity.WaterConsumptionHistories.FirstOrDefault() != null ? new WaterConsumptionHistoryDTO
+                {
+                    WaterConsumptionHistoryId = entity.WaterConsumptionHistories.First().WaterConsumptionHistoryId,
+                    ClinicalHistoryId = entity.WaterConsumptionHistories.First().ClinicalHistoryId,
+                    Amount = entity.WaterConsumptionHistories.First().Amount,
+                    Frequency = entity.WaterConsumptionHistories.First().Frequency,
+                    Description = entity.WaterConsumptionHistories.First().Description,
+                    RegistrationDate = entity.WaterConsumptionHistories.First().RegistrationDate
+                } : null
 
 
             };

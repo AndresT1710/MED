@@ -1,101 +1,1564 @@
 ﻿@page "/medical-history/nutrition"
 @using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
+@inject SportsActivitiesService SportsActivitiesService
+@inject SportsActivitiesHistoryService SportsActivitiesHistoryService
+@inject LifeStyleService LifeStyleService
+@inject LifeStyleHistoryService LifeStyleHistoryService
+@inject DietaryHabitsHistoryService DietaryHabitsHistoryService
+@inject ILogger<Nutrition> Logger
+@inject SleepHabitService SleepHabitService
+@inject SleepHabitHistoryService SleepHabitHistoryService
+@inject FoodService FoodService
+@inject FoodConsumptionHistoryService FoodConsumptionHistoryService
+@inject WaterConsumptionHistoryService WaterConsumptionHistoryService
 
-<TabContainer OnSave="GuardarDatos">
+<TabContainer>
     <h4>Historia Clínica - Nutrición</h4>
-    <PatientSelector />
 
-    <div class="editable-table-wrapper">
-        <EditableTable Title="Actividades Deportivas"
-                       ColumnHeaders="@headersActividadesDeportivas"
-                       Rows="@actividadesdeportivas"
-                       ColumnOptions="@optionsActividadesDeportivas" />
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
 
-        <EditableTable Title="Estilo de Vida"
-                       ColumnHeaders="@headersEstiloDeVida"
-                       Rows="@estilodevida"
-                       ColumnOptions="@optionsEstiloDeVida" />
+    @if (clinicalHistoryId > 0)
+    {
+        <!-- SECCIÓN: ANTECEDENTES DE ACTIVIDADES DEPORTIVAS -->
+        <div class="editable-table-wrapper">
+            <EditableTable Title="Antecedentes de Actividades Deportivas"
+                           ColumnHeaders="@headersSportsActivities"
+                           Rows="@sportsActivitiesData.Select(d => d.Values).ToList()"
+                           RowIds="@sportsActivitiesData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddSportsActivity"
+                           OnEditRequested="PrepareForEditSportsActivity"
+                           OnDeleteRequested="HandleSportsActivityRowDeleted"
+                           OnSaveRequested="SaveSportsActivityChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedSportsActivity) && minutesPerDay > 0 && numberOfDays > 0"
+                           EmptyMessage="@(isLoadingSportsActivities ? "Cargando..." : "No hay datos disponibles")">
 
-        <EditableTable Title="Hábitos Dietéticos"
-                       ColumnHeaders="@headersCirugias"
-                       Rows="@cirugias"
-                       ColumnOptions="@optionsCirugias" />
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingSportsActivityId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Actividad Deportiva</label>
+                        <select class="form-select" @bind="selectedSportsActivity">
+                            <option value="">Seleccione una actividad deportiva</option>
+                            @foreach (var activity in availableSportsActivities)
+                            {
+                                <option value="@activity">@activity</option>
+                            }
+                        </select>
+                        @if (isLoadingSportsActivities)
+                        {
+                            <div class="text-muted mt-1">Cargando actividades deportivas...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Minutos por Día</label>
+                        <input type="number" class="form-control" @bind="minutesPerDay" min="1" max="1440" placeholder="Ingrese los minutos por día" />
+                        @if (minutesPerDay <= 0)
+                        {
+                            <div class="text-muted mt-1">Debe ingresar minutos válidos (mayor a 0)</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Número de Días por Semana</label>
+                        <input type="number" class="form-control" @bind="numberOfDays" min="1" max="7" placeholder="Ingrese el número de días" />
+                        @if (numberOfDays <= 0)
+                        {
+                            <div class="text-muted mt-1">Debe ingresar días válidos (1-7)</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="sportsActivityDescription" rows="3" placeholder="Descripción adicional (opcional)"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
 
-        <EditableTable Title="Hábitos de Sueño"
-                       ColumnHeaders="@headersAlergias"
-                       Rows="@alergias"
-                       ColumnOptions="@optionsAlergias" />
+        <!-- SECCIÓN: ANTECEDENTES DE ESTILOS DE VIDA -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Estilos de Vida"
+                           ColumnHeaders="@headersLifeStyle"
+                           Rows="@lifeStyleData.Select(d => d.Values).ToList()"
+                           RowIds="@lifeStyleData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddLifeStyle"
+                           OnEditRequested="PrepareForEditLifeStyle"
+                           OnDeleteRequested="HandleLifeStyleRowDeleted"
+                           OnSaveRequested="SaveLifeStyleChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedLifeStyle)"
+                           EmptyMessage="@(isLoadingLifeStyle ? "Cargando..." : "No hay datos disponibles")">
 
-        <EditableTable Title="Consumo de Alimentos"
-                       ColumnHeaders="@headersHabitos"
-                       Rows="@habitos"
-                       ColumnOptions="@optionsHabitos" />
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingLifeStyleId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Estilo de Vida</label>
+                        <select class="form-select" @bind="selectedLifeStyle">
+                            <option value="">Seleccione un estilo de vida</option>
+                            @foreach (var lifestyle in availableLifeStyles)
+                            {
+                                <option value="@lifestyle">@lifestyle</option>
+                            }
+                        </select>
+                        @if (isLoadingLifeStyle)
+                        {
+                            <div class="text-muted mt-1">Cargando estilos de vida...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="lifeStyleDescription" rows="3" placeholder="Descripción del estilo de vida"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
 
-        <EditableTable Title="Consumo de Agua"
-                       ColumnHeaders="@headersHabitos"
-                       Rows="@habitos"
-                       ColumnOptions="@optionsHabitos" />
-    </div>
+        <!-- SECCIÓN: ANTECEDENTES DE HÁBITOS DIETÉTICOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Hábitos Dietéticos"
+                           ColumnHeaders="@headersDietaryHabits"
+                           Rows="@dietaryHabitsData.Select(d => d.Values).ToList()"
+                           RowIds="@dietaryHabitsData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddDietaryHabit"
+                           OnEditRequested="PrepareForEditDietaryHabit"
+                           OnDeleteRequested="HandleDietaryHabitRowDeleted"
+                           OnSaveRequested="SaveDietaryHabitChanges"
+                           IsValidForm="() => !string.IsNullOrWhiteSpace(dietaryHabitDescription)"
+                           EmptyMessage="@(isLoadingDietaryHabits ? "Cargando..." : "No hay datos disponibles")">
 
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingDietaryHabitId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción del Hábito Dietético</label>
+                        <textarea class="form-control" @bind="dietaryHabitDescription" rows="4"
+                                  placeholder="Describa los hábitos dietéticos del paciente (ej: vegetariano, consume 5 comidas al día, evita azúcares, etc.)"></textarea>
+                        @if (string.IsNullOrWhiteSpace(dietaryHabitDescription))
+                        {
+                            <div class="text-muted mt-1">La descripción es obligatoria</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha de Registro</label>
+                        <input type="date" class="form-control" @bind="dietaryHabitRegistrationDate" />
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
 
+        <!-- SECCIÓN: ANTECEDENTES DE HÁBITOS DE SUEÑO -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Hábitos de Sueño"
+                           ColumnHeaders="@headersSleepHabits"
+                           Rows="@sleepHabitsData.Select(d => d.Values).ToList()"
+                           RowIds="@sleepHabitsData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddSleepHabit"
+                           OnEditRequested="PrepareForEditSleepHabit"
+                           OnDeleteRequested="HandleSleepHabitRowDeleted"
+                           OnSaveRequested="SaveSleepHabitChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedSleepHabit) && !string.IsNullOrWhiteSpace(sleepHabitDescription)"
+                           EmptyMessage="@(isLoadingSleepHabits ? "Cargando..." : "No hay datos disponibles")">
 
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingSleepHabitId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Hábito de Sueño</label>
+                        <select class="form-select" @bind="selectedSleepHabit">
+                            <option value="">Seleccione un hábito de sueño</option>
+                            @foreach (var habit in availableSleepHabits)
+                            {
+                                <option value="@habit">@habit</option>
+                            }
+                        </select>
+                        @if (isLoadingSleepHabits)
+                        {
+                            <div class="text-muted mt-1">Cargando hábitos de sueño...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="sleepHabitDescription" rows="3"
+                                  placeholder="Describa los detalles del hábito de sueño (ej: horarios, calidad, duración, etc.)"></textarea>
+                        @if (string.IsNullOrWhiteSpace(sleepHabitDescription))
+                        {
+                            <div class="text-muted mt-1">La descripción es obligatoria</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha de Registro</label>
+                        <input type="date" class="form-control" @bind="sleepHabitRecordDate" />
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES DE CONSUMO DE ALIMENTOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Consumo de Alimentos"
+                           ColumnHeaders="@headersFoodConsumption"
+                           Rows="@foodConsumptionData.Select(d => d.Values).ToList()"
+                           RowIds="@foodConsumptionData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddFoodConsumption"
+                           OnEditRequested="PrepareForEditFoodConsumption"
+                           OnDeleteRequested="HandleFoodConsumptionRowDeleted"
+                           OnSaveRequested="SaveFoodConsumptionChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedFood) && !string.IsNullOrWhiteSpace(foodConsumptionDescription)"
+                           EmptyMessage="@(isLoadingFoodConsumption ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingFoodConsumptionId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Alimento</label>
+                        <select class="form-select" @bind="selectedFood">
+                            <option value="">Seleccione un alimento</option>
+                            @foreach (var food in availableFoods)
+                            {
+                                <option value="@food">@food</option>
+                            }
+                        </select>
+                        @if (isLoadingFoodConsumption)
+                        {
+                            <div class="text-muted mt-1">Cargando alimentos...</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Hora de Consumo</label>
+                        <input type="string" class="form-control" @bind="foodConsumptionHour" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Lugar de Consumo</label>
+                        <input type="text" class="form-control" @bind="foodConsumptionPlace" placeholder="Ej: Casa, Restaurante, Trabajo, etc." />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Cantidad (gramos)</label>
+                        <input type="number" class="form-control" @bind="foodConsumptionAmount" min="0" step="0.1" placeholder="Cantidad en gramos" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="foodConsumptionDescription" rows="3"
+                                  placeholder="Describa detalles del consumo (preparación, acompañamientos, etc.)"></textarea>
+                        @if (string.IsNullOrWhiteSpace(foodConsumptionDescription))
+                        {
+                            <div class="text-muted mt-1">La descripción es obligatoria</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha de Registro</label>
+                        <input type="date" class="form-control" @bind="foodConsumptionRegistrationDate" />
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES DE CONSUMO DE AGUA -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes de Consumo de Agua"
+                           ColumnHeaders="@headersWaterConsumption"
+                           Rows="@waterConsumptionData.Select(d => d.Values).ToList()"
+                           RowIds="@waterConsumptionData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddWaterConsumption"
+                           OnEditRequested="PrepareForEditWaterConsumption"
+                           OnDeleteRequested="HandleWaterConsumptionRowDeleted"
+                           OnSaveRequested="SaveWaterConsumptionChanges"
+                           IsValidForm="() => waterConsumptionAmount > 0 && !string.IsNullOrWhiteSpace(waterConsumptionDescription)"
+                           EmptyMessage="@(isLoadingWaterConsumption ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingWaterConsumptionId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Cantidad (litros por día)</label>
+                        <input type="number" class="form-control" @bind="waterConsumptionAmount" min="0.1" step="0.1" placeholder="Ej: 2.5" />
+                        @if (waterConsumptionAmount <= 0)
+                        {
+                            <div class="text-muted mt-1">Debe ingresar una cantidad válida (mayor a 0)</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Frecuencia</label>
+                        <select class="form-select" @bind="waterConsumptionFrequency">
+                            <option value="">Seleccione una frecuencia</option>
+                            <option value="Diaria">Diaria</option>
+                            <option value="Cada 2 horas">Cada 2 horas</option>
+                            <option value="Cada 3 horas">Cada 3 horas</option>
+                            <option value="Con las comidas">Con las comidas</option>
+                            <option value="Al despertar">Al despertar</option>
+                            <option value="Antes de dormir">Antes de dormir</option>
+                            <option value="Durante ejercicio">Durante ejercicio</option>
+                            <option value="Irregular">Irregular</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="waterConsumptionDescription" rows="3"
+                                  placeholder="Describa los hábitos de consumo de agua (tipo de agua, horarios, etc.)"></textarea>
+                        @if (string.IsNullOrWhiteSpace(waterConsumptionDescription))
+                        {
+                            <div class="text-muted mt-1">La descripción es obligatoria</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha de Registro</label>
+                        <input type="date" class="form-control" @bind="waterConsumptionRegistrationDate" />
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes nutricionales.</p>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">
+            @errorMessage
+            <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+        </div>
+    }
 </TabContainer>
 
 @code {
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
 
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE ACTIVIDADES DEPORTIVAS
+    // ==========================================
+    private readonly List<string> headersSportsActivities = new() { "Actividad Deportiva", "Minutos/Día", "Días/Semana", "Descripción" };
+    private List<SportsActivityRow> sportsActivitiesData = new();
+    private List<SportsActivitiesHistoryDTO> currentSportsActivitiesHistories = new();
+    private List<SportsActivitiesDTO> sportsActivities = new();
+    private List<string> availableSportsActivities = new();
 
+    private string selectedSportsActivity = "";
+    private int minutesPerDay = 0;
+    private int numberOfDays = 0;
+    private string sportsActivityDescription = "";
+    private int editingSportsActivityId = -1;
+    private bool isLoadingSportsActivities = false;
 
-    // Headers
-    List<string> headersActividadesDeportivas = new() { "Actividad", "Minutos al día", "Número de dias/semana" };
-    List<string> headersEstiloDeVida = new() { "Estilo de Vida" };
-    List<string> headersCirugias = new() { "Procedimiento", "Fecha de Cirugía", "Secuelas" };
-    List<string> headersAlergias = new() { "Alergeno", "Reacción", "Severidad" };
-    List<string> headersHabitos = new() { "Hábito" };
-
-    // Datos
-    List<List<string>> actividadesdeportivas = new();
-    List<List<string>> estilodevida = new();
-    List<List<string>> cirugias = new();
-    List<List<string>> alergias = new();
-    List<List<string>> habitos = new();
-
-    // Opciones para los selects
-    Dictionary<string, List<string>> optionsActividadesDeportivas = new()
-        {
-            ["Actividad"] = new() { "Cardiovascular", "Endocrina", "Oncologica", "Otro" },
-            ["Minutos al día"] = new() { "10-30", "30-60", "60-90", "90-más" },
-            ["Número de dias/semana"] = new() { "1", "2", "3", "4","5","6" ,"7"},
-        };
-
-    Dictionary<string, List<string>> optionsEstiloDeVida = new()
-        {
-            ["Estilo De Vida"] = new() { "Sedentario", "Nomada", "Minimalista", "Maximalista" }
-        };
-
-    // Similar para las otras tablas...
-    Dictionary<string, List<string>> optionsCirugias = new()
-        {
-            ["Procedimiento"] = new() { "Apéndice", "Vesícula", "Rodilla", "Cesárea" },
-            ["Fecha de Cirugía"] = new() { "2023", "2020", "2015", "2010" },
-            ["Secuelas"] = new() { "Ninguna", "Infección", "Hemorragia", "Otra" }
-        };
-
-    Dictionary<string, List<string>> optionsAlergias = new()
-        {
-            ["Alergeno"] = new() { "Penicilina", "Aspirina", "Mariscos", "Polvo" },
-            ["Reacción"] = new() { "Urticaria", "Anafilaxia", "Erupción", "Edema" },
-            ["Severidad"] = new() { "Leve", "Moderada", "Severa", "Crítica" }
-        };
-
-    Dictionary<string, List<string>> optionsHabitos = new()
-        {
-            ["Hábito"] = new() { "Tabaco", "Alcohol", "Cafeína", "Ejercicio" }
-        };
-
-
-    private async Task GuardarDatos()
+    private class SportsActivityRow
     {
-        Console.WriteLine("Guardando datos del historial nutricional...");
-        // Lógica real de guardado aquí
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
     }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE ESTILOS DE VIDA
+    // ==========================================
+    private readonly List<string> headersLifeStyle = new() { "Estilo de Vida", "Descripción" };
+    private List<LifeStyleRow> lifeStyleData = new();
+    private List<LifeStyleHistoryDTO> currentLifeStyleHistories = new();
+    private List<LifeStyleDTO> lifeStyles = new();
+    private List<string> availableLifeStyles = new();
+
+    private string selectedLifeStyle = "";
+    private string lifeStyleDescription = "";
+    private int editingLifeStyleId = -1;
+    private bool isLoadingLifeStyle = false;
+
+    private class LifeStyleRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE HÁBITOS DIETÉTICOS
+    // ==========================================
+    private readonly List<string> headersDietaryHabits = new() { "Descripción", "Fecha de Registro" };
+    private List<DietaryHabitRow> dietaryHabitsData = new();
+    private List<DietaryHabitsHistoryDTO> currentDietaryHabitsHistories = new();
+
+    private string dietaryHabitDescription = "";
+    private DateTime dietaryHabitRegistrationDate = DateTime.Now;
+    private int editingDietaryHabitId = -1;
+    private bool isLoadingDietaryHabits = false;
+
+    private class DietaryHabitRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE HÁBITOS DE SUEÑO
+    // ==========================================
+    private readonly List<string> headersSleepHabits = new() { "Hábito de Sueño", "Descripción", "Fecha de Registro" };
+    private List<SleepHabitRow> sleepHabitsData = new();
+    private List<SleepHabitHistoryDTO> currentSleepHabitsHistories = new();
+    private List<SleepHabitDTO> sleepHabits = new();
+    private List<string> availableSleepHabits = new();
+
+    private string selectedSleepHabit = "";
+    private string sleepHabitDescription = "";
+    private DateTime sleepHabitRecordDate = DateTime.Now;
+    private int editingSleepHabitId = -1;
+    private bool isLoadingSleepHabits = false;
+
+    private class SleepHabitRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE CONSUMO DE ALIMENTOS
+    // ==========================================
+    private readonly List<string> headersFoodConsumption = new() { "Alimento", "Hora", "Lugar", "Cantidad (g)", "Descripción" };
+    private List<FoodConsumptionRow> foodConsumptionData = new();
+    private List<FoodConsumptionHistoryDTO> currentFoodConsumptionHistories = new();
+    private List<FoodDTO> foods = new();
+    private List<string> availableFoods = new();
+
+    private string selectedFood = "";
+    private string foodConsumptionHour = "";
+    private string foodConsumptionPlace = "";
+    private decimal foodConsumptionAmount = 0;
+    private string foodConsumptionDescription = "";
+    private DateTime foodConsumptionRegistrationDate = DateTime.Now;
+    private int editingFoodConsumptionId = -1;
+    private bool isLoadingFoodConsumption = false;
+
+    private class FoodConsumptionRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES DE CONSUMO DE AGUA
+    // ==========================================
+    private readonly List<string> headersWaterConsumption = new() { "Cantidad (L/día)", "Frecuencia", "Descripción", "Fecha de Registro" };
+    private List<WaterConsumptionRow> waterConsumptionData = new();
+    private List<WaterConsumptionHistoryDTO> currentWaterConsumptionHistories = new();
+
+    private decimal waterConsumptionAmount = 0;
+    private string waterConsumptionFrequency = "";
+    private string waterConsumptionDescription = "";
+    private DateTime waterConsumptionRegistrationDate = DateTime.Now;
+    private int editingWaterConsumptionId = -1;
+    private bool isLoadingWaterConsumption = false;
+
+    private class WaterConsumptionRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Cargar actividades deportivas disponibles
+            sportsActivities = await SportsActivitiesService.GetAllAsync() ?? new();
+            availableSportsActivities = sportsActivities.Select(s => s.Name).ToList();
+
+            // Cargar estilos de vida disponibles
+            lifeStyles = await LifeStyleService.GetAllAsync() ?? new();
+            availableLifeStyles = lifeStyles.Select(l => l.Name).ToList();
+
+            // Cargar hábitos de sueño disponibles
+            sleepHabits = await SleepHabitService.GetAllAsync() ?? new();
+            availableSleepHabits = sleepHabits.Select(s => s.Name).ToList();
+
+            // Cargar alimentos disponibles
+            foods = await FoodService.GetAllAsync() ?? new();
+            availableFoods = foods.Select(f => f.Name).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar datos iniciales");
+            errorMessage = "Error al cargar los datos iniciales.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE ACTIVIDADES DEPORTIVAS
+    // ==========================================
+    private async Task LoadSportsActivitiesHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingSportsActivities = true;
+
+        try
+        {
+            var result = await SportsActivitiesHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentSportsActivitiesHistories = result ?? new();
+            sportsActivitiesData = new();
+
+            foreach (var sah in currentSportsActivitiesHistories)
+            {
+                sportsActivitiesData.Add(new SportsActivityRow
+                    {
+                        Id = sah.SportActivityHistoryId,
+                        Values = new()
+                    {
+                        GetSportsActivityName(sah.SportActivityId ?? 0),
+                        sah.MinutesPerDay.ToString(),
+                        sah.NumberOfDays.ToString(),
+                        sah.Description ?? "Sin descripción"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de actividades deportivas");
+            errorMessage = "Error al cargar los antecedentes de actividades deportivas.";
+        }
+        finally
+        {
+            isLoadingSportsActivities = false;
+        }
+    }
+
+    private string GetSportsActivityName(int sportActivityId)
+    {
+        if (sportActivityId == 0) return "Sin especificar";
+        return sportsActivities.FirstOrDefault(s => s.SportActivityId == sportActivityId)?.Name ?? "Desconocida";
+    }
+
+    private async Task PrepareForEditSportsActivity(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentSportsActivitiesHistories.FirstOrDefault(s => s.SportActivityHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de actividad deportiva con ID {id}";
+                return;
+            }
+
+            editingSportsActivityId = id;
+            selectedSportsActivity = GetSportsActivityName(dto.SportActivityId ?? 0);
+            minutesPerDay = dto.MinutesPerDay;
+            numberOfDays = dto.NumberOfDays;
+            sportsActivityDescription = dto.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de actividad deportiva");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleSportsActivityRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await SportsActivitiesHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadSportsActivitiesHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de actividad deportiva");
+            errorMessage = "Error al eliminar el antecedente de actividad deportiva.";
+        }
+    }
+
+    private async Task SaveSportsActivityChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedSportsActivity))
+            {
+                errorMessage = "Debe seleccionar una actividad deportiva.";
+                return;
+            }
+
+            if (minutesPerDay <= 0)
+            {
+                errorMessage = "Debe ingresar minutos válidos (mayor a 0).";
+                return;
+            }
+
+            if (numberOfDays <= 0 || numberOfDays > 7)
+            {
+                errorMessage = "Debe ingresar días válidos (1-7).";
+                return;
+            }
+
+            var actividad = sportsActivities.FirstOrDefault(s => s.Name == selectedSportsActivity);
+            if (actividad == null)
+            {
+                errorMessage = "Actividad deportiva no encontrada.";
+                return;
+            }
+
+            if (editingSportsActivityId == -1)
+            {
+                var nuevo = new SportsActivitiesHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        SportActivityId = actividad.SportActivityId,
+                        MinutesPerDay = minutesPerDay,
+                        NumberOfDays = numberOfDays,
+                        Description = string.IsNullOrWhiteSpace(sportsActivityDescription) ?
+                                             $"Actividad: {selectedSportsActivity}" : sportsActivityDescription,
+                        RegistrationDate = DateTime.Now,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await SportsActivitiesHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de actividad deportiva: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentSportsActivitiesHistories.FirstOrDefault(s => s.SportActivityHistoryId == editingSportsActivityId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.SportActivityId = actividad.SportActivityId;
+                dto.MinutesPerDay = minutesPerDay;
+                dto.NumberOfDays = numberOfDays;
+                dto.Description = string.IsNullOrWhiteSpace(sportsActivityDescription) ?
+                                 $"Actividad: {selectedSportsActivity}" : sportsActivityDescription;
+
+                var (success, error) = await SportsActivitiesHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de actividad deportiva: {error}";
+                    return;
+                }
+            }
+
+            await LoadSportsActivitiesHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de actividad deportiva");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddSportsActivity()
+    {
+        editingSportsActivityId = -1;
+        selectedSportsActivity = "";
+        minutesPerDay = 0;
+        numberOfDays = 0;
+        sportsActivityDescription = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingSportsActivityId() => editingSportsActivityId == -1 ? "Nuevo" : editingSportsActivityId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE ESTILOS DE VIDA
+    // ==========================================
+    private async Task LoadLifeStyleHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingLifeStyle = true;
+
+        try
+        {
+            var result = await LifeStyleHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentLifeStyleHistories = result ?? new();
+            lifeStyleData = new();
+
+            foreach (var lsh in currentLifeStyleHistories)
+            {
+                lifeStyleData.Add(new LifeStyleRow
+                    {
+                        Id = lsh.LifeStyleHistoryId,
+                        Values = new()
+                    {
+                        GetLifeStyleName(lsh.LifeStyleId ?? 0),
+                        lsh.Description ?? "Sin descripción"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de estilos de vida");
+            errorMessage = "Error al cargar los antecedentes de estilos de vida.";
+        }
+        finally
+        {
+            isLoadingLifeStyle = false;
+        }
+    }
+
+    private string GetLifeStyleName(int lifeStyleId)
+    {
+        if (lifeStyleId == 0) return "Sin especificar";
+        return lifeStyles.FirstOrDefault(l => l.LifeStyleId == lifeStyleId)?.Name ?? "Desconocido";
+    }
+
+    private async Task PrepareForEditLifeStyle(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentLifeStyleHistories.FirstOrDefault(l => l.LifeStyleHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de estilo de vida con ID {id}";
+                return;
+            }
+
+            editingLifeStyleId = id;
+            selectedLifeStyle = GetLifeStyleName(dto.LifeStyleId ?? 0);
+            lifeStyleDescription = dto.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de estilo de vida");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleLifeStyleRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await LifeStyleHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadLifeStyleHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de estilo de vida");
+            errorMessage = "Error al eliminar el antecedente de estilo de vida.";
+        }
+    }
+
+    private async Task SaveLifeStyleChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedLifeStyle))
+            {
+                errorMessage = "Debe seleccionar un estilo de vida.";
+                return;
+            }
+
+            var estilo = lifeStyles.FirstOrDefault(l => l.Name == selectedLifeStyle);
+            if (estilo == null)
+            {
+                errorMessage = "Estilo de vida no encontrado.";
+                return;
+            }
+
+            if (editingLifeStyleId == -1)
+            {
+                var nuevo = new LifeStyleHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        LifeStyleId = estilo.LifeStyleId,
+                        Description = string.IsNullOrWhiteSpace(lifeStyleDescription) ?
+                                             $"Estilo de vida: {selectedLifeStyle}" : lifeStyleDescription,
+                        RegistrationDate = DateTime.Now,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await LifeStyleHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de estilo de vida: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentLifeStyleHistories.FirstOrDefault(l => l.LifeStyleHistoryId == editingLifeStyleId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.LifeStyleId = estilo.LifeStyleId;
+                dto.Description = string.IsNullOrWhiteSpace(lifeStyleDescription) ?
+                                 $"Estilo de vida: {selectedLifeStyle}" : lifeStyleDescription;
+
+                var (success, error) = await LifeStyleHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de estilo de vida: {error}";
+                    return;
+                }
+            }
+
+            await LoadLifeStyleHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de estilo de vida");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddLifeStyle()
+    {
+        editingLifeStyleId = -1;
+        selectedLifeStyle = "";
+        lifeStyleDescription = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingLifeStyleId() => editingLifeStyleId == -1 ? "Nuevo" : editingLifeStyleId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE HÁBITOS DIETÉTICOS
+    // ==========================================
+    private async Task LoadDietaryHabitsHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingDietaryHabits = true;
+
+        try
+        {
+            var result = await DietaryHabitsHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentDietaryHabitsHistories = result ?? new();
+            dietaryHabitsData = new();
+
+            foreach (var dhh in currentDietaryHabitsHistories)
+            {
+                dietaryHabitsData.Add(new DietaryHabitRow
+                    {
+                        Id = dhh.DietaryHabitHistoryId,
+                        Values = new()
+                    {
+                        dhh.Description ?? "Sin descripción",
+                        dhh.RegistrationDate?.ToShortDateString() ?? "Sin fecha"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de hábitos dietéticos");
+            errorMessage = "Error al cargar los antecedentes de hábitos dietéticos.";
+        }
+        finally
+        {
+            isLoadingDietaryHabits = false;
+        }
+    }
+
+    private async Task PrepareForEditDietaryHabit(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentDietaryHabitsHistories.FirstOrDefault(d => d.DietaryHabitHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de hábito dietético con ID {id}";
+                return;
+            }
+
+            editingDietaryHabitId = id;
+            dietaryHabitDescription = dto.Description ?? "";
+            dietaryHabitRegistrationDate = dto.RegistrationDate ?? DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de hábito dietético");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleDietaryHabitRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await DietaryHabitsHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadDietaryHabitsHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de hábito dietético");
+            errorMessage = "Error al eliminar el antecedente de hábito dietético.";
+        }
+    }
+
+    private async Task SaveDietaryHabitChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(dietaryHabitDescription))
+            {
+                errorMessage = "La descripción del hábito dietético es obligatoria.";
+                return;
+            }
+
+            if (editingDietaryHabitId == -1)
+            {
+                var nuevo = new DietaryHabitsHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        Description = dietaryHabitDescription.Trim(),
+                        RegistrationDate = dietaryHabitRegistrationDate,
+                        MedicalRecordNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await DietaryHabitsHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de hábito dietético: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentDietaryHabitsHistories.FirstOrDefault(d => d.DietaryHabitHistoryId == editingDietaryHabitId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.Description = dietaryHabitDescription.Trim();
+                dto.RegistrationDate = dietaryHabitRegistrationDate;
+
+                var (success, error) = await DietaryHabitsHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de hábito dietético: {error}";
+                    return;
+                }
+            }
+
+            await LoadDietaryHabitsHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de hábito dietético");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddDietaryHabit()
+    {
+        editingDietaryHabitId = -1;
+        dietaryHabitDescription = "";
+        dietaryHabitRegistrationDate = DateTime.Now;
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingDietaryHabitId() => editingDietaryHabitId == -1 ? "Nuevo" : editingDietaryHabitId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE HÁBITOS DE SUEÑO
+    // ==========================================
+    private async Task LoadSleepHabitsHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingSleepHabits = true;
+
+        try
+        {
+            var result = await SleepHabitHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentSleepHabitsHistories = result ?? new();
+            sleepHabitsData = new();
+
+            foreach (var shh in currentSleepHabitsHistories)
+            {
+                sleepHabitsData.Add(new SleepHabitRow
+                    {
+                        Id = shh.HabitSleepHistoryId,
+                        Values = new()
+                    {
+                        GetSleepHabitName(shh.SleepHabitId),
+                        shh.Description ?? "Sin descripción",
+                        shh.RecordDate?.ToShortDateString() ?? "Sin fecha"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de hábitos de sueño");
+            errorMessage = "Error al cargar los antecedentes de hábitos de sueño.";
+        }
+        finally
+        {
+            isLoadingSleepHabits = false;
+        }
+    }
+
+    private string GetSleepHabitName(int sleepHabitId)
+    {
+        return sleepHabits.FirstOrDefault(s => s.SleepHabitId == sleepHabitId)?.Name ?? "Desconocido";
+    }
+
+    private async Task PrepareForEditSleepHabit(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentSleepHabitsHistories.FirstOrDefault(s => s.HabitSleepHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de hábito de sueño con ID {id}";
+                return;
+            }
+
+            editingSleepHabitId = id;
+            selectedSleepHabit = GetSleepHabitName(dto.SleepHabitId);
+            sleepHabitDescription = dto.Description ?? "";
+            sleepHabitRecordDate = dto.RecordDate ?? DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de hábito de sueño");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleSleepHabitRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await SleepHabitHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadSleepHabitsHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de hábito de sueño");
+            errorMessage = "Error al eliminar el antecedente de hábito de sueño.";
+        }
+    }
+
+    private async Task SaveSleepHabitChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedSleepHabit))
+            {
+                errorMessage = "Debe seleccionar un hábito de sueño.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(sleepHabitDescription))
+            {
+                errorMessage = "La descripción del hábito de sueño es obligatoria.";
+                return;
+            }
+
+            var habito = sleepHabits.FirstOrDefault(s => s.Name == selectedSleepHabit);
+            if (habito == null)
+            {
+                errorMessage = "Hábito de sueño no encontrado.";
+                return;
+            }
+
+            if (editingSleepHabitId == -1)
+            {
+                var nuevo = new SleepHabitHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        SleepHabitId = habito.SleepHabitId,
+                        Description = sleepHabitDescription.Trim(),
+                        RecordDate = sleepHabitRecordDate,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await SleepHabitHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de hábito de sueño: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentSleepHabitsHistories.FirstOrDefault(s => s.HabitSleepHistoryId == editingSleepHabitId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.SleepHabitId = habito.SleepHabitId;
+                dto.Description = sleepHabitDescription.Trim();
+                dto.RecordDate = sleepHabitRecordDate;
+
+                var (success, error) = await SleepHabitHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de hábito de sueño: {error}";
+                    return;
+                }
+            }
+
+            await LoadSleepHabitsHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de hábito de sueño");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddSleepHabit()
+    {
+        editingSleepHabitId = -1;
+        selectedSleepHabit = "";
+        sleepHabitDescription = "";
+        sleepHabitRecordDate = DateTime.Now;
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingSleepHabitId() => editingSleepHabitId == -1 ? "Nuevo" : editingSleepHabitId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE CONSUMO DE ALIMENTOS
+    // ==========================================
+    private async Task LoadFoodConsumptionHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingFoodConsumption = true;
+
+        try
+        {
+            var result = await FoodConsumptionHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentFoodConsumptionHistories = result ?? new();
+            foodConsumptionData = new();
+
+            foreach (var fch in currentFoodConsumptionHistories)
+            {
+                foodConsumptionData.Add(new FoodConsumptionRow
+                    {
+                        Id = fch.FoodConsumptionHistoryId,
+                        Values = new()
+                    {
+                        GetFoodName(fch.FoodId ?? 0),
+                        fch.Hour ?? "Sin especificar",
+                        fch.Place ?? "Sin especificar",
+                        fch.Amount?.ToString("F1") ?? "0",
+                        fch.Description ?? "Sin descripción"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de consumo de alimentos");
+            errorMessage = "Error al cargar los antecedentes de consumo de alimentos.";
+        }
+        finally
+        {
+            isLoadingFoodConsumption = false;
+        }
+    }
+
+    private string GetFoodName(int foodId)
+    {
+        if (foodId == 0) return "Sin especificar";
+        return foods.FirstOrDefault(f => f.FoodId == foodId)?.Name ?? "Desconocido";
+    }
+
+    private async Task PrepareForEditFoodConsumption(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentFoodConsumptionHistories.FirstOrDefault(f => f.FoodConsumptionHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de consumo de alimento con ID {id}";
+                return;
+            }
+
+            editingFoodConsumptionId = id;
+            selectedFood = GetFoodName(dto.FoodId ?? 0);
+            foodConsumptionHour = dto.Hour ?? "";
+            foodConsumptionPlace = dto.Place ?? "";
+            foodConsumptionAmount = dto.Amount ?? 0;
+            foodConsumptionDescription = dto.Description ?? "";
+            foodConsumptionRegistrationDate = dto.RegistrationDate ?? DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de consumo de alimento");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleFoodConsumptionRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await FoodConsumptionHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadFoodConsumptionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de consumo de alimento");
+            errorMessage = "Error al eliminar el antecedente de consumo de alimento.";
+        }
+    }
+
+    private async Task SaveFoodConsumptionChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedFood))
+            {
+                errorMessage = "Debe seleccionar un alimento.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(foodConsumptionDescription))
+            {
+                errorMessage = "La descripción del consumo es obligatoria.";
+                return;
+            }
+
+            var alimento = foods.FirstOrDefault(f => f.Name == selectedFood);
+            if (alimento == null)
+            {
+                errorMessage = "Alimento no encontrado.";
+                return;
+            }
+
+            if (editingFoodConsumptionId == -1)
+            {
+                var nuevo = new FoodConsumptionHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        FoodId = alimento.FoodId,
+                        Hour = string.IsNullOrWhiteSpace(foodConsumptionHour) ? null : foodConsumptionHour,
+                        Place = string.IsNullOrWhiteSpace(foodConsumptionPlace) ? null : foodConsumptionPlace,
+                        Amount = foodConsumptionAmount > 0 ? foodConsumptionAmount : null,
+                        Description = foodConsumptionDescription.Trim(),
+                        RegistrationDate = foodConsumptionRegistrationDate,
+                        HistoryNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await FoodConsumptionHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de consumo de alimento: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentFoodConsumptionHistories.FirstOrDefault(f => f.FoodConsumptionHistoryId == editingFoodConsumptionId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.FoodId = alimento.FoodId;
+                dto.Hour = string.IsNullOrWhiteSpace(foodConsumptionHour) ? null : foodConsumptionHour;
+                dto.Place = string.IsNullOrWhiteSpace(foodConsumptionPlace) ? null : foodConsumptionPlace;
+                dto.Amount = foodConsumptionAmount > 0 ? foodConsumptionAmount : null;
+                dto.Description = foodConsumptionDescription.Trim();
+                dto.RegistrationDate = foodConsumptionRegistrationDate;
+
+                var (success, error) = await FoodConsumptionHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de consumo de alimento: {error}";
+                    return;
+                }
+            }
+
+            await LoadFoodConsumptionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de consumo de alimento");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddFoodConsumption()
+    {
+        editingFoodConsumptionId = -1;
+        selectedFood = "";
+        foodConsumptionHour = "";
+        foodConsumptionPlace = "";
+        foodConsumptionAmount = 0;
+        foodConsumptionDescription = "";
+        foodConsumptionRegistrationDate = DateTime.Now;
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingFoodConsumptionId() => editingFoodConsumptionId == -1 ? "Nuevo" : editingFoodConsumptionId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTES DE CONSUMO DE AGUA
+    // ==========================================
+    private async Task LoadWaterConsumptionHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingWaterConsumption = true;
+
+        try
+        {
+            var result = await WaterConsumptionHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentWaterConsumptionHistories = result ?? new();
+            waterConsumptionData = new();
+
+            foreach (var wch in currentWaterConsumptionHistories)
+            {
+                waterConsumptionData.Add(new WaterConsumptionRow
+                    {
+                        Id = wch.WaterConsumptionHistoryId,
+                        Values = new()
+                    {
+                        wch.Amount?.ToString("F1") ?? "0.0",
+                        wch.Frequency ?? "Sin especificar",
+                        wch.Description ?? "Sin descripción",
+                        wch.RegistrationDate?.ToShortDateString() ?? "Sin fecha"
+                    }
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historias de consumo de agua");
+            errorMessage = "Error al cargar los antecedentes de consumo de agua.";
+        }
+        finally
+        {
+            isLoadingWaterConsumption = false;
+        }
+    }
+
+    private async Task PrepareForEditWaterConsumption(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentWaterConsumptionHistories.FirstOrDefault(w => w.WaterConsumptionHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de consumo de agua con ID {id}";
+                return;
+            }
+
+            editingWaterConsumptionId = id;
+            waterConsumptionAmount = dto.Amount ?? 0;
+            waterConsumptionFrequency = dto.Frequency ?? "";
+            waterConsumptionDescription = dto.Description ?? "";
+            waterConsumptionRegistrationDate = dto.RegistrationDate ?? DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de consumo de agua");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleWaterConsumptionRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await WaterConsumptionHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadWaterConsumptionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de consumo de agua");
+            errorMessage = "Error al eliminar el antecedente de consumo de agua.";
+        }
+    }
+
+    private async Task SaveWaterConsumptionChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (waterConsumptionAmount <= 0)
+            {
+                errorMessage = "Debe ingresar una cantidad válida (mayor a 0).";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(waterConsumptionDescription))
+            {
+                errorMessage = "La descripción del consumo de agua es obligatoria.";
+                return;
+            }
+
+            if (editingWaterConsumptionId == -1)
+            {
+                var nuevo = new WaterConsumptionHistoryDTO
+                    {
+                        ClinicalHistoryId = clinicalHistoryId,
+                        Amount = waterConsumptionAmount,
+                        Frequency = string.IsNullOrWhiteSpace(waterConsumptionFrequency) ? null : waterConsumptionFrequency,
+                        Description = waterConsumptionDescription.Trim(),
+                        RegistrationDate = waterConsumptionRegistrationDate,
+                        MedicalRecordNumber = medicalRecordNumber
+                    };
+
+                var (success, _, error) = await WaterConsumptionHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de consumo de agua: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentWaterConsumptionHistories.FirstOrDefault(w => w.WaterConsumptionHistoryId == editingWaterConsumptionId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.Amount = waterConsumptionAmount;
+                dto.Frequency = string.IsNullOrWhiteSpace(waterConsumptionFrequency) ? null : waterConsumptionFrequency;
+                dto.Description = waterConsumptionDescription.Trim();
+                dto.RegistrationDate = waterConsumptionRegistrationDate;
+
+                var (success, error) = await WaterConsumptionHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de consumo de agua: {error}";
+                    return;
+                }
+            }
+
+            await LoadWaterConsumptionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de consumo de agua");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddWaterConsumption()
+    {
+        editingWaterConsumptionId = -1;
+        waterConsumptionAmount = 0;
+        waterConsumptionFrequency = "";
+        waterConsumptionDescription = "";
+        waterConsumptionRegistrationDate = DateTime.Now;
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingWaterConsumptionId() => editingWaterConsumptionId == -1 ? "Nuevo" : editingWaterConsumptionId.ToString();
+
+    // ==========================================
+    // MÉTODOS COMUNES
+    // ==========================================
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadSportsActivitiesHistories();
+            await LoadLifeStyleHistories();
+            await LoadDietaryHabitsHistories();
+            await LoadSleepHabitsHistories();
+            await LoadFoodConsumptionHistories();
+            await LoadWaterConsumptionHistories();
+        }
+    }
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
 }

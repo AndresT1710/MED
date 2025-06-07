@@ -17,13 +17,17 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<SportsActivitiesHistoryDTO>> GetAllAsync()
         {
-            var entities = await _context.SportsActivitiesHistories.ToListAsync();
+            var entities = await _context.SportsActivitiesHistories
+                .Include(h => h.SportActivityNavigation)
+                .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
 
         public async Task<SportsActivitiesHistoryDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.SportsActivitiesHistories.FindAsync(id);
+            var entity = await _context.SportsActivitiesHistories
+                .Include(h => h.SportActivityNavigation)
+                .FirstOrDefaultAsync();
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -42,6 +46,8 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.HistoryNumber = dto.HistoryNumber;
             entity.Description = dto.Description;
+            entity.MinutesPerDay = dto.MinutesPerDay;
+            entity.NumberOfDays = dto.NumberOfDays;
             entity.RegistrationDate = dto.RegistrationDate;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.SportActivityId = dto.SportActivityId;
@@ -67,6 +73,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 SportActivityHistoryId = entity.SportActivityHistoryId,
                 HistoryNumber = entity.HistoryNumber,
                 Description = entity.Description,
+                MinutesPerDay = entity.MinutesPerDay,
+                NumberOfDays = entity.NumberOfDays,
                 RegistrationDate = entity.RegistrationDate,
                 ClinicalHistoryId = entity.ClinicalHistoryId,
                 SportActivityId = entity.SportActivityId
@@ -80,6 +88,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 SportActivityHistoryId = dto.SportActivityHistoryId,
                 HistoryNumber = dto.HistoryNumber,
                 Description = dto.Description,
+                MinutesPerDay = dto.MinutesPerDay,
+                NumberOfDays = dto.NumberOfDays,
                 RegistrationDate = dto.RegistrationDate,
                 ClinicalHistoryId = dto.ClinicalHistoryId,
                 SportActivityId = dto.SportActivityId

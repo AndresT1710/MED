@@ -217,14 +217,14 @@
                         <ul class="list-group">
                             <li class="list-group-item">
                                 <strong>Embarazo Actual:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.CurrentPregnancy.Value ? "Sí" : "No")<br />
-                                <strong>Embarazos Anteriores:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.PreviousPregnancies.Value ? "Sí" : "No") <br />
-                                <strong>Partos:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Deliveries.Value ? "Sí" : "No") <br />
-                                <strong>Abortos:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Abortions.Value ? "Sí" : "No") <br />
-                                <strong>Cesáreas:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.CSections.Value ? "Sí" : "No") <br />
-                                <strong>Nacidos Vivos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.LiveBirths.Value > 0 ? "Sí" : "No") <br />
-                                <strong>Nacidos Muertos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.Stillbirths.Value > 0 ? "Sí" : "No") <br />
-                                <strong>Hijos Vivos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.LivingChildren.Value > 0 ? "Sí" : "No") <br />
-                                <strong>Lactancia:</strong> @(History.ObstetricHistory.CurrentPregnancy.HasValue && History.ObstetricHistory.Breastfeeding.Value ? "Sí" : "No") <br />
+                                <strong>Embarazos Anteriores:</strong> @(History.ObstetricHistory.PreviousPregnancies.HasValue && History.ObstetricHistory.PreviousPregnancies.Value ? "Sí" : "No")<br />
+                                <strong>Partos:</strong> @(History.ObstetricHistory.Deliveries.HasValue && History.ObstetricHistory.Deliveries.Value ? "Sí" : "No")<br />
+                                <strong>Abortos:</strong> @(History.ObstetricHistory.Abortions.HasValue && History.ObstetricHistory.Abortions.Value ? "Sí" : "No")<br />
+                                <strong>Cesáreas:</strong> @(History.ObstetricHistory.CSections.HasValue && History.ObstetricHistory.CSections.Value ? "Sí" : "No")<br />
+                                <strong>Nacidos Vivos:</strong> @(History.ObstetricHistory.LiveBirths.HasValue && History.ObstetricHistory.LiveBirths.Value > 0 ? "Sí" : "No")<br />
+                                <strong>Nacidos Muertos:</strong> @(History.ObstetricHistory.Stillbirths.HasValue && History.ObstetricHistory.Stillbirths.Value > 0 ? "Sí" : "No")<br />
+                                <strong>Hijos Vivos:</strong> @(History.ObstetricHistory.LivingChildren.HasValue && History.ObstetricHistory.LivingChildren.Value > 0 ? "Sí" : "No")<br />
+                                <strong>Lactancia:</strong> @(History.ObstetricHistory.Breastfeeding.HasValue && History.ObstetricHistory.Breastfeeding.Value ? "Sí" : "No")<br />
                                 <strong>Edad Gestacional:</strong> @History.ObstetricHistory.GestionalAge semanas<br />
                                 <strong>Fecha Estimada de Parto:</strong> @History.ObstetricHistory.ExpectedDeliveryDate?.ToShortDateString()
                             </li>

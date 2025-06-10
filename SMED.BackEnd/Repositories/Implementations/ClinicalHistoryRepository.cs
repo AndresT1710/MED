@@ -91,16 +91,37 @@ namespace SMED.BackEnd.Repositories.Implementations
             return history == null ? null : MapToDTO(history);
         }
 
-        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryDTO dto)
+        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryCreateDTO createDto)
         {
-            if (dto.Patient == null || dto.Patient.PersonId == 0)
+            if (createDto.Patient == null || createDto.Patient.PersonId == 0)
                 throw new Exception("Patient information is required.");
 
-            // Validar que exista el paciente con ese PersonId
-            var patientExists = await _context.Patients.AnyAsync(p => p.PersonId == dto.Patient.PersonId);
+            // Validar que exista el paciente
+            var patientExists = await _context.Patients.AnyAsync(p => p.PersonId == createDto.Patient.PersonId);
             if (!patientExists)
                 throw new Exception("Patient not found.");
 
+            // Convertir ClinicalHistoryCreateDTO a ClinicalHistoryDTO
+            var clinicalHistoryDto = new ClinicalHistoryDTO
+            {
+                HistoryNumber = createDto.HistoryNumber,
+                CreationDate = createDto.CreationDate ?? DateTime.Now,
+                IsActive = createDto.IsActive ?? true,
+                GeneralObservations = createDto.GeneralObservations,
+                Patient = new PatientDTO
+                {
+                    PersonId = createDto.Patient.PersonId
+                    // Puedes mapear más campos si es necesario
+                }
+            };
+
+            // Llamar al método existente que usa ClinicalHistoryDTO
+            return await AddAsync(clinicalHistoryDto);
+        }
+
+        // Método original
+        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryDTO dto)
+        {
             var clinicalHistory = new ClinicalHistory
             {
                 HistoryNumber = dto.HistoryNumber,
@@ -113,22 +134,15 @@ namespace SMED.BackEnd.Repositories.Implementations
             _context.ClinicalHistories.Add(clinicalHistory);
             await _context.SaveChangesAsync();
 
-            // Mapear entidad guardada a DTO para devolver
-            var createdDto = new ClinicalHistoryDTO
+            return new ClinicalHistoryDTO
             {
                 ClinicalHistoryId = clinicalHistory.ClinicalHistoryId,
                 HistoryNumber = clinicalHistory.HistoryNumber,
                 CreationDate = clinicalHistory.CreationDate,
                 IsActive = clinicalHistory.IsActive,
                 GeneralObservations = clinicalHistory.GeneralObservations,
-                Patient = new PatientDTO
-                {
-                    PersonId = clinicalHistory.PatientId ?? 0
-                    // Si quieres, puedes mapear más propiedades
-                }
+                Patient = new PatientDTO { PersonId = clinicalHistory.PatientId ?? 0 }
             };
-
-            return createdDto;
         }
 
 
@@ -162,7 +176,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             return MapToDTO(entity);
         }
 
-
+        // Método original
         public async Task<ClinicalHistoryDTO?> UpdateAsync(ClinicalHistoryDTO dto)
         {
             return await UpdateAsync(new BasicClinicalHistroyDTO

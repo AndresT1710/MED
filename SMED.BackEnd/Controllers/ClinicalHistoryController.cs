@@ -50,9 +50,19 @@ namespace SMED.BackEnd.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ClinicalHistoryDTO>> Add(ClinicalHistoryDTO dto)
+        public async Task<ActionResult<ClinicalHistoryDTO>> Add(ClinicalHistoryCreateDTO createDto)
         {
-            var created = await _clinicalHistoryRepository.AddAsync(dto);
+            // Convertir ClinicalHistoryCreateDTO a ClinicalHistoryDTO
+            var clinicalHistoryDto = new ClinicalHistoryDTO
+            {
+                HistoryNumber = createDto.HistoryNumber,
+                CreationDate = createDto.CreationDate ?? DateTime.Now,
+                IsActive = createDto.IsActive ?? true,
+                GeneralObservations = createDto.GeneralObservations,
+                Patient = new PatientDTO { PersonId = createDto.Patient.PersonId }
+            };
+
+            var created = await _clinicalHistoryRepository.AddAsync(clinicalHistoryDto);
             return CreatedAtAction(nameof(GetById), new { id = created.ClinicalHistoryId }, created);
         }
 

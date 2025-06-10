@@ -15,6 +15,6 @@ namespace SMED.Shared.DTOs
         public string Description { get; set; } = null!;
         public int ClinicalHistoryId { get; set; }
 
-        public string SleepHabitName { get; set; } = null!;
+        public string? SleepHabitName { get; set; }
     }
 }

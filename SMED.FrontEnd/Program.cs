@@ -5,24 +5,24 @@ using SMED.FrontEnd.Services;
 using Blazored.LocalStorage;
 using System.Net.Http;
 
-
-
-
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Configuraci�n del HttpClient con timeout extendido
+// Configuración del HttpClient con URL del backend en Docker
 builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient
     {
-       //BaseAddress = new Uri("https://localhost:59166/"),
+        //BaseAddress = new Uri("https://localhost:59166/"),
         BaseAddress = new Uri("https://localhost:7009/"),
+        
+        //Dirección para Docker
+        //BaseAddress = new Uri("http://localhost:2023/"),
+        
         Timeout = TimeSpan.FromSeconds(30)
     };
 
-    // Headers por defecto
     httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
     return httpClient;

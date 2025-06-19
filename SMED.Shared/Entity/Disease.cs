@@ -27,5 +27,9 @@ namespace SMED.Shared.Entity
         [ForeignKey("DiseaseTypeId")]
         [InverseProperty("Diseases")]
         public virtual DiseaseType DiseaseTypeNavigation { get; set; } = null!;
+
+        [InverseProperty("DiseaseNavigation")]
+        public virtual ICollection<IdentifiedDisease> IdentifiedDiseases { get; set; } = new List<IdentifiedDisease>();
+
     }
 }

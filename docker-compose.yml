@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    image: backend:1.0
+    container_name: smed_backend
+    ports:
+      - "2023:80"
+    networks:
+      - smed_network
+
+  frontend:
+    image: front:1.0
+    container_name: smed_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - smed_network
+
+networks:
+  smed_network:
+    driver: bridge

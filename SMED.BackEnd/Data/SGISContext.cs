@@ -595,6 +595,47 @@ namespace SGIS.Models
             {
                 entity.ToTable("WaterConsumptionHistory");
             });
+
+
+            modelBuilder.Entity<PhysicalExam>()
+                .HasOne(p => p.PhysicalExamDetail)
+                .WithOne(d => d.PhysicalExam)
+                .HasForeignKey<PhysicalExam>(p => p.PhysicalExamDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SystemsDevices>()
+                .HasOne(s => s.Review)
+                .WithOne(r => r.SystemsDevices)
+                .HasForeignKey<ReviewSystemDevices>(r => r.SystemsDevicesId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrderDiagnosis>()
+               .HasIndex(od => new { od.OrderId, od.DiagnosisId })
+               .IsUnique();
+
+            modelBuilder.Entity<OrderDiagnosis>()
+                .HasOne(od => od.Order)
+                .WithMany(o => o.OrderDiagnoses)
+                .HasForeignKey(od => od.OrderId);
+
+            modelBuilder.Entity<OrderDiagnosis>()
+                .HasOne(od => od.Diagnosis)
+                .WithMany(d => d.OrderDiagnoses)
+                .HasForeignKey(od => od.DiagnosisId);
+
+            modelBuilder.Entity<ExamType>()
+                .HasMany(e => e.ExamResults)
+                .WithOne(r => r.ExamTypeNavigation)
+                .HasForeignKey(r => r.ExamTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TypeOfProcedures>()
+                .HasMany(tp => tp.Procedures)
+                .WithOne(p => p.TypeOfProcedure)
+                .HasForeignKey(p => p.TypeOfProcedureId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
             base.OnModelCreating(modelBuilder);
         }
     }

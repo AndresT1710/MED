@@ -20,6 +20,12 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("PhysicalExamDetailId")]
         public virtual PhysicalExamDetail? PhysicalExamDetail { get; set; }
+
+        public int MedicalCareId { get; set; }
+
+        [ForeignKey("MedicalCareId")]
+        [InverseProperty("PhysicalExam")]
+        public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
 
 

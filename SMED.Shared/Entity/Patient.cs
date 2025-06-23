@@ -30,6 +30,9 @@ namespace SMED.Shared.Entity
     [ForeignKey("PersonId")]
     [InverseProperty("Patient")]
     public virtual Person PersonNavigation { get; set; } = null!;
-}
+
+    [InverseProperty("Patient")]
+    public virtual ICollection<MedicalCare> MedicalCares { get; set; } = new List<MedicalCare>();
+    }
 
 }

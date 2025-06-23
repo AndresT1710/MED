@@ -19,4 +19,5 @@ namespace SMED.Shared.Entity
         [InverseProperty("ExamTypeNavigation")]
         public virtual ICollection<ExamResults> ExamResults { get; set; } = new List<ExamResults>();
     }
+
 }

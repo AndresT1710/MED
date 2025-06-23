@@ -84,6 +84,34 @@ namespace SGIS.Models
         // Atención médica
         public DbSet<MedicalVisit> MedicalVisits { get; set; }
         public DbSet<Progress> Progresses { get; set; }
+        public DbSet<LaboratoryOrders> LaboratoryOrders { get; set; }
+        public DbSet<ImageOrders> ImageOrders { get; set; }
+        public DbSet<Orders> Orders { get; set; }
+        public DbSet<Diagnosis> Diagnoses { get; set; }
+        public DbSet<Interconsultation> Interconsultations { get; set; }
+        public DbSet<Service> Services { get; set; }
+        public DbSet<MedicalReferral> MedicalReferrals { get; set; }
+        public DbSet<SystemsDevices> SystemsDevices { get; set; }
+        public DbSet<ReviewSystemDevices> ReviewSystemDevices { get; set; }
+        public DbSet<PlaceOfAttention> PlaceOfAttentions { get; set; }
+        public DbSet<PhysicalExam> PhysicalExams { get; set; }
+        public DbSet<PhysicalExamDetail> PhysicalExamDetails { get; set; }
+        public DbSet<PhysicalExamType> PhysicalExamTypes { get; set; }
+        public DbSet<IdentifiedDisease> IdentifiedDiseases { get; set; }
+        public DbSet<VitalSigns> VitalSigns { get; set; }
+        public DbSet<ExamResults> ExamResults { get; set; }
+        public DbSet<ExamType> ExamTypes { get; set; }
+        public DbSet<TypeOfProcedures> TypeOfProcedures { get; set; }
+        public DbSet<Procedures> Procedures { get; set; }
+        public DbSet<Evolution> Evolutions { get; set; }
+        public DbSet<Medicine> Medicines { get; set; }
+        public DbSet<Non_PharmacologicalTreatment> NonPharmacologicalTreatments { get; set; }
+        public DbSet<PharmacologicalTreatment> PharmacologicalTreatments { get; set; }
+        public DbSet<Treatment> Treatments { get; set; }
+        public DbSet<OrderDiagnosis> OrderDiagnoses { get; set; }
+        public DbSet<MedicalCare> MedicalCares { get; set; }
+        public DbSet<ReasonForConsultation> ReasonForConsultations { get; set; }
+        public DbSet<Indications> Indications { get; set; }
 
 
 
@@ -634,6 +662,49 @@ namespace SGIS.Models
                 .WithOne(p => p.TypeOfProcedure)
                 .HasForeignKey(p => p.TypeOfProcedureId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+
+            modelBuilder.Entity<MedicalCare>(entity =>
+            {
+                // Configuración de relaciones con DeleteBehavior.Restrict
+                entity.HasOne(m => m.PlaceOfAttentionNavigation)
+                      .WithMany(p => p.MedicalCares)
+                      .HasForeignKey(m => m.LocationId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.HealthProfessional)
+                      .WithMany(h => h.MedicalCares)
+                      .HasForeignKey(m => m.HealthProfessionalId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Patient)
+                      .WithMany(p => p.MedicalCares)
+                      .HasForeignKey(m => m.PatientId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Configuración para relaciones uno-a-uno
+                entity.HasOne(m => m.VitalSigns)
+                      .WithOne(v => v.MedicalCare)
+                      .HasForeignKey<VitalSigns>(v => v.MedicalCareId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.PhysicalExam)
+                      .WithOne(p => p.MedicalCare)
+                      .HasForeignKey<PhysicalExam>(p => p.MedicalCareId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.ReviewSystemDevices)
+                      .WithOne(r => r.MedicalCare)
+                      .HasForeignKey<ReviewSystemDevices>(r => r.MedicalCareId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.MedicalReferral)
+                      .WithOne(mr => mr.MedicalCare)
+                      .HasForeignKey<MedicalReferral>(mr => mr.MedicalCareId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
 
 
             base.OnModelCreating(modelBuilder);

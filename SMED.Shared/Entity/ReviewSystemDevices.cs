@@ -22,6 +22,12 @@ namespace SMED.Shared.Entity
         [ForeignKey("SystemsDevicesId")]
         [InverseProperty("Review")]
         public virtual SystemsDevices SystemsDevices { get; set; } = null!;
+
+        public int MedicalCareId { get; set; }
+
+        [ForeignKey("MedicalCareId")]
+        [InverseProperty("ReviewSystemDevices")]
+        public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
 
 }

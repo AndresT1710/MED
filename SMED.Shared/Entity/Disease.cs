@@ -31,5 +31,8 @@ namespace SMED.Shared.Entity
         [InverseProperty("DiseaseNavigation")]
         public virtual ICollection<IdentifiedDisease> IdentifiedDiseases { get; set; } = new List<IdentifiedDisease>();
 
+        [InverseProperty("DiseaseNavigation")]
+        public virtual ICollection<Diagnosis> Diagnosis { get; set; } = new List<Diagnosis>();
+
     }
 }

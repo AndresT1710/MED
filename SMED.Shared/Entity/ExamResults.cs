@@ -21,5 +21,11 @@ namespace SMED.Shared.Entity
         [ForeignKey("ExamTypeId")]
         [InverseProperty("ExamResults")]
         public virtual ExamType ExamTypeNavigation { get; set; } = null!;
+
+        public int MedicalCareId { get; set; }
+
+        [ForeignKey("MedicalCareId")]
+        [InverseProperty("ExamResults")]
+        public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
 }

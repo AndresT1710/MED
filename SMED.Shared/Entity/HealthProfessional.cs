@@ -25,6 +25,9 @@ namespace SMED.Shared.Entity
         [ForeignKey("HealthProfessionalTypeId")]
         [InverseProperty("HealthProfessionals")]
         public virtual HealthProfessionalType? HealthProfessionalTypeNavigation { get; set; }
+
+        [InverseProperty("HealthProfessional")]
+        public virtual ICollection<MedicalCare> MedicalCares { get; set; } = new List<MedicalCare>();
     }
 
 }

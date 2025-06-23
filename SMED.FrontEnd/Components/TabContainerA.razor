@@ -1,0 +1,56 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="tab-container-wrapper">
+    <div class="tab-container">
+        <ul class="tab-header nav nav-tabs">
+            @foreach (var tab in Tabs)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
+                       href="@tab.Url">@tab.Title</a>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-body">
+            @ChildContent
+        </div>
+
+        @* Se comenta el botón de guardar para evitar confusión, cada EditableTable guarda sus datos *@
+        @*
+        <div class="tab-actions">
+            <button class="btn btn-primary save-button" @onclick="OnSaveClick">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+        </div>
+        *@
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private List<TabItem> Tabs = new()
+    {
+        new TabItem("Registro", "/medical-attention/registro"),
+        new TabItem("Aparatos y Sistemas", "/medical-attention/devicesandsystems"),
+        new TabItem("Exámen Físico", "/medical-attention/physicalexamination"),
+        new TabItem("Datos Adicionales", "/medical-attention/additionaldata"),
+        new TabItem("Procedimientos", "/medical-attention/procedures"),
+        new TabItem("Diagnóstico", "/medical-attention/diagnosis"),
+        new TabItem("Tratamiento", "/medical-attention/treatment"),
+        new TabItem("Evolución", "/medical-attention/evolution"),
+        new TabItem("Derivación", "/medical-attention/derivation"),
+    };
+
+    private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);
+
+    private async Task OnSaveClick()
+    {
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(null);
+    }
+
+    private record TabItem(string Title, string Url);
+}

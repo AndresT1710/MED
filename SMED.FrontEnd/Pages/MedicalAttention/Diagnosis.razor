@@ -1,0 +1,22 @@
+﻿@page "/medical-attention/diagnosis"
+@layout MainLayout
+@using SMED.FrontEnd.Components
+@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+
+
+<TabContainerA OnSave="GuardarDatos">
+    <h3>Diagnosis</h3>
+    </TabContainerA>
+
+@code {
+    void GuardarDatos()
+    {
+        // Lógica para guardar los datos
+    }
+}

@@ -19,15 +19,26 @@ namespace SMED.Shared.Entity
         public string DiagnosticType { get; set; } = null!;
         public string Recurrence { get; set; } = null!;
         public string DiagnosisMotivation { get; set; } = null!;
-
-        [InverseProperty("Diagnosis")]
-        public virtual ICollection<OrderDiagnosis> OrderDiagnoses { get; set; } = new List<OrderDiagnosis>();
-
         public int MedicalCareId { get; set; }
 
         [ForeignKey("MedicalCareId")]
         [InverseProperty("Diagnoses")]
         public virtual MedicalCare MedicalCare { get; set; } = null!;
+
+        public int? DiseaseId { get; set; }
+
+        [ForeignKey("DiseaseId")]
+        [InverseProperty("Diagnosis")]
+        public virtual Disease? DiseaseNavigation { get; set; }
+
+        [InverseProperty("Diagnosis")]
+        public virtual ICollection<OrderDiagnosis> OrderDiagnoses { get; set; } = new List<OrderDiagnosis>();
+
+        [InverseProperty("Diagnosis")]
+        public virtual ICollection<DiagnosisTreatment> DiagnosisTreatments { get; set; } = new List<DiagnosisTreatment>();
+
+        [InverseProperty("Diagnosis")]
+        public virtual ICollection<Interconsultation> Interconsultations { get; set; } = new List<Interconsultation>();
 
     }
 

@@ -8,20 +8,124 @@
 @inject IJSRuntime JS
 @inject HttpClient Http
 
-
-
-
 <TabContainerE OnSave="GuardarDatos">
     <h3>Procedimientos</h3>
+
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
+    {
+        <div class="d-flex flex-wrap">
+            <!-- Primera columna -->
+            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
+                <ContainerBox2 Title="Fecha de procedimiento"
+                                Width="full"
+                                @bind-SelectedDate="fechaProcedimiento" />
+
+                <ContainerSelectBox Title="Tipo de procedimiento"
+                                    Width="full"
+                                    Options="TipoProcedimientos"
+                                    @bind-SelectedValue="tipoProcedimientoSeleccionado" />
+
+                <ContainerSelectBox Title="Procedimiento"
+                                    Width="full"
+                                    Options="Procedimientos"
+                                    @bind-SelectedValue="procedimientoSeleccionado" />
+            </div>
+
+            <!-- Segunda columna -->
+            <div class="d-flex flex-column" style="flex: 1 1 48%">
+                <ContainerSelectBox Title="Personal Salud"
+                                    Width="full"
+                                    Options="PersonalSalud"
+                                    @bind-SelectedValue="personalSaludSeleccionado" />
+
+                <ContainerBox1 Title="Paciente"
+                               Width="full"
+                               @bind-Content="nombrePaciente" />
+
+                <ContainerBox1 Title="Médico Tratante"
+                               Width="full"
+                               @bind-Content="medicoTratante" />
+            </div>
+        </div>
+
+        <!-- EditableTable debajo de las columnas -->
+        <EditableTable Title="Detalle de procedimientos realizados"
+                       ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
+                       Rows="procedimientos"
+                       RowIds="procedimientoIds"
+                       EditModalContent="@editForm"
+                       OnAddRequested="AgregarProcedimiento"
+                       OnEditRequested="EditarProcedimiento"
+                       OnDeleteRequested="EliminarProcedimiento"
+                       OnSaveRequested="GuardarProcedimiento"
+                       IsValidForm="@(() => true)" />
+
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatos"
+                    disabled="@(clinicalHistoryId <= 0)">
+                <i class="fas fa-save me-2"></i>
+                <span>Guardar Datos</span>
+            </button>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para ingresar los procedimientos.</p>
+    }
 </TabContainerE>
 
 @code {
+    private int clinicalHistoryId = 0;
 
+    private DateTime? fechaProcedimiento = null;
+    private string tipoProcedimientoSeleccionado = "";
+    private string procedimientoSeleccionado = "";
+    private string personalSaludSeleccionado = "";
+    private string medicoTratante = "";
+    private string nombrePaciente = ""; // Aquí se mostrará el nombre
 
-
-
-    void GuardarDatos()
+    private List<string> TipoProcedimientos = new()
     {
-        // Lógica para guardar los datos
+        "Consulta", "Cirugía", "Terapia", "Examen", "Procedimiento Especial"
+    };
+
+    private List<string> Procedimientos = new()
+    {
+        "Biopsia", "Colocación de catéter", "Electrocardiograma", "Ultrasonido"
+    };
+
+    private List<string> PersonalSalud = new()
+    {
+        "Enfermero(a) Juan", "Dr. María Gómez", "Lic. Carlos Pérez"
+    };
+
+    private List<List<string>> procedimientos = new();
+    private List<int> procedimientoIds = new();
+
+    private RenderFragment editForm => __builder =>
+    {
+        __builder.AddContent(0, "Formulario de edición aquí...");
+    };
+
+    private void GuardarDatos()
+    {
+        Console.WriteLine($"Guardando datos del paciente {clinicalHistoryId}...");
     }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        // Aquí puedes obtener el nombre del paciente según la historia clínica
+        nombrePaciente = $"Historia clínica: {paciente.ClinicalHistoryId}"; // Luego puedes reemplazar esto con una búsqueda real
+        return Task.CompletedTask;
+    }
+
+    private Task AgregarProcedimiento() => Task.CompletedTask;
+    private Task EditarProcedimiento(int id) => Task.CompletedTask;
+    private Task EliminarProcedimiento(int id) => Task.CompletedTask;
+    private Task GuardarProcedimiento() => Task.CompletedTask;
 }

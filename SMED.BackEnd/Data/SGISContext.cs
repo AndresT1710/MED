@@ -113,6 +113,9 @@ namespace SGIS.Models
         public DbSet<ReasonForConsultation> ReasonForConsultations { get; set; }
         public DbSet<Indications> Indications { get; set; }
 
+        //Enfermeria
+        public DbSet<TypeOfService> TypeOfServices { get; set; }
+        public DbSet<CostOfService> CostOfServices { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

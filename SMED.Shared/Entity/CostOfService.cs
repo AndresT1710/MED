@@ -20,9 +20,9 @@ namespace SMED.Shared.Entity
         public int ServiceId { get; set; }
 
         [ForeignKey("ServiceId")]
-        [InverseProperty("CostOfServices")]
+        [InverseProperty("CostOfService")]
         public virtual Service Service { get; set; } = null!;
-
     }
+
 
 }

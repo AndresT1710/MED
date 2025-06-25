@@ -1,27 +1,78 @@
 ﻿@page "/nursing-module/vitalsigns"
 @layout MainLayout
+
 @using SMED.FrontEnd.Components
-@using SMED.Shared.Entity
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
+
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
-
-
-
 <TabContainerE OnSave="GuardarDatos">
     <h3>Signos Vitales</h3>
+
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
+    {
+        <div class="containerbox1-grid">
+            <ContainerBox1 Title="Peso" Width="half" @bind-Content="peso" />
+            <ContainerBox1 Title="Talla" Width="half" @bind-Content="talla" />
+            <ContainerBox1 Title="IMC" Width="half" @bind-Content="imc" />
+            <ContainerBox1 Title="Perímetro Abdominal" Width="half" @bind-Content="perimetroAbdominal" />
+            <ContainerBox1 Title="Presión Arterial" Width="half" @bind-Content="presionArterial" />
+            <ContainerBox1 Title="Temperatura" Width="half" @bind-Content="temperatura" />
+            <ContainerBox1 Title="Presión Arterial Media" Width="half" @bind-Content="pam" />
+            <ContainerBox1 Title="Frecuencia Cardíaca" Width="half" @bind-Content="frecuenciaCardiaca" />
+            <ContainerBox1 Title="Saturación Oxígeno" Width="half" @bind-Content="saturacionOxigeno" />
+            <ContainerBox1 Title="Frecuencia Respiratoria" Width="half" @bind-Content="frecuenciaRespiratoria" />
+            <ContainerBox1 Title="Glucosa Capilar" Width="half" @bind-Content="glucosaCapilar" />
+            <ContainerBox1 Title="Hemoglobina" Width="half" @bind-Content="hemoglobina" />
+        </div>
+
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatos"
+                    disabled="@(clinicalHistoryId <= 0)">
+                <i class="fas fa-save me-2"></i>
+                <span>Guardar Datos</span>
+            </button>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para ingresar los signos vitales.</p>
+    }
 </TabContainerE>
 
 @code {
+    private int clinicalHistoryId = 0;
 
+    // Campos para los 12 signos vitales
+    private string peso = "";
+    private string talla = "";
+    private string imc = "";
+    private string perimetroAbdominal = "";
+    private string presionArterial = "";
+    private string temperatura = "";
+    private string pam = "";
+    private string frecuenciaCardiaca = "";
+    private string saturacionOxigeno = "";
+    private string frecuenciaRespiratoria = "";
+    private string glucosaCapilar = "";
+    private string hemoglobina = "";
 
-
-
-    void GuardarDatos()
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
     {
-        // Lógica para guardar los datos
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        return Task.CompletedTask;
+    }
+
+    private void GuardarDatos()
+    {
+        // Simulación de guardado
+        Console.WriteLine("Datos guardados (simulado).");
     }
 }

@@ -1,0 +1,51 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="tab-container-wrapper">
+    <div class="tab-container">
+        <ul class="tab-header nav nav-tabs">
+            @foreach (var tab in Tabs)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
+                       href="@tab.Url">@tab.Title</a>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-body">
+            @ChildContent
+        </div>
+
+        @* Se comenta el botón de guardar para evitar confusión, cada EditableTable guarda sus datos *@
+        @*
+        <div class="tab-actions">
+            <button class="btn btn-primary save-button" @onclick="OnSaveClick">
+                <i class="fas fa-save"></i> Guardar
+            </button>
+        </div>
+        *@
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private List<TabItem> Tabs = new()
+    {
+        new TabItem("Registro", "/nursing-module/registro"),
+        new TabItem("Signos Vitales", "/nursing-module/vitalsigns"),
+        new TabItem("Servicios", "/nursing-module/nursingservices"),
+        new TabItem("Procedimientos", "/nursing-module/procedures"),
+    };
+
+    private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);
+
+    private async Task OnSaveClick()
+    {
+        if (OnSave.HasDelegate)
+            await OnSave.InvokeAsync(null);
+    }
+
+    private record TabItem(string Title, string Url);
+}

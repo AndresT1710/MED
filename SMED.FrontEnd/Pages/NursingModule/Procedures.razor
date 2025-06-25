@@ -1,4 +1,4 @@
-﻿@page "/medical-attention/evolution"
+﻿@page "/nursing-module/procedures"
 @layout MainLayout
 @using SMED.FrontEnd.Components
 @using SMED.Shared.Entity
@@ -10,11 +10,16 @@
 
 
 
-<TabContainerA OnSave="GuardarDatos">
-    <h3>Evolución</h3>
-    </TabContainerA>
+
+<TabContainerE OnSave="GuardarDatos">
+    <h3>Procedimientos</h3>
+</TabContainerE>
 
 @code {
+
+
+
+
     void GuardarDatos()
     {
         // Lógica para guardar los datos

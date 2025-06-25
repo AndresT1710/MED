@@ -1,0 +1,89 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+
+<div class="containerselectbox-wrapper @BoxWidthClass">
+    <label class="containerselectbox-label">@Title</label>
+    <div class="containerselectbox-box" @onclick="ToggleDropdown">
+        @if (string.IsNullOrWhiteSpace(SelectedValue))
+        {
+            <span class="containerselectbox-placeholder">Seleccione una opción</span>
+        }
+        else
+        {
+            @SelectedValue
+        }
+
+        <span class="dropdown-arrow">▼</span>
+    </div>
+
+    @if (DropdownVisible)
+    {
+        <ul class="containerselectbox-dropdown">
+            @foreach (var option in Options)
+            {
+                <li @onclick="() => OnSelectOption(option)">
+                    @option
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@if (ShowConfirmModal)
+{
+    <div class="containerselectbox-modal-backdrop" @onclick="() => ShowConfirmModal = false">
+        <div class="containerselectbox-modal" @onclick:stopPropagation>
+            <p>¿Deseas guardar esta información?</p>
+            <div class="modal-buttons mt-3">
+                <button class="btn btn-primary" @onclick="ConfirmSelection">Guardar</button>
+                <button class="btn btn-secondary" @onclick="CancelSelection">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "Seleccionar opción";
+    [Parameter] public List<string> Options { get; set; } = new();
+    [Parameter] public string Width { get; set; } = "full";
+    [Parameter] public string SelectedValue { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedValueChanged { get; set; }
+
+    private bool DropdownVisible = false;
+    private bool ShowConfirmModal = false;
+    private string? TempSelected;
+
+    private string BoxWidthClass => Width switch
+    {
+        "half" => "containerselectbox-half",
+        "third" => "containerselectbox-third",
+        _ => "containerselectbox-full"
+    };
+
+    private void ToggleDropdown()
+    {
+        DropdownVisible = !DropdownVisible;
+    }
+
+    private void OnSelectOption(string value)
+    {
+        TempSelected = value;
+        DropdownVisible = false;
+        ShowConfirmModal = true;
+    }
+
+    private async Task ConfirmSelection()
+    {
+        if (!string.IsNullOrWhiteSpace(TempSelected))
+        {
+            SelectedValue = TempSelected;
+            await SelectedValueChanged.InvokeAsync(SelectedValue);
+        }
+        ShowConfirmModal = false;
+    }
+
+    private void CancelSelection()
+    {
+        TempSelected = null;
+        ShowConfirmModal = false;
+    }
+}

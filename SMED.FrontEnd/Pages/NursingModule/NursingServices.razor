@@ -17,12 +17,52 @@
 
     @if (clinicalHistoryId > 0)
     {
-        <div class="containerbox1-grid">
-            <ContainerSelectBox Title="Tipo de servicio"
-                                Width="half"
-                                Options="TipoServicios"
-                                @bind-SelectedValue="servicioSeleccionado" />
+        <div class="d-flex flex-wrap">
+            <!-- Columna izquierda -->
+            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
+                <ContainerBox2 Title="Fecha de atención"
+                                Width="full"
+                                @bind-SelectedDate="fechaAtencion" />
+
+                <ContainerSelectBox Title="Tipo de servicio"
+                                    Width="full"
+                                    Options="TipoServicios"
+                                    @bind-SelectedValue="servicioSeleccionado" />
+
+                <ContainerSelectBox Title="Profesional responsable"
+                                    Width="full"
+                                    Options="Profesionales"
+                                    @bind-SelectedValue="profesionalSeleccionado" />
+            </div>
+
+            <!-- Columna derecha -->
+            <div class="d-flex flex-column" style="flex: 1 1 48%">
+                <ContainerBox1 Title="Diagnóstico"
+                               Width="full"
+                               @bind-Content="diagnostico" />
+
+                <ContainerBox1 Title="Observaciones"
+                               Width="full"
+                               @bind-Content="observaciones" />
+
+                <ContainerBox1 Title="Recomendaciones"
+                               Width="full"
+                               @bind-Content="recomendaciones" />
+            </div>
         </div>
+
+<EditableTable Title="Detalle de procedimientos realizados"
+               ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
+               Rows="procedimientos"
+               RowIds="procedimientoIds"
+               EditModalContent="@editForm"
+               OnAddRequested="AgregarProcedimiento"
+               OnEditRequested="EditarProcedimiento"
+               OnDeleteRequested="EliminarProcedimiento"
+               OnSaveRequested="GuardarProcedimiento"
+               IsValidForm="@(() => true)" />
+
+
 
         <div class="d-flex justify-content-center mt-4 mb-3">
             <button class="btn btn-primary btn-lg px-5"
@@ -41,21 +81,39 @@
 
 @code {
     private int clinicalHistoryId = 0;
+
+    private DateTime? fechaAtencion = null;
     private string servicioSeleccionado = "";
+    private string profesionalSeleccionado = "";
+    private string diagnostico = "";
+    private string observaciones = "";
+    private string recomendaciones = "";
 
     private List<string> TipoServicios = new()
     {
-        "Hospitalización",
-        "Consulta externa",
-        "Emergencia",
-        "Medicina preventiva",
-        "Rehabilitación",
-        "Curación",
-        "Inyectología",
-        "Atención domiciliaria",
-        "Telemedicina",
-        "Cuidados paliativos"
+        "Hospitalización", "Consulta externa", "Emergencia",
+        "Preventiva", "Rehabilitación", "Inyectología",
+        "Curaciones", "Telemedicina"
     };
+
+    private List<string> Profesionales = new()
+    {
+        "Dr. Juan Pérez", "Dra. Ana López", "Lic. María Fernanda"
+    };
+
+    // EditableTable
+    private List<List<string>> procedimientos = new();
+    private List<int> procedimientoIds = new();
+
+    private RenderFragment editForm => __builder =>
+    {
+        __builder.AddContent(0, "Formulario de edición aquí...");
+    };
+
+    private void GuardarDatos()
+    {
+        Console.WriteLine($"Guardando datos del paciente {clinicalHistoryId}...");
+    }
 
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
     {
@@ -63,9 +121,8 @@
         return Task.CompletedTask;
     }
 
-    private void GuardarDatos()
-    {
-        Console.WriteLine($"Guardado servicio '{servicioSeleccionado}' para historia clínica ID: {clinicalHistoryId}");
-        // Aquí iría tu lógica de guardado real con HttpClient
-    }
+    private Task AgregarProcedimiento() => Task.CompletedTask;
+    private Task EditarProcedimiento(int id) => Task.CompletedTask;
+    private Task EliminarProcedimiento(int id) => Task.CompletedTask;
+    private Task GuardarProcedimiento() => Task.CompletedTask;
 }

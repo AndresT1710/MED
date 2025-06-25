@@ -1,27 +1,71 @@
 ﻿@page "/nursing-module/nursingservices"
 @layout MainLayout
+
 @using SMED.FrontEnd.Components
-@using SMED.Shared.Entity
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
+
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
-
-
-
 <TabContainerE OnSave="GuardarDatos">
     <h3>Servicios</h3>
+
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
+    {
+        <div class="containerbox1-grid">
+            <ContainerSelectBox Title="Tipo de servicio"
+                                Width="half"
+                                Options="TipoServicios"
+                                @bind-SelectedValue="servicioSeleccionado" />
+        </div>
+
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatos"
+                    disabled="@(clinicalHistoryId <= 0)">
+                <i class="fas fa-save me-2"></i>
+                <span>Guardar Datos</span>
+            </button>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para ingresar los servicios aplicados.</p>
+    }
 </TabContainerE>
 
 @code {
+    private int clinicalHistoryId = 0;
+    private string servicioSeleccionado = "";
 
-
-
-
-    void GuardarDatos()
+    private List<string> TipoServicios = new()
     {
-        // Lógica para guardar los datos
+        "Hospitalización",
+        "Consulta externa",
+        "Emergencia",
+        "Medicina preventiva",
+        "Rehabilitación",
+        "Curación",
+        "Inyectología",
+        "Atención domiciliaria",
+        "Telemedicina",
+        "Cuidados paliativos"
+    };
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        return Task.CompletedTask;
+    }
+
+    private void GuardarDatos()
+    {
+        Console.WriteLine($"Guardado servicio '{servicioSeleccionado}' para historia clínica ID: {clinicalHistoryId}");
+        // Aquí iría tu lógica de guardado real con HttpClient
     }
 }

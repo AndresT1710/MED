@@ -1,0 +1,134 @@
+﻿/* Estilos para el wrapper principal */
+.containerselectbox-wrapper {
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Tamaños de columnas */
+.containerselectbox-full {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding: 0.5rem;
+}
+
+.containerselectbox-half {
+    flex: 1 1 calc(50% - 0.5rem);
+    max-width: calc(50% - 0.5rem);
+    padding: 0.5rem;
+}
+
+.containerselectbox-third {
+    flex: 1 1 calc(33.333% - 0.5rem);
+    max-width: calc(33.333% - 0.5rem);
+    padding: 0.5rem;
+}
+
+/* Estilos para la etiqueta */
+.containerselectbox-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+/* Estilos para la caja de selección */
+.containerselectbox-box {
+    position: relative;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    min-height: 60px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.2s ease;
+}
+
+    .containerselectbox-box:hover {
+        border-color: #999;
+    }
+
+/* Placeholder para cuando no hay valor seleccionado */
+.containerselectbox-placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+/* Flechita hacia abajo al estilo "select" */
+.dropdown-arrow {
+    font-size: 0.85rem;
+    color: #666;
+    margin-left: 1rem;
+    pointer-events: none;
+}
+
+/* Lista desplegable */
+.containerselectbox-dropdown {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    margin-top: 0.25rem;
+    padding: 0;
+    width: 100%;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    list-style: none;
+}
+
+    /* Estilos para los ítems de la lista */
+    .containerselectbox-dropdown li {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+        .containerselectbox-dropdown li:hover {
+            background-color: #f5f5f5;
+        }
+
+/* Estilos para el backdrop del modal */
+.containerselectbox-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estilos para el modal de confirmación */
+.containerselectbox-modal {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Contenedor de botones del modal */
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Responsive: en pantallas pequeñas, se colapsa a 100% */
+@media (max-width: 768px) {
+    .containerselectbox-half,
+    .containerselectbox-third {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}

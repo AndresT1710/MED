@@ -53,6 +53,13 @@ builder.Services.AddScoped<SleepHabitHistoryService>();
 builder.Services.AddScoped<FoodService>();
 builder.Services.AddScoped<FoodConsumptionHistoryService>();
 builder.Services.AddScoped<WaterConsumptionHistoryService>();
+builder.Services.AddScoped<MedicalCareService>();
+builder.Services.AddScoped<TypeOfServiceService>();
+builder.Services.AddScoped<CostOfServiceService>();
+builder.Services.AddScoped<ServiceService>();
+builder.Services.AddScoped<TypeOfProceduresService>();
+builder.Services.AddScoped<ProceduresService>();
+
 
 builder.Services.AddLogging();
 

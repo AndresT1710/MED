@@ -53,6 +53,14 @@ builder.Services.AddScoped<IRepository<SleepHabitDTO, int>, SleepHabitRepository
 builder.Services.AddScoped<IRepository<SleepHabitHistoryDTO, int>, SleepHabitHistoryRepository>();
 builder.Services.AddScoped<IRepository<FoodConsumptionHistoryDTO, int>, FoodConsumptionHistoryRepository>();
 builder.Services.AddScoped<IRepository<WaterConsumptionHistoryDTO, int>, WaterConsumptionHistoryRepository>();
+builder.Services.AddScoped<IRepository<TypeOfServiceDTO, int>, TypeOfServiceRepository>();
+builder.Services.AddScoped<IRepository<CostOfServiceDTO, int>, CostOfServiceRepository>();
+builder.Services.AddScoped<IRepository<ServiceDTO, int>, ServiceRepository>();
+builder.Services.AddScoped<IRepository<TypeOfProceduresDTO, int>, TypeOfProceduresRepository>();
+builder.Services.AddScoped<IRepository<ProceduresDTO, int>, ProceduresRepository>();
+builder.Services.AddScoped<IRepository<HealthProfessionalDTO, int>, HealthProfessionalRepository>();
+builder.Services.AddScoped<IRepository<MedicalCareDTO, int>, MedicalCareRepository>();
+builder.Services.AddScoped<IRepository<VitalSignsDTO, int>, VitalSignsRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

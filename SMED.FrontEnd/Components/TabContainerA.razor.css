@@ -15,6 +15,7 @@
     flex-direction: column;
     flex-grow: 1;
     min-height: 400px;
+    z-index: 0; /* Asegura que no esté por encima de modales */
 }
 
 /* Estilo de cabecera de pestañas */
@@ -23,7 +24,7 @@
     border-bottom: 2px solid #dee2e6;
     border-radius: 0.5rem 0.5rem 0 0;
     display: flex;
-    gap: 0.25rem; /* espacio entre pestañas */
+    gap: 0.25rem;
     background-color: transparent;
     padding: 0.25rem;
 }
@@ -60,8 +61,9 @@
             color: white;
             border: 1px solid #0d6efd;
             border-bottom: none;
-            z-index: 1;
+            /* Elimina z-index para evitar que sobrepase al modal */
             position: relative;
+            z-index: 0;
         }
 
 .tab-body {

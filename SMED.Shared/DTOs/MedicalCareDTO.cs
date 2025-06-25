@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.DTOs
 {
-    internal class MedicalCareDTO
+    public class MedicalCareDTO
     {
+        public int CareId { get; set; }
+        public int LocationId { get; set; }
+        public int PatientId { get; set; }
+        public int HealthProfessionalId { get; set; }
     }
 }

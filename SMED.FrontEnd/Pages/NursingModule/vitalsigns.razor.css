@@ -1,0 +1,6 @@
+﻿.containerbox1-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0; /* el padding interno ya lo tiene cada .containerbox1-wrapper */
+}

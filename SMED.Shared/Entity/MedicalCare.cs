@@ -49,6 +49,11 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ReviewSystemDevices? ReviewSystemDevices { get; set; }
 
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<ServiceCare> ServiceCares { get; set; } = new List<ServiceCare>();
+
+
+
 
         [ForeignKey("HealthProfessionalId")]
         [InverseProperty("MedicalCares")]

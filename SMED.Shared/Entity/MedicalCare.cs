@@ -17,6 +17,8 @@ namespace SMED.Shared.Entity
         public int PatientId { get; set; }
         public int HealthProfessionalId { get; set; }
 
+        public string Area { get; set; }
+
 
         [ForeignKey("LocationId")]
         [InverseProperty("MedicalCares")]

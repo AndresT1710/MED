@@ -116,7 +116,7 @@
         Console.WriteLine($"Guardando datos del paciente {clinicalHistoryId}...");
     }
 
-    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
         // Aquí puedes obtener el nombre del paciente según la historia clínica

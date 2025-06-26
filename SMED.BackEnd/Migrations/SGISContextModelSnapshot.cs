@@ -232,7 +232,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasIndex("MedicalCareId");
 
-                    b.ToTable("Diagnoses");
+                    b.ToTable("Diagnosis");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DiagnosisTreatment", b =>
@@ -255,7 +255,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasIndex("TreatmentId");
 
-                    b.ToTable("DiagnosisTreatment");
+                    b.ToTable("DiagnosisTreatment", (string)null);
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DietaryHabitsHistory", b =>
@@ -1170,7 +1170,7 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("OrderId", "DiagnosisId")
                         .IsUnique();
 
-                    b.ToTable("OrderDiagnoses");
+                    b.ToTable("OrderDiagnosis");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Orders", b =>
@@ -2173,44 +2173,44 @@ namespace SMED.BackEnd.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<float>("AbdominalCircumference")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("AbdominalCircumference")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<float>("BloodGlucose")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("BloodGlucose")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("BloodPressure")
+                    b.Property<string>("BloodPressure")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("HeartRate")
                         .HasColumnType("int");
 
-                    b.Property<float>("HeartRate")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Height")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Height")
-                        .HasColumnType("int");
+                    b.Property<decimal?>("Hemoglobin")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<float>("Hemoglobin")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("Icm")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Icm")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MeanArterialPressure")
-                        .HasColumnType("int");
+                    b.Property<decimal?>("MeanArterialPressure")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
-                    b.Property<float>("OxygenSaturation")
-                        .HasColumnType("real");
+                    b.Property<decimal?>("OxygenSaturation")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<float>("RespiratoryRate")
-                        .HasColumnType("real");
-
-                    b.Property<float>("Temperature")
-                        .HasColumnType("real");
-
-                    b.Property<int>("Weight")
+                    b.Property<int?>("RespiratoryRate")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("Temperature")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Weight")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -2739,13 +2739,13 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.OrderDiagnosis", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.Diagnosis", "Diagnosis")
-                        .WithMany("OrderDiagnoses")
+                        .WithMany("OrderDiagnosis")
                         .HasForeignKey("DiagnosisId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("SMED.Shared.Entity.Orders", "Order")
-                        .WithMany("OrderDiagnoses")
+                        .WithMany("OrderDiagnosis")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3212,7 +3212,7 @@ namespace SMED.BackEnd.Migrations
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
                         .WithOne("VitalSigns")
                         .HasForeignKey("SMED.Shared.Entity.VitalSigns", "MedicalCareId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("MedicalCare");
@@ -3299,7 +3299,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("Interconsultations");
 
-                    b.Navigation("OrderDiagnoses");
+                    b.Navigation("OrderDiagnosis");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Disease", b =>
@@ -3424,7 +3424,7 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Orders", b =>
                 {
-                    b.Navigation("OrderDiagnoses");
+                    b.Navigation("OrderDiagnosis");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Patient", b =>

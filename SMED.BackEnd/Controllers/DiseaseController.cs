@@ -96,7 +96,6 @@ namespace SMED.BackEnd.Controllers
             return NoContent();
         }
 
-        // Aquí está la ruta que funcionó para tu compañero
         [HttpGet("disease/{diseaseTypeId}")]
         public async Task<ActionResult<IEnumerable<DiseaseDTO>>> GetDiseasesByType(int diseaseTypeId)
         {

@@ -48,9 +48,9 @@
     [Parameter]
     public EventCallback<int> ValueChanged { get; set; }
 
-    // ✅ Nuevo parámetro para pasar datos adicionales al padre
     [Parameter]
-    public EventCallback<(int ClinicalHistoryId, string MedicalRecordNumber)> OnPatientSelected { get; set; }
+    public EventCallback<(int ClinicalHistoryId, string MedicalRecordNumber, int PersonId)> OnPatientSelected { get; set; }
+
 
     private string SearchBy { get; set; } = "";
     private string SearchTerm { get; set; } = "";
@@ -89,7 +89,8 @@
             {
                 await OnPatientSelected.InvokeAsync((
                     historyId,
-                    FoundPatient.Person.ClinicalHistory.HistoryNumber
+                    FoundPatient.Person.ClinicalHistory.HistoryNumber,
+					FoundPatient.Person.Id
                 ));
             }
         }

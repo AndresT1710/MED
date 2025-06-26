@@ -21,7 +21,7 @@ namespace SMED.Shared.Entity
         public DateTime? OrderDate { get; set; }
 
         [InverseProperty("Order")]
-        public virtual ICollection<OrderDiagnosis> OrderDiagnoses { get; set; } = new List<OrderDiagnosis>();
+        public virtual ICollection<OrderDiagnosis> OrderDiagnosis { get; set; } = new List<OrderDiagnosis>();
     }
 
 

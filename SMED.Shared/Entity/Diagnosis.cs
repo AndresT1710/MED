@@ -32,7 +32,7 @@ namespace SMED.Shared.Entity
         public virtual Disease? DiseaseNavigation { get; set; }
 
         [InverseProperty("Diagnosis")]
-        public virtual ICollection<OrderDiagnosis> OrderDiagnoses { get; set; } = new List<OrderDiagnosis>();
+        public virtual ICollection<OrderDiagnosis> OrderDiagnosis { get; set; } = new List<OrderDiagnosis>();
 
         [InverseProperty("Diagnosis")]
         public virtual ICollection<DiagnosisTreatment> DiagnosisTreatments { get; set; } = new List<DiagnosisTreatment>();

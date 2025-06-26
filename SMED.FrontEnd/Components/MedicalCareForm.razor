@@ -1,0 +1,385 @@
+﻿@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+
+@inject MedicalCareService MedicalCareService
+@inject TypeOfServiceService TypeOfServiceService
+@inject HealthProfessionalService HealthProfessionalService
+@inject VitalSignsService VitalSignsService
+@inject IJSRuntime JS
+
+<div class="medical-care-form">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("vitals"))"
+                    type="button" role="tab"
+                    disabled="@(selectedPatientId <= 0)">
+                <i class="fas fa-heartbeat me-2"></i>Signos Vitales
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "services" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("services"))"
+                    type="button" role="tab"
+                    disabled="@(selectedPatientId <= 0)">
+                <i class="fas fa-stethoscope me-2"></i>Servicios
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content mt-3">
+        <!-- Patient Selection Tab -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Selección de Paciente</h5>
+                </div>
+                <div class="card-body">
+                    <PatientSelector @bind-Value="clinicalHistoryId"
+                                     OnPatientSelected="HandlePatientSelected" />
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("vitals"))">
+                                Continuar a Signos Vitales <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Vital Signs Tab -->
+        <div class="tab-pane @(activeTab == "vitals" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Signos Vitales</h5>
+                </div>
+                <div class="card-body">
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="containerbox1-grid">
+                            <ContainerBox1 Title="Peso" Width="half" @bind-Content="peso" />
+                            <ContainerBox1 Title="Talla" Width="half" @bind-Content="talla" />
+                            <ContainerBox1 Title="IMC" Width="half" @bind-Content="imc" />
+                            <ContainerBox1 Title="Perímetro Abdominal" Width="half" @bind-Content="perimetroAbdominal" />
+                            <ContainerBox1 Title="Presión Arterial" Width="half" @bind-Content="presionArterial" />
+                            <ContainerBox1 Title="Temperatura" Width="half" @bind-Content="temperatura" />
+                            <ContainerBox1 Title="Presión Arterial Media" Width="half" @bind-Content="pam" />
+                            <ContainerBox1 Title="Frecuencia Cardíaca" Width="half" @bind-Content="frecuenciaCardiaca" />
+                            <ContainerBox1 Title="Saturación Oxígeno" Width="half" @bind-Content="saturacionOxigeno" />
+                            <ContainerBox1 Title="Frecuencia Respiratoria" Width="half" @bind-Content="frecuenciaRespiratoria" />
+                            <ContainerBox1 Title="Glucosa Capilar" Width="half" @bind-Content="glucosaCapilar" />
+                            <ContainerBox1 Title="Hemoglobina" Width="half" @bind-Content="hemoglobina" />
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("services"))">
+                                Continuar a Servicios <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Tab -->
+        <div class="tab-pane @(activeTab == "services" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Servicios</h5>
+                </div>
+                <div class="card-body">
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="d-flex flex-wrap">
+                            <!-- Columna izquierda -->
+                            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
+                                <ContainerBox2 Title="Fecha de atención"
+                                               Width="full"
+                                               @bind-SelectedDate="fechaAtencion" />
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de servicio</label>
+                                    <select class="form-select" @bind="servicioSeleccionado">
+                                        <option value="">Seleccione un tipo de servicio</option>
+                                        @foreach (var tipo in tipoServicios)
+                                        {
+                                            <option value="@tipo.Id">@tipo.Name</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Área</label>
+                                    <select class="form-select" @bind="areaSeleccionada">
+                                        <option value="">Seleccione un área</option>
+                                        <option value="Enfermería">Enfermería</option>
+                                        <option value="Psicología">Psicología</option>
+                                        <option value="Ginecología">Ginecología</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Profesional responsable</label>
+                                    <select class="form-select" @bind="profesionalSeleccionado">
+                                        <option value="">Seleccione un profesional</option>
+                                        @foreach (var profesional in profesionales)
+                                        {
+                                            <option value="@profesional.HealthProfessionalId">
+                                                @profesional.FullName - @profesional.NameTypeProfessional
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+
+
+                            </div>
+
+                            <!-- Columna derecha -->
+                            <div class="d-flex flex-column" style="flex: 1 1 48%">
+                                <ContainerBox1 Title="Diagnóstico"
+                                               Width="full"
+                                               @bind-Content="diagnostico" />
+
+                                <ContainerBox1 Title="Observaciones"
+                                               Width="full"
+                                               @bind-Content="observaciones" />
+
+                                <ContainerBox1 Title="Recomendaciones"
+                                               Width="full"
+                                               @bind-Content="recomendaciones" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("vitals"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                <button class="btn btn-success me-2" @onclick="GuardarAtencionMedica">
+                                    <i class="fas fa-save me-2"></i>Guardar Atención Médica
+                                </button>
+                                <button class="btn btn-secondary" @onclick="OnCancel">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string activeTab = "patient";
+    private int clinicalHistoryId = 0;
+    private int selectedPatientId = 0;
+    private string selectedHistoryNumber = "";
+    private string areaSeleccionada;
+
+    // Signos vitales
+    private string peso = "";
+    private string talla = "";
+    private string imc = "";
+    private string perimetroAbdominal = "";
+    private string presionArterial = "";
+    private string temperatura = "";
+    private string pam = "";
+    private string frecuenciaCardiaca = "";
+    private string saturacionOxigeno = "";
+    private string frecuenciaRespiratoria = "";
+    private string glucosaCapilar = "";
+    private string hemoglobina = "";
+
+    // Servicios
+    private DateTime? fechaAtencion = DateTime.Now;
+    private string servicioSeleccionado = "";
+    private string profesionalSeleccionado = "";
+    private string diagnostico = "";
+    private string observaciones = "";
+    private string recomendaciones = "";
+
+    // Listas dinámicas
+    private List<TypeOfServiceDTO> tipoServicios = new();
+    private List<HealthProfessionalDTO> profesionales = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTypeOfServices();
+        await LoadHealthProfessionals();
+    }
+
+    private async Task LoadTypeOfServices()
+    {
+        tipoServicios = await TypeOfServiceService.GetAllAsync();
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        profesionales = await HealthProfessionalService.GetAllAsync();
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        return Task.CompletedTask;
+    }
+
+    private async Task GuardarAtencionMedica()
+    {
+        try
+        {
+            // Validaciones básicas
+            if (selectedPatientId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(profesionalSeleccionado))
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un profesional responsable");
+                return;
+            }
+
+            // Mostrar todos los datos en consola antes de guardar
+            var allData = new
+            {
+                Paciente = new
+                {
+                    Id = selectedPatientId,
+                    HistoriaClinica = selectedHistoryNumber
+                },
+                SignosVitales = new
+                {
+                    Peso = peso,
+                    Talla = talla,
+                    IMC = imc,
+                    PerimetroAbdominal = perimetroAbdominal,
+                    PresionArterial = presionArterial,
+                    Temperatura = temperatura,
+                    PAM = pam,
+                    FrecuenciaCardiaca = frecuenciaCardiaca,
+                    SaturacionOxigeno = saturacionOxigeno,
+                    FrecuenciaRespiratoria = frecuenciaRespiratoria,
+                    GlucosaCapilar = glucosaCapilar,
+                    Hemoglobina = hemoglobina
+                },
+                Servicios = new
+                {
+                    FechaAtencion = fechaAtencion,
+                    Area = areaSeleccionada,
+                    TipoServicio = servicioSeleccionado,
+                    Profesional = profesionalSeleccionado,
+                    Diagnostico = diagnostico,
+                    Observaciones = observaciones,
+                    Recomendaciones = recomendaciones
+                }
+            };
+
+            var jsonData = System.Text.Json.JsonSerializer.Serialize(allData, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+            await JS.InvokeVoidAsync("console.log", "Datos a guardar:", jsonData);
+
+            // Crear la atención médica
+            var medicalCareDto = new MedicalCareDTO
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    LocationId = 1, // Valor por defecto, ajustar según necesidades,
+                    Area = areaSeleccionada,
+                };
+
+            var result = await MedicalCareService.CreateAsync(medicalCareDto);
+            if (!result.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
+                return;
+            }
+
+            var createdMedicalCare = result.Data;
+
+            // Guardar signos vitales si hay datos
+            if (HasVitalSignsData())
+            {
+                var vitalSignsDto = new VitalSignsDTO
+                    {
+                        MedicalCareId = createdMedicalCare.CareId,
+                        Weight = ParseDecimal(peso),
+                        Height = ParseDecimal(talla),
+                        Icm = ParseDecimal(imc),
+                        AbdominalCircumference = ParseDecimal(perimetroAbdominal),
+                        BloodPressure = presionArterial,
+                        Temperature = ParseDecimal(temperatura),
+                        MeanArterialPressure = ParseDecimal(pam),
+                        HeartRate = ParseInt(frecuenciaCardiaca),
+                        OxygenSaturation = ParseDecimal(saturacionOxigeno),
+                        RespiratoryRate = ParseInt(frecuenciaRespiratoria),
+                        BloodGlucose = ParseDecimal(glucosaCapilar),
+                        Hemoglobin = ParseDecimal(hemoglobina)
+                    };
+
+                await VitalSignsService.CreateAsync(vitalSignsDto);
+            }
+
+            await OnSaved.InvokeAsync(createdMedicalCare);
+            await JS.InvokeVoidAsync("alert", "Atención médica creada exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+    }
+
+    private bool HasVitalSignsData()
+    {
+        return !string.IsNullOrWhiteSpace(peso) || !string.IsNullOrWhiteSpace(talla) ||
+               !string.IsNullOrWhiteSpace(presionArterial) || !string.IsNullOrWhiteSpace(temperatura) ||
+               !string.IsNullOrWhiteSpace(frecuenciaCardiaca) || !string.IsNullOrWhiteSpace(saturacionOxigeno);
+    }
+
+    private decimal? ParseDecimal(string value)
+    {
+        return decimal.TryParse(value, out var result) ? result : null;
+    }
+
+    private int? ParseInt(string value)
+    {
+        return int.TryParse(value, out var result) ? result : null;
+    }
+}

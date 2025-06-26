@@ -64,7 +64,7 @@
     private string glucosaCapilar = "";
     private string hemoglobina = "";
 
-    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) paciente)
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
         return Task.CompletedTask;

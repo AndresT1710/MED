@@ -11,14 +11,33 @@ namespace SMED.BackEnd.Repositories.Implementations
         private readonly SGISContext _context;
         public MedicalCareRepository(SGISContext context) => _context = context;
 
-        public async Task<List<MedicalCareDTO>> GetAllAsync() =>
-            await _context.MedicalCares.Select(m => new MedicalCareDTO
+        public async Task<List<MedicalCareDTO>> GetAllAsync()
+        {
+            var medicalCares = await _context.MedicalCares
+                .Include(m => m.PlaceOfAttentionNavigation)
+                .Include(m => m.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .ToListAsync();
+
+            return medicalCares.Select(m => new MedicalCareDTO
             {
                 CareId = m.CareId,
                 LocationId = m.LocationId,
+                NameLocation = m.PlaceOfAttentionNavigation?.Name,
+                NamePatient = m.Patient?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
                 PatientId = m.PatientId,
-                HealthProfessionalId = m.HealthProfessionalId
-            }).ToListAsync();
+                HealthProfessionalId = m.HealthProfessionalId,
+                Area = m.Area
+            }).ToList();
+        }
+
 
         public async Task<MedicalCareDTO?> GetByIdAsync(int id)
         {
@@ -38,7 +57,9 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 LocationId = dto.LocationId,
                 PatientId = dto.PatientId,
-                HealthProfessionalId = dto.HealthProfessionalId
+                HealthProfessionalId = dto.HealthProfessionalId,
+                Area = dto.Area ?? string.Empty // Ensure Area is not null
+
             };
             _context.MedicalCares.Add(entity);
             await _context.SaveChangesAsync();
@@ -53,6 +74,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.LocationId = dto.LocationId;
             entity.PatientId = dto.PatientId;
             entity.HealthProfessionalId = dto.HealthProfessionalId;
+            entity.Area = dto.Area ?? string.Empty; // Ensure Area is not null
             await _context.SaveChangesAsync();
             return dto;
         }

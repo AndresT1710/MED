@@ -11,13 +11,31 @@ namespace SMED.BackEnd.Repositories.Implementations
         private readonly SGISContext _context;
         public HealthProfessionalRepository(SGISContext context) => _context = context;
 
-        public async Task<List<HealthProfessionalDTO>> GetAllAsync() =>
-            await _context.HealthProfessionals.Select(h => new HealthProfessionalDTO
+        public async Task<List<HealthProfessionalDTO>> GetAllAsync()
+        {
+            var professionals = await _context.HealthProfessionals
+                .Where(h => h.HealthProfessionalTypeId != null && h.RegistrationNumber != null) // Solo los profesionales reales
+                .Include(h => h.PersonNavigation)
+                .Include(h => h.HealthProfessionalTypeNavigation)
+                .ToListAsync();
+
+            return professionals.Select(h => new HealthProfessionalDTO
             {
                 HealthProfessionalId = h.HealthProfessionalId,
                 HealthProfessionalTypeId = h.HealthProfessionalTypeId,
-                RegistrationNumber = h.RegistrationNumber
-            }).ToListAsync();
+                RegistrationNumber = h.RegistrationNumber,
+                FullName = h.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                h.PersonNavigation.FirstName,
+                h.PersonNavigation.MiddleName,
+                h.PersonNavigation.LastName,
+                h.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : "Sin nombre",
+                NameTypeProfessional = h.HealthProfessionalTypeNavigation?.Name ?? "Sin tipo"
+            }).ToList();
+        }
+
 
         public async Task<HealthProfessionalDTO?> GetByIdAsync(int id)
         {

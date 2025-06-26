@@ -13,6 +13,7 @@ namespace SMED.Shared.DTOs
 
         public int? HealthProfessionalTypeId { get; set; }
         public string? RegistrationNumber { get; set; }
+        public string? FullName { get; set; }
         public string? NameTypeProfessional { get; set; }
     }
 }

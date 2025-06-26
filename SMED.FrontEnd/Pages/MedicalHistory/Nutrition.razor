@@ -1544,7 +1544,7 @@
     // ==========================================
     // MÉTODOS COMUNES
     // ==========================================
-    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber) patient)
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
     {
         clinicalHistoryId = patient.ClinicalHistoryId;
         medicalRecordNumber = patient.MedicalRecordNumber;

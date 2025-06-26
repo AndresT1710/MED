@@ -13,18 +13,18 @@ namespace SMED.Shared.Entity
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public int Weight { get; set; }
-        public int Height { get; set; }
-        public int Icm { get; set; }
-        public float AbdominalCircumference { get; set; }
-        public int BloodPressure { get; set; }
-        public float Temperature { get; set; }
-        public int MeanArterialPressure { get; set; }
-        public float HeartRate { get; set; }
-        public float OxygenSaturation { get; set; }
-        public float RespiratoryRate { get; set; }
-        public float BloodGlucose { get; set; }
-        public float Hemoglobin { get; set; }
+        public decimal? Weight { get; set; }
+        public decimal? Height { get; set; }
+        public decimal? Icm { get; set; }
+        public decimal? AbdominalCircumference { get; set; }
+        public string? BloodPressure { get; set; }
+        public decimal? Temperature { get; set; }
+        public decimal? MeanArterialPressure { get; set; }
+        public int? HeartRate { get; set; }
+        public decimal? OxygenSaturation { get; set; }
+        public int? RespiratoryRate { get; set; }
+        public decimal? BloodGlucose { get; set; }
+        public decimal? Hemoglobin { get; set; }
 
 
         public int MedicalCareId { get; set; }

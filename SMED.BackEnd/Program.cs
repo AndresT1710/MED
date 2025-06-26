@@ -61,6 +61,30 @@ builder.Services.AddScoped<IRepository<ProceduresDTO, int>, ProceduresRepository
 builder.Services.AddScoped<IRepository<HealthProfessionalDTO, int>, HealthProfessionalRepository>();
 builder.Services.AddScoped<IRepository<MedicalCareDTO, int>, MedicalCareRepository>();
 builder.Services.AddScoped<IRepository<VitalSignsDTO, int>, VitalSignsRepository>();
+builder.Services.AddScoped<IRepository<DiagnosisDTO, int>, DiagnosisRepository>();
+builder.Services.AddScoped<IRepository<OrdersDTO, int>, OrdersRepository>();
+builder.Services.AddScoped<IRepository<ImageOrdersDTO, int>, ImageOrdersRepository>();
+builder.Services.AddScoped<IRepository<LaboratoryOrdersDTO, int>, LaboratoryOrdersRepository>();
+builder.Services.AddScoped<IRepository<InterconsultationDTO, int>, InterconsultationRepository>();
+builder.Services.AddScoped<IRepository<MedicalReferralDTO, int>, MedicalReferralRepository>();
+builder.Services.AddScoped<IRepository<SystemsDevicesDTO, int>, SystemsDevicesRepository>();
+builder.Services.AddScoped<IRepository<ReviewSystemDevicesDTO, int>, ReviewSystemDevicesRepository>();
+builder.Services.AddScoped<IRepository<PlaceOfAttentionDTO, int>, PlaceOfAttentionRepository>();
+builder.Services.AddScoped<IRepository<PhysicalExamDTO, int>, PhysicalExamRepository>();
+builder.Services.AddScoped<IRepository<PhysicalExamDetailDTO, int>, PhysicalExamDetailRepository>();
+builder.Services.AddScoped<IRepository<PhysicalExamTypeDTO, int>, PhysicalExamTypeRepository>();
+builder.Services.AddScoped<IRepository<IdentifiedDiseaseDTO, int>, IdentifiedDiseaseRepository>();
+builder.Services.AddScoped<IRepository<ExamResultsDTO, int>, ExamResultsRepository>();
+builder.Services.AddScoped<IRepository<ExamTypeDTO, int>, ExamTypeRepository>();
+builder.Services.AddScoped<IRepository<EvolutionDTO, int>, EvolutionRepository>();
+builder.Services.AddScoped<IRepository<MedicineDTO, int>, MedicineRepository>();
+builder.Services.AddScoped<IRepository<TreatmentDTO, int>, TreatmentRepository>();
+builder.Services.AddScoped<IRepository<NonPharmacologicalTreatmentDTO, int>, NonPharmacologicalTreatmentRepository>();
+builder.Services.AddScoped<IRepository<PharmacologicalTreatmentDTO, int>, PharmacologicalTreatmentRepository>();
+builder.Services.AddScoped<IRepository<OrderDiagnosisDTO, int>, OrderDiagnosisRepository>();
+builder.Services.AddScoped<IRepository<ReasonForConsultationDTO, int>, ReasonForConsultationRepository>();
+builder.Services.AddScoped<IRepository<IndicationsDTO, int>, IndicationsRepository>();
+builder.Services.AddScoped<IRepository<DiagnosisTreatmentDTO, int>, DiagnosisTreatmentRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

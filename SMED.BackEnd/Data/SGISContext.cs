@@ -87,7 +87,6 @@ namespace SGIS.Models
         public DbSet<LaboratoryOrders> LaboratoryOrders { get; set; }
         public DbSet<ImageOrders> ImageOrders { get; set; }
         public DbSet<Orders> Orders { get; set; }
-        public DbSet<Diagnosis> Diagnoses { get; set; }
         public DbSet<Interconsultation> Interconsultations { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<MedicalReferral> MedicalReferrals { get; set; }
@@ -108,7 +107,7 @@ namespace SGIS.Models
         public DbSet<Non_PharmacologicalTreatment> NonPharmacologicalTreatments { get; set; }
         public DbSet<PharmacologicalTreatment> PharmacologicalTreatments { get; set; }
         public DbSet<Treatment> Treatments { get; set; }
-        public DbSet<OrderDiagnosis> OrderDiagnoses { get; set; }
+        public DbSet<OrderDiagnosis> OrderDiagnosis { get; set; }
         public DbSet<MedicalCare> MedicalCares { get; set; }
         public DbSet<ReasonForConsultation> ReasonForConsultations { get; set; }
         public DbSet<Indications> Indications { get; set; }
@@ -116,6 +115,11 @@ namespace SGIS.Models
         //Enfermeria
         public DbSet<TypeOfService> TypeOfServices { get; set; }
         public DbSet<CostOfService> CostOfServices { get; set; }
+        public DbSet<Diagnosis> Diagnosis { get; set; }
+        public DbSet<DiagnosisTreatment> DiagnosisTreatments { get; set; }
+
+
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -646,12 +650,12 @@ namespace SGIS.Models
 
             modelBuilder.Entity<OrderDiagnosis>()
                 .HasOne(od => od.Order)
-                .WithMany(o => o.OrderDiagnoses)
+                .WithMany(o => o.OrderDiagnosis)
                 .HasForeignKey(od => od.OrderId);
 
             modelBuilder.Entity<OrderDiagnosis>()
                 .HasOne(od => od.Diagnosis)
-                .WithMany(d => d.OrderDiagnoses)
+                .WithMany(d => d.OrderDiagnosis)
                 .HasForeignKey(od => od.DiagnosisId);
 
             modelBuilder.Entity<ExamType>()
@@ -690,7 +694,7 @@ namespace SGIS.Models
                 entity.HasOne(m => m.VitalSigns)
                       .WithOne(v => v.MedicalCare)
                       .HasForeignKey<VitalSigns>(v => v.MedicalCareId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(m => m.PhysicalExam)
                       .WithOne(p => p.MedicalCare)
@@ -706,6 +710,11 @@ namespace SGIS.Models
                       .WithOne(mr => mr.MedicalCare)
                       .HasForeignKey<MedicalReferral>(mr => mr.MedicalCareId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<DiagnosisTreatment>(entity =>
+            {
+                entity.ToTable("DiagnosisTreatment");
             });
 
 

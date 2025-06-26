@@ -45,24 +45,24 @@
                                Width="full"
                                @bind-Content="observaciones" />
 
-                <ContainerBox1 Title="Recomendaciones"
-                               Width="full"
-                               @bind-Content="recomendaciones" />
+                <ContainerSelectBox Title="Recomendaciones"
+                                     Width="full"
+                                     Options="Recomendaciones"
+                                     @bind-SelectedValue="recomendaciones" />
             </div>
         </div>
 
-<EditableTable Title="Detalle de procedimientos realizados"
-               ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
-               Rows="procedimientos"
-               RowIds="procedimientoIds"
-               EditModalContent="@editForm"
-               OnAddRequested="AgregarProcedimiento"
-               OnEditRequested="EditarProcedimiento"
-               OnDeleteRequested="EliminarProcedimiento"
-               OnSaveRequested="GuardarProcedimiento"
-               IsValidForm="@(() => true)" />
-
-
+        <!-- Tabla editable debajo de las columnas -->
+        <EditableTable Title="Detalle de procedimientos realizados"
+                        ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
+                        Rows="procedimientos"
+                        RowIds="procedimientoIds"
+                        EditModalContent="@editForm"
+                        OnAddRequested="AgregarProcedimiento"
+                        OnEditRequested="EditarProcedimiento"
+                        OnDeleteRequested="EliminarProcedimiento"
+                        OnSaveRequested="GuardarProcedimiento"
+                        IsValidForm="@(() => true)" />
 
         <div class="d-flex justify-content-center mt-4 mb-3">
             <button class="btn btn-primary btn-lg px-5"
@@ -99,6 +99,11 @@
     private List<string> Profesionales = new()
     {
         "Dr. Juan Pérez", "Dra. Ana López", "Lic. María Fernanda"
+    };
+
+    private List<string> Recomendaciones = new()
+    {
+        "Reposo", "Control en 7 días", "Tomar medicación", "Referir a especialista"
     };
 
     // EditableTable

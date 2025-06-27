@@ -6,6 +6,7 @@
 @inject TypeOfServiceService TypeOfServiceService
 @inject HealthProfessionalService HealthProfessionalService
 @inject VitalSignsService VitalSignsService
+@inject MedicalServiceService MedicalServiceService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -45,8 +46,18 @@
                     <h5 class="mb-0">Selección de Paciente</h5>
                 </div>
                 <div class="card-body">
-                    <PatientSelector @bind-Value="clinicalHistoryId"
-                                     OnPatientSelected="HandlePatientSelected" />
+                    @if (!isEditMode)
+                    {
+                        <PatientSelector @bind-Value="clinicalHistoryId"
+                                         OnPatientSelected="HandlePatientSelected" />
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención médica existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
 
                     @if (selectedPatientId > 0)
                     {
@@ -151,8 +162,6 @@
                                         }
                                     </select>
                                 </div>
-
-
                             </div>
 
                             <!-- Columna derecha -->
@@ -177,7 +186,7 @@
                             </button>
                             <div>
                                 <button class="btn btn-success me-2" @onclick="GuardarAtencionMedica">
-                                    <i class="fas fa-save me-2"></i>Guardar Atención Médica
+                                    <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
                                 </button>
                                 <button class="btn btn-secondary" @onclick="OnCancel">
                                     Cancelar
@@ -200,7 +209,8 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private string areaSeleccionada;
+    private string areaSeleccionada = "";
+    private bool isEditMode = false;
 
     // Signos vitales
     private string peso = "";
@@ -228,10 +238,66 @@
     private List<TypeOfServiceDTO> tipoServicios = new();
     private List<HealthProfessionalDTO> profesionales = new();
 
+    // Para edición
+    private VitalSignsDTO? existingVitalSigns;
+    private MedicalServiceDTO? existingMedicalService;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadTypeOfServices();
         await LoadHealthProfessionals();
+
+        // Si es modo edición, cargar los datos existentes
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            await LoadExistingData();
+        }
+    }
+
+    private async Task LoadExistingData()
+    {
+        if (MedicalCare == null) return;
+
+        // Cargar datos básicos de la atención médica
+        selectedPatientId = MedicalCare.PatientId;
+        areaSeleccionada = MedicalCare.Area ?? "";
+        profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
+
+        // Cargar signos vitales existentes
+        var allVitalSigns = await VitalSignsService.GetAllAsync();
+        existingVitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
+
+        if (existingVitalSigns != null)
+        {
+            peso = existingVitalSigns.Weight?.ToString() ?? "";
+            talla = existingVitalSigns.Height?.ToString() ?? "";
+            imc = existingVitalSigns.Icm?.ToString() ?? "";
+            perimetroAbdominal = existingVitalSigns.AbdominalCircumference?.ToString() ?? "";
+            presionArterial = existingVitalSigns.BloodPressure ?? "";
+            temperatura = existingVitalSigns.Temperature?.ToString() ?? "";
+            pam = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
+            frecuenciaCardiaca = existingVitalSigns.HeartRate?.ToString() ?? "";
+            saturacionOxigeno = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
+            frecuenciaRespiratoria = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
+            glucosaCapilar = existingVitalSigns.BloodGlucose?.ToString() ?? "";
+            hemoglobina = existingVitalSigns.Hemoglobin?.ToString() ?? "";
+        }
+
+        // Cargar servicios médicos existentes
+        var existingServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId);
+        existingMedicalService = existingServices?.FirstOrDefault();
+
+        if (existingMedicalService != null)
+        {
+            fechaAtencion = existingMedicalService.ServiceDate;
+            servicioSeleccionado = existingMedicalService.ServiceType ?? "";
+            diagnostico = existingMedicalService.Diagnosis ?? "";
+            observaciones = existingMedicalService.Observations ?? "";
+            recomendaciones = existingMedicalService.Recommendations ?? "";
+        }
+
+        StateHasChanged();
     }
 
     private async Task LoadTypeOfServices()
@@ -274,72 +340,49 @@
                 return;
             }
 
-            // Mostrar todos los datos en consola antes de guardar
-            var allData = new
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null)
             {
-                Paciente = new
+                // Actualizar atención médica existente
+                MedicalCare.Area = areaSeleccionada;
+                MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
                 {
-                    Id = selectedPatientId,
-                    HistoriaClinica = selectedHistoryNumber
-                },
-                SignosVitales = new
-                {
-                    Peso = peso,
-                    Talla = talla,
-                    IMC = imc,
-                    PerimetroAbdominal = perimetroAbdominal,
-                    PresionArterial = presionArterial,
-                    Temperatura = temperatura,
-                    PAM = pam,
-                    FrecuenciaCardiaca = frecuenciaCardiaca,
-                    SaturacionOxigeno = saturacionOxigeno,
-                    FrecuenciaRespiratoria = frecuenciaRespiratoria,
-                    GlucosaCapilar = glucosaCapilar,
-                    Hemoglobina = hemoglobina
-                },
-                Servicios = new
-                {
-                    FechaAtencion = fechaAtencion,
-                    Area = areaSeleccionada,
-                    TipoServicio = servicioSeleccionado,
-                    Profesional = profesionalSeleccionado,
-                    Diagnostico = diagnostico,
-                    Observaciones = observaciones,
-                    Recomendaciones = recomendaciones
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
+                    return;
                 }
-            };
-
-            var jsonData = System.Text.Json.JsonSerializer.Serialize(allData, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-            await JS.InvokeVoidAsync("console.log", "Datos a guardar:", jsonData);
-
-            // Crear la atención médica
-            var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                    LocationId = 1, // Valor por defecto, ajustar según necesidades,
-                    Area = areaSeleccionada,
-                };
-
-            var result = await MedicalCareService.CreateAsync(medicalCareDto);
-            if (!result.Success)
+                medicalCareResult = MedicalCare;
+            }
+            else
             {
-                await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
-                return;
+                // Crear nueva atención médica
+                var medicalCareDto = new MedicalCareDTO
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                        LocationId = 1,
+                        Area = areaSeleccionada,
+                    };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
+                    return;
+                }
+                medicalCareResult = result.Data;
             }
 
-            var createdMedicalCare = result.Data;
-
-            // Guardar signos vitales si hay datos
+            // Guardar o actualizar signos vitales
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
                     {
-                        MedicalCareId = createdMedicalCare.CareId,
+                        Id = existingVitalSigns?.Id ?? 0,
+                        MedicalCareId = medicalCareResult.CareId,
                         Weight = ParseDecimal(peso),
                         Height = ParseDecimal(talla),
                         Icm = ParseDecimal(imc),
@@ -354,11 +397,42 @@
                         Hemoglobin = ParseDecimal(hemoglobina)
                     };
 
-                await VitalSignsService.CreateAsync(vitalSignsDto);
+                if (existingVitalSigns != null)
+                {
+                    await VitalSignsService.UpdateAsync(vitalSignsDto);
+                }
+                else
+                {
+                    await VitalSignsService.CreateAsync(vitalSignsDto);
+                }
             }
 
-            await OnSaved.InvokeAsync(createdMedicalCare);
-            await JS.InvokeVoidAsync("alert", "Atención médica creada exitosamente");
+            // Guardar o actualizar servicios médicos
+            if (HasServiceData())
+            {
+                var medicalServiceDto = new MedicalServiceDTO
+                    {
+                        ServiceId = existingMedicalService?.ServiceId ?? 0,
+                        CareId = medicalCareResult.CareId,
+                        ServiceDate = fechaAtencion,
+                        ServiceType = GetServiceTypeName(servicioSeleccionado),
+                        Diagnosis = diagnostico,
+                        Observations = observaciones,
+                        Recommendations = recomendaciones
+                    };
+
+                if (existingMedicalService != null)
+                {
+                    await MedicalServiceService.UpdateAsync(medicalServiceDto);
+                }
+                else
+                {
+                    await MedicalServiceService.CreateAsync(medicalServiceDto);
+                }
+            }
+
+            await OnSaved.InvokeAsync(medicalCareResult);
+            await JS.InvokeVoidAsync("alert", isEditMode ? "Atención médica actualizada exitosamente" : "Atención médica creada exitosamente");
         }
         catch (Exception ex)
         {
@@ -366,11 +440,27 @@
         }
     }
 
+    private string GetServiceTypeName(string serviceId)
+    {
+        if (int.TryParse(serviceId, out int id))
+        {
+            var service = tipoServicios.FirstOrDefault(s => s.Id == id);
+            return service?.Name ?? "";
+        }
+        return "";
+    }
+
     private bool HasVitalSignsData()
     {
         return !string.IsNullOrWhiteSpace(peso) || !string.IsNullOrWhiteSpace(talla) ||
                !string.IsNullOrWhiteSpace(presionArterial) || !string.IsNullOrWhiteSpace(temperatura) ||
                !string.IsNullOrWhiteSpace(frecuenciaCardiaca) || !string.IsNullOrWhiteSpace(saturacionOxigeno);
+    }
+
+    private bool HasServiceData()
+    {
+        return !string.IsNullOrWhiteSpace(servicioSeleccionado) || !string.IsNullOrWhiteSpace(diagnostico) ||
+               !string.IsNullOrWhiteSpace(observaciones) || !string.IsNullOrWhiteSpace(recomendaciones);
     }
 
     private decimal? ParseDecimal(string value)

@@ -8,6 +8,7 @@ using SMED.BackEnd.Services.Interface;
 using SMED.Shared.DTOs;
 using System.Text;
 using SGIS.Models;
+using SMED.Shared.Entity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IRepository<OrderDiagnosisDTO, int>, OrderDiagnosisRe
 builder.Services.AddScoped<IRepository<ReasonForConsultationDTO, int>, ReasonForConsultationRepository>();
 builder.Services.AddScoped<IRepository<IndicationsDTO, int>, IndicationsRepository>();
 builder.Services.AddScoped<IRepository<DiagnosisTreatmentDTO, int>, DiagnosisTreatmentRepository>();
+builder.Services.AddScoped<IRepository<MedicalServiceDTO, int>, MedicalServiceRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

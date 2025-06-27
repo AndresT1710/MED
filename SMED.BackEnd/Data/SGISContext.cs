@@ -117,8 +117,7 @@ namespace SGIS.Models
         public DbSet<CostOfService> CostOfServices { get; set; }
         public DbSet<Diagnosis> Diagnosis { get; set; }
         public DbSet<DiagnosisTreatment> DiagnosisTreatments { get; set; }
-
-
+        public DbSet<MedicalService> MedicalServices { get; set; }
 
 
 

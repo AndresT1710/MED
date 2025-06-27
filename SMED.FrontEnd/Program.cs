@@ -66,7 +66,7 @@ builder.Services.AddScoped<CostOfServiceService>();
 builder.Services.AddScoped<TypeOfServiceService>();
 builder.Services.AddScoped<TypeOfProceduresService>();
 builder.Services.AddScoped<ProceduresService>();
-
+builder.Services.AddScoped<MedicalServiceService>();
 
 builder.Services.AddLogging();
 

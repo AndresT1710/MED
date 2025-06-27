@@ -5,129 +5,245 @@
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
 
+@inject MedicalServiceService MedicalServiceService
+@inject MedicalCareService MedicalCareService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
-    <h3>Servicios</h3>
+    <h3>Gestión de Servicios Médicos</h3>
 
+    <!-- Selector de Paciente -->
     <PatientSelector @bind-Value="clinicalHistoryId"
                      OnPatientSelected="HandlePatientSelected" />
 
-    @if (clinicalHistoryId > 0)
+    @if (selectedPatientId > 0)
     {
-        <div class="d-flex flex-wrap">
-            <!-- Columna izquierda -->
-            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
-                <ContainerBox2 Title="Fecha de atención"
-                                Width="full"
-                                @bind-SelectedDate="fechaAtencion" />
-
-                <ContainerSelectBox Title="Tipo de servicio"
-                                    Width="full"
-                                    Options="TipoServicios"
-                                    @bind-SelectedValue="servicioSeleccionado" />
-
-                <ContainerSelectBox Title="Profesional responsable"
-                                    Width="full"
-                                    Options="Profesionales"
-                                    @bind-SelectedValue="profesionalSeleccionado" />
-            </div>
-
-            <!-- Columna derecha -->
-            <div class="d-flex flex-column" style="flex: 1 1 48%">
-                <ContainerBox1 Title="Diagnóstico"
-                               Width="full"
-                               @bind-Content="diagnostico" />
-
-                <ContainerBox1 Title="Observaciones"
-                               Width="full"
-                               @bind-Content="observaciones" />
-
-                <ContainerSelectBox Title="Recomendaciones"
-                                     Width="full"
-                                     Options="Recomendaciones"
-                                     @bind-SelectedValue="recomendaciones" />
-            </div>
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Paciente seleccionado: Historia Clínica @selectedHistoryNumber
         </div>
 
-        <!-- Tabla editable debajo de las columnas -->
-        <EditableTable Title="Detalle de procedimientos realizados"
-                        ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
-                        Rows="procedimientos"
-                        RowIds="procedimientoIds"
-                        EditModalContent="@editForm"
-                        OnAddRequested="AgregarProcedimiento"
-                        OnEditRequested="EditarProcedimiento"
-                        OnDeleteRequested="EliminarProcedimiento"
-                        OnSaveRequested="GuardarProcedimiento"
-                        IsValidForm="@(() => true)" />
-
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatos"
-                    disabled="@(clinicalHistoryId <= 0)">
-                <i class="fas fa-save me-2"></i>
-                <span>Guardar Datos</span>
-            </button>
+        <!-- Tabla de Servicios Médicos -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Servicios Médicos Registrados</h5>
+                <button class="btn btn-primary" @onclick="AgregarNuevoServicio">
+                    <i class="fas fa-plus me-2"></i>Nuevo Servicio
+                </button>
+            </div>
+            <div class="card-body">
+                @if (serviciosMedicos.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo de Servicio</th>
+                                    <th>Diagnóstico</th>
+                                    <th>Observaciones</th>
+                                    <th>Recomendaciones</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var servicio in serviciosMedicos)
+                                {
+                                    <tr>
+                                        <td>@servicio.ServiceDate?.ToString("dd/MM/yyyy")</td>
+                                        <td>@servicio.ServiceType</td>
+                                        <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
+                                        <td>@(string.IsNullOrEmpty(servicio.Observations) ? "N/A" : servicio.Observations)</td>
+                                        <td>@(string.IsNullOrEmpty(servicio.Recommendations) ? "N/A" : servicio.Recommendations)</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)">
+                                                <i class="fas fa-edit">Editar</i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio.ServiceId)">
+                                                <i class="fas fa-trash">Eliminar</i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay servicios médicos registrados para este paciente.</p>
+                        <button class="btn btn-primary" @onclick="AgregarNuevoServicio">
+                            <i class="fas fa-plus me-2"></i>Agregar Primer Servicio
+                        </button>
+                    </div>
+                }
+            </div>
         </div>
     }
     else
     {
-        <p class="text-muted">Seleccione un paciente con historia clínica para ingresar los servicios aplicados.</p>
+        <div class="text-center py-5">
+            <i class="fas fa-user-search fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Seleccione un paciente para ver y gestionar sus servicios médicos.</p>
+        </div>
+    }
+
+    <!-- Modal para Formulario -->
+    @if (showForm)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            @(selectedMedicalService?.ServiceId > 0 ? "Editar Servicio Médico" : "Nuevo Servicio Médico")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <MedicalServicesForm MedicalService="selectedMedicalService"
+                                             CareId="selectedCareId"
+                                             OnSaved="OnServiceSaved"
+                                             OnCancel="HideForm" />
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 </TabContainerE>
 
 @code {
     private int clinicalHistoryId = 0;
+    private int selectedPatientId = 0;
+    private string selectedHistoryNumber = "";
+    private int selectedCareId = 0;
 
-    private DateTime? fechaAtencion = null;
-    private string servicioSeleccionado = "";
-    private string profesionalSeleccionado = "";
-    private string diagnostico = "";
-    private string observaciones = "";
-    private string recomendaciones = "";
+    private List<MedicalServiceDTO> serviciosMedicos = new();
+    private MedicalServiceDTO? selectedMedicalService;
+    private bool showForm = false;
 
-    private List<string> TipoServicios = new()
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
-        "Hospitalización", "Consulta externa", "Emergencia",
-        "Preventiva", "Rehabilitación", "Inyectología",
-        "Curaciones", "Telemedicina"
-    };
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
 
-    private List<string> Profesionales = new()
+        // Buscar la atención médica activa para este paciente
+        await BuscarAtencionMedicaActiva();
+
+        // Cargar servicios médicos
+        await LoadServiciosMedicos();
+    }
+
+    private async Task BuscarAtencionMedicaActiva()
     {
-        "Dr. Juan Pérez", "Dra. Ana López", "Lic. María Fernanda"
-    };
+        try
+        {
+            var allMedicalCares = await MedicalCareService.GetAllAsync();
+            var patientCare = allMedicalCares?.FirstOrDefault(mc => mc.PatientId == selectedPatientId);
 
-    private List<string> Recomendaciones = new()
+            if (patientCare != null)
+            {
+                selectedCareId = patientCare.CareId;
+            }
+            else
+            {
+                // Si no existe una atención médica, crear una básica
+                var newCare = new MedicalCareDTO
+                    {
+                        PatientId = selectedPatientId,
+                        LocationId = 1,
+                        HealthProfessionalId = 1, // Valor por defecto
+                        Area = "Servicios Generales"
+                    };
+
+                var result = await MedicalCareService.CreateAsync(newCare);
+                if (result.Success && result.Data != null)
+                {
+                    selectedCareId = result.Data.CareId;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al buscar atención médica: {ex.Message}");
+            selectedCareId = 0;
+        }
+    }
+
+    private async Task LoadServiciosMedicos()
     {
-        "Reposo", "Control en 7 días", "Tomar medicación", "Referir a especialista"
-    };
+        if (selectedCareId > 0)
+        {
+            serviciosMedicos = await MedicalServiceService.GetByCareIdAsync(selectedCareId) ?? new List<MedicalServiceDTO>();
+        }
+        else
+        {
+            serviciosMedicos = new List<MedicalServiceDTO>();
+        }
+        StateHasChanged();
+    }
 
-    // EditableTable
-    private List<List<string>> procedimientos = new();
-    private List<int> procedimientoIds = new();
-
-    private RenderFragment editForm => __builder =>
+    private void AgregarNuevoServicio()
     {
-        __builder.AddContent(0, "Formulario de edición aquí...");
-    };
+        if (selectedCareId <= 0)
+        {
+            JS.InvokeVoidAsync("alert", "No se puede crear un servicio sin una atención médica activa");
+            return;
+        }
+
+        selectedMedicalService = new MedicalServiceDTO
+            {
+                ServiceId = 0,
+                CareId = selectedCareId
+            };
+        showForm = true;
+    }
+
+    private void EditarServicio(MedicalServiceDTO servicio)
+    {
+        selectedMedicalService = servicio;
+        showForm = true;
+    }
+
+    private async Task EliminarServicio(int serviceId)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "¿Está seguro de eliminar este servicio médico?");
+
+        if (confirmed)
+        {
+            var result = await MedicalServiceService.DeleteAsync(serviceId);
+            if (result.Success)
+            {
+                await LoadServiciosMedicos();
+                await JS.InvokeVoidAsync("alert", "Servicio eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+    }
+
+    private async Task OnServiceSaved(MedicalServiceDTO savedService)
+    {
+        showForm = false;
+        await LoadServiciosMedicos();
+    }
+
+    private void HideForm()
+    {
+        showForm = false;
+        selectedMedicalService = null;
+    }
 
     private void GuardarDatos()
     {
-        Console.WriteLine($"Guardando datos del paciente {clinicalHistoryId}...");
+        // Método requerido por TabContainerE
     }
-
-    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
-    {
-        clinicalHistoryId = paciente.ClinicalHistoryId;
-        return Task.CompletedTask;
-    }
-
-    private Task AgregarProcedimiento() => Task.CompletedTask;
-    private Task EditarProcedimiento(int id) => Task.CompletedTask;
-    private Task EliminarProcedimiento(int id) => Task.CompletedTask;
-    private Task GuardarProcedimiento() => Task.CompletedTask;
 }

@@ -1,131 +1,206 @@
 ﻿@page "/nursing-module/procedures"
 @layout MainLayout
+
 @using SMED.FrontEnd.Components
-@using SMED.Shared.Entity
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
+
+@inject MedicalProcedureService MedicalProcedureService
+@inject TypeOfProceduresService TypeOfProceduresService
+@inject ProceduresService ProceduresService
+@inject HealthProfessionalService HealthProfessionalService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
-    <h3>Procedimientos</h3>
+    <h3>Gestión de Procedimientos Médicos</h3>
 
+    <!-- Selector de Paciente -->
     <PatientSelector @bind-Value="clinicalHistoryId"
                      OnPatientSelected="HandlePatientSelected" />
 
-    @if (clinicalHistoryId > 0)
+    @if (selectedPatientId > 0)
     {
-        <div class="d-flex flex-wrap">
-            <!-- Primera columna -->
-            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
-                <ContainerBox2 Title="Fecha de procedimiento"
-                                Width="full"
-                                @bind-SelectedDate="fechaProcedimiento" />
-
-                <ContainerSelectBox Title="Tipo de procedimiento"
-                                    Width="full"
-                                    Options="TipoProcedimientos"
-                                    @bind-SelectedValue="tipoProcedimientoSeleccionado" />
-
-                <ContainerSelectBox Title="Procedimiento"
-                                    Width="full"
-                                    Options="Procedimientos"
-                                    @bind-SelectedValue="procedimientoSeleccionado" />
-            </div>
-
-            <!-- Segunda columna -->
-            <div class="d-flex flex-column" style="flex: 1 1 48%">
-                <ContainerSelectBox Title="Personal Salud"
-                                    Width="full"
-                                    Options="PersonalSalud"
-                                    @bind-SelectedValue="personalSaludSeleccionado" />
-
-                <ContainerBox1 Title="Paciente"
-                               Width="full"
-                               @bind-Content="nombrePaciente" />
-
-                <ContainerBox1 Title="Médico Tratante"
-                               Width="full"
-                               @bind-Content="medicoTratante" />
-            </div>
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Paciente seleccionado: Historia Clínica @selectedHistoryNumber
         </div>
 
-        <!-- EditableTable debajo de las columnas -->
-        <EditableTable Title="Detalle de procedimientos realizados"
-                       ColumnHeaders="@(new List<string> { "Procedimiento", "Cantidad", "Notas" })"
-                       Rows="procedimientos"
-                       RowIds="procedimientoIds"
-                       EditModalContent="@editForm"
-                       OnAddRequested="AgregarProcedimiento"
-                       OnEditRequested="EditarProcedimiento"
-                       OnDeleteRequested="EliminarProcedimiento"
-                       OnSaveRequested="GuardarProcedimiento"
-                       IsValidForm="@(() => true)" />
-
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatos"
-                    disabled="@(clinicalHistoryId <= 0)">
-                <i class="fas fa-save me-2"></i>
-                <span>Guardar Datos</span>
-            </button>
+        <!-- Tabla de Procedimientos Médicos -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Procedimientos Médicos Registrados</h5>
+                <button class="btn btn-primary" @onclick="AgregarNuevoProcedimiento">
+                    <i class="fas fa-plus me-2"></i>Nuevo Procedimiento
+                </button>
+            </div>
+            <div class="card-body">
+                @if (procedimientosMedicos.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo de Procedimiento</th>
+                                    <th>Procedimiento</th>
+                                    <th>Personal de Salud</th>
+                                    <th>Médico Tratante</th>
+                                    <th>Observaciones</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var procedimiento in procedimientosMedicos)
+                                {
+                                    <tr>
+                                        <td>@procedimiento.ProcedureDate.ToString("dd/MM/yyyy")</td>
+                                        <td>@(procedimiento.TypeOfProcedureName ?? "N/A")</td>
+                                        <td>@(procedimiento.SpecificProcedureName ?? "N/A")</td>
+                                        <td>@(procedimiento.HealthProfessionalName ?? "N/A")</td>
+                                        <td>@(procedimiento.TreatingPhysicianName ?? "N/A")</td>
+                                        <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento.ProcedureId)">
+                                                <i class="fas fa-trash"></i> Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-procedures fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay procedimientos médicos registrados para este paciente.</p>
+                        <button class="btn btn-primary" @onclick="AgregarNuevoProcedimiento">
+                            <i class="fas fa-plus me-2"></i>Agregar Primer Procedimiento
+                        </button>
+                    </div>
+                }
+            </div>
         </div>
     }
     else
     {
-        <p class="text-muted">Seleccione un paciente con historia clínica para ingresar los procedimientos.</p>
+        <div class="text-center py-5">
+            <i class="fas fa-user-search fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Seleccione un paciente para ver y gestionar sus procedimientos médicos.</p>
+        </div>
+    }
+
+    <!-- Modal para Formulario -->
+    @if (showForm)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            @(selectedMedicalProcedure?.ProcedureId > 0 ? "Editar Procedimiento Médico" : "Nuevo Procedimiento Médico")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <MedicalProcedureForm MedicalProcedure="selectedMedicalProcedure"
+                                              PatientId="selectedPatientId"
+                                              OnSaved="OnProcedureSaved"
+                                              OnCancel="HideForm" />
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 </TabContainerE>
 
 @code {
     private int clinicalHistoryId = 0;
+    private int selectedPatientId = 0;
+    private string selectedHistoryNumber = "";
 
-    private DateTime? fechaProcedimiento = null;
-    private string tipoProcedimientoSeleccionado = "";
-    private string procedimientoSeleccionado = "";
-    private string personalSaludSeleccionado = "";
-    private string medicoTratante = "";
-    private string nombrePaciente = ""; // Aquí se mostrará el nombre
+    private List<MedicalProcedureDTO> procedimientosMedicos = new();
+    private MedicalProcedureDTO? selectedMedicalProcedure;
+    private bool showForm = false;
 
-    private List<string> TipoProcedimientos = new()
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
-        "Consulta", "Cirugía", "Terapia", "Examen", "Procedimiento Especial"
-    };
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
 
-    private List<string> Procedimientos = new()
+        // Cargar procedimientos médicos para este paciente
+        await LoadProcedimientosMedicos();
+    }
+
+    private async Task LoadProcedimientosMedicos()
     {
-        "Biopsia", "Colocación de catéter", "Electrocardiograma", "Ultrasonido"
-    };
+        // Obtener todos los procedimientos y filtrar por el paciente actual usando PatientId
+        var allProcedures = await MedicalProcedureService.GetAllAsync();
 
-    private List<string> PersonalSalud = new()
+        // Filtrar por PatientId
+        procedimientosMedicos = allProcedures?.Where(p => p.PatientId == selectedPatientId).ToList() ?? new List<MedicalProcedureDTO>();
+
+        StateHasChanged();
+    }
+
+    private void AgregarNuevoProcedimiento()
     {
-        "Enfermero(a) Juan", "Dr. María Gómez", "Lic. Carlos Pérez"
-    };
+        selectedMedicalProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = 0,
+                PatientId = selectedPatientId,
+                ProcedureDate = DateTime.Now
+            };
+        showForm = true;
+    }
 
-    private List<List<string>> procedimientos = new();
-    private List<int> procedimientoIds = new();
-
-    private RenderFragment editForm => __builder =>
+    private void EditarProcedimiento(MedicalProcedureDTO procedimiento)
     {
-        __builder.AddContent(0, "Formulario de edición aquí...");
-    };
+        selectedMedicalProcedure = procedimiento;
+        showForm = true;
+    }
+
+    private async Task EliminarProcedimiento(int procedureId)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "¿Está seguro de eliminar este procedimiento médico?");
+
+        if (confirmed)
+        {
+            var result = await MedicalProcedureService.DeleteAsync(procedureId);
+            if (result.Success)
+            {
+                await LoadProcedimientosMedicos();
+                await JS.InvokeVoidAsync("alert", "Procedimiento eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+    }
+
+    private async Task OnProcedureSaved(MedicalProcedureDTO savedProcedure)
+    {
+        showForm = false;
+        await LoadProcedimientosMedicos();
+    }
+
+    private void HideForm()
+    {
+        showForm = false;
+        selectedMedicalProcedure = null;
+    }
 
     private void GuardarDatos()
     {
-        Console.WriteLine($"Guardando datos del paciente {clinicalHistoryId}...");
+        // Método requerido por TabContainerE
     }
-
-    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
-    {
-        clinicalHistoryId = paciente.ClinicalHistoryId;
-        // Aquí puedes obtener el nombre del paciente según la historia clínica
-        nombrePaciente = $"Historia clínica: {paciente.ClinicalHistoryId}"; // Luego puedes reemplazar esto con una búsqueda real
-        return Task.CompletedTask;
-    }
-
-    private Task AgregarProcedimiento() => Task.CompletedTask;
-    private Task EditarProcedimiento(int id) => Task.CompletedTask;
-    private Task EliminarProcedimiento(int id) => Task.CompletedTask;
-    private Task GuardarProcedimiento() => Task.CompletedTask;
 }

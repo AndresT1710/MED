@@ -37,9 +37,6 @@ namespace SMED.Shared.Entity
         public virtual ICollection<ReasonForConsultation> ReasonsForConsultation { get; set; } = new List<ReasonForConsultation>();
 
         [InverseProperty("MedicalCare")]
-        public virtual ICollection<Procedures> Procedures { get; set; } = new List<Procedures>();
-
-        [InverseProperty("MedicalCare")]
         public virtual ICollection<ExamResults> ExamResults { get; set; } = new List<ExamResults>();
 
         [InverseProperty("MedicalCare")]
@@ -66,6 +63,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("MedicalCare")]
         public virtual ICollection<MedicalService> MedicalServices { get; set; } = new List<MedicalService>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<MedicalProcedure> MedicalProcedures { get; set; } = new List<MedicalProcedure>();
 
     }
 }

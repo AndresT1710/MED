@@ -7,6 +7,11 @@
 @inject HealthProfessionalService HealthProfessionalService
 @inject VitalSignsService VitalSignsService
 @inject MedicalServiceService MedicalServiceService
+@inject TypeOfProceduresService TypeOfProceduresService
+@inject ProceduresService ProceduresService
+@inject MedicalProcedureService MedicalProcedureService
+@inject PlaceOfAttentionService PlaceService
+
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -14,25 +19,45 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("vitals"))"
-                    type="button" role="tab"
-                    disabled="@(selectedPatientId <= 0)">
+            @onclick="@(() => SetActiveTab("vitals"))"
+            type="button" role="tab"
+            disabled="@(selectedPatientId <= 0)">
                 <i class="fas fa-heartbeat me-2"></i>Signos Vitales
+                @if (HasVitalSignsData())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "services" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("services"))"
-                    type="button" role="tab"
-                    disabled="@(selectedPatientId <= 0)">
+            @onclick="@(() => SetActiveTab("services"))"
+            type="button" role="tab"
+            disabled="@(selectedPatientId <= 0)">
                 <i class="fas fa-stethoscope me-2"></i>Servicios
+                @if (serviciosList.Any())
+                {
+                    <span class="badge bg-primary ms-1">@serviciosList.Count</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("procedures"))"
+            type="button" role="tab"
+            disabled="@(selectedPatientId <= 0)">
+                <i class="fas fa-procedures me-2"></i>Procedimientos
+                @if (procedimientosList.Any())
+                {
+                    <span class="badge bg-info ms-1">@procedimientosList.Count</span>
+                }
             </button>
         </li>
     </ul>
@@ -49,7 +74,7 @@
                     @if (!isEditMode)
                     {
                         <PatientSelector @bind-Value="clinicalHistoryId"
-                                         OnPatientSelected="HandlePatientSelected" />
+                        OnPatientSelected="HandlePatientSelected" />
                     }
                     else
                     {
@@ -66,9 +91,45 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label">Lugar de Atención</label>
+                            <select class="form-select" @bind="lugarSeleccionada">
+                                <option value="">Seleccione el lugar de Atención</option>
+                                @foreach (var lugar in lugaresAtencion)
+                                {
+                                    <option value="@lugar.Id">@lugar.Name</option>
+                                }
+                            </select>
+						</div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Área</label>
+                            <select class="form-select" @bind="areaSeleccionada">
+                                <option value="">Seleccione un área</option>
+                                <option value="Enfermería">Enfermería</option>
+                                <option value="Psicología">Psicología</option>
+                                <option value="Ginecología">Ginecología</option>
+                                <option value="Medicina General">Medicina General</option>
+                                <option value="Pediatría">Pediatría</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Profesional responsable</label>
+                            <select class="form-select" @bind="profesionalSeleccionado">
+                                <option value="">Seleccione un profesional</option>
+                                @foreach (var profesional in profesionales)
+                                {
+                                    <option value="@profesional.HealthProfessionalId">
+                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
                         <div class="d-flex justify-content-end mt-3">
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("vitals"))">
-                                Continuar a Signos Vitales <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -79,22 +140,23 @@
         <!-- Vital Signs Tab -->
         <div class="tab-pane @(activeTab == "vitals" ? "show active" : "")" role="tabpanel">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Signos Vitales</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Signos Vitales (Opcional)</h5>
+                    <small class="text-muted">Complete solo si es necesario</small>
                 </div>
                 <div class="card-body">
                     @if (selectedPatientId > 0)
                     {
                         <div class="containerbox1-grid">
-                            <ContainerBox1 Title="Peso" Width="half" @bind-Content="peso" />
-                            <ContainerBox1 Title="Talla" Width="half" @bind-Content="talla" />
+                            <ContainerBox1 Title="Peso (kg)" Width="half" @bind-Content="peso" />
+                            <ContainerBox1 Title="Talla (cm)" Width="half" @bind-Content="talla" />
                             <ContainerBox1 Title="IMC" Width="half" @bind-Content="imc" />
-                            <ContainerBox1 Title="Perímetro Abdominal" Width="half" @bind-Content="perimetroAbdominal" />
+                            <ContainerBox1 Title="Perímetro Abdominal (cm)" Width="half" @bind-Content="perimetroAbdominal" />
                             <ContainerBox1 Title="Presión Arterial" Width="half" @bind-Content="presionArterial" />
-                            <ContainerBox1 Title="Temperatura" Width="half" @bind-Content="temperatura" />
+                            <ContainerBox1 Title="Temperatura (°C)" Width="half" @bind-Content="temperatura" />
                             <ContainerBox1 Title="Presión Arterial Media" Width="half" @bind-Content="pam" />
                             <ContainerBox1 Title="Frecuencia Cardíaca" Width="half" @bind-Content="frecuenciaCardiaca" />
-                            <ContainerBox1 Title="Saturación Oxígeno" Width="half" @bind-Content="saturacionOxigeno" />
+                            <ContainerBox1 Title="Saturación Oxígeno (%)" Width="half" @bind-Content="saturacionOxigeno" />
                             <ContainerBox1 Title="Frecuencia Respiratoria" Width="half" @bind-Content="frecuenciaRespiratoria" />
                             <ContainerBox1 Title="Glucosa Capilar" Width="half" @bind-Content="glucosaCapilar" />
                             <ContainerBox1 Title="Hemoglobina" Width="half" @bind-Content="hemoglobina" />
@@ -104,9 +166,14 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("services"))">
-                                Continuar a Servicios <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                            <div>
+                                <button class="btn btn-outline-primary me-2" @onclick="@(() => SetActiveTab("services"))">
+                                    Ir a Servicios <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                                <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("procedures"))">
+                                    Ir a Procedimientos <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                 </div>
@@ -116,89 +183,188 @@
         <!-- Services Tab -->
         <div class="tab-pane @(activeTab == "services" ? "show active" : "")" role="tabpanel">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Servicios</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Servicios Médicos</h5>
+                    <button class="btn btn-sm btn-primary" @onclick="AgregarServicio">
+                        <i class="fas fa-plus me-1"></i>Agregar Servicio
+                    </button>
                 </div>
                 <div class="card-body">
                     @if (selectedPatientId > 0)
                     {
-                        <div class="d-flex flex-wrap">
-                            <!-- Columna izquierda -->
-                            <div class="d-flex flex-column me-3" style="flex: 1 1 48%">
-                                <ContainerBox2 Title="Fecha de atención"
-                                               Width="full"
-                                               @bind-SelectedDate="fechaAtencion" />
-
-                                <div class="mb-3">
-                                    <label class="form-label">Tipo de servicio</label>
-                                    <select class="form-select" @bind="servicioSeleccionado">
-                                        <option value="">Seleccione un tipo de servicio</option>
-                                        @foreach (var tipo in tipoServicios)
+                        @if (serviciosList.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Diagnóstico</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var servicio in serviciosList)
                                         {
-                                            <option value="@tipo.Id">@tipo.Name</option>
+                                            <tr>
+                                                <td>@servicio.ServiceDate?.ToString("dd/MM/yyyy")</td>
+                                                <td>@servicio.ServiceType</td>
+                                                <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)">
+                                                        <i class="fas fa-edit">Editar</i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)">
+                                                        <i class="fas fa-trash">Eliminar</i>
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         }
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Área</label>
-                                    <select class="form-select" @bind="areaSeleccionada">
-                                        <option value="">Seleccione un área</option>
-                                        <option value="Enfermería">Enfermería</option>
-                                        <option value="Psicología">Psicología</option>
-                                        <option value="Ginecología">Ginecología</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Profesional responsable</label>
-                                    <select class="form-select" @bind="profesionalSeleccionado">
-                                        <option value="">Seleccione un profesional</option>
-                                        @foreach (var profesional in profesionales)
-                                        {
-                                            <option value="@profesional.HealthProfessionalId">
-                                                @profesional.FullName - @profesional.NameTypeProfessional
-                                            </option>
-                                        }
-                                    </select>
-                                </div>
+                                    </tbody>
+                                </table>
                             </div>
-
-                            <!-- Columna derecha -->
-                            <div class="d-flex flex-column" style="flex: 1 1 48%">
-                                <ContainerBox1 Title="Diagnóstico"
-                                               Width="full"
-                                               @bind-Content="diagnostico" />
-
-                                <ContainerBox1 Title="Observaciones"
-                                               Width="full"
-                                               @bind-Content="observaciones" />
-
-                                <ContainerBox1 Title="Recomendaciones"
-                                               Width="full"
-                                               @bind-Content="recomendaciones" />
+                        }
+                        else
+                        {
+                            <div class="text-center py-3">
+                                <p class="text-muted">No hay servicios agregados</p>
+                                <button class="btn btn-primary" @onclick="AgregarServicio">
+                                    <i class="fas fa-plus me-2"></i>Agregar Primer Servicio
+                                </button>
                             </div>
-                        </div>
+                        }
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("vitals"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <div>
-                                <button class="btn btn-success me-2" @onclick="GuardarAtencionMedica">
-                                    <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
-                                </button>
-                                <button class="btn btn-secondary" @onclick="OnCancel">
-                                    Cancelar
+                            <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("procedures"))">
+                                Ir a Procedimientos <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Procedures Tab -->
+        <div class="tab-pane @(activeTab == "procedures" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Procedimientos Médicos</h5>
+                    <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
+                        <i class="fas fa-plus me-1"></i>Agregar Procedimiento
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (selectedPatientId > 0)
+                    {
+                        @if (procedimientosList.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Procedimiento</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var procedimiento in procedimientosList)
+                                        {
+                                            <tr>
+                                                <td>@procedimiento.ProcedureDate.ToString("dd/MM/yyyy")</td>
+                                                <td>@procedimiento.TypeOfProcedureName</td>
+                                                <td>@procedimiento.SpecificProcedureName</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)">
+                                                        <i class="fas fa-edit">Editar</i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)">
+                                                        <i class="fas fa-trash">Eliminar</i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-3">
+                                <p class="text-muted">No hay procedimientos agregados</p>
+                                <button class="btn btn-primary" @onclick="AgregarProcedimiento">
+                                    <i class="fas fa-plus me-2"></i>Agregar Primer Procedimiento
                                 </button>
                             </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("services"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="GuardarAtencionMedica">
+                                <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
+                            </button>
                         </div>
                     }
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Botón de guardado flotante -->
+    @if (selectedPatientId > 0 && !string.IsNullOrEmpty(profesionalSeleccionado))
+    {
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
+            <button class="btn btn-success btn-lg shadow" @onclick="GuardarAtencionMedica">
+                <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar")
+            </button>
+        </div>
+    }
 </div>
+
+<!-- Modal para Servicio -->
+@if (showServiceModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(currentService?.ServiceId > 0 ? "Editar" : "Agregar") Servicio</h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalServicio"></button>
+                </div>
+                <div class="modal-body">
+                    <ServiceForm Service="currentService" OnSaved="OnServiceSaved" OnCancel="CerrarModalServicio" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para Procedimiento -->
+@if (showProcedureModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento</h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
+                </div>
+                <div class="modal-body">
+                    <ProcedureForm Procedure="currentProcedure" OnSaved="OnProcedureSaved" OnCancel="CerrarModalProcedimiento" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
@@ -210,7 +376,10 @@
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
     private string areaSeleccionada = "";
+    private string profesionalSeleccionado = "";
     private bool isEditMode = false;
+    private string lugarSeleccionada = "";
+
 
     // Signos vitales
     private string peso = "";
@@ -226,26 +395,33 @@
     private string glucosaCapilar = "";
     private string hemoglobina = "";
 
-    // Servicios
-    private DateTime? fechaAtencion = DateTime.Now;
-    private string servicioSeleccionado = "";
-    private string profesionalSeleccionado = "";
-    private string diagnostico = "";
-    private string observaciones = "";
-    private string recomendaciones = "";
-
     // Listas dinámicas
     private List<TypeOfServiceDTO> tipoServicios = new();
     private List<HealthProfessionalDTO> profesionales = new();
+    private List<TypeOfProceduresDTO> tiposProcedimientos = new();
+    private List<ProceduresDTO> todosProcedimientos = new();
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+
+    // Listas de servicios y procedimientos
+    private List<MedicalServiceDTO> serviciosList = new();
+    private List<MedicalProcedureDTO> procedimientosList = new();
 
     // Para edición
     private VitalSignsDTO? existingVitalSigns;
-    private MedicalServiceDTO? existingMedicalService;
+
+    // Modales
+    private bool showServiceModal = false;
+    private bool showProcedureModal = false;
+    private MedicalServiceDTO? currentService;
+    private MedicalProcedureDTO? currentProcedure;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadTypeOfServices();
         await LoadHealthProfessionals();
+        await LoadTypeOfProcedures();
+        await LoadProcedures();
+		await LoadLugaresAtencion();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -261,8 +437,9 @@
 
         // Cargar datos básicos de la atención médica
         selectedPatientId = MedicalCare.PatientId;
-        areaSeleccionada = MedicalCare.Area ?? "";
+        areaSeleccionada = MedicalCare.Area;
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
+        selectedHistoryNumber = MedicalCare.NamePatient ?? "";
 
         // Cargar signos vitales existentes
         var allVitalSigns = await VitalSignsService.GetAllAsync();
@@ -286,19 +463,19 @@
 
         // Cargar servicios médicos existentes
         var existingServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId);
-        existingMedicalService = existingServices?.FirstOrDefault();
+        serviciosList = existingServices ?? new List<MedicalServiceDTO>();
 
-        if (existingMedicalService != null)
-        {
-            fechaAtencion = existingMedicalService.ServiceDate;
-            servicioSeleccionado = existingMedicalService.ServiceType ?? "";
-            diagnostico = existingMedicalService.Diagnosis ?? "";
-            observaciones = existingMedicalService.Observations ?? "";
-            recomendaciones = existingMedicalService.Recommendations ?? "";
-        }
+        // Cargar procedimientos médicos existentes
+        var existingProcedures = await MedicalProcedureService.GetAllAsync();
+        procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
         StateHasChanged();
     }
+
+	private async Task LoadLugaresAtencion()
+	{
+        lugaresAtencion = await PlaceService.GetAllPlacesAsync();
+	}
 
     private async Task LoadTypeOfServices()
     {
@@ -308,6 +485,16 @@
     private async Task LoadHealthProfessionals()
     {
         profesionales = await HealthProfessionalService.GetAllAsync();
+    }
+
+    private async Task LoadTypeOfProcedures()
+    {
+        tiposProcedimientos = await TypeOfProceduresService.GetAllAsync();
+    }
+
+    private async Task LoadProcedures()
+    {
+        todosProcedimientos = await ProceduresService.GetAllAsync();
     }
 
     private void SetActiveTab(string tab)
@@ -321,6 +508,100 @@
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
         return Task.CompletedTask;
+    }
+
+    // Métodos para servicios
+    private void AgregarServicio()
+    {
+        currentService = new MedicalServiceDTO
+        {
+            ServiceId = 0,
+            PatientId = selectedPatientId,
+            ServiceDate = DateTime.Now,
+            HealthProfessionalId = int.Parse(profesionalSeleccionado)
+        };
+        showServiceModal = true;
+    }
+
+    private void EditarServicio(MedicalServiceDTO servicio)
+    {
+        currentService = servicio;
+        showServiceModal = true;
+    }
+
+    private void EliminarServicio(MedicalServiceDTO servicio)
+    {
+        serviciosList.Remove(servicio);
+        StateHasChanged();
+    }
+
+    private void OnServiceSaved(MedicalServiceDTO servicio)
+    {
+        var existing = serviciosList.FirstOrDefault(s => s.ServiceId == servicio.ServiceId);
+        if (existing != null)
+        {
+            var index = serviciosList.IndexOf(existing);
+            serviciosList[index] = servicio;
+        }
+        else
+        {
+            serviciosList.Add(servicio);
+        }
+        CerrarModalServicio();
+        StateHasChanged();
+    }
+
+    private void CerrarModalServicio()
+    {
+        showServiceModal = false;
+        currentService = null;
+    }
+
+    // Métodos para procedimientos
+    private void AgregarProcedimiento()
+    {
+        currentProcedure = new MedicalProcedureDTO
+        {
+            ProcedureId = 0,
+            PatientId = selectedPatientId,
+            ProcedureDate = DateTime.Now,
+            HealthProfessionalId = int.Parse(profesionalSeleccionado)
+        };
+        showProcedureModal = true;
+    }
+
+    private void EditarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        currentProcedure = procedimiento;
+        showProcedureModal = true;
+    }
+
+    private void EliminarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        procedimientosList.Remove(procedimiento);
+        StateHasChanged();
+    }
+
+    private void OnProcedureSaved(MedicalProcedureDTO procedimiento)
+    {
+        var existing = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedimiento.ProcedureId);
+        if (existing != null)
+        {
+            var index = procedimientosList.IndexOf(existing);
+            procedimientosList[index] = procedimiento;
+        }
+        else
+        {
+            procedimientosList.Add(procedimiento);
+        }
+        CerrarModalProcedimiento();
+        StateHasChanged();
+    }
+
+    private void CerrarModalProcedimiento()
+    {
+        showProcedureModal = false;
+        currentProcedure = null;
     }
 
     private async Task GuardarAtencionMedica()
@@ -341,8 +622,10 @@
             }
 
             MedicalCareDTO medicalCareResult;
+            bool isCreatingNew = !isEditMode || MedicalCare == null || MedicalCare.CareId == 0;
 
-            if (isEditMode && MedicalCare != null)
+            // 1. Guardar o actualizar MedicalCare
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
                 // Actualizar atención médica existente
                 MedicalCare.Area = areaSeleccionada;
@@ -360,12 +643,12 @@
             {
                 // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                        LocationId = 1,
-                        Area = areaSeleccionada,
-                    };
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    LocationId = int.Parse(lugarSeleccionada),
+                    Area = areaSeleccionada,
+                };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -376,28 +659,28 @@
                 medicalCareResult = result.Data;
             }
 
-            // Guardar o actualizar signos vitales
+            // 2. Guardar o actualizar signos vitales (si hay datos)
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
-                    {
-                        Id = existingVitalSigns?.Id ?? 0,
-                        MedicalCareId = medicalCareResult.CareId,
-                        Weight = ParseDecimal(peso),
-                        Height = ParseDecimal(talla),
-                        Icm = ParseDecimal(imc),
-                        AbdominalCircumference = ParseDecimal(perimetroAbdominal),
-                        BloodPressure = presionArterial,
-                        Temperature = ParseDecimal(temperatura),
-                        MeanArterialPressure = ParseDecimal(pam),
-                        HeartRate = ParseInt(frecuenciaCardiaca),
-                        OxygenSaturation = ParseDecimal(saturacionOxigeno),
-                        RespiratoryRate = ParseInt(frecuenciaRespiratoria),
-                        BloodGlucose = ParseDecimal(glucosaCapilar),
-                        Hemoglobin = ParseDecimal(hemoglobina)
-                    };
+                {
+                    Id = existingVitalSigns?.Id ?? 0,
+                    MedicalCareId = medicalCareResult.CareId,
+                    Weight = ParseDecimal(peso),
+                    Height = ParseDecimal(talla),
+                    Icm = ParseDecimal(imc),
+                    AbdominalCircumference = ParseDecimal(perimetroAbdominal),
+                    BloodPressure = presionArterial,
+                    Temperature = ParseDecimal(temperatura),
+                    MeanArterialPressure = ParseDecimal(pam),
+                    HeartRate = ParseInt(frecuenciaCardiaca),
+                    OxygenSaturation = ParseDecimal(saturacionOxigeno),
+                    RespiratoryRate = ParseInt(frecuenciaRespiratoria),
+                    BloodGlucose = ParseDecimal(glucosaCapilar),
+                    Hemoglobin = ParseDecimal(hemoglobina)
+                };
 
-                if (existingVitalSigns != null)
+                if (existingVitalSigns != null && existingVitalSigns.Id > 0)
                 {
                     await VitalSignsService.UpdateAsync(vitalSignsDto);
                 }
@@ -407,32 +690,42 @@
                 }
             }
 
-            // Guardar o actualizar servicios médicos
-            if (HasServiceData())
+            // 3. Guardar servicios médicos
+            foreach (var servicio in serviciosList)
             {
-                var medicalServiceDto = new MedicalServiceDTO
-                    {
-                        ServiceId = existingMedicalService?.ServiceId ?? 0,
-                        CareId = medicalCareResult.CareId,
-                        ServiceDate = fechaAtencion,
-                        ServiceType = GetServiceTypeName(servicioSeleccionado),
-                        Diagnosis = diagnostico,
-                        Observations = observaciones,
-                        Recommendations = recomendaciones
-                    };
-
-                if (existingMedicalService != null)
+                servicio.CareId = medicalCareResult.CareId;
+                if (servicio.ServiceId == 0)
                 {
-                    await MedicalServiceService.UpdateAsync(medicalServiceDto);
+                    await MedicalServiceService.CreateAsync(servicio);
                 }
                 else
                 {
-                    await MedicalServiceService.CreateAsync(medicalServiceDto);
+                    await MedicalServiceService.UpdateAsync(servicio);
                 }
             }
 
+            // 4. Guardar procedimientos médicos
+            foreach (var procedimiento in procedimientosList)
+            {
+                procedimiento.CareId = medicalCareResult.CareId;
+                if (procedimiento.ProcedureId == 0)
+                {
+                    await MedicalProcedureService.CreateAsync(procedimiento);
+                }
+                else
+                {
+                    await MedicalProcedureService.UpdateAsync(procedimiento);
+                }
+            }
+
+            // 5. Mostrar mensaje de éxito y notificar
             await OnSaved.InvokeAsync(medicalCareResult);
-            await JS.InvokeVoidAsync("alert", isEditMode ? "Atención médica actualizada exitosamente" : "Atención médica creada exitosamente");
+
+            string successMessage = isCreatingNew
+                ? "Atención médica creada exitosamente"
+                : "Atención médica actualizada exitosamente";
+
+            await JS.InvokeVoidAsync("alert", successMessage);
         }
         catch (Exception ex)
         {
@@ -440,27 +733,11 @@
         }
     }
 
-    private string GetServiceTypeName(string serviceId)
-    {
-        if (int.TryParse(serviceId, out int id))
-        {
-            var service = tipoServicios.FirstOrDefault(s => s.Id == id);
-            return service?.Name ?? "";
-        }
-        return "";
-    }
-
     private bool HasVitalSignsData()
     {
         return !string.IsNullOrWhiteSpace(peso) || !string.IsNullOrWhiteSpace(talla) ||
                !string.IsNullOrWhiteSpace(presionArterial) || !string.IsNullOrWhiteSpace(temperatura) ||
                !string.IsNullOrWhiteSpace(frecuenciaCardiaca) || !string.IsNullOrWhiteSpace(saturacionOxigeno);
-    }
-
-    private bool HasServiceData()
-    {
-        return !string.IsNullOrWhiteSpace(servicioSeleccionado) || !string.IsNullOrWhiteSpace(diagnostico) ||
-               !string.IsNullOrWhiteSpace(observaciones) || !string.IsNullOrWhiteSpace(recomendaciones);
     }
 
     private decimal? ParseDecimal(string value)

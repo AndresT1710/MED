@@ -14,24 +14,36 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ServiceId { get; set; }
 
-        public int? CareId { get; set; } // FK a MedicalCares (opcional)
+        public int? CareId { get; set; }
 
-        public DateTime? ServiceDate { get; set; } // Fecha de atención
+        public DateTime? ServiceDate { get; set; }
 
         [StringLength(100)]
-        public string? ServiceType { get; set; } // Tipo de servicio
+        public string? ServiceType { get; set; }
 
-        public string? Diagnosis { get; set; } // Diagnóstico
+        public string? Diagnosis { get; set; }
 
-        public string? Observations { get; set; } // Observaciones
+        public string? Observations { get; set; }
+
+        public int PatientId { get; set; }
+
+        public int HealthProfessionalId { get; set; }
 
         [StringLength(255)]
-        public string? Recommendations { get; set; } // Recomendaciones
+        public string? Recommendations { get; set; }
 
-        // Navegación
+        // Relaciones
         [ForeignKey("CareId")]
         [InverseProperty("MedicalServices")]
         public virtual MedicalCare? MedicalCare { get; set; }
+
+        [ForeignKey("PatientId")]
+        [InverseProperty("MedicalServices")]
+        public virtual Patient? Patient { get; set; }
+
+        [ForeignKey("HealthProfessionalId")]
+        [InverseProperty("MedicalServices")]
+        public virtual HealthProfessional? HealthProfessional { get; set; }
     }
 
 }

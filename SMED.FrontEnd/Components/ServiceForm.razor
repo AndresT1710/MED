@@ -1,0 +1,103 @@
+﻿@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+
+@inject TypeOfServiceService TypeOfServiceService
+@inject HealthProfessionalService HealthProfessionalService
+@inject IJSRuntime JS
+
+<div class="service-form">
+    <div class="row">
+        <div class="col-md-6">
+            <ContainerBox2 Title="Fecha de servicio"
+                           Width="full"
+                           @bind-SelectedDate="fechaServicio" />
+
+            <div class="mb-3">
+                <label class="form-label">Tipo de servicio</label>
+                <select class="form-select" @bind="tipoServicioSeleccionado">
+                    <option value="">Seleccione un tipo de servicio</option>
+                    @foreach (var tipo in tiposServicio)
+                    {
+                        <option value="@tipo.Name">@tipo.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <ContainerBox1 Title="Diagnóstico"
+                           Width="full"
+                           @bind-Content="diagnostico" />
+
+            <ContainerBox1 Title="Observaciones"
+                           Width="full"
+                           @bind-Content="observaciones" />
+
+            <ContainerBox1 Title="Recomendaciones"
+                           Width="full"
+                           @bind-Content="recomendaciones" />
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-secondary me-2" @onclick="OnCancel">Cancelar</button>
+        <button class="btn btn-primary" @onclick="GuardarServicio">
+            <i class="fas fa-save me-2"></i>Guardar
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalServiceDTO? Service { get; set; }
+    [Parameter] public EventCallback<MedicalServiceDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private DateTime? fechaServicio = DateTime.Now;
+    private string tipoServicioSeleccionado = "";
+    private string diagnostico = "";
+    private string observaciones = "";
+    private string recomendaciones = "";
+
+    private List<TypeOfServiceDTO> tiposServicio = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        tiposServicio = await TypeOfServiceService.GetAllAsync();
+        LoadExistingData();
+    }
+
+    protected override void OnParametersSet()
+    {
+        LoadExistingData();
+    }
+
+    private void LoadExistingData()
+    {
+        if (Service != null)
+        {
+            fechaServicio = Service.ServiceDate ?? DateTime.Now;
+            tipoServicioSeleccionado = Service.ServiceType ?? "";
+            diagnostico = Service.Diagnosis ?? "";
+            observaciones = Service.Observations ?? "";
+            recomendaciones = Service.Recommendations ?? "";
+        }
+    }
+
+    private async Task GuardarServicio()
+    {
+        if (string.IsNullOrEmpty(tipoServicioSeleccionado))
+        {
+            await JS.InvokeVoidAsync("alert", "Debe seleccionar un tipo de servicio");
+            return;
+        }
+
+        var servicio = Service ?? new MedicalServiceDTO();
+        servicio.ServiceDate = fechaServicio;
+        servicio.ServiceType = tipoServicioSeleccionado;
+        servicio.Diagnosis = diagnostico;
+        servicio.Observations = observaciones;
+        servicio.Recommendations = recomendaciones;
+
+        await OnSaved.InvokeAsync(servicio);
+    }
+}

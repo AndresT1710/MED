@@ -1,0 +1,156 @@
+﻿@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+
+@inject TypeOfProceduresService TypeOfProceduresService
+@inject ProceduresService ProceduresService
+@inject HealthProfessionalService HealthProfessionalService
+@inject IJSRuntime JS
+
+<div class="procedure-form">
+    <div class="row">
+        <div class="col-md-6">
+            <ContainerBox2 Title="Fecha de procedimiento"
+                           Width="full"
+                           @bind-SelectedDate="fechaProcedimiento" />
+
+            <div class="mb-3">
+                <label class="form-label">Tipo de procedimiento</label>
+                <select class="form-select" @onchange="OnTipoProcedimientoChanged">
+                    <option value="">Seleccione un tipo</option>
+                    @foreach (var tipo in tiposProcedimientos)
+                    {
+                        <option value="@tipo.Id">@tipo.Name</option>
+                    }
+                </select>
+
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Procedimiento específico</label>
+                <select class="form-select" @bind="procedimientoSeleccionado" disabled="@(string.IsNullOrEmpty(tipoProcedimientoSeleccionado))">
+                    <option value="">Seleccione un procedimiento</option>
+                    @foreach (var proc in procedimientosFiltrados)
+                    {
+                        <option value="@proc.Id">@proc.Description</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Médico Tratante</label>
+                <select class="form-select" @bind="medicoTratanteSeleccionado">
+                    <option value="">Seleccione médico tratante</option>
+                    @foreach (var medico in profesionales)
+                    {
+                        <option value="@medico.HealthProfessionalId">
+                            @medico.FullName - @medico.NameTypeProfessional
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-control" rows="4" @bind="observaciones"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-secondary me-2" @onclick="OnCancel">Cancelar</button>
+        <button class="btn btn-primary" @onclick="GuardarProcedimiento">
+            <i class="fas fa-save me-2"></i>Guardar
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalProcedureDTO? Procedure { get; set; }
+    [Parameter] public EventCallback<MedicalProcedureDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private DateTime? fechaProcedimiento = DateTime.Now;
+    private string tipoProcedimientoSeleccionado = "";
+    private string procedimientoSeleccionado = "";
+    private string medicoTratanteSeleccionado = "";
+    private string observaciones = "";
+
+    private List<TypeOfProceduresDTO> tiposProcedimientos = new();
+    private List<ProceduresDTO> todosProcedimientos = new();
+    private List<ProceduresDTO> procedimientosFiltrados = new();
+    private List<HealthProfessionalDTO> profesionales = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        LoadExistingData();
+    }
+
+    protected override void OnParametersSet()
+    {
+        LoadExistingData();
+    }
+
+    private async Task LoadData()
+    {
+        tiposProcedimientos = await TypeOfProceduresService.GetAllAsync();
+        todosProcedimientos = await ProceduresService.GetAllAsync();
+        profesionales = await HealthProfessionalService.GetAllAsync();
+    }
+
+    private async Task OnTipoProcedimientoChanged(ChangeEventArgs e)
+    {
+        tipoProcedimientoSeleccionado = e.Value?.ToString() ?? "";
+        procedimientoSeleccionado = "";
+
+        if (int.TryParse(tipoProcedimientoSeleccionado, out int typeId))
+        {
+            procedimientosFiltrados = todosProcedimientos
+                .Where(p => p.TypeOfProcedureId == typeId)
+                .ToList();
+        }
+        else
+        {
+            procedimientosFiltrados = new List<ProceduresDTO>();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private void LoadExistingData()
+    {
+        if (Procedure != null)
+        {
+            fechaProcedimiento = Procedure.ProcedureDate;
+            procedimientoSeleccionado = Procedure.SpecificProcedureId.ToString();
+            medicoTratanteSeleccionado = Procedure.TreatingPhysicianId?.ToString() ?? "";
+            observaciones = Procedure.Observations ?? "";
+
+            if (Procedure.TypeOfProcedureId.HasValue)
+            {
+                tipoProcedimientoSeleccionado = Procedure.TypeOfProcedureId.Value.ToString();
+                procedimientosFiltrados = todosProcedimientos.Where(p => p.TypeOfProcedureId == Procedure.TypeOfProcedureId.Value).ToList();
+            }
+        }
+    }
+
+    private async Task GuardarProcedimiento()
+    {
+        if (string.IsNullOrEmpty(procedimientoSeleccionado))
+        {
+            await JS.InvokeVoidAsync("alert", "Debe seleccionar un procedimiento específico");
+            return;
+        }
+
+        var procedimiento = Procedure ?? new MedicalProcedureDTO();
+        procedimiento.ProcedureDate = fechaProcedimiento ?? DateTime.Now;
+        procedimiento.SpecificProcedureId = int.Parse(procedimientoSeleccionado);
+        procedimiento.TreatingPhysicianId = string.IsNullOrEmpty(medicoTratanteSeleccionado) ? null : int.Parse(medicoTratanteSeleccionado);
+        procedimiento.Observations = observaciones;
+
+        await OnSaved.InvokeAsync(procedimiento);
+    }
+}

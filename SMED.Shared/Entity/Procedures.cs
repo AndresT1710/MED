@@ -21,10 +21,7 @@ namespace SMED.Shared.Entity
         [InverseProperty("Procedures")]
         public virtual TypeOfProcedures TypeOfProcedure { get; set; } = null!;
 
-        public int? MedicalCareId { get; set; }
-
-        [ForeignKey("MedicalCareId")]
-        [InverseProperty("Procedures")]
-        public virtual MedicalCare? MedicalCare { get; set; }
+        [InverseProperty("Procedure")]
+        public virtual ICollection<MedicalProcedure> MedicalProcedures { get; set; } = new List<MedicalProcedure>();
     }
 }

@@ -15,5 +15,9 @@ namespace SMED.Shared.DTOs
         public string? Diagnosis { get; set; }
         public string? Observations { get; set; }
         public string? Recommendations { get; set; }
+
+        public int PatientId { get; set; }
+        public int HealthProfessionalId { get; set; }
     }
+
 }

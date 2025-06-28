@@ -53,6 +53,20 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<MedicalServiceDTO>?> GetByPatientIdAsync(int patientId)
+        {
+            try
+            {
+                var allServices = await GetAllAsync();
+                return allServices?.Where(s => s.PatientId == patientId).ToList() ?? new List<MedicalServiceDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener servicios médicos por PatientId: {PatientId}", patientId);
+                return new List<MedicalServiceDTO>();
+            }
+        }
+
         public async Task<List<MedicalServiceDTO>?> GetByCareIdAsync(int careId)
         {
             try

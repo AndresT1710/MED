@@ -6,7 +6,6 @@
 @using SMED.FrontEnd.Services
 
 @inject MedicalServiceService MedicalServiceService
-@inject MedicalCareService MedicalCareService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
@@ -59,10 +58,10 @@
                                         <td>@(string.IsNullOrEmpty(servicio.Recommendations) ? "N/A" : servicio.Recommendations)</td>
                                         <td>
                                             <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)">
-                                                <i class="fas fa-edit">Editar</i>
+                                                <i class="fas fa-edit"></i> Editar
                                             </button>
                                             <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio.ServiceId)">
-                                                <i class="fas fa-trash">Eliminar</i>
+                                                <i class="fas fa-trash"></i> Eliminar
                                             </button>
                                         </td>
                                     </tr>
@@ -107,7 +106,7 @@
                     </div>
                     <div class="modal-body">
                         <MedicalServicesForm MedicalService="selectedMedicalService"
-                                             CareId="selectedCareId"
+                                             PatientId="selectedPatientId"
                                              OnSaved="OnServiceSaved"
                                              OnCancel="HideForm" />
                     </div>
@@ -121,7 +120,6 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private int selectedCareId = 0;
 
     private List<MedicalServiceDTO> serviciosMedicos = new();
     private MedicalServiceDTO? selectedMedicalService;
@@ -133,74 +131,27 @@
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
 
-        // Buscar la atención médica activa para este paciente
-        await BuscarAtencionMedicaActiva();
-
-        // Cargar servicios médicos
+        // Cargar servicios médicos para este paciente
         await LoadServiciosMedicos();
-    }
-
-    private async Task BuscarAtencionMedicaActiva()
-    {
-        try
-        {
-            var allMedicalCares = await MedicalCareService.GetAllAsync();
-            var patientCare = allMedicalCares?.FirstOrDefault(mc => mc.PatientId == selectedPatientId);
-
-            if (patientCare != null)
-            {
-                selectedCareId = patientCare.CareId;
-            }
-            else
-            {
-                // Si no existe una atención médica, crear una básica
-                var newCare = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        LocationId = 1,
-                        HealthProfessionalId = 1, // Valor por defecto
-                        Area = "Servicios Generales"
-                    };
-
-                var result = await MedicalCareService.CreateAsync(newCare);
-                if (result.Success && result.Data != null)
-                {
-                    selectedCareId = result.Data.CareId;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", $"Error al buscar atención médica: {ex.Message}");
-            selectedCareId = 0;
-        }
     }
 
     private async Task LoadServiciosMedicos()
     {
-        if (selectedCareId > 0)
-        {
-            serviciosMedicos = await MedicalServiceService.GetByCareIdAsync(selectedCareId) ?? new List<MedicalServiceDTO>();
-        }
-        else
-        {
-            serviciosMedicos = new List<MedicalServiceDTO>();
-        }
+        // Obtener todos los servicios y filtrar por el paciente actual usando PatientId
+        var allServices = await MedicalServiceService.GetAllAsync();
+
+        // Filtrar por PatientId en lugar de CareId
+        serviciosMedicos = allServices?.Where(s => s.PatientId == selectedPatientId).ToList() ?? new List<MedicalServiceDTO>();
+
         StateHasChanged();
     }
 
     private void AgregarNuevoServicio()
     {
-        if (selectedCareId <= 0)
-        {
-            JS.InvokeVoidAsync("alert", "No se puede crear un servicio sin una atención médica activa");
-            return;
-        }
-
         selectedMedicalService = new MedicalServiceDTO
             {
                 ServiceId = 0,
-                CareId = selectedCareId
+                PatientId = selectedPatientId // Usar PatientId en lugar de CareId
             };
         showForm = true;
     }

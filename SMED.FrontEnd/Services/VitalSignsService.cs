@@ -23,33 +23,12 @@ namespace SMED.FrontEnd.Services
                 {
                     return await response.Content.ReadFromJsonAsync<List<VitalSignsDTO>>();
                 }
-
-                _logger.LogWarning("Error al obtener signos vitales: {StatusCode}", response.StatusCode);
                 return new List<VitalSignsDTO>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener todos los signos vitales");
+                _logger.LogError(ex, "Error al obtener signos vitales");
                 return new List<VitalSignsDTO>();
-            }
-        }
-
-        public async Task<VitalSignsDTO?> GetByIdAsync(int id)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/VitalSigns/{id}");
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<VitalSignsDTO>();
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener signo vital por ID: {Id}", id);
-                return null;
             }
         }
 
@@ -69,7 +48,7 @@ namespace SMED.FrontEnd.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al crear signo vital");
+                _logger.LogError(ex, "Error al crear signos vitales");
                 return (false, null, ex.Message);
             }
         }
@@ -89,27 +68,7 @@ namespace SMED.FrontEnd.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al actualizar signo vital");
-                return (false, ex.Message);
-            }
-        }
-
-        public async Task<(bool Success, string Error)> DeleteAsync(int id)
-        {
-            try
-            {
-                var response = await _httpClient.DeleteAsync($"api/VitalSigns/{id}");
-                if (response.IsSuccessStatusCode)
-                {
-                    return (true, string.Empty);
-                }
-
-                var error = await response.Content.ReadAsStringAsync();
-                return (false, error);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar signo vital");
+                _logger.LogError(ex, "Error al actualizar signos vitales");
                 return (false, ex.Message);
             }
         }

@@ -1,0 +1,209 @@
+﻿@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+
+@inject VitalSignsService VitalSignsService
+@inject MedicalServiceService MedicalServiceService
+@inject MedicalProcedureService MedicalProcedureService
+@inject IJSRuntime JS
+
+<div class="medical-care-detail">
+    <div class="row">
+        <!-- Información básica -->
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Atención:</strong> @MedicalCare?.CareId</p>
+                            <p><strong>Paciente:</strong> @MedicalCare?.NamePatient</p>
+                            <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "N/A")</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NameLocation</p>
+                            <p><strong>Profesional:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signos Vitales -->
+        @if (vitalSigns != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Signos Vitales</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <p><strong>Peso:</strong> @(vitalSigns.Weight?.ToString("F1") ?? "N/A") kg</p>
+                                <p><strong>Talla:</strong> @(vitalSigns.Height?.ToString("F1") ?? "N/A") cm</p>
+                                <p><strong>IMC:</strong> @(vitalSigns.Icm?.ToString("F1") ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p><strong>Presión Arterial:</strong> @(vitalSigns.BloodPressure ?? "N/A")</p>
+                                <p><strong>Temperatura:</strong> @(vitalSigns.Temperature?.ToString("F1") ?? "N/A") °C</p>
+                                <p><strong>PAM:</strong> @(vitalSigns.MeanArterialPressure?.ToString("F1") ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p><strong>FC:</strong> @(vitalSigns.HeartRate?.ToString() ?? "N/A") lpm</p>
+                                <p><strong>FR:</strong> @(vitalSigns.RespiratoryRate?.ToString() ?? "N/A") rpm</p>
+                                <p><strong>SatO2:</strong> @(vitalSigns.OxygenSaturation?.ToString("F1") ?? "N/A") %</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p><strong>Glucosa:</strong> @(vitalSigns.BloodGlucose?.ToString("F1") ?? "N/A") mg/dl</p>
+                                <p><strong>Hemoglobina:</strong> @(vitalSigns.Hemoglobin?.ToString("F1") ?? "N/A") g/dl</p>
+                                <p><strong>P. Abdominal:</strong> @(vitalSigns.AbdominalCircumference?.ToString("F1") ?? "N/A") cm</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Servicios Médicos -->
+        @if (medicalServices.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Servicios Médicos (@medicalServices.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo de Servicio</th>
+                                        <th>Diagnóstico</th>
+                                        <th>Observaciones</th>
+                                        <th>Recomendaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var service in medicalServices)
+                                    {
+                                        <tr>
+                                            <td>@service.ServiceDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@service.ServiceType</td>
+                                            <td>@(service.Diagnosis ?? "N/A")</td>
+                                            <td>@(service.Observations ?? "N/A")</td>
+                                            <td>@(service.Recommendations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Procedimientos Médicos -->
+        @if (medicalProcedures.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-procedures me-2"></i>Procedimientos Médicos (@medicalProcedures.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Procedimiento</th>
+                                        <th>Personal de Salud</th>
+                                        <th>Médico Tratante</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var procedure in medicalProcedures)
+                                    {
+                                        <tr>
+                                            <td>@procedure.ProcedureDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@(procedure.TypeOfProcedureName ?? "N/A")</td>
+                                            <td>@(procedure.SpecificProcedureName ?? "N/A")</td>
+                                            <td>@(procedure.HealthProfessionalName ?? "N/A")</td>
+                                            <td>@(procedure.TreatingPhysicianName ?? "N/A")</td>
+                                            <td>@(procedure.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (vitalSigns == null && !medicalServices.Any() && !medicalProcedures.Any())
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta atención médica no tiene signos vitales, servicios o procedimientos registrados.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+
+    private VitalSignsDTO? vitalSigns;
+    private List<MedicalServiceDTO> medicalServices = new();
+    private List<MedicalProcedureDTO> medicalProcedures = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    private async Task LoadDetails()
+    {
+        if (MedicalCare == null) return;
+
+        try
+        {
+            // Cargar signos vitales
+            var allVitalSigns = await VitalSignsService.GetAllAsync();
+            vitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
+
+            // Cargar servicios médicos
+            medicalServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<MedicalServiceDTO>();
+
+            // Cargar procedimientos médicos
+            var allProcedures = await MedicalProcedureService.GetAllAsync();
+            medicalProcedures = allProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading medical care details: {ex.Message}");
+        }
+    }
+}

@@ -28,6 +28,15 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("HealthProfessional")]
         public virtual ICollection<MedicalCare> MedicalCares { get; set; } = new List<MedicalCare>();
+
+        [InverseProperty("HealthProfessional")]
+        public virtual ICollection<MedicalService> MedicalServices { get; set; } = new List<MedicalService>();
+
+        [InverseProperty("HealthProfessional")]
+        public virtual ICollection<MedicalProcedure> MedicalProceduresAsHealthProfessional { get; set; } = new List<MedicalProcedure>();
+
+        [InverseProperty("TreatingPhysician")]
+        public virtual ICollection<MedicalProcedure> MedicalProceduresAsTreatingPhysician { get; set; } = new List<MedicalProcedure>();
     }
 
 }

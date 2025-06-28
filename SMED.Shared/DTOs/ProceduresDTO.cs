@@ -11,7 +11,6 @@ namespace SMED.Shared.DTOs
         public int Id { get; set; }
         public string Description { get; set; } = string.Empty;
         public int TypeOfProcedureId { get; set; }
-        public int? MedicalCareId { get; set; }
         public string TypeOfProcedureName { get; set; } = string.Empty;
     }
 

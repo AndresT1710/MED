@@ -101,7 +101,6 @@
             </div>
         </div>
     }
-
 </TabContainerE>
 
 @code {
@@ -121,7 +120,7 @@
 
     private List<string> MedicalCareColumns = new()
     {
-        "ID Atención", "ID Ubicación", "Ubicación", "ID Paciente", "Nombre", "ID Profesional", "Área", "Acciones"
+        "ID", "Paciente", "Área", "Profesional", "Acciones"
     };
 
     protected override async Task OnInitializedAsync()
@@ -173,12 +172,9 @@
         MedicalCareData = results.Select(mc => new List<string>
         {
             mc.CareId.ToString(),
-            mc.LocationId.ToString(),
-            mc.NameLocation.ToString(),
-            mc.PatientId.ToString(),
-			mc.NamePatient.ToString(),
-            mc.HealthProfessionalId.ToString(),
-			mc.Area.ToString(),
+            mc.NamePatient ?? "N/A",
+            mc.Area ?? "N/A",
+            mc.NameHealthProfessional ?? "N/A",
             mc.CareId.ToString()
         }).ToList();
 
@@ -229,18 +225,18 @@
     private void CreateNewMedicalCare()
     {
         selectedMedicalCare = new MedicalCareDTO
-        {
-            CareId = 0
-        };
+            {
+                CareId = 0
+            };
         showForm = true;
     }
 
     private Task AddMedicalCare()
     {
         selectedMedicalCare = new MedicalCareDTO
-        {
-            CareId = 0
-        };
+            {
+                CareId = 0
+            };
         ShowForm();
         return Task.CompletedTask;
     }

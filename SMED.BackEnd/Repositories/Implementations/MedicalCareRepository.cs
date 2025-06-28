@@ -17,6 +17,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(m => m.PlaceOfAttentionNavigation)
                 .Include(m => m.Patient)
                     .ThenInclude(p => p.PersonNavigation)
+                .Include(m => m.HealthProfessional)
+                    .ThenInclude(h => h.PersonNavigation) // <- FALTA ESTO
                 .ToListAsync();
 
             return medicalCares.Select(m => new MedicalCareDTO
@@ -30,10 +32,18 @@ namespace SMED.BackEnd.Repositories.Implementations
                 m.Patient.PersonNavigation.MiddleName,
                 m.Patient.PersonNavigation.LastName,
                 m.Patient.PersonNavigation.SecondLastName
-                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                      }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 PatientId = m.PatientId,
                 HealthProfessionalId = m.HealthProfessionalId,
+                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
+                      }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
                 Area = m.Area
             }).ToList();
         }
@@ -48,6 +58,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 LocationId = entity.LocationId,
                 PatientId = entity.PatientId,
                 HealthProfessionalId = entity.HealthProfessionalId
+                
             };
         }
 
@@ -58,8 +69,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 LocationId = dto.LocationId,
                 PatientId = dto.PatientId,
                 HealthProfessionalId = dto.HealthProfessionalId,
-                Area = dto.Area ?? string.Empty // Ensure Area is not null
-
+                Area = dto.Area ?? string.Empty
             };
             _context.MedicalCares.Add(entity);
             await _context.SaveChangesAsync();

@@ -19,7 +19,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Id = p.Id,
                     Description = p.Description,
                     TypeOfProcedureId = p.TypeOfProcedureId,
-                    MedicalCareId = p.MedicalCareId
                 })
                 .ToListAsync();
 
@@ -31,7 +30,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Id = entity.Id,
                 Description = entity.Description,
                 TypeOfProcedureId = entity.TypeOfProcedureId,
-                MedicalCareId = entity.MedicalCareId
             };
         }
 
@@ -41,7 +39,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 Description = dto.Description,
                 TypeOfProcedureId = dto.TypeOfProcedureId,
-                MedicalCareId = dto.MedicalCareId
             };
 
             _context.Procedures.Add(entity);
@@ -58,7 +55,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.Description = dto.Description;
             entity.TypeOfProcedureId = dto.TypeOfProcedureId;
-            entity.MedicalCareId = dto.MedicalCareId;
 
             await _context.SaveChangesAsync();
             return dto;

@@ -46,6 +46,8 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.Diagnosis = dto.Diagnosis;
             entity.Observations = dto.Observations;
             entity.Recommendations = dto.Recommendations;
+            entity.PatientId = dto.PatientId;
+            entity.HealthProfessionalId = dto.HealthProfessionalId;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -72,7 +74,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ServiceType = entity.ServiceType,
                 Diagnosis = entity.Diagnosis,
                 Observations = entity.Observations,
-                Recommendations = entity.Recommendations
+                Recommendations = entity.Recommendations,
+                PatientId = entity.PatientId,
+                HealthProfessionalId = entity.HealthProfessionalId
             };
         }
 
@@ -86,8 +90,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ServiceType = dto.ServiceType,
                 Diagnosis = dto.Diagnosis,
                 Observations = dto.Observations,
-                Recommendations = dto.Recommendations
+                Recommendations = dto.Recommendations,
+                PatientId = dto.PatientId,
+                HealthProfessionalId = dto.HealthProfessionalId
             };
         }
     }
+
 }

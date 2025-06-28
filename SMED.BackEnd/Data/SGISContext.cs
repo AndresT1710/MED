@@ -118,7 +118,7 @@ namespace SGIS.Models
         public DbSet<Diagnosis> Diagnosis { get; set; }
         public DbSet<DiagnosisTreatment> DiagnosisTreatments { get; set; }
         public DbSet<MedicalService> MedicalServices { get; set; }
-
+        public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -715,6 +715,36 @@ namespace SGIS.Models
             {
                 entity.ToTable("DiagnosisTreatment");
             });
+
+            modelBuilder.Entity<MedicalService>()
+                .HasOne(ms => ms.Patient)
+                .WithMany(p => p.MedicalServices)
+                .HasForeignKey(ms => ms.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MedicalService>()
+                .HasOne(ms => ms.HealthProfessional)
+                .WithMany(hp => hp.MedicalServices)
+                .HasForeignKey(ms => ms.HealthProfessionalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MedicalProcedure>()
+                .HasOne(mp => mp.HealthProfessional)
+                .WithMany(hp => hp.MedicalProceduresAsHealthProfessional)
+                .HasForeignKey(mp => mp.HealthProfessionalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MedicalProcedure>()
+                .HasOne(mp => mp.TreatingPhysician)
+                .WithMany(hp => hp.MedicalProceduresAsTreatingPhysician)
+                .HasForeignKey(mp => mp.TreatingPhysicianId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MedicalService>()
+                .HasOne(ms => ms.MedicalCare)
+                .WithMany(mc => mc.MedicalServices)
+                .HasForeignKey(ms => ms.CareId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
 

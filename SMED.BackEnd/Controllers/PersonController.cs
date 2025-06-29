@@ -69,5 +69,29 @@ namespace SMED.BackEnd.Controllers
             return NoContent();
         }
 
+        [HttpGet("by-document/{documentNumber}")]
+        public async Task<ActionResult<PersonDTO>> GetByDocument(string documentNumber)
+        {
+            if (string.IsNullOrWhiteSpace(documentNumber))
+                return BadRequest("El número de documento es requerido");
+
+            var person = await _personRepository.GetByDocumentNumberAsync(documentNumber);
+
+            if (person == null)
+                return NotFound($"No se encontró ninguna persona con el documento {documentNumber}");
+
+            return Ok(person);
+        }
+
+        [HttpGet("search")]
+        public async Task<ActionResult<List<PersonDTO>>> SearchPersons([FromQuery] string term)
+        {
+            if (string.IsNullOrWhiteSpace(term) || term.Length < 3)
+                return BadRequest("El término de búsqueda debe tener al menos 3 caracteres");
+
+            var persons = await _personRepository.SearchPersonsAsync(term);
+            return Ok(persons);
+        }
+
     }
 }

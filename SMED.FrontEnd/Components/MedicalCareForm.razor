@@ -1,7 +1,6 @@
 ﻿@using SMED.FrontEnd.Components
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
-
 @inject MedicalCareService MedicalCareService
 @inject TypeOfServiceService TypeOfServiceService
 @inject HealthProfessionalService HealthProfessionalService
@@ -11,7 +10,6 @@
 @inject ProceduresService ProceduresService
 @inject MedicalProcedureService MedicalProcedureService
 @inject PlaceOfAttentionService PlaceService
-
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -19,45 +17,56 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("patient"))"
-            type="button" role="tab">
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("vitals"))"
-            type="button" role="tab"
-            disabled="@(selectedPatientId <= 0)">
+                    @onclick="@(() => SetActiveTab("vitals"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-heartbeat me-2"></i>Signos Vitales
                 @if (HasVitalSignsData())
                 {
                     <span class="badge bg-success ms-1">✓</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "services" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("services"))"
-            type="button" role="tab"
-            disabled="@(selectedPatientId <= 0)">
+                    @onclick="@(() => SetActiveTab("services"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-stethoscope me-2"></i>Servicios
                 @if (serviciosList.Any())
                 {
                     <span class="badge bg-primary ms-1">@serviciosList.Count</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("procedures"))"
-            type="button" role="tab"
-            disabled="@(selectedPatientId <= 0)">
+                    @onclick="@(() => SetActiveTab("procedures"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
                     <span class="badge bg-info ms-1">@procedimientosList.Count</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
     </ul>
@@ -68,13 +77,25 @@
         <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Selección de Paciente</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Selección de Paciente
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                    </h5>
                 </div>
                 <div class="card-body">
                     @if (!isEditMode)
                     {
-                        <PatientSelector @bind-Value="clinicalHistoryId"
-                        OnPatientSelected="HandlePatientSelected" />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                                             OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
@@ -91,32 +112,49 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Lugar de Atención</label>
-                            <select class="form-select" @bind="lugarSeleccionada">
-                                <option value="">Seleccione el lugar de Atención</option>
-                                @foreach (var lugar in lugaresAtencion)
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                        @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
                                 {
-                                    <option value="@lugar.Id">@lugar.Name</option>
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
                                 }
-                            </select>
-						</div>
+                            </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Área</label>
-                            <select class="form-select" @bind="areaSeleccionada">
-                                <option value="">Seleccione un área</option>
-                                <option value="Enfermería">Enfermería</option>
-                                <option value="Psicología">Psicología</option>
-                                <option value="Ginecología">Ginecología</option>
-                                <option value="Medicina General">Medicina General</option>
-                                <option value="Pediatría">Pediatría</option>
-                            </select>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Área *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(areaSeleccionada) ? "is-invalid" : "")"
+                                        @bind="areaSeleccionada">
+                                    <option value="">Seleccione un área</option>
+                                    <option value="Enfermería">Enfermería</option>
+                                    <option value="Psicología">Psicología</option>
+                                    <option value="Ginecología">Ginecología</option>
+                                    <option value="Medicina General">Medicina General</option>
+                                    <option value="Pediatría">Pediatría</option>
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(areaSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un área
+                                    </div>
+                                }
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Profesional responsable</label>
-                            <select class="form-select" @bind="profesionalSeleccionado">
+                            <label class="form-label fw-bold">Profesional responsable *</label>
+                            <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
+                                    @bind="profesionalSeleccionado">
                                 <option value="">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
@@ -125,12 +163,42 @@
                                     </option>
                                 }
                             </select>
+                            @if (showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe seleccionar un profesional responsable
+                                </div>
+                            }
                         </div>
 
-                        <div class="d-flex justify-content-end mt-3">
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("vitals"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-primary" @onclick="@(() => SetActiveTab("vitals"))">
+                                        Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
@@ -141,7 +209,10 @@
         <div class="tab-pane @(activeTab == "vitals" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Signos Vitales (Opcional)</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat me-2"></i>Signos Vitales
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
                     <small class="text-muted">Complete solo si es necesario</small>
                 </div>
                 <div class="card-body">
@@ -184,7 +255,10 @@
         <div class="tab-pane @(activeTab == "services" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Servicios Médicos</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-stethoscope me-2"></i>Servicios Médicos
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
                     <button class="btn btn-sm btn-primary" @onclick="AgregarServicio">
                         <i class="fas fa-plus me-1"></i>Agregar Servicio
                     </button>
@@ -213,10 +287,10 @@
                                                 <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
                                                 <td>
                                                     <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)">
-                                                        <i class="fas fa-edit">Editar</i>
+                                                        <i class="fas fa-edit"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)">
-                                                        <i class="fas fa-trash">Eliminar</i>
+                                                        <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -252,7 +326,10 @@
         <div class="tab-pane @(activeTab == "procedures" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Procedimientos Médicos</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
                     <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
                         <i class="fas fa-plus me-1"></i>Agregar Procedimiento
                     </button>
@@ -281,10 +358,10 @@
                                                 <td>@procedimiento.SpecificProcedureName</td>
                                                 <td>
                                                     <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)">
-                                                        <i class="fas fa-edit">Editar</i>
+                                                        <i class="fas fa-edit"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)">
-                                                        <i class="fas fa-trash">Eliminar</i>
+                                                        <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -317,15 +394,6 @@
         </div>
     </div>
 
-    <!-- Botón de guardado flotante -->
-    @if (selectedPatientId > 0 && !string.IsNullOrEmpty(profesionalSeleccionado))
-    {
-        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
-            <button class="btn btn-success btn-lg shadow" @onclick="GuardarAtencionMedica">
-                <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar")
-            </button>
-        </div>
-    }
 </div>
 
 <!-- Modal para Servicio -->
@@ -379,7 +447,7 @@
     private string profesionalSeleccionado = "";
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
-
+    private bool showValidationErrors = false;
 
     // Signos vitales
     private string peso = "";
@@ -421,7 +489,7 @@
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
         await LoadProcedures();
-		await LoadLugaresAtencion();
+        await LoadLugaresAtencion();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -429,6 +497,34 @@
             isEditMode = true;
             await LoadExistingData();
         }
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               !string.IsNullOrEmpty(areaSeleccionada) &&
+               !string.IsNullOrEmpty(profesionalSeleccionado);
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task SetActiveTab(string tab)
+    {
+        // Validar antes de cambiar de pestaña
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        activeTab = tab;
+        StateHasChanged();
     }
 
     private async Task LoadExistingData()
@@ -439,6 +535,7 @@
         selectedPatientId = MedicalCare.PatientId;
         areaSeleccionada = MedicalCare.Area;
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
+        lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
 
         // Cargar signos vitales existentes
@@ -472,10 +569,10 @@
         StateHasChanged();
     }
 
-	private async Task LoadLugaresAtencion()
-	{
+    private async Task LoadLugaresAtencion()
+    {
         lugaresAtencion = await PlaceService.GetAllPlacesAsync();
-	}
+    }
 
     private async Task LoadTypeOfServices()
     {
@@ -497,29 +594,38 @@
         todosProcedimientos = await ProceduresService.GetAllAsync();
     }
 
-    private void SetActiveTab(string tab)
-    {
-        activeTab = tab;
-    }
-
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
+
+        // Limpiar errores de validación cuando se selecciona un paciente
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+
+        StateHasChanged();
         return Task.CompletedTask;
     }
 
     // Métodos para servicios
     private void AgregarServicio()
     {
-        currentService = new MedicalServiceDTO
+        if (!IsPatientTabComplete())
         {
-            ServiceId = 0,
-            PatientId = selectedPatientId,
-            ServiceDate = DateTime.Now,
-            HealthProfessionalId = int.Parse(profesionalSeleccionado)
-        };
+            JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar servicios.");
+            return;
+        }
+
+        currentService = new MedicalServiceDTO
+            {
+                ServiceId = 0,
+                PatientId = selectedPatientId,
+                ServiceDate = DateTime.Now,
+                HealthProfessionalId = int.Parse(profesionalSeleccionado)
+            };
         showServiceModal = true;
     }
 
@@ -560,13 +666,19 @@
     // Métodos para procedimientos
     private void AgregarProcedimiento()
     {
-        currentProcedure = new MedicalProcedureDTO
+        if (!IsPatientTabComplete())
         {
-            ProcedureId = 0,
-            PatientId = selectedPatientId,
-            ProcedureDate = DateTime.Now,
-            HealthProfessionalId = int.Parse(profesionalSeleccionado)
-        };
+            JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar procedimientos.");
+            return;
+        }
+
+        currentProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = 0,
+                PatientId = selectedPatientId,
+                ProcedureDate = DateTime.Now,
+                HealthProfessionalId = int.Parse(profesionalSeleccionado)
+            };
         showProcedureModal = true;
     }
 
@@ -609,15 +721,11 @@
         try
         {
             // Validaciones básicas
-            if (selectedPatientId <= 0)
+            if (!IsPatientTabComplete())
             {
-                await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente");
-                return;
-            }
-
-            if (string.IsNullOrEmpty(profesionalSeleccionado))
-            {
-                await JS.InvokeVoidAsync("alert", "Debe seleccionar un profesional responsable");
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                SetActiveTab("patient");
                 return;
             }
 
@@ -630,6 +738,7 @@
                 // Actualizar atención médica existente
                 MedicalCare.Area = areaSeleccionada;
                 MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
+                MedicalCare.LocationId = int.Parse(lugarSeleccionada);
 
                 var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
                 if (!updateResult.Success)
@@ -643,12 +752,12 @@
             {
                 // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                    LocationId = int.Parse(lugarSeleccionada),
-                    Area = areaSeleccionada,
-                };
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                        LocationId = int.Parse(lugarSeleccionada),
+                        Area = areaSeleccionada,
+                    };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -663,22 +772,22 @@
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
-                {
-                    Id = existingVitalSigns?.Id ?? 0,
-                    MedicalCareId = medicalCareResult.CareId,
-                    Weight = ParseDecimal(peso),
-                    Height = ParseDecimal(talla),
-                    Icm = ParseDecimal(imc),
-                    AbdominalCircumference = ParseDecimal(perimetroAbdominal),
-                    BloodPressure = presionArterial,
-                    Temperature = ParseDecimal(temperatura),
-                    MeanArterialPressure = ParseDecimal(pam),
-                    HeartRate = ParseInt(frecuenciaCardiaca),
-                    OxygenSaturation = ParseDecimal(saturacionOxigeno),
-                    RespiratoryRate = ParseInt(frecuenciaRespiratoria),
-                    BloodGlucose = ParseDecimal(glucosaCapilar),
-                    Hemoglobin = ParseDecimal(hemoglobina)
-                };
+                    {
+                        Id = existingVitalSigns?.Id ?? 0,
+                        MedicalCareId = medicalCareResult.CareId,
+                        Weight = ParseDecimal(peso),
+                        Height = ParseDecimal(talla),
+                        Icm = ParseDecimal(imc),
+                        AbdominalCircumference = ParseDecimal(perimetroAbdominal),
+                        BloodPressure = presionArterial,
+                        Temperature = ParseDecimal(temperatura),
+                        MeanArterialPressure = ParseDecimal(pam),
+                        HeartRate = ParseInt(frecuenciaCardiaca),
+                        OxygenSaturation = ParseDecimal(saturacionOxigeno),
+                        RespiratoryRate = ParseInt(frecuenciaRespiratoria),
+                        BloodGlucose = ParseDecimal(glucosaCapilar),
+                        Hemoglobin = ParseDecimal(hemoglobina)
+                    };
 
                 if (existingVitalSigns != null && existingVitalSigns.Id > 0)
                 {
@@ -720,11 +829,9 @@
 
             // 5. Mostrar mensaje de éxito y notificar
             await OnSaved.InvokeAsync(medicalCareResult);
-
             string successMessage = isCreatingNew
                 ? "Atención médica creada exitosamente"
                 : "Atención médica actualizada exitosamente";
-
             await JS.InvokeVoidAsync("alert", successMessage);
         }
         catch (Exception ex)

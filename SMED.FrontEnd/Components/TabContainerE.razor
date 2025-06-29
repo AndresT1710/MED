@@ -34,9 +34,6 @@
     private List<TabItem> Tabs = new()
     {
         new TabItem("Registro", "/nursing-module/registro"),
-        new TabItem("Signos Vitales", "/nursing-module/vitalsigns"),
-        new TabItem("Servicios", "/nursing-module/nursingservices"),
-        new TabItem("Procedimientos", "/nursing-module/procedures"),
     };
 
     private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);

@@ -1,0 +1,220 @@
+﻿@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject PersonService PersonService
+@inject IJSRuntime JS
+
+<div class="person-search-container">
+    <div class="input-group mb-3">
+        <span class="input-group-text">
+            <i class="fas fa-search"></i>
+        </span>
+        <input type="text" class="form-control"
+               @bind="searchTerm"
+               @oninput="OnSearchInput"
+               placeholder="Buscar por cédula, nombre o apellido (mín. 3 caracteres)..."
+               autocomplete="off" />
+        <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    @if (isSearching)
+    {
+        <div class="text-center p-3">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Buscando...</span>
+            </div>
+            <span class="ms-2">Buscando personas...</span>
+        </div>
+    }
+
+    @if (searchResults.Any() && !string.IsNullOrWhiteSpace(searchTerm))
+    {
+        <div class="search-results border rounded p-2 mb-3" style="max-height: 300px; overflow-y: auto;">
+            <small class="text-muted">Resultados encontrados (@searchResults.Count):</small>
+            @foreach (var person in searchResults)
+            {
+                <div class="person-item p-2 border-bottom cursor-pointer hover-bg-light"
+                     @onclick="() => SelectPerson(person)"
+                     style="cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@GetFullName(person)</strong>
+                            <br />
+                            <small class="text-muted">
+                                Cédula: @(person.Document?.DocumentNumber ?? "Sin cédula")
+                                @if (person.BirthDate.HasValue)
+                                {
+                                    <span> | @CalculateAge(person.BirthDate.Value) años</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(person.Email))
+                                {
+                                    <span> | @person.Email</span>
+                                }
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-check"></i> Seleccionar
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (SelectedPerson != null)
+    {
+        <div class="alert alert-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Persona seleccionada:</strong>
+                    @GetFullName(SelectedPerson)
+                    <br />
+                    <small>
+                        Cédula: @(SelectedPerson.Document?.DocumentNumber ?? "Sin cédula")
+                        @if (SelectedPerson.BirthDate.HasValue)
+                        {
+                            <span> | @CalculateAge(SelectedPerson.BirthDate.Value) años</span>
+                        }
+                    </small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" @onclick="ClearSelection">
+                    <i class="fas fa-times"></i> Cambiar
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!searchResults.Any() && !string.IsNullOrWhiteSpace(searchTerm) && searchTerm.Length >= 3 && !isSearching)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            No se encontraron personas con el término de búsqueda "<strong>@searchTerm</strong>"
+        </div>
+    }
+</div>
+
+<style>
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    .person-item:hover {
+        background-color: #e3f2fd !important;
+    }
+</style>
+
+@code {
+    [Parameter] public PersonDTO SelectedPerson { get; set; }
+    [Parameter] public EventCallback<PersonDTO> SelectedPersonChanged { get; set; }
+    [Parameter] public EventCallback<PersonDTO> OnPersonSelected { get; set; }
+    [Parameter] public EventCallback OnPersonCleared { get; set; }
+
+    private string searchTerm = string.Empty;
+    private List<PersonDTO> searchResults = new();
+    private bool isSearching = false;
+    private Timer searchTimer;
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+
+        // Cancelar búsqueda anterior
+        searchTimer?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 3)
+        {
+            searchResults.Clear();
+            StateHasChanged();
+            return;
+        }
+
+        // Crear nuevo timer para búsqueda con delay
+        searchTimer = new Timer(async _ => await PerformSearch(), null, 500, Timeout.Infinite);
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 3)
+            return;
+
+        await InvokeAsync(async () =>
+        {
+            isSearching = true;
+            StateHasChanged();
+
+            try
+            {
+                searchResults = await PersonService.SearchPersonsAsync(searchTerm);
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error searching persons: {ex.Message}");
+                searchResults.Clear();
+            }
+            finally
+            {
+                isSearching = false;
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task SelectPerson(PersonDTO person)
+    {
+        SelectedPerson = person;
+        await SelectedPersonChanged.InvokeAsync(person);
+        await OnPersonSelected.InvokeAsync(person);
+
+        // Limpiar búsqueda
+        searchTerm = string.Empty;
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private async Task ClearSelection()
+    {
+        SelectedPerson = null;
+        await SelectedPersonChanged.InvokeAsync(null);
+        await OnPersonCleared.InvokeAsync(); // Agregar esta línea
+        searchTerm = string.Empty;
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        searchResults.Clear();
+        StateHasChanged();
+    }
+
+    private string GetFullName(PersonDTO person)
+    {
+        var names = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(person.FirstName))
+            names.Add(person.FirstName);
+        if (!string.IsNullOrWhiteSpace(person.MiddleName))
+            names.Add(person.MiddleName);
+        if (!string.IsNullOrWhiteSpace(person.LastName))
+            names.Add(person.LastName);
+        if (!string.IsNullOrWhiteSpace(person.SecondLastName))
+            names.Add(person.SecondLastName);
+
+        return string.Join(" ", names);
+    }
+
+    private int CalculateAge(DateTime birthDate)
+    {
+        var today = DateTime.Today;
+        var age = today.Year - birthDate.Year;
+        if (birthDate.Date > today.AddYears(-age)) age--;
+        return age;
+    }
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}

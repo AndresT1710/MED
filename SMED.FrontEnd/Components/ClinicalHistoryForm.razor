@@ -4,85 +4,109 @@
 @using System.Text.Json;
 @using System.Text.Json.Serialization;
 
-
 <EditForm Model="History" OnValidSubmit="HandleSave">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="patient" class="form-label">Paciente *</label>
-            @if (isLoadingPatients)
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <label class="form-label fw-bold">Paciente *</label>
+            @if (PreselectedPerson != null)
             {
-                <div class="spinner-border spinner-border-sm" role="status">
-                    <span class="visually-hidden">Cargando...</span>
+                <div class="card border-success">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="card-title text-success mb-1">
+                                    @PreselectedPerson.FirstName @PreselectedPerson.MiddleName @PreselectedPerson.LastName @PreselectedPerson.SecondLastName
+                                </h5>
+                                <p class="card-text mb-1">
+                                    <strong>Cédula:</strong> @(PreselectedPerson.Document?.DocumentNumber ?? "Sin cédula")
+                                </p>
+                                @if (PreselectedPerson.BirthDate.HasValue)
+                                {
+                                    <p class="card-text mb-1">
+                                        <strong>Fecha de Nacimiento:</strong> @PreselectedPerson.BirthDate.Value.ToString("dd/MM/yyyy")
+                                        <small class="text-muted">(@CalculateAge(PreselectedPerson.BirthDate.Value) años)</small>
+                                    </p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(PreselectedPerson.Email))
+                                {
+                                    <p class="card-text mb-0">
+                                        <strong>Email:</strong> @PreselectedPerson.Email
+                                    </p>
+                                }
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="badge bg-success fs-6">Paciente Seleccionado</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
             else
             {
-                <div class="input-group">
-                    <InputSelect id="patient" class="form-select" @bind-Value="selectedPersonId">
-                        <option value="">Seleccione un paciente</option>
-                        @foreach (var patient in Patients)
-                        {
-                            <option value="@patient.PersonId">
-                                @GetPatientDisplayName(patient)
-                            </option>
-                        }
-                    </InputSelect>
-
-                    <button class="btn btn-outline-secondary" type="button" @onclick="SearchPatient">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-                <ValidationMessage For="@(() => History.Patient.PersonId)" />
+                <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                       OnPersonSelected="OnPersonSelected"
+                                       OnPersonCleared="OnPersonCleared" />
             }
         </div>
-        <div class="col-md-6">
-            <label for="historyNumber" class="form-label">Número de Historia *</label>
-            <InputText id="historyNumber" class="form-control" @bind-Value="History.HistoryNumber" readonly="@IsEditMode" />
+        <div class="col-md-4">
+            <label for="historyNumber" class="form-label fw-bold">Número de Historia *</label>
+            <div class="input-group">
+                <span class="input-group-text bg-primary text-white">
+                    <i class="fas fa-file-medical"></i>
+                </span>
+                <input id="historyNumber" class="form-control fw-bold" @bind="History.HistoryNumber" readonly="true"
+                       placeholder="Se genera automáticamente" />
+            </div>
+            <small class="form-text text-muted">
+                Formato: UTA-HC-{año}{cédula} - Se genera automáticamente
+            </small>
             <ValidationMessage For="@(() => History.HistoryNumber)" />
         </div>
     </div>
 
     <div class="row mb-3">
         <div class="col-md-6">
-            <label for="date" class="form-label">Fecha *</label>
+            <label for="date" class="form-label fw-bold">Fecha de Creación *</label>
             <InputDate id="date" class="form-control" @bind-Value="History.CreationDate" />
             <ValidationMessage For="@(() => History.CreationDate)" />
         </div>
         <div class="col-md-6">
-            <label for="isActive" class="form-label">Estado</label>
+            <label class="form-label fw-bold">Estado de la Historia</label>
             <div class="form-check form-switch mt-2">
                 <InputCheckbox id="isActive" class="form-check-input"
                                @bind-Value="_isActive" />
-
-                <label class="form-check-label" for="isActive">
-                    @(_isActive ? "Activo" : "Inactivo")
+                <label class="form-check-label fw-bold" for="isActive">
+                    <span class="badge @(_isActive ? "bg-success" : "bg-secondary")">
+                        @(_isActive ? "Activa" : "Inactiva")
+                    </span>
                 </label>
-
             </div>
         </div>
     </div>
 
-    <div class="mb-3">
-        <label for="generalObservations" class="form-label">Observaciones Generales</label>
-        <InputTextArea id="generalObservations" class="form-control" @bind-Value="History.GeneralObservations" rows="3" />
+    <div class="mb-4">
+        <label for="generalObservations" class="form-label fw-bold">Observaciones Generales</label>
+        <InputTextArea id="generalObservations" class="form-control" @bind-Value="History.GeneralObservations"
+                       rows="4" placeholder="Ingrese observaciones generales sobre la historia clínica..." />
     </div>
 
-    <div class="text-end">
-        <button type="button" class="btn btn-secondary me-2" @onclick="HandleCancel" disabled="@isSaving">
-            Cancelar
+    <div class="text-end border-top pt-3">
+        <button type="button" class="btn btn-outline-secondary me-2" @onclick="HandleCancel" disabled="@isSaving">
+            <i class="fas fa-times"></i> Cancelar
         </button>
-        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+        <button type="submit" class="btn btn-primary" disabled="@(isSaving || !IsFormValid())">
             @if (isSaving)
             {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span class="visually-hidden">Guardando...</span>
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Guardando...</span>
             }
             else
             {
-                <span>Guardar</span>
+                <i class="fas fa-save me-2"></i>
+                <span>Guardar Historia Clínica</span>
             }
         </button>
     </div>
@@ -90,97 +114,138 @@
 
 @code {
     [Parameter] public ClinicalHistoryDTO History { get; set; } = new();
+    [Parameter] public PersonDTO PreselectedPerson { get; set; }
     [Parameter] public EventCallback<ClinicalHistoryDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
-    private bool IsEditMode => History.ClinicalHistoryId != 0;
-
-
-    private List<PatientDTO> Patients { get; set; } = new();
-    private bool isLoadingPatients = true;
+    private PersonDTO selectedPerson;
     private bool isSaving = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Si Patient es null, lo inicializamos para evitar errores de binding
         History.Patient ??= new PatientDTO();
 
-        await LoadPatients();
-    }
-
-    private async Task LoadPatients()
-    {
-        isLoadingPatients = true;
-        try
+        if (PreselectedPerson != null)
         {
-            Patients = await Http.GetFromJsonAsync<List<PatientDTO>>("api/patient") ?? new();
-            await JS.InvokeVoidAsync("console.log", "Pacientes cargados:", Patients);
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", $"Error loading patients: {ex.Message}");
-        }
-        finally
-        {
-            isLoadingPatients = false;
+            await SetupPreselectedPerson();
         }
     }
 
-
-    private string GetDocumentNumber(PersonDTO person)
+    private async Task SetupPreselectedPerson()
     {
-        return person?.Document?.DocumentNumber ?? "Sin cédula";
+        History.Patient.PersonId = PreselectedPerson.Id;
+        History.Patient.Person = PreselectedPerson;
+
+        if (string.IsNullOrWhiteSpace(History.HistoryNumber))
+        {
+            History.HistoryNumber = GenerateHistoryNumber(PreselectedPerson.Document?.DocumentNumber);
+        }
+
+        StateHasChanged();
     }
 
-    private async Task SearchPatient()
+    private void OnPersonSelected(PersonDTO person)
     {
-        // Aquí podrías abrir un modal o redirigir a una búsqueda avanzada si lo deseas
-        await JS.InvokeVoidAsync("alert", "Funcionalidad de búsqueda de pacientes");
+        selectedPerson = person;
+        History.Patient.PersonId = person.Id;
+        History.Patient.Person = person;
+
+        // SIEMPRE regenerar el número de historia cuando se selecciona una nueva persona
+        History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+
+        StateHasChanged();
+    }
+
+    private void OnPersonCleared()
+    {
+        selectedPerson = null;
+        History.Patient.PersonId = 0;
+        History.Patient.Person = null;
+
+        // Limpiar el número de historia cuando no hay persona seleccionada
+        History.HistoryNumber = string.Empty;
+
+        StateHasChanged();
+    }
+
+    private string GenerateHistoryNumber(string documentNumber)
+    {
+        if (string.IsNullOrWhiteSpace(documentNumber) || documentNumber.Length < 2)
+        {
+            return string.Empty;
+        }
+
+        var currentYear = DateTime.Now.Year;
+        var yearSuffix = currentYear.ToString().Substring(2, 2);
+        var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
+
+        return $"UTA-HC-{yearSuffix}{documentSuffix}";
+    }
+
+    private int CalculateAge(DateTime birthDate)
+    {
+        var today = DateTime.Today;
+        var age = today.Year - birthDate.Year;
+        if (birthDate.Date > today.AddYears(-age)) age--;
+        return age;
+    }
+
+    private bool IsFormValid()
+    {
+        return (PreselectedPerson != null || selectedPerson != null) &&
+               !string.IsNullOrWhiteSpace(History.HistoryNumber) &&
+               History.CreationDate.HasValue;
     }
 
     private async Task HandleSave()
     {
         isSaving = true;
-
         try
         {
+            // Validar que hay un paciente seleccionado
             if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
             {
                 await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
                 return;
             }
 
-            // Limpiar referencias circulares y preparar datos obligatorios
-            if (History.Patient?.Person != null)
+            // Generar número de historia si no existe
+            if (string.IsNullOrWhiteSpace(History.HistoryNumber))
             {
-                History.Patient.Person.ClinicalHistory = null;
-
-                if (History.Patient.Person.MaritalStatus == null)
+                var documentNumber = History.Patient.Person?.Document?.DocumentNumber;
+                if (!string.IsNullOrWhiteSpace(documentNumber))
                 {
-                    History.Patient.Person.MaritalStatus = new MaritalStatusDTO
-                        {
-                            Id = 1,
-                            Name = "Soltero"
-                        };
+                    History.HistoryNumber = GenerateHistoryNumber(documentNumber);
                 }
-
-                if (History.Patient.Person.Professions == null || !History.Patient.Person.Professions.Any())
+                else
                 {
-                    History.Patient.Person.Professions = new List<ProfessionDTO>();
-                    // Agrega profesiones válidas si tienes
+                    await JS.InvokeVoidAsync("alert", "No se puede generar el número de historia sin la cédula del paciente.");
+                    return;
                 }
             }
 
-            var json = JsonSerializer.Serialize(History, new JsonSerializerOptions
+            // Preparar datos para envío
+            var historyToSave = new ClinicalHistoryCreateDTO
+                {
+                    HistoryNumber = History.HistoryNumber,
+                    CreationDate = History.CreationDate,
+                    IsActive = History.IsActive,
+                    GeneralObservations = History.GeneralObservations,
+                    Patient = new PatientDTO
+                    {
+                        PersonId = History.Patient.PersonId
+                    }
+                };
+
+            var json = JsonSerializer.Serialize(historyToSave, new JsonSerializerOptions
                 {
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
                     WriteIndented = true
                 });
 
-            await JS.InvokeVoidAsync("console.log", json);
+            await JS.InvokeVoidAsync("console.log", "Datos a enviar:", json);
 
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
             HttpResponseMessage response;
 
             if (History.ClinicalHistoryId == 0)
@@ -213,58 +278,14 @@
         }
     }
 
-
-
-
-
     private async Task HandleCancel()
     {
         await OnCancel.InvokeAsync();
     }
 
-    private string GetPatientDisplayName(PatientDTO patient)
-    {
-        var person = patient.Person;
-        var doc = person?.Document;
-
-        string nombreCompleto = $"{person?.FirstName} {person?.LastName}";
-        string cedula = (doc?.DocumentTypeId == 1 && !string.IsNullOrWhiteSpace(doc.DocumentNumber))
-            ? doc.DocumentNumber
-            : "Sin cédula";
-
-        return $"{nombreCompleto} ({cedula})";
-    }
-
     private bool _isActive
     {
-        get => History.IsActive.GetValueOrDefault();  // Si es null, se asume false
+        get => History.IsActive.GetValueOrDefault(true);
         set => History.IsActive = value;
     }
-
-    private int? selectedPersonId
-    {
-        get => History.Patient?.PersonId;
-        set
-        {
-            if (History.Patient == null)
-            {
-                History.Patient = new PatientDTO();
-            }
-            History.Patient.PersonId = value ?? 0;
-
-            // Asignar PatientFullName basado en la selección
-            var paciente = Patients.FirstOrDefault(p => p.PersonId == History.Patient.PersonId);
-            if (paciente != null)
-            {
-                var person = paciente.Person;
-                History.PatientFullName = $"{person?.FirstName} {person?.LastName}".Trim();
-            }
-            else
-            {
-                History.PatientFullName = null;
-            }
-        }
-    }
-
-
 }

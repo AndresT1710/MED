@@ -746,7 +746,11 @@ namespace SGIS.Models
                 .HasForeignKey(ms => ms.CareId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
+            modelBuilder.Entity<MedicalProcedure>()
+                .HasOne(ms => ms.MedicalCare)
+                .WithMany(mc => mc.MedicalProcedures)
+                .HasForeignKey(ms => ms.CareId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             base.OnModelCreating(modelBuilder);
         }

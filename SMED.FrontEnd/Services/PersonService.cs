@@ -122,6 +122,51 @@ namespace SMED.FrontEnd.Services
             return response ?? new List<PatientDTO>();
         }
 
+        public async Task<PersonDTO?> GetPersonByDocumentAsync(string documentNumber)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/Person/by-document/{documentNumber}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Error getting person by document: {response.StatusCode}");
+                    return null;
+                }
+
+                return await response.Content.ReadFromJsonAsync<PersonDTO>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception getting person by document: {ex}");
+                return null;
+            }
+        }
+
+        public async Task<List<PersonDTO>> SearchPersonsAsync(string searchTerm)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 3)
+                    return new List<PersonDTO>();
+
+                var response = await _httpClient.GetAsync($"api/Person/search?term={Uri.EscapeDataString(searchTerm)}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Error searching persons: {response.StatusCode}");
+                    return new List<PersonDTO>();
+                }
+
+                return await response.Content.ReadFromJsonAsync<List<PersonDTO>>() ?? new List<PersonDTO>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception searching persons: {ex}");
+                return new List<PersonDTO>();
+            }
+        }
+
 
     }
 }

@@ -685,6 +685,91 @@ namespace SMED.BackEnd.Repositories.Implementations
             }
         }
 
+        public async Task<PersonDTO?> GetByDocumentNumberAsync(string documentNumber)
+        {
+            var person = await _context.Persons
+                .Include(p => p.PersonAddress)
+                .Include(p => p.PersonPhone)
+                .Include(p => p.PersonMedicalInsurances)
+                    .ThenInclude(psm => psm.MedicalInsuranceNavigation)
+                .Include(p => p.PersonMaritalStatus)
+                    .ThenInclude(pec => pec.MaritalStatusNavigation)
+                .Include(p => p.PersonDocument)
+                    .ThenInclude(pd => pd.DocumentTypeNavigation)
+                .Include(p => p.PersonLaterality)
+                    .ThenInclude(pl => pl.LateralityNavigation)
+                .Include(p => p.PersonReligion)
+                    .ThenInclude(pr => pr.ReligionNavigation)
+                .Include(p => p.PersonResidence)
+                    .ThenInclude(pr => pr.CityNavigation)
+                    .ThenInclude(pr => pr.ProvinceNavigation)
+                .Include(p => p.HealthProfessional)
+                    .ThenInclude(ps => ps.HealthProfessionalTypeNavigation)
+                .Include(p => p.PersonBloodGroup)
+                    .ThenInclude(pg => pg.BloodGroupNavigation)
+                .Include(p => p.PersonProfessions)
+                    .ThenInclude(pp => pp.ProfessionNavigation)
+                .Include(p => p.PersonLaborActivity)
+                    .ThenInclude(pa => pa.LaborActivityNavigation)
+                .Include(p => p.PersonEducation)
+                    .ThenInclude(pi => pi.EducationLevelNavigation)
+                .FirstOrDefaultAsync(p => p.PersonDocument != null &&
+                                          p.PersonDocument.DocumentNumber == documentNumber &&
+                                          p.PersonDocument.DocumentTypeId == 1); // 1 = Cédula de Identidad
+
+            return person == null ? null : MapToDTO(person);
+        }
+
+        public async Task<List<PersonDTO>> SearchPersonsAsync(string searchTerm)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return new List<PersonDTO>();
+
+            var persons = await _context.Persons
+                .Include(p => p.PersonAddress)
+                .Include(p => p.PersonPhone)
+                .Include(p => p.PersonMedicalInsurances)
+                    .ThenInclude(psm => psm.MedicalInsuranceNavigation)
+                .Include(p => p.PersonMaritalStatus)
+                    .ThenInclude(pec => pec.MaritalStatusNavigation)
+                .Include(p => p.PersonDocument)
+                    .ThenInclude(pd => pd.DocumentTypeNavigation)
+                .Include(p => p.PersonLaterality)
+                    .ThenInclude(pl => pl.LateralityNavigation)
+                .Include(p => p.PersonReligion)
+                    .ThenInclude(pr => pr.ReligionNavigation)
+                .Include(p => p.PersonResidence)
+                    .ThenInclude(pr => pr.CityNavigation)
+                    .ThenInclude(pr => pr.ProvinceNavigation)
+                .Include(p => p.HealthProfessional)
+                    .ThenInclude(ps => ps.HealthProfessionalTypeNavigation)
+                .Include(p => p.PersonBloodGroup)
+                    .ThenInclude(pg => pg.BloodGroupNavigation)
+                .Include(p => p.PersonProfessions)
+                    .ThenInclude(pp => pp.ProfessionNavigation)
+                .Include(p => p.PersonLaborActivity)
+                    .ThenInclude(pa => pa.LaborActivityNavigation)
+                .Include(p => p.PersonEducation)
+                    .ThenInclude(pi => pi.EducationLevelNavigation)
+                .Where(p =>
+                    // Buscar por nombre
+                    (p.FirstName != null && p.FirstName.Contains(searchTerm)) ||
+                    (p.MiddleName != null && p.MiddleName.Contains(searchTerm)) ||
+                    (p.LastName != null && p.LastName.Contains(searchTerm)) ||
+                    (p.SecondLastName != null && p.SecondLastName.Contains(searchTerm)) ||
+                    // Buscar por cédula
+                    (p.PersonDocument != null && p.PersonDocument.DocumentNumber != null &&
+                     p.PersonDocument.DocumentNumber.Contains(searchTerm)) ||
+                    // Buscar por email
+                    (p.Email != null && p.Email.Contains(searchTerm))
+                )
+                .OrderBy(p => p.FirstName)
+                .ThenBy(p => p.LastName)
+                .Take(50) // Limitar resultados para performance
+                .ToListAsync();
+
+            return persons.Select(p => MapToDTO(p)).ToList();
+        }
 
 
     }

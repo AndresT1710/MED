@@ -5,55 +5,80 @@
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
 @inject ClinicalHistoryService ClinicalHistoryService
+@inject PersonService PersonService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
 <TabContainer OnSave="GuardarDatos">
+    <h3 class="mb-4">Gestión de Historias Clínicas</h3>
 
-<h3 class="mb-4">Gestión de Historias Clínicas</h3>
-
-<div class="search-container mb-4">
-    <div class="search-options">
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="searchType" id="searchByHistory"
-                   checked="@(!searchByIdNumber)" @onchange="() => { searchByIdNumber = false; searchTerm = string.Empty; }">
-            <label class="form-check-label" for="searchByHistory">N° Historia Clínica</label>
+    <div class="search-container mb-4">
+        <div class="search-options">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="searchType" id="searchByHistory"
+                       checked="@(!searchByIdNumber)" @onchange="() => { searchByIdNumber = false; searchTerm = string.Empty; ClearSearchResults(); }">
+                <label class="form-check-label" for="searchByHistory">N° Historia Clínica</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="searchType" id="searchByIdNumber"
+                       checked="@(searchByIdNumber)" @onchange="() => { searchByIdNumber = true; searchTerm = string.Empty; ClearSearchResults(); }">
+                <label class="form-check-label" for="searchByIdNumber">Cédula de Identidad</label>
+            </div>
         </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="searchType" id="searchByIdNumber"
-                   checked="@(searchByIdNumber)" @onchange="() => { searchByIdNumber = true; searchTerm = string.Empty; }">
-            <label class="form-check-label" for="searchByIdNumber">Cédula de Identidad</label>
+
+        <div class="input-group">
+            <input type="text" class="form-control"
+                   @bind="searchTerm"
+                   placeholder="@(searchByIdNumber ? "Ingrese cédula de identidad" : "Ingrese número de historia")"
+                   @onkeypress="@(async (e) => { if (e.Key == "Enter") await HandleSearch(); })" />
+            <button class="btn btn-primary" @onclick="HandleSearch" disabled="@isSearching">
+                @if (isSearching)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                <i class="fas fa-search"></i> Buscar
+            </button>
+            <button class="btn btn-secondary" @onclick="ClearSearch">
+                <i class="fas fa-times"></i> Limpiar
+            </button>
         </div>
     </div>
 
-    <div class="input-group">
-        <input type="text" class="form-control"
-               @bind="searchTerm"
-               placeholder="@(searchByIdNumber ? "Ingrese cédula de identidad" : "Ingrese número de historia")"
-               @onkeypress="@(async (e) => { if (e.Key == "Enter") await HandleSearch(); })" />
-
-        <button class="btn btn-primary" @onclick="HandleSearch">
-            <i class="fas fa-search"></i> Buscar
-        </button>
-
-        <button class="btn btn-secondary" @onclick="ClearSearch">
-            <i class="fas fa-times"></i> Limpiar
-        </button>
-    </div>
-</div>
-
-
-                    @if (showNoHistoryAlert)
+    @if (showNoHistoryAlert)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@searchMessage</strong>
+                    @if (foundPerson != null)
                     {
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            <strong>@searchMessage</strong>
-                            <button type="button" class="btn btn-primary ml-3" @onclick="CreateNewHistory">
-                                <i class="fas fa-plus"></i> Crear Nueva Historia
-                            </button>
-                            <button type="button" class="btn-close" @onclick="() => showNoHistoryAlert = false" aria-label="Close"></button>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>Persona encontrada:</strong> @foundPerson.FirstName @foundPerson.MiddleName @foundPerson.LastName @foundPerson.SecondLastName
+                                <br />
+                                <strong>Cédula:</strong> @foundPerson.Document?.DocumentNumber
+                                @if (foundPerson.BirthDate.HasValue)
+                                {
+                                    <br />
+                                    <strong>Edad:</strong> @CalculateAge(foundPerson.BirthDate.Value) @:años
+                                }
+                            </small>
                         </div>
                     }
+                </div>
+                <div>
+                    @if (foundPerson != null)
+                    {
+                        <button type="button" class="btn btn-primary me-2" @onclick="CreateHistoryForFoundPerson">
+                            <i class="fas fa-plus"></i> Crear Historia para @foundPerson.FirstName
+                        </button>
+                    }
+                    <button type="button" class="btn-close" @onclick="ClearSearchResults" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    }
 
     <ManagementTableR TableTitle="Historias Clínicas"
                       Columns="ClinicalHistoryColumns"
@@ -62,71 +87,81 @@
                       AddCallback="AddClinicalHistory"
                       @ref="table" />
 
-
-@if (showDetail && selectedClinicalHistory != null)
-{
-    <div class="modal fade show d-flex align-items-center justify-content-center"
-         tabindex="-1"
-         style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
-         role="dialog">
-        <div style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center;">
-            <div class="modal-content"
-                 style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detalle de Historia Clínica</h5>
-                    <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
-                </div>
-                <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                    <ClinicalHistoryDetail History="selectedClinicalHistory" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-
-@if (showForm)
-{
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(selectedClinicalHistory?.ClinicalHistoryId == 0 ? "Nueva Historia Clínica" : "Editar Historia Clínica")</h5>
-                    <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <ClinicalHistoryForm History="selectedClinicalHistory"
-                                         OnSaved="OnClinicalHistorySaved"
-                                         OnCancel="HideForm" />
+    @if (showDetail && selectedClinicalHistory != null)
+    {
+        <div class="modal fade show d-flex align-items-center justify-content-center"
+             tabindex="-1"
+             style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
+             role="dialog">
+            <div style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center;">
+                <div class="modal-content"
+                     style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Detalle de Historia Clínica</h5>
+                        <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
+                    </div>
+                    <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
+                        <ClinicalHistoryDetail History="selectedClinicalHistory" />
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-}
+    }
+
+    @if (showForm)
+    {
+        <div class="modal-backdrop fade show"></div>
+        <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            @if (preselectedPerson != null)
+                            {
+                                <span>Nueva Historia Clínica para @preselectedPerson.FirstName @preselectedPerson.LastName</span>
+                            }
+                            else
+                            {
+                                <span>@(selectedClinicalHistory?.ClinicalHistoryId == 0 ? "Nueva Historia Clínica" : "Editar Historia Clínica")</span>
+                            }
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ClinicalHistoryForm History="selectedClinicalHistory"
+                                             PreselectedPerson="preselectedPerson"
+                                             OnSaved="OnClinicalHistorySaved"
+                                             OnCancel="HideForm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </TabContainer>
 
 @code {
     private ManagementTableR table;
     private ClinicalHistoryDTO selectedClinicalHistory;
+    private PersonDTO preselectedPerson;
+    private PersonDTO foundPerson;
     private bool showDetail = false;
     private bool showForm = false;
+    private bool isSearching = false;
     private List<DocumentTypeDTO> documentTypeList = new();
     private List<ClinicalHistoryDTO> clinicalHistoryList = new();
     private List<List<string>> ClinicalHistoryData = new();
 
-    //Search
+    // Search
     private string searchTerm = string.Empty;
     private bool searchByIdNumber = false;
     private string searchMessage = string.Empty;
     private bool showNoHistoryAlert = false;
 
     private List<string> ClinicalHistoryColumns = new()
-        {
+    {
         "ID", "Nombre", "Apellido", "Historia", "Fecha", "Acciones"
-        };
+    };
 
-   
     protected override async Task OnInitializedAsync()
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types");
@@ -136,26 +171,30 @@
     private async Task LoadClinicalHistoryData(string searchTerm = null)
     {
         List<ClinicalHistoryDTO> results;
-
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
             results = (await ClinicalHistoryService.GetAllClinicalHistories()).ToList();
-            showNoHistoryAlert = false;
+            ClearSearchResults();
         }
         else
         {
             results = (await ClinicalHistoryService.SearchClinicalHistories(searchTerm, searchByIdNumber)).ToList();
-
             if (!results.Any())
             {
-                searchMessage = searchByIdNumber
-                    ? $"No se encontró historia clínica para la cédula {searchTerm}"
-                    : $"No se encontró historia clínica con el número {searchTerm}";
-                showNoHistoryAlert = true;
+                if (searchByIdNumber)
+                {
+                    await SearchPersonByDocument(searchTerm);
+                }
+                else
+                {
+                    searchMessage = $"No se encontró historia clínica con el número {searchTerm}";
+                    showNoHistoryAlert = true;
+                    foundPerson = null;
+                }
             }
             else
             {
-                showNoHistoryAlert = false;
+                ClearSearchResults();
             }
         }
 
@@ -176,39 +215,37 @@
         }
     }
 
-    private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
-
-    private async Task Search(string[] data)
+    private async Task SearchPersonByDocument(string documentNumber)
     {
-        string field = data[0];
-        string value = data[1]?.Trim() ?? "";
-
-        if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value))
+        try
         {
-            await LoadClinicalHistoryData();
-            return;
-        }
+            foundPerson = await PersonService.GetPersonByDocumentAsync(documentNumber);
 
-        // Búsqueda en backend cuando el campo es "Paciente"
-        if (field == "Paciente")
-        {
-            await LoadClinicalHistoryData(value);
-        }
-        else
-        {
-            // Búsqueda en frontend para otros campos
-            int index = ClinicalHistoryColumns.IndexOf(field);
-            if (index < 0) return;
-
-            var filteredData = ClinicalHistoryData
-                .Where(row => row[index].Contains(value, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (table != null)
+            if (foundPerson != null)
             {
-                await table.LoadRecords(filteredData);
+                searchMessage = $"No se encontró historia clínica para la cédula {documentNumber}";
+                showNoHistoryAlert = true;
+            }
+            else
+            {
+                searchMessage = $"No se encontró ninguna persona con la cédula {documentNumber}";
+                showNoHistoryAlert = true;
             }
         }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error buscando persona: {ex.Message}");
+            searchMessage = $"Error al buscar la persona con cédula {documentNumber}";
+            showNoHistoryAlert = true;
+            foundPerson = null;
+        }
+    }
+
+    private void ClearSearchResults()
+    {
+        showNoHistoryAlert = false;
+        foundPerson = null;
+        searchMessage = string.Empty;
     }
 
     private async Task HandleSearch()
@@ -219,63 +256,95 @@
             return;
         }
 
-        await LoadClinicalHistoryData(searchTerm);
+        isSearching = true;
+        StateHasChanged();
+
+        try
+        {
+            await LoadClinicalHistoryData(searchTerm);
+        }
+        finally
+        {
+            isSearching = false;
+            StateHasChanged();
+        }
     }
 
-    private void CreateNewHistory()
+    private void CreateHistoryForFoundPerson()
+    {
+        if (foundPerson == null) return;
+
+        selectedClinicalHistory = new ClinicalHistoryDTO
+            {
+                ClinicalHistoryId = 0,
+                CreationDate = DateTime.Now,
+                Patient = new PatientDTO
+                {
+                    PersonId = foundPerson.Id,
+                    Person = foundPerson
+                },
+                HistoryNumber = GenerateHistoryNumber(foundPerson.Document?.DocumentNumber),
+                IsActive = true
+            };
+
+        preselectedPerson = foundPerson;
+        showForm = true;
+        ClearSearchResults();
+    }
+
+    private void ShowCreateForm()
     {
         selectedClinicalHistory = new ClinicalHistoryDTO
             {
                 ClinicalHistoryId = 0,
                 CreationDate = DateTime.Now,
                 Patient = new PatientDTO(),
-                HistoryNumber = GenerateNextHistoryNumber()
+                IsActive = true
             };
+
+        preselectedPerson = null;
         showForm = true;
     }
 
-    private string GenerateNextHistoryNumber()
+    private string GenerateHistoryNumber(string documentNumber)
     {
-        if (!clinicalHistoryList.Any()) return "UTA-HC-0001";
+        if (string.IsNullOrWhiteSpace(documentNumber) || documentNumber.Length < 2)
+        {
+            return string.Empty;
+        }
 
-        var lastNumber = clinicalHistoryList
-            .Select(h => h.HistoryNumber)
-            .Where(hn => hn != null && hn.StartsWith("UTA-HC-"))
-            .Select(hn =>
-            {
-                var numberPart = hn.Replace("UTA-HC-", "");
-                return int.TryParse(numberPart, out var num) ? num : 0;
-            })
-            .DefaultIfEmpty(0)
-            .Max();
+        var currentYear = DateTime.Now.Year;
+        var yearSuffix = currentYear.ToString().Substring(2, 2);
+        var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
 
-        return $"UTA-HC-{(lastNumber + 1).ToString("D4")}";
+        return $"UTA-HC-{yearSuffix}{documentSuffix}";
     }
 
+    private int CalculateAge(DateTime birthDate)
+    {
+        var today = DateTime.Today;
+        var age = today.Year - birthDate.Year;
+        if (birthDate.Date > today.AddYears(-age)) age--;
+        return age;
+    }
 
     private Task AddClinicalHistory()
     {
-        selectedClinicalHistory = new ClinicalHistoryDTO
-                {
-                    CreationDate = DateTime.Now
-                };
-        ShowForm();
+        ShowCreateForm();
         return Task.CompletedTask;
     }
 
     private async Task ClearSearch()
     {
         searchTerm = string.Empty;
-       // await table.ClearSearch();
+        ClearSearchResults();
         await LoadClinicalHistoryData();
     }
-
-
 
     RenderFragment<List<string>> RenderClinicalHistoryActions => row => builder =>
     {
         int seq = 0;
-        var id = row[0]; // El ID está en la primera columna
+        var id = row[0];
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
@@ -316,6 +385,7 @@
         if (int.TryParse(id, out int idInt))
         {
             selectedClinicalHistory = clinicalHistoryList.FirstOrDefault(ch => ch.ClinicalHistoryId == idInt) ?? new ClinicalHistoryDTO();
+            preselectedPerson = selectedClinicalHistory.Patient?.Person;
             showForm = true;
         }
     }
@@ -353,34 +423,26 @@
         }
     }
 
-    private void ShowForm()
-    {
-        showForm = true;
-    }
-
     private void HideForm()
     {
         showForm = false;
         selectedClinicalHistory = null;
-        searchMessage = string.Empty;
+        preselectedPerson = null;
     }
-
 
     private async Task OnClinicalHistorySaved(ClinicalHistoryDTO savedHistory)
     {
         showForm = false;
+        preselectedPerson = null;
         await LoadClinicalHistoryData();
-
         var message = savedHistory.ClinicalHistoryId == 0
             ? "Historia clínica creada exitosamente"
             : "Historia clínica actualizada exitosamente";
-
         await JS.InvokeVoidAsync("alert", message);
     }
 
-        void GuardarDatos()
-        {
+    void GuardarDatos()
+    {
         // Lógica para guardar los datos
-        }
-
+    }
 }

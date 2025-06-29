@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,8 +10,13 @@ namespace SMED.BackEnd.Controllers
     public class MedicalCareController : ControllerBase
     {
         private readonly IRepository<MedicalCareDTO, int> _repository;
+        private readonly MedicalCareRepository _medicalCareRepository;
 
-        public MedicalCareController(IRepository<MedicalCareDTO, int> repository) => _repository = repository;
+        public MedicalCareController(IRepository<MedicalCareDTO, int> repository, MedicalCareRepository medicalCareRepository)
+        {
+            _repository = repository;
+            _medicalCareRepository = medicalCareRepository;
+        }
 
         [HttpGet]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetAll() => Ok(await _repository.GetAllAsync());
@@ -18,6 +24,20 @@ namespace SMED.BackEnd.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<MedicalCareDTO>> GetById(int id) =>
             await _repository.GetByIdAsync(id) is { } dto ? Ok(dto) : NotFound();
+
+        [HttpGet("by-document/{documentNumber}")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetByPatientDocument(string documentNumber)
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetByPatientDocumentAsync(documentNumber);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al buscar atenciones por cédula: {ex.Message}");
+            }
+        }
 
         [HttpPost]
         public async Task<ActionResult<MedicalCareDTO>> Create(MedicalCareDTO dto)
@@ -30,6 +50,7 @@ namespace SMED.BackEnd.Controllers
         public async Task<IActionResult> Update(int id, MedicalCareDTO dto)
         {
             if (id != dto.CareId) return BadRequest();
+
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
         }
@@ -41,4 +62,5 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
+
 }

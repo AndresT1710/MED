@@ -1,6 +1,7 @@
 ﻿@using SMED.Shared.DTOs
 @inject HttpClient Http
 @inject IJSRuntime JS
+@inject ClinicalHistoryService ClinicalHistoryService
 @using System.Text.Json;
 @using System.Text.Json.Serialization;
 
@@ -57,11 +58,19 @@
                 <span class="input-group-text bg-primary text-white">
                     <i class="fas fa-file-medical"></i>
                 </span>
-                <input id="historyNumber" class="form-control fw-bold" @bind="History.HistoryNumber" readonly="true"
+                <input id="historyNumber" class="form-control fw-bold" @bind="History.HistoryNumber"
+                       readonly="@(IsEditMode)"
                        placeholder="Se genera automáticamente" />
             </div>
             <small class="form-text text-muted">
-                Formato: UTA-HC-{año}{cédula} - Se genera automáticamente
+                @if (IsEditMode)
+                {
+                    <span>Número de historia no se puede modificar en edición</span>
+                }
+                else
+                {
+                    <span>Formato: UTA-HC-{año}{cédula} - Se genera automáticamente</span>
+                }
             </small>
             <ValidationMessage For="@(() => History.HistoryNumber)" />
         </div>
@@ -106,7 +115,7 @@
             else
             {
                 <i class="fas fa-save me-2"></i>
-                <span>Guardar Historia Clínica</span>
+                <span>@(IsEditMode ? "Actualizar" : "Guardar") Historia Clínica</span>
             }
         </button>
     </div>
@@ -120,6 +129,7 @@
 
     private PersonDTO selectedPerson;
     private bool isSaving = false;
+    private bool IsEditMode => History?.ClinicalHistoryId > 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,6 +139,11 @@
         {
             await SetupPreselectedPerson();
         }
+        else if (IsEditMode && History.Patient?.Person != null)
+        {
+            // Si estamos en modo edición y ya tenemos datos del paciente
+            selectedPerson = History.Patient.Person;
+        }
     }
 
     private async Task SetupPreselectedPerson()
@@ -136,7 +151,7 @@
         History.Patient.PersonId = PreselectedPerson.Id;
         History.Patient.Person = PreselectedPerson;
 
-        if (string.IsNullOrWhiteSpace(History.HistoryNumber))
+        if (string.IsNullOrWhiteSpace(History.HistoryNumber) && !IsEditMode)
         {
             History.HistoryNumber = GenerateHistoryNumber(PreselectedPerson.Document?.DocumentNumber);
         }
@@ -150,22 +165,25 @@
         History.Patient.PersonId = person.Id;
         History.Patient.Person = person;
 
-        // SIEMPRE regenerar el número de historia cuando se selecciona una nueva persona
-        History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+        // Solo regenerar el número de historia si no estamos en modo edición
+        if (!IsEditMode)
+        {
+            History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+        }
 
         StateHasChanged();
     }
 
     private void OnPersonCleared()
     {
-        selectedPerson = null;
-        History.Patient.PersonId = 0;
-        History.Patient.Person = null;
-
-        // Limpiar el número de historia cuando no hay persona seleccionada
-        History.HistoryNumber = string.Empty;
-
-        StateHasChanged();
+        if (!IsEditMode) // Solo permitir limpiar si no estamos editando
+        {
+            selectedPerson = null;
+            History.Patient.PersonId = 0;
+            History.Patient.Person = null;
+            History.HistoryNumber = string.Empty;
+            StateHasChanged();
+        }
     }
 
     private string GenerateHistoryNumber(string documentNumber)
@@ -192,7 +210,7 @@
 
     private bool IsFormValid()
     {
-        return (PreselectedPerson != null || selectedPerson != null) &&
+        return (PreselectedPerson != null || selectedPerson != null || (IsEditMode && History.Patient?.PersonId > 0)) &&
                !string.IsNullOrWhiteSpace(History.HistoryNumber) &&
                History.CreationDate.HasValue;
     }
@@ -209,63 +227,57 @@
                 return;
             }
 
-            // Generar número de historia si no existe
-            if (string.IsNullOrWhiteSpace(History.HistoryNumber))
+            if (IsEditMode)
             {
-                var documentNumber = History.Patient.Person?.Document?.DocumentNumber;
-                if (!string.IsNullOrWhiteSpace(documentNumber))
-                {
-                    History.HistoryNumber = GenerateHistoryNumber(documentNumber);
-                }
-                else
-                {
-                    await JS.InvokeVoidAsync("alert", "No se puede generar el número de historia sin la cédula del paciente.");
-                    return;
-                }
-            }
-
-            // Preparar datos para envío
-            var historyToSave = new ClinicalHistoryCreateDTO
-                {
-                    HistoryNumber = History.HistoryNumber,
-                    CreationDate = History.CreationDate,
-                    IsActive = History.IsActive,
-                    GeneralObservations = History.GeneralObservations,
-                    Patient = new PatientDTO
+                // Actualizar historia existente
+                var updateDto = new BasicClinicalHistroyDTO
                     {
-                        PersonId = History.Patient.PersonId
-                    }
-                };
+                        ClinicalHistoryId = History.ClinicalHistoryId,
+                        HistoryNumber = History.HistoryNumber,
+                        CreationDate = History.CreationDate,
+                        IsActive = History.IsActive,
+                        GeneralObservations = History.GeneralObservations,
+                        Patient = new PatientDTO
+                        {
+                            PersonId = History.Patient.PersonId
+                        }
+                    };
 
-            var json = JsonSerializer.Serialize(historyToSave, new JsonSerializerOptions
-                {
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                    WriteIndented = true
-                });
-
-            await JS.InvokeVoidAsync("console.log", "Datos a enviar:", json);
-
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-            HttpResponseMessage response;
-
-            if (History.ClinicalHistoryId == 0)
-            {
-                response = await Http.PostAsync("api/ClinicalHistory", content);
+                var updatedHistory = await ClinicalHistoryService.Update(updateDto);
+                await OnSaved.InvokeAsync(updatedHistory);
             }
             else
             {
-                response = await Http.PutAsync($"api/ClinicalHistory/{History.ClinicalHistoryId}", content);
-            }
+                // Crear nueva historia
+                if (string.IsNullOrWhiteSpace(History.HistoryNumber))
+                {
+                    var documentNumber = History.Patient.Person?.Document?.DocumentNumber;
+                    if (!string.IsNullOrWhiteSpace(documentNumber))
+                    {
+                        History.HistoryNumber = GenerateHistoryNumber(documentNumber);
+                    }
+                    else
+                    {
+                        await JS.InvokeVoidAsync("alert", "No se puede generar el número de historia sin la cédula del paciente.");
+                        return;
+                    }
+                }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("console.error", $"Error en API: {error}");
-                await JS.InvokeVoidAsync("alert", $"Error al guardar: {error}");
-                return;
-            }
+                var createDto = new ClinicalHistoryCreateDTO
+                    {
+                        HistoryNumber = History.HistoryNumber,
+                        CreationDate = History.CreationDate,
+                        IsActive = History.IsActive,
+                        GeneralObservations = History.GeneralObservations,
+                        Patient = new PatientDTO
+                        {
+                            PersonId = History.Patient.PersonId
+                        }
+                    };
 
-            await OnSaved.InvokeAsync(History);
+                var createdHistory = await ClinicalHistoryService.Add(createDto);
+                await OnSaved.InvokeAsync(createdHistory);
+            }
         }
         catch (Exception ex)
         {

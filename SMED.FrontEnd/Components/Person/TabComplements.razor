@@ -1,152 +1,225 @@
 ﻿@using SMED.Shared.DTOs
 @inject HttpClient Http
 
-<div class="form-section">
-    <h4>Información Complementaria</h4>
-
-    <div class="form-group">
-        <label>Estado Civil</label>
-        <InputSelect @bind-Value="SelectedMaritalStatusId" class="form-control">
-            <option value="">-- Seleccione Estado Civil --</option>
-            @if (MaritalStatusList != null)
-            {
-                @foreach (var estado in MaritalStatusList)
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Estado Civil *</label>
+            <InputSelect @bind-Value="SelectedMaritalStatusId"
+                         class="@GetInputClass(!SelectedMaritalStatusId.HasValue)">
+                <option value="">-- Seleccione Estado Civil --</option>
+                @if (MaritalStatusList != null)
                 {
-                    <option value="@estado.Id">@estado.Name</option>
+                    @foreach (var estado in MaritalStatusList)
+                    {
+                        <option value="@estado.Id">@estado.Name</option>
+                    }
                 }
-            }
-        </InputSelect>
-        <ValidationMessage For="@(() => Person.MaritalStatus.Id)" />
-    </div>
-
-
-
-    <div class="form-group">
-        <label>Religión</label>
-        <InputSelect @bind-Value="SelectedReligionId" class="form-control">
-            <option value="">-- Seleccione Religión --</option>
-            @foreach (var religion in Religions)
+            </InputSelect>
+            @if (ShowValidationErrors && !SelectedMaritalStatusId.HasValue)
             {
-                <option value="@religion.Id">@religion.Name</option>
+                <div class="invalid-feedback">Debe seleccionar un estado civil</div>
             }
-        </InputSelect>
-        <ValidationMessage For="@(() => Person.Religion.Id)" />
+        </div>
     </div>
-
-
-    <div class="form-group">
-        <label>Grupo Sanguíneo</label>
-        <InputSelect @bind-Value="SelectedBloodGroupId" class="form-control">
-            <option value="">-- Seleccione Grupo Sanguíneo --</option>
-            @foreach (var bg in BloodGroups)
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Religión *</label>
+            <InputSelect @bind-Value="SelectedReligionId"
+                         class="@GetInputClass(!SelectedReligionId.HasValue)">
+                <option value="">-- Seleccione Religión --</option>
+                @foreach (var religion in Religions)
+                {
+                    <option value="@religion.Id">@religion.Name</option>
+                }
+            </InputSelect>
+            @if (ShowValidationErrors && !SelectedReligionId.HasValue)
             {
-                <option value="@bg.Id">@bg.Name</option>
+                <div class="invalid-feedback">Debe seleccionar una religión</div>
             }
-        </InputSelect>
-        <ValidationMessage For="@(() => Person.BloodGroup.Id)" />
+        </div>
     </div>
+</div>
 
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Grupo Sanguíneo *</label>
+            <InputSelect @bind-Value="SelectedBloodGroupId"
+                         class="@GetInputClass(!SelectedBloodGroupId.HasValue)">
+                <option value="">-- Seleccione Grupo Sanguíneo --</option>
+                @foreach (var bg in BloodGroups)
+                {
+                    <option value="@bg.Id">@bg.Name</option>
+                }
+            </InputSelect>
+            @if (ShowValidationErrors && !SelectedBloodGroupId.HasValue)
+            {
+                <div class="invalid-feedback">Debe seleccionar un grupo sanguíneo</div>
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Nivel de Educación *</label>
+            <InputSelect @bind-Value="SelectedEducationLevelId"
+                         class="@GetInputClass(!SelectedEducationLevelId.HasValue)">
+                <option value="">-- Seleccione Nivel Educativo --</option>
+                @foreach (var n in EducationLevels)
+                {
+                    <option value="@n.Id">@n.Name</option>
+                }
+            </InputSelect>
+            @if (ShowValidationErrors && !SelectedEducationLevelId.HasValue)
+            {
+                <div class="invalid-feedback">Debe seleccionar un nivel educativo</div>
+            }
+        </div>
+    </div>
+</div>
 
-    <div class="form-group">
-        <label>Profesión</label>
-        <select class="form-control mb-2" @bind="selectedProfessionId">
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Lateralidad *</label>
+    <InputSelect @bind-Value="SelectedLateralityId"
+                 class="@GetInputClass(!SelectedLateralityId.HasValue)">
+        <option value="">-- Seleccione Lateralidad --</option>
+        @foreach (var lateralidad in Lateralities)
+        {
+            <option value="@lateralidad.Id">@lateralidad.Name</option>
+        }
+    </InputSelect>
+    @if (ShowValidationErrors && !SelectedLateralityId.HasValue)
+    {
+        <div class="invalid-feedback">Debe seleccionar una lateralidad</div>
+    }
+</div>
+
+<!-- Profesiones -->
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Profesión * (mínimo 1)</label>
+    <div class="input-group">
+        <select class="form-control" @bind="selectedProfessionId">
             <option value="">-- Seleccione Profesión --</option>
             @foreach (var p in ProfessionsList)
             {
                 <option value="@p.Id">@p.Name</option>
             }
         </select>
-
-        <button type="button" class="btn btn-sm btn-secondary mt-1" @onclick="AgregarProfesion">Agregar profesión</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="AgregarProfesion">
+            <i class="fas fa-plus"></i> Agregar
+        </button>
     </div>
-
-    @if (Person.Professions is not null && Person.Professions.Count > 0)
+    @if (ShowValidationErrors && (Person.Professions == null || !Person.Professions.Any()))
     {
-        <ul class="mt-2">
+        <div class="text-danger mt-1">
+            <small>Debe agregar al menos una profesión</small>
+        </div>
+    }
+</div>
+
+@if (Person.Professions is not null && Person.Professions.Count > 0)
+{
+    <div class="mb-3">
+        <strong>Profesiones seleccionadas:</strong>
+        <ul class="list-group mt-2">
             @foreach (var prof in Person.Professions)
             {
-                <li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
                     @prof.Name
-                    <button type="button" class="btn btn-sm btn-danger ml-2" @onclick="@(() => QuitarProfesion(prof.Id))">Quitar</button>
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="@(() => QuitarProfesion(prof.Id))">
+                        <i class="fas fa-trash">X</i>
+                    </button>
                 </li>
             }
         </ul>
-    }
+    </div>
+}
 
-
-    <div class="form-group">
-        <label>Actividad Laboral</label>
-        <select class="form-control mb-2" @bind="selectedLaborActivityId">
+<!-- Actividades Laborales -->
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Actividad Laboral * (mínimo 1)</label>
+    <div class="input-group">
+        <select class="form-control" @bind="selectedLaborActivityId">
             <option value="">-- Seleccione Actividad Laboral --</option>
             @foreach (var a in LaborActivities)
             {
                 <option value="@a.Id">@a.Name</option>
             }
         </select>
-
-        <button type="button" class="btn btn-sm btn-secondary mt-1" @onclick="AgregarActividadLaboral">Agregar actividad</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="AgregarActividadLaboral">
+            <i class="fas fa-plus"></i> Agregar
+        </button>
     </div>
+    @if (ShowValidationErrors && (Person.LaborActivity == null || !Person.LaborActivity.Any()))
+    {
+        <div class="text-danger mt-1">
+            <small>Debe agregar al menos una actividad laboral</small>
+        </div>
+    }
+</div>
 
-    <ul>
-        @foreach (var s in Person.LaborActivity)
-        {
-            <li>
-                @s.Name
-                <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">Quitar</button>
-            </li>
-        }
-    </ul>
-
-
-    <div class="form-group">
-        <label>Nivel de Educación</label>
-        <InputSelect @bind-Value="SelectedEducationLevelId" class="form-control">
-            <option value="">-- Seleccione Nivel Educativo --</option>
-            @foreach (var n in EducationLevels)
+@if (Person.LaborActivity != null && Person.LaborActivity.Any())
+{
+    <div class="mb-3">
+        <strong>Actividades laborales seleccionadas:</strong>
+        <ul class="list-group mt-2">
+            @foreach (var s in Person.LaborActivity)
             {
-                <option value="@n.Id">@n.Name</option>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    @s.Name
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarActividadLaboral(s.Id)">
+                        <i class="fas fa-trash">X</i>
+                    </button>
+                </li>
             }
-        </InputSelect>
-        <ValidationMessage For="@(() => Person.EducationLevel.Id)" />
+        </ul>
     </div>
+}
 
-    <div class="form-group">
-        <label>Seguro Médico</label>
-        <select class="form-control mb-2" @bind="selectedMedicalInsuranceId">
+<!-- Seguros Médicos -->
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Seguro Médico * (mínimo 1)</label>
+    <div class="input-group">
+        <select class="form-control" @bind="selectedMedicalInsuranceId">
             <option value="">-- Seleccione Seguro Médico --</option>
             @foreach (var s in MedicalInsurances)
             {
                 <option value="@s.Id">@s.Name</option>
             }
         </select>
-
-        <button type ="button" class="btn btn-sm btn-secondary mt-1" @onclick ="AgregarSeguroMedico">Agregar seguro</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="AgregarSeguroMedico">
+            <i class="fas fa-plus"></i> Agregar
+        </button>
     </div>
-
-    <ul>
-        @foreach (var s in Person.MedicalInsurance)
-        {
-            <li>
-                @s.Name
-                <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">Quitar</button>
-            </li>
-        }
-    </ul>
-
-    <div class="form-group">
-        <label>Lateralidad</label>
-        <InputSelect @bind-Value="SelectedLateralityId" class="form-control">
-            <option value="">-- Seleccione Lateralidad --</option>
-            @foreach (var lateralidad in Lateralities)
-            {
-                <option value="@lateralidad.Id">@lateralidad.Name</option>
-            }
-        </InputSelect>
-    </div>
+    @if (ShowValidationErrors && (Person.MedicalInsurance == null || !Person.MedicalInsurance.Any()))
+    {
+        <div class="text-danger mt-1">
+            <small>Debe agregar al menos un seguro médico</small>
+        </div>
+    }
 </div>
+
+@if (Person.MedicalInsurance != null && Person.MedicalInsurance.Any())
+{
+    <div class="mb-3">
+        <strong>Seguros médicos seleccionados:</strong>
+        <ul class="list-group mt-2">
+            @foreach (var s in Person.MedicalInsurance)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    @s.Name
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => QuitarSeguroMedico(s.Id)">
+                        <i class="fas fa-trash">X</i>
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
+}
 
 @code {
     [Parameter] public PersonDTO Person { get; set; } = new();
+    [Parameter] public bool ShowValidationErrors { get; set; }
 
     private List<MaritalStatusDTO> MaritalStatusList = new();
     private List<ReligionDTO> Religions = new();
@@ -157,10 +230,15 @@
     private List<MedicalInsuranceDTO> MedicalInsurances = new();
     private List<LateralityDTO> Lateralities = new();
 
-
     int selectedLaborActivityId;
     int selectedMedicalInsuranceId;
     int? selectedProfessionId;
+
+    // Método helper para generar clases CSS
+    private string GetInputClass(bool hasError)
+    {
+        return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -184,17 +262,15 @@
         if (Person.Religion?.Id != null && string.IsNullOrEmpty(Person.Religion.Name))
         {
             var religion = Religions.FirstOrDefault(r => r.Id == Person.Religion.Id);
-
-			if (religion != null)
-			{
-				Person.Religion.Name = religion.Name;
-			}
+            if (religion != null)
+            {
+                Person.Religion.Name = religion.Name;
+            }
         }
 
         if (Person.BloodGroup?.Id != null && string.IsNullOrEmpty(Person.BloodGroup.Name))
         {
             var bloodGroup = BloodGroups.FirstOrDefault(r => r.Id == Person.BloodGroup.Id);
-
             if (bloodGroup != null)
             {
                 Person.BloodGroup.Name = bloodGroup.Name;
@@ -204,13 +280,11 @@
         if (Person.EducationLevel?.Id != null && string.IsNullOrEmpty(Person.EducationLevel.Name))
         {
             var educationLevel = EducationLevels.FirstOrDefault(r => r.Id == Person.EducationLevel.Id);
-
             if (educationLevel != null)
             {
                 Person.EducationLevel.Name = educationLevel.Name;
             }
         }
-
     }
 
     private async Task CargarDatosComplementarios()
@@ -251,27 +325,31 @@
     {
         BloodGroups = await Http.GetFromJsonAsync<List<BloodGroupDTO>>("api/Complements/blood-groups") ?? new();
     }
-	private async Task LoadProfessions()
-	{
-        ProfessionsList = await Http.GetFromJsonAsync<List<ProfessionDTO>>("api/Complements/professions") ?? new();
-	}
-	private async Task LoadLaborActivities()
-	{
-        LaborActivities = await Http.GetFromJsonAsync<List<LaborActivityDTO>>("api/Complements/labor-activities") ?? new();
-	}
-	private async Task LoadEducationLevels()
-	{
-        EducationLevels = await Http.GetFromJsonAsync<List<EducationLevelDTO>>("api/Complements/education-levels") ?? new();
-	}
-	private async Task LoadMedicalInsurances()
-	{
-        MedicalInsurances = await Http.GetFromJsonAsync<List<MedicalInsuranceDTO>>("api/Complements/medical-insurances") ?? new();
-	}
-	private async Task LoadLateralities()
-	{
-        Lateralities = await Http.GetFromJsonAsync<List<LateralityDTO>>("api/Complements/lateralities") ?? new();
-	}
 
+    private async Task LoadProfessions()
+    {
+        ProfessionsList = await Http.GetFromJsonAsync<List<ProfessionDTO>>("api/Complements/professions") ?? new();
+    }
+
+    private async Task LoadLaborActivities()
+    {
+        LaborActivities = await Http.GetFromJsonAsync<List<LaborActivityDTO>>("api/Complements/labor-activities") ?? new();
+    }
+
+    private async Task LoadEducationLevels()
+    {
+        EducationLevels = await Http.GetFromJsonAsync<List<EducationLevelDTO>>("api/Complements/education-levels") ?? new();
+    }
+
+    private async Task LoadMedicalInsurances()
+    {
+        MedicalInsurances = await Http.GetFromJsonAsync<List<MedicalInsuranceDTO>>("api/Complements/medical-insurances") ?? new();
+    }
+
+    private async Task LoadLateralities()
+    {
+        Lateralities = await Http.GetFromJsonAsync<List<LateralityDTO>>("api/Complements/lateralities") ?? new();
+    }
 
     private int? SelectedLateralityId
     {
@@ -288,6 +366,7 @@
             Person.Laterality.NameLaterality = selectedLaterality?.Name;
         }
     }
+
     private int? SelectedReligionId
     {
         get => Person.Religion?.Id;
@@ -296,7 +375,7 @@
             if (Person.Religion == null)
                 Person.Religion = new ReligionDTO();
 
-            Person.Religion.Id = value ?? 0; 
+            Person.Religion.Id = value ?? 0;
 
             // Actualizar el nombre basado en la selección
             var selectedReligion = Religions.FirstOrDefault(r => r.Id == value);
@@ -354,18 +433,6 @@
         }
     }
 
-    private List<int> SelectedProfessionIds
-    {
-        get => Person.Professions?.Select(p => p.Id).ToList() ?? new();
-        set
-        {
-            Person.Professions = ProfessionsList
-                .Where(p => value.Contains(p.Id))
-                .ToList();
-        }
-    }
-
-
     private void AgregarActividadLaboral()
     {
         var actividad = LaborActivities.FirstOrDefault(a => a.Id == selectedLaborActivityId);
@@ -374,6 +441,7 @@
             Person.LaborActivity.Add(actividad);
         }
     }
+
     private void QuitarActividadLaboral(int id)
     {
         var actividad = Person.LaborActivity.FirstOrDefault(s => s.Id == id);
@@ -382,7 +450,6 @@
             Person.LaborActivity.Remove(actividad);
         }
     }
-
 
     private void AgregarSeguroMedico()
     {
@@ -407,7 +474,6 @@
         if (selectedProfessionId != null)
         {
             var seleccionada = ProfessionsList.FirstOrDefault(p => p.Id == selectedProfessionId);
-
             if (seleccionada != null && !Person.Professions.Any(p => p.Id == seleccionada.Id))
             {
                 Person.Professions.Add(new ProfessionDTO
@@ -416,11 +482,9 @@
                         Name = seleccionada.Name
                     });
             }
-
             selectedProfessionId = null;
         }
     }
-
 
     private void QuitarProfesion(int id)
     {

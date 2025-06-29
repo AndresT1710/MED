@@ -113,6 +113,24 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+        public async Task<List<MedicalCareDTO>?> GetByPatientDocumentAsync(string documentNumber)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/MedicalCare/by-document/{documentNumber}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones por cédula: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones por cédula: {DocumentNumber}", documentNumber);
+                return new List<MedicalCareDTO>();
+            }
+        }
     }
 
 }

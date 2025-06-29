@@ -26,7 +26,6 @@
                 <label class="form-check-label" for="searchByIdNumber">Cédula de Identidad</label>
             </div>
         </div>
-
         <div class="input-group">
             <input type="text" class="form-control"
                    @bind="searchTerm"
@@ -220,7 +219,6 @@
         try
         {
             foundPerson = await PersonService.GetPersonByDocumentAsync(documentNumber);
-
             if (foundPerson != null)
             {
                 searchMessage = $"No se encontró historia clínica para la cédula {documentNumber}";
@@ -380,13 +378,30 @@
         }
     }
 
-    private void EditClinicalHistory(string id)
+    private async Task EditClinicalHistory(string id)
     {
         if (int.TryParse(id, out int idInt))
         {
-            selectedClinicalHistory = clinicalHistoryList.FirstOrDefault(ch => ch.ClinicalHistoryId == idInt) ?? new ClinicalHistoryDTO();
-            preselectedPerson = selectedClinicalHistory.Patient?.Person;
-            showForm = true;
+            try
+            {
+                // Cargar los datos completos desde el servicio
+                selectedClinicalHistory = await ClinicalHistoryService.GetById(idInt);
+
+                if (selectedClinicalHistory != null)
+                {
+                    preselectedPerson = selectedClinicalHistory.Patient?.Person;
+                    showForm = true;
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "No se pudo cargar la historia clínica");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error cargando historia: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error al cargar la historia clínica");
+            }
         }
     }
 
@@ -406,19 +421,27 @@
         }
 
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Estás seguro de eliminar la historia clínica del paciente {historyToDelete.Patient?.Person.FirstName}?");
+            $"¿Estás seguro de eliminar la historia clínica del paciente {historyToDelete.Patient?.Person?.FirstName} {historyToDelete.Patient?.Person?.LastName}?");
 
         if (confirmed)
         {
-            var success = await ClinicalHistoryService.Delete(idInt);
-            if (success)
+            try
             {
-                await LoadClinicalHistoryData();
-                await JS.InvokeVoidAsync("alert", "Historia clínica eliminada exitosamente");
+                var success = await ClinicalHistoryService.Delete(idInt);
+                if (success)
+                {
+                    await LoadClinicalHistoryData();
+                    await JS.InvokeVoidAsync("alert", "Historia clínica eliminada exitosamente");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Error al eliminar la historia clínica");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("alert", "Error al eliminar la historia clínica");
+                await JS.InvokeVoidAsync("console.error", $"Error eliminando: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error inesperado al eliminar la historia clínica");
             }
         }
     }
@@ -435,9 +458,11 @@
         showForm = false;
         preselectedPerson = null;
         await LoadClinicalHistoryData();
+
         var message = savedHistory.ClinicalHistoryId == 0
             ? "Historia clínica creada exitosamente"
             : "Historia clínica actualizada exitosamente";
+
         await JS.InvokeVoidAsync("alert", message);
     }
 

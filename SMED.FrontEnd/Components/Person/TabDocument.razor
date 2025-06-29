@@ -1,65 +1,335 @@
 ﻿@using SMED.Shared.DTOs
 @inject HttpClient Http
+@inject IJSRuntime JS
 
 <div class="form-section">
-    <h4>Documentos</h4>
-    <div class="form-group">
-        <label>Tipo de documento</label>
-        <InputSelect @bind-Value="SelectedDocumentTypeId" class="form-control">
-            <option value="">-- Seleccione --</option>
-            @foreach (var tipo in DocumentTypes)
-            {
-                <option value="@tipo.Id">@tipo.Name</option>
-            }
-        </InputSelect>
-    </div>
+    <h5 class="mb-3"><i class="fas fa-id-card me-2"></i>Documentos</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Tipo de Documento *</label>
+                <InputSelect @bind-Value="SelectedDocumentTypeId"
+                             class="@GetInputClass(!SelectedDocumentTypeId.HasValue)">
+                    <option value="">-- Seleccione --</option>
+                    @foreach (var tipo in DocumentTypes)
+                    {
+                        <option value="@tipo.Id">@tipo.Name</option>
+                    }
+                </InputSelect>
+                @if (ShowValidationErrors && !SelectedDocumentTypeId.HasValue)
+                {
+                    <div class="invalid-feedback">Debe seleccionar un tipo de documento</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Número de Documento *</label>
+                <div class="input-group">
+                    <input type="text"
+                           @ref="documentInput"
+                           value="@Person.Document.DocumentNumber"
+                           @oninput="OnDocumentNumberInput"
+                           class="@GetDocumentNumberClass()"
+                           placeholder="@GetDocumentPlaceholder()"
+                           maxlength="10"
+                           autocomplete="off"
+                           inputmode="numeric"
+                           pattern="[0-9]*" />
+                    @if (isValidatingDocument)
+                    {
+                        <span class="input-group-text">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Validando...</span>
+                            </div>
+                        </span>
+                    }
+                    else if (IsDocumentValid && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                    {
+                        <span class="input-group-text text-success">
+                            <i class="fas fa-check"></i>
+                        </span>
+                    }
+                </div>
 
-    <div class="form-group">
-        <label>Número de documento</label>
-        <InputText @bind-Value="Person.Document.DocumentNumber" class="form-control" />
+                <!-- Contador de dígitos -->
+                @if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                {
+                    <small class="form-text text-muted">
+                        @Person.Document.DocumentNumber.Length / 10 dígitos
+                    </small>
+                }
+
+                @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                {
+                    <div class="invalid-feedback d-block">El número de documento es obligatorio</div>
+                }
+                else if (!string.IsNullOrWhiteSpace(documentValidationError))
+                {
+                    <div class="invalid-feedback d-block">@documentValidationError</div>
+                }
+                else if (documentAlreadyExists)
+                {
+                    <div class="invalid-feedback d-block">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Esta cédula ya está registrada en el sistema
+                    </div>
+                }
+                else if (IsCedulaType && IsDocumentValid && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                {
+                    <div class="valid-feedback d-block">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Cédula válida
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="form-section">
-
-    <h4>Profesional de la Salud</h4>
-
-    <div class="form-group">
-        <label>Tipo de Profesional</label>
-        <InputSelect @bind-Value="SelectedHealthProfessionalTypeId" class="form-control">
+    <h5 class="mb-3"><i class="fas fa-user-md me-2"></i>Profesional de la Salud</h5>
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Tipo de Profesional *</label>
+        <InputSelect @bind-Value="SelectedHealthProfessionalTypeId"
+                     class="@GetInputClass(!SelectedHealthProfessionalTypeId.HasValue)">
             <option value="">-- Seleccione --</option>
             @foreach (var tipo in HealthProfessionalTypes)
             {
                 <option value="@tipo.Id">@tipo.Name</option>
             }
         </InputSelect>
+        @if (ShowValidationErrors && !SelectedHealthProfessionalTypeId.HasValue)
+        {
+            <div class="invalid-feedback">Debe seleccionar un tipo de profesional</div>
+        }
     </div>
 
     @if (ShowProfessionalFields)
     {
         <div class="professional-fields">
-            <div class="form-group">
-                <label>Número de Registro/Matrícula</label>
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Número de Registro/Matrícula *</label>
                 <InputText @bind-Value="Person.HealthProfessional.RegistrationNumber"
-                class="form-control"
-                placeholder="Ingrese el número de registro" />
-                <ValidationMessage For="@(() => Person.HealthProfessional.RegistrationNumber)" />
+                           class="@GetProfessionalFieldClass()"
+                           placeholder="Ingrese el número de registro" />
+                @if (ShowValidationErrors && ShowProfessionalFields && string.IsNullOrWhiteSpace(Person.HealthProfessional?.RegistrationNumber))
+                {
+                    <div class="invalid-feedback">El número de registro es obligatorio para profesionales de la salud</div>
+                }
             </div>
         </div>
     }
 </div>
 
-
 @code {
-    [Parameter]
-    public PersonDTO Person { get; set; } = new();
+    [Parameter] public PersonDTO Person { get; set; } = new();
+    [Parameter] public bool ShowValidationErrors { get; set; }
 
     private List<DocumentTypeDTO> DocumentTypes = new();
-
     private List<HealthProfessionalTypeDTO> HealthProfessionalTypes = new();
+
+    // Variables para validación de documento
+    private string documentValidationError = string.Empty;
+    private bool documentAlreadyExists = false;
+    private bool isValidatingDocument = false;
+    private Timer validationTimer;
+    private ElementReference documentInput;
 
     private bool ShowProfessionalFields => SelectedHealthProfessionalTypeId.HasValue && SelectedHealthProfessionalTypeId.Value != 25;
 
+    // Propiedades para validación
+    private bool IsCedulaType => SelectedDocumentTypeId.HasValue &&
+                                DocumentTypes.Any(dt => dt.Id == SelectedDocumentTypeId &&
+                                (dt.Name.ToLower().Contains("cédula") || dt.Name.ToLower().Contains("cedula")));
+
+    private bool IsDocumentValid => string.IsNullOrWhiteSpace(documentValidationError) && !documentAlreadyExists;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Configurar el input para solo números usando JavaScript
+            await JS.InvokeVoidAsync("setupNumericInput", documentInput);
+        }
+    }
+
+    // Métodos helper para generar clases CSS
+    private string GetInputClass(bool hasError)
+    {
+        return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
+
+    private string GetDocumentNumberClass()
+    {
+        var hasError = (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber)) ||
+                       !string.IsNullOrWhiteSpace(documentValidationError) ||
+                       documentAlreadyExists;
+
+        var isValid = !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber) &&
+                      string.IsNullOrWhiteSpace(documentValidationError) &&
+                      !documentAlreadyExists;
+
+        return $"form-control {(hasError ? "is-invalid" : "")} {(isValid && IsCedulaType ? "is-valid" : "")}";
+    }
+
+    private string GetProfessionalFieldClass()
+    {
+        var hasError = ShowProfessionalFields && string.IsNullOrWhiteSpace(Person.HealthProfessional?.RegistrationNumber);
+        return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
+
+    private string GetDocumentPlaceholder()
+    {
+        return IsCedulaType ? "Ingrese 10 dígitos de la cédula" : "Ingrese el número de documento";
+    }
+
+    private async Task OnDocumentNumberInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+
+        // Filtrar solo números y limitar a 10 dígitos
+        var filteredValue = new string(value.Where(char.IsDigit).Take(10).ToArray());
+
+        // Si el valor filtrado es diferente al original, actualizar el input
+        if (filteredValue != value)
+        {
+            await JS.InvokeVoidAsync("setInputValue", documentInput, filteredValue);
+        }
+
+        // Actualizar el valor filtrado
+        Person.Document.DocumentNumber = filteredValue;
+
+        // Limpiar validaciones anteriores
+        documentValidationError = string.Empty;
+        documentAlreadyExists = false;
+
+        // Cancelar timer anterior
+        validationTimer?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(filteredValue))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        // Solo validar si es cédula
+        if (IsCedulaType)
+        {
+            // Validación inmediata de formato
+            if (filteredValue.Length < 10)
+            {
+                // No mostrar error hasta que complete los 10 dígitos
+                StateHasChanged();
+                return;
+            }
+
+            if (!IsValidCedulaFormat(filteredValue))
+            {
+                documentValidationError = "Cédula ecuatoriana inválida";
+                StateHasChanged();
+                return;
+            }
+
+            // Si el formato es válido, verificar si existe (con delay)
+            if (filteredValue.Length == 10)
+            {
+                validationTimer = new Timer(async _ => await ValidateDocumentExists(filteredValue), null, 800, Timeout.Infinite);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsValidCedulaFormat(string cedula)
+    {
+        if (string.IsNullOrWhiteSpace(cedula) || cedula.Length != 10)
+            return false;
+
+        // Verificar que todos sean dígitos
+        if (!cedula.All(char.IsDigit))
+            return false;
+
+        // Obtener los dígitos
+        var digits = cedula.Select(c => int.Parse(c.ToString())).ToArray();
+
+        // Verificar provincia (primeros 2 dígitos)
+        var provincia = digits[0] * 10 + digits[1];
+        if (provincia < 1 || provincia > 24)
+            return false;
+
+        // Verificar tercer dígito (debe ser menor a 6 para personas naturales)
+        if (digits[2] >= 6)
+            return false;
+
+        // Algoritmo de validación del dígito verificador
+        var coeficientes = new[] { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
+        var suma = 0;
+
+        for (int i = 0; i < 9; i++)
+        {
+            var producto = digits[i] * coeficientes[i];
+            if (producto >= 10)
+                producto = producto - 9;
+            suma += producto;
+        }
+
+        var digitoVerificador = suma % 10;
+        if (digitoVerificador != 0)
+            digitoVerificador = 10 - digitoVerificador;
+
+        return digitoVerificador == digits[9];
+    }
+
+    private async Task ValidateDocumentExists(string documentNumber)
+    {
+        await InvokeAsync(async () =>
+        {
+            isValidatingDocument = true;
+            StateHasChanged();
+
+            try
+            {
+                // Verificar si la cédula ya existe en el sistema
+                var response = await Http.GetAsync($"api/Person/by-document/{documentNumber}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var existingPerson = await response.Content.ReadFromJsonAsync<PersonDTO>();
+
+                    // Si existe y no es la misma persona que estamos editando
+                    if (existingPerson != null && existingPerson.Id != Person.Id)
+                    {
+                        documentAlreadyExists = true;
+                    }
+                    else
+                    {
+                        documentAlreadyExists = false;
+                    }
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // No existe, está bien
+                    documentAlreadyExists = false;
+                }
+                else
+                {
+                    // Error en la consulta
+                    documentValidationError = "Error al validar el documento";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error validating document: {ex.Message}");
+                documentValidationError = "Error al validar el documento";
+            }
+            finally
+            {
+                isValidatingDocument = false;
+                StateHasChanged();
+            }
+        });
+    }
 
     private int? SelectedDocumentTypeId
     {
@@ -70,9 +340,21 @@
                 Person.Document = new PersonDocumentDTO();
 
             Person.Document.DocumentTypeId = value;
-
             var selectedType = DocumentTypes.FirstOrDefault(dt => dt.Id == value);
             Person.Document.DocumentTypeName = selectedType?.Name;
+
+            // Limpiar validaciones cuando cambia el tipo
+            documentValidationError = string.Empty;
+            documentAlreadyExists = false;
+
+            // Si cambia a cédula y ya hay un número, validar
+            if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document.DocumentNumber))
+            {
+                _ = Task.Run(async () => await OnDocumentNumberInput(new ChangeEventArgs
+                    {
+                        Value = Person.Document.DocumentNumber
+                    }));
+            }
         }
     }
 
@@ -84,7 +366,6 @@
             Person.HealthProfessional ??= new HealthProfessionalDTO();
             Person.HealthProfessional.HealthProfessionalTypeId = value;
 
-            // ACTUALIZACIÓN CORREGIDA DEL NOMBRE
             if (value.HasValue)
             {
                 var selectedType = HealthProfessionalTypes.FirstOrDefault(t => t.Id == value.Value);
@@ -107,7 +388,7 @@
     {
         Person.Document ??= new PersonDocumentDTO();
         await CargarTiposDocumento();
-		await LoadHealthProfessionalTypes();
+        await LoadHealthProfessionalTypes();
 
         // Si ya tiene un tipo de documento asignado, actualizar el nombre
         if (Person.Document.DocumentTypeId.HasValue)
@@ -129,7 +410,11 @@
             }
         }
 
-
+        // Validar documento existente si es cédula
+        if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+        {
+            await OnDocumentNumberInput(new ChangeEventArgs { Value = Person.Document.DocumentNumber });
+        }
     }
 
     private async Task CargarTiposDocumento()
@@ -155,4 +440,58 @@
             Console.WriteLine($"Error cargando tipos de profesionales: {ex.Message}");
         }
     }
+
+    public void Dispose()
+    {
+        validationTimer?.Dispose();
+    }
 }
+
+<script>
+    window.setupNumericInput = (element) => {
+        if (!element) return;
+
+        // Prevenir entrada de caracteres no numéricos
+        element.addEventListener('keydown', function(e) {
+            // Permitir: backspace, delete, tab, escape, enter
+            if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true) ||
+                // Permitir: home, end, left, right
+                (e.keyCode >= 35 && e.keyCode <= 39)) {
+                return;
+            }
+            // Asegurar que es un número y detener el keypress
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+
+        // Filtrar caracteres pegados
+        element.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let paste = (e.clipboardData || window.clipboardData).getData('text');
+            let numericValue = paste.replace(/[^0-9]/g, '').substring(0, 10);
+            element.value = numericValue;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        // Filtrar entrada directa
+        element.addEventListener('input', function(e) {
+            let value = e.target.value;
+            let numericValue = value.replace(/[^0-9]/g, '').substring(0, 10);
+            if (value !== numericValue) {
+                e.target.value = numericValue;
+            }
+        });
+    };
+
+    window.setInputValue = (element, value) => {
+        if (element) {
+            element.value = value;
+        }
+    };
+</script>

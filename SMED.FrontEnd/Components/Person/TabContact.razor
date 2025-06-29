@@ -2,75 +2,143 @@
 @inject HttpClient Http
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 
-
 <div class="form-section">
-    <h4>Dirección</h4>
-
-    <InputText class="form-control mb-2" @bind-Value="MainStreet" placeholder="Calle Principal" />
-    <InputText class="form-control mb-2" @bind-Value="SecondaryStreet1" placeholder="Calle Secundaria 1" />
-    <InputText class="form-control mb-2" @bind-Value="SecondaryStreet2" placeholder="Calle Secundaria 2" />
-    <InputText class="form-control mb-2" @bind-Value="HouseNumber" placeholder="Número de Casa" />
-    <InputText class="form-control mb-2" @bind-Value="Reference" placeholder="Referencia" />
+    <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Dirección</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Calle Principal *</label>
+                <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(MainStreet))"
+                           @bind-Value="MainStreet" placeholder="Calle Principal" />
+                @if (ShowValidationErrors && string.IsNullOrWhiteSpace(MainStreet))
+                {
+                    <div class="invalid-feedback">La calle principal es obligatoria</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Calle Secundaria 1 *</label>
+                <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(SecondaryStreet1))"
+                           @bind-Value="SecondaryStreet1" placeholder="Calle Secundaria 1" />
+                @if (ShowValidationErrors && string.IsNullOrWhiteSpace(SecondaryStreet1))
+                {
+                    <div class="invalid-feedback">La calle secundaria 1 es obligatoria</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label">Calle Secundaria 2</label>
+                <InputText class="form-control" @bind-Value="SecondaryStreet2" placeholder="Calle Secundaria 2" />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label">Número de Casa</label>
+                <InputText class="form-control" @bind-Value="HouseNumber" placeholder="Número de Casa" />
+            </div>
+        </div>
+    </div>
+    <div class="form-group mb-3">
+        <label class="form-label fw-bold">Referencia *</label>
+        <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(Reference))"
+                   @bind-Value="Reference" placeholder="Referencia" />
+        @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Reference))
+        {
+            <div class="invalid-feedback">La referencia es obligatoria</div>
+        }
+    </div>
 </div>
 
 <div class="form-section">
-    <h4>Teléfonos</h4>
-
-    <div class="form-group">
-        <label>Teléfono</label>
-        <InputText @bind-Value="Landline" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label>Celular</label>
-        <InputText @bind-Value="Mobile" class="form-control" />
+    <h5 class="mb-3"><i class="fas fa-phone me-2"></i>Teléfonos</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label">Teléfono Fijo</label>
+                <InputText @bind-Value="Landline" class="form-control" />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Celular *</label>
+                <InputText @bind-Value="Mobile"
+                           class="@GetInputClass(string.IsNullOrWhiteSpace(Mobile))" />
+                @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Mobile))
+                {
+                    <div class="invalid-feedback">El número de celular es obligatorio</div>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="form-section mt-4">
-    <h4>Residencia</h4>
+<div class="form-section">
+    <h5 class="mb-3"><i class="fas fa-home me-2"></i>Residencia</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Provincia *</label>
+                <InputSelect @bind-Value="SelectedProvinceId"
+                             class="@GetInputClass(!SelectedProvinceId.HasValue)">
+                    <option value="">-- Seleccione Provincia --</option>
+                    @if (provincias != null)
+                    {
+                        @foreach (var provincia in provincias)
+                        {
+                            <option value="@provincia.Id">@provincia.Name</option>
+                        }
+                    }
+                </InputSelect>
+                @if (ShowValidationErrors && !SelectedProvinceId.HasValue)
+                {
+                    <div class="invalid-feedback">Debe seleccionar una provincia</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label class="form-label fw-bold">Ciudad *</label>
+                <InputSelect @bind-Value="Person.Residence.CityId"
+                             class="@GetInputClass(!(Person.Residence?.CityId.HasValue == true))"
+                             disabled="@(ciudades == null || !ciudades.Any())">
+                    <option value="">-- Seleccione Ciudad --</option>
+                    @if (ciudades != null)
+                    {
+                        @foreach (var ciudad in ciudades)
+                        {
+                            <option value="@ciudad.Id">@ciudad.Name</option>
+                        }
+                    }
+                </InputSelect>
 
-    <label>Provincia</label>
-    <InputSelect @bind-Value="SelectedProvinceId"
-                 class="form-control mb-2">
-        <option value="">-- Seleccione Provincia --</option>
-        @if (provincias != null)
-        {
-            @foreach (var provincia in provincias)
-            {
-                <option value="@provincia.Id">@provincia.Name</option>
-            }
-        }
-    </InputSelect>
-    <ValidationMessage For="@(() => Person.Residence.ProvinceId)" />
+                @if (ShowValidationErrors && !(Person.Residence?.CityId.HasValue == true))
+                {
+                    <div class="invalid-feedback">Debe seleccionar una ciudad</div>
+                }
+            </div>
+        </div>
 
-
-    <label>Ciudad</label>
-    <InputSelect @bind-Value="Person.Residence.CityId"
-                 class="form-control"
-                 disabled="@(ciudades == null || !ciudades.Any())">
-        <option value="">-- Seleccione Ciudad --</option>
-        @if (ciudades != null)
-        {
-            @foreach (var ciudad in ciudades)
-            {
-                <option value="@ciudad.Id">@ciudad.Name</option>
-            }
-        }
-    </InputSelect>
-    <ValidationMessage For="@(() => Person.Residence.CityId)" />
-
+    </div>
 </div>
 
 @code {
-    [Parameter]
-    public PersonDTO Person { get; set; } = new();
-
-    [Parameter]
-    public EventCallback<int?> ProvinceIdChanged { get; set; }
+    [Parameter] public PersonDTO Person { get; set; } = new();
+    [Parameter] public bool ShowValidationErrors { get; set; }
+    [Parameter] public EventCallback<int?> ProvinceIdChanged { get; set; }
 
     private List<ProvinceDTO>? provincias;
     private List<CityDTO>? ciudades;
     private bool isLoading = false;
+
+    // Método helper para generar clases CSS
+    private string GetInputClass(bool hasError)
+    {
+        return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -140,17 +208,6 @@
         }
     }
 
-    private async Task OnProvinciaChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int provinciaId))
-        {
-            SelectedProvinceId = provinciaId;
-            await LoadCities(provinciaId);
-            await ProvinceIdChanged.InvokeAsync(provinciaId);
-            await SaveToLocalStorage();
-        }
-    }
-
     private async Task SaveToLocalStorage()
     {
         try
@@ -162,7 +219,6 @@
             Console.WriteLine($"Error saving to localStorage: {ex.Message}");
         }
     }
-
 
     private int? SelectedProvinceId
     {
@@ -198,7 +254,7 @@
         StateHasChanged();
     }
 
-    //IMPUTS
+    //INPUTS
     private string? MainStreet
     {
         get => Person.Address?.ElementAtOrDefault(0)?.MainStreet;
@@ -210,6 +266,7 @@
             }
         }
     }
+
     private string? SecondaryStreet1
     {
         get => Person.Address?.ElementAtOrDefault(0)?.SecondaryStreet1;
@@ -221,6 +278,7 @@
             }
         }
     }
+
     private string? SecondaryStreet2
     {
         get => Person.Address?.ElementAtOrDefault(0)?.SecondaryStreet2;
@@ -232,6 +290,7 @@
             }
         }
     }
+
     private string? HouseNumber
     {
         get => Person.Address?.ElementAtOrDefault(0)?.HouseNumber;
@@ -243,6 +302,7 @@
             }
         }
     }
+
     private string? Reference
     {
         get => Person.Address?.ElementAtOrDefault(0)?.Reference;
@@ -254,6 +314,7 @@
             }
         }
     }
+
     private string? Landline
     {
         get => Person.Phone?.Landline;
@@ -261,7 +322,6 @@
         {
             if (Person.Phone == null)
                 Person.Phone = new PersonPhoneDTO();
-
             Person.Phone.Landline = value;
         }
     }
@@ -273,9 +333,7 @@
         {
             if (Person.Phone == null)
                 Person.Phone = new PersonPhoneDTO();
-
             Person.Phone.Mobile = value;
         }
     }
-
 }

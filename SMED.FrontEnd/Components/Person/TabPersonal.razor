@@ -1,63 +1,109 @@
 ﻿@using SMED.Shared.DTOs
 @inject HttpClient Http
 
-<div class="form-group">
-    <label>Primer Nombre</label>
-    <InputText @bind-Value="Person.FirstName" class="form-control" />
-</div>
-
-<div class="form-group">
-    <label>Segundo Nombre</label>
-    <InputText @bind-Value="Person.MiddleName" class="form-control" />
-</div>
-
-<div class="form-group">
-    <label>Apellido paterno</label>
-    <InputText @bind-Value="Person.LastName" class="form-control" />
-</div>
-
-<div class="form-group">
-    <label>Apellido materno</label>
-    <InputText @bind-Value="Person.SecondLastName" class="form-control" />
-</div>
-
-<div class="form-group">
-    <label>Género</label>
-    @if (isLoading)
-    {
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    }
-    else
-    {
-        <InputSelect @bind-Value="SelectedGenderId" class="form-control">
-            <option value="">-- Seleccione Género --</option>
-            @foreach (var gender in genders)
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Primer Nombre *</label>
+            <InputText @bind-Value="Person.FirstName"
+                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.FirstName))" />
+            @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.FirstName))
             {
-                <option value="@gender.Id">@gender.Name</option>
+                <div class="invalid-feedback">El primer nombre es obligatorio</div>
             }
-        </InputSelect>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label">Segundo Nombre</label>
+            <InputText @bind-Value="Person.MiddleName" class="form-control" />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Apellido Paterno *</label>
+            <InputText @bind-Value="Person.LastName"
+                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.LastName))" />
+            @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.LastName))
+            {
+                <div class="invalid-feedback">El apellido paterno es obligatorio</div>
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label">Apellido Materno</label>
+            <InputText @bind-Value="Person.SecondLastName" class="form-control" />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Género *</label>
+            @if (isLoading)
+            {
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            }
+            else
+            {
+                <InputSelect @bind-Value="SelectedGenderId"
+                             class="@GetInputClass(!SelectedGenderId.HasValue)">
+                    <option value="">-- Seleccione Género --</option>
+                    @foreach (var gender in genders)
+                    {
+                        <option value="@gender.Id">@gender.Name</option>
+                    }
+                </InputSelect>
+                @if (ShowValidationErrors && !SelectedGenderId.HasValue)
+                {
+                    <div class="invalid-feedback">Debe seleccionar un género</div>
+                }
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label class="form-label fw-bold">Fecha de Nacimiento *</label>
+            <InputDate @bind-Value="Person.BirthDate"
+                       class="@GetInputClass(!Person.BirthDate.HasValue)" />
+            @if (ShowValidationErrors && !Person.BirthDate.HasValue)
+            {
+                <div class="invalid-feedback">La fecha de nacimiento es obligatoria</div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Correo Electrónico *</label>
+    <InputText @bind-Value="Person.Email"
+               class="@GetInputClass(string.IsNullOrWhiteSpace(Person.Email))"
+               type="email" />
+    @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Email))
+    {
+        <div class="invalid-feedback">El correo electrónico es obligatorio</div>
     }
-</div>
-
-<div class="form-group">
-    <label>Fecha de nacimiento</label>
-    <InputDate @bind-Value="Person.BirthDate" class="form-control" />
-</div>
-
-<div class="form-group">
-    <label>Correo</label>
-    <InputText @bind-Value="Person.Email" class="form-control" />
 </div>
 
 @code {
-    [Parameter]
-    public PersonDTO Person { get; set; }
+    [Parameter] public PersonDTO Person { get; set; }
+    [Parameter] public bool ShowValidationErrors { get; set; }
 
     private List<GenderDTO> genders = new();
     private bool isLoading = false;
 
+    // Método helper para generar clases CSS
+    private string GetInputClass(bool hasError)
+    {
+        return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
 
     // Intermediario para manejar bind y asignar Gender completo
     private int? SelectedGenderId
@@ -70,11 +116,9 @@
         }
     }
 
-
     protected override async Task OnInitializedAsync()
     {
         await LoadGenders();
-
         if (Person.GenderId.HasValue && Person.Gender == null && genders != null)
         {
             Person.Gender = genders.FirstOrDefault(g => g.Id == Person.GenderId);

@@ -130,7 +130,6 @@
                                     </div>
                                 }
                             </div>
-
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Área *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(areaSeleccionada) ? "is-invalid" : "")"
@@ -269,13 +268,14 @@
                         @if (serviciosList.Any())
                         {
                             <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>Fecha</th>
                                             <th>Tipo</th>
                                             <th>Diagnóstico</th>
-                                            <th>Acciones</th>
+                                            <th>Observaciones</th>
+                                            <th width="120">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -285,11 +285,12 @@
                                                 <td>@servicio.ServiceDate?.ToString("dd/MM/yyyy")</td>
                                                 <td>@servicio.ServiceType</td>
                                                 <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
+                                                <td>@(string.IsNullOrEmpty(servicio.Observations) ? "N/A" : (servicio.Observations.Length > 50 ? servicio.Observations.Substring(0, 50) + "..." : servicio.Observations))</td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)">
+                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)" title="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)">
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)" title="Eliminar">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -301,7 +302,8 @@
                         }
                         else
                         {
-                            <div class="text-center py-3">
+                            <div class="text-center py-4">
+                                <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">No hay servicios agregados</p>
                                 <button class="btn btn-primary" @onclick="AgregarServicio">
                                     <i class="fas fa-plus me-2"></i>Agregar Primer Servicio
@@ -340,13 +342,14 @@
                         @if (procedimientosList.Any())
                         {
                             <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>Fecha</th>
                                             <th>Tipo</th>
                                             <th>Procedimiento</th>
-                                            <th>Acciones</th>
+                                            <th>Observaciones</th>
+                                            <th width="120">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -356,11 +359,12 @@
                                                 <td>@procedimiento.ProcedureDate.ToString("dd/MM/yyyy")</td>
                                                 <td>@procedimiento.TypeOfProcedureName</td>
                                                 <td>@procedimiento.SpecificProcedureName</td>
+                                                <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)">
+                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)" title="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)">
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)" title="Eliminar">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -372,7 +376,8 @@
                         }
                         else
                         {
-                            <div class="text-center py-3">
+                            <div class="text-center py-4">
+                                <i class="fas fa-procedures fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">No hay procedimientos agregados</p>
                                 <button class="btn btn-primary" @onclick="AgregarProcedimiento">
                                     <i class="fas fa-plus me-2"></i>Agregar Primer Procedimiento
@@ -384,7 +389,11 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("services"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-success" @onclick="GuardarAtencionMedica">
+                            <button class="btn btn-success" @onclick="GuardarAtencionMedica" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
                                 <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
                             </button>
                         </div>
@@ -393,7 +402,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Modal para Servicio -->
@@ -404,7 +412,10 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@(currentService?.ServiceId > 0 ? "Editar" : "Agregar") Servicio</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-stethoscope me-2"></i>
+                        @(currentService?.ServiceId > 0 ? "Editar" : "Agregar") Servicio
+                    </h5>
                     <button type="button" class="btn-close" @onclick="CerrarModalServicio"></button>
                 </div>
                 <div class="modal-body">
@@ -423,7 +434,10 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-procedures me-2"></i>
+                        @(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento
+                    </h5>
                     <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
                 </div>
                 <div class="modal-body">
@@ -448,6 +462,7 @@
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
     private bool showValidationErrors = false;
+    private bool isSaving = false;
 
     // Signos vitales
     private string peso = "";
@@ -611,11 +626,11 @@
     }
 
     // Métodos para servicios
-    private void AgregarServicio()
+    private async Task AgregarServicio()
     {
         if (!IsPatientTabComplete())
         {
-            JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar servicios.");
+            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar servicios.");
             return;
         }
 
@@ -626,19 +641,43 @@
                 ServiceDate = DateTime.Now,
                 HealthProfessionalId = int.Parse(profesionalSeleccionado)
             };
-        showServiceModal = true;
-    }
 
-    private void EditarServicio(MedicalServiceDTO servicio)
-    {
-        currentService = servicio;
         showServiceModal = true;
-    }
-
-    private void EliminarServicio(MedicalServiceDTO servicio)
-    {
-        serviciosList.Remove(servicio);
         StateHasChanged();
+    }
+
+    private async Task EditarServicio(MedicalServiceDTO servicio)
+    {
+        await JS.InvokeVoidAsync("console.log", $"Editando servicio: {servicio.ServiceId}");
+
+        // Crear una copia del servicio para edición
+        currentService = new MedicalServiceDTO
+            {
+                ServiceId = servicio.ServiceId,
+                PatientId = servicio.PatientId,
+                HealthProfessionalId = servicio.HealthProfessionalId,
+                CareId = servicio.CareId,
+                ServiceDate = servicio.ServiceDate,
+                ServiceType = servicio.ServiceType,
+                Diagnosis = servicio.Diagnosis,
+                Observations = servicio.Observations,
+                Recommendations = servicio.Recommendations
+            };
+
+        showServiceModal = true;
+        StateHasChanged();
+    }
+
+    private async Task EliminarServicio(MedicalServiceDTO servicio)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"¿Está seguro de eliminar el servicio de {servicio.ServiceType}?");
+
+        if (confirmed)
+        {
+            serviciosList.Remove(servicio);
+            StateHasChanged();
+        }
     }
 
     private void OnServiceSaved(MedicalServiceDTO servicio)
@@ -653,6 +692,7 @@
         {
             serviciosList.Add(servicio);
         }
+
         CerrarModalServicio();
         StateHasChanged();
     }
@@ -661,14 +701,15 @@
     {
         showServiceModal = false;
         currentService = null;
+        StateHasChanged();
     }
 
     // Métodos para procedimientos
-    private void AgregarProcedimiento()
+    private async Task AgregarProcedimiento()
     {
         if (!IsPatientTabComplete())
         {
-            JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar procedimientos.");
+            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar procedimientos.");
             return;
         }
 
@@ -679,19 +720,55 @@
                 ProcedureDate = DateTime.Now,
                 HealthProfessionalId = int.Parse(profesionalSeleccionado)
             };
-        showProcedureModal = true;
-    }
 
-    private void EditarProcedimiento(MedicalProcedureDTO procedimiento)
-    {
-        currentProcedure = procedimiento;
         showProcedureModal = true;
-    }
-
-    private void EliminarProcedimiento(MedicalProcedureDTO procedimiento)
-    {
-        procedimientosList.Remove(procedimiento);
         StateHasChanged();
+    }
+
+    private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        await JS.InvokeVoidAsync("console.log", $"=== EDITANDO PROCEDIMIENTO ===");
+        await JS.InvokeVoidAsync("console.log", $"ID: {procedimiento.ProcedureId}");
+        await JS.InvokeVoidAsync("console.log", $"Tipo ID: {procedimiento.TypeOfProcedureId}");
+        await JS.InvokeVoidAsync("console.log", $"Específico ID: {procedimiento.SpecificProcedureId}");
+        await JS.InvokeVoidAsync("console.log", $"Médico ID: {procedimiento.TreatingPhysicianId}");
+        await JS.InvokeVoidAsync("console.log", $"Fecha: {procedimiento.ProcedureDate}");
+        await JS.InvokeVoidAsync("console.log", $"Observaciones: {procedimiento.Observations}");
+
+        // Crear una copia completa del procedimiento para edición
+        currentProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = procedimiento.ProcedureId,
+                PatientId = procedimiento.PatientId,
+                HealthProfessionalId = procedimiento.HealthProfessionalId,
+                CareId = procedimiento.CareId,
+                ProcedureDate = procedimiento.ProcedureDate,
+                SpecificProcedureId = procedimiento.SpecificProcedureId,
+                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
+                TreatingPhysicianId = procedimiento.TreatingPhysicianId,
+                Observations = procedimiento.Observations,
+                TypeOfProcedureName = procedimiento.TypeOfProcedureName,
+                SpecificProcedureName = procedimiento.SpecificProcedureName
+            };
+
+        await JS.InvokeVoidAsync("console.log", "Procedimiento copiado para edición");
+
+        showProcedureModal = true;
+        StateHasChanged();
+
+        await JS.InvokeVoidAsync("console.log", "Modal de procedimiento abierto");
+    }
+
+    private async Task EliminarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
+
+        if (confirmed)
+        {
+            procedimientosList.Remove(procedimiento);
+            StateHasChanged();
+        }
     }
 
     private void OnProcedureSaved(MedicalProcedureDTO procedimiento)
@@ -706,6 +783,7 @@
         {
             procedimientosList.Add(procedimiento);
         }
+
         CerrarModalProcedimiento();
         StateHasChanged();
     }
@@ -714,10 +792,12 @@
     {
         showProcedureModal = false;
         currentProcedure = null;
+        StateHasChanged();
     }
 
     private async Task GuardarAtencionMedica()
     {
+        isSaving = true;
         try
         {
             // Validaciones básicas
@@ -725,7 +805,7 @@
             {
                 showValidationErrors = true;
                 await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
-                SetActiveTab("patient");
+                await SetActiveTab("patient");
                 return;
             }
 
@@ -746,6 +826,7 @@
                     await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
                     return;
                 }
+
                 medicalCareResult = MedicalCare;
             }
             else
@@ -765,6 +846,7 @@
                     await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
                     return;
                 }
+
                 medicalCareResult = result.Data;
             }
 
@@ -833,10 +915,15 @@
                 ? "Atención médica creada exitosamente"
                 : "Atención médica actualizada exitosamente";
             await JS.InvokeVoidAsync("alert", successMessage);
+
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
         }
     }
 

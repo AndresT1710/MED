@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using SMED.Shared.DTOs;
 public class ClinicalHistoryService
 {
-
     private readonly HttpClient _httpClient;
 
     public ClinicalHistoryService(HttpClient httpClient)
@@ -22,14 +21,14 @@ public class ClinicalHistoryService
         return await _httpClient.GetFromJsonAsync<ClinicalHistoryDTO>($"api/ClinicalHistory/{id}");
     }
 
-    public async Task<ClinicalHistoryDTO> Add(ClinicalHistoryDTO dto)
+    public async Task<ClinicalHistoryDTO> Add(ClinicalHistoryCreateDTO dto)
     {
         var response = await _httpClient.PostAsJsonAsync("api/ClinicalHistory", dto);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ClinicalHistoryDTO>();
     }
 
-    public async Task<ClinicalHistoryDTO> Update(ClinicalHistoryDTO dto)
+    public async Task<ClinicalHistoryDTO> Update(BasicClinicalHistroyDTO dto)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/ClinicalHistory/{dto.ClinicalHistoryId}", dto);
         response.EnsureSuccessStatusCode();
@@ -50,10 +49,9 @@ public class ClinicalHistoryService
                 $"api/ClinicalHistory/search?term={Uri.EscapeDataString(searchTerm)}&byIdNumber={byIdNumber}")
                 ?? Enumerable.Empty<ClinicalHistoryDTO>();
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        catch (HttpRequestException ex) when (ex.Message.Contains("404"))
         {
             return Enumerable.Empty<ClinicalHistoryDTO>();
         }
     }
-
 }

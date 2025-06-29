@@ -10,57 +10,101 @@
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
-
     <h3 class="mb-4">Gestión de Atenciones Médicas</h3>
 
-    <div class="search-container mb-4">
-        <div class="search-options">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="searchType" id="searchByCareId"
-                       checked="@(!searchByPatientId)" @onchange="() => { searchByPatientId = false; searchTerm = string.Empty; }">
-                <label class="form-check-label" for="searchByCareId">ID Atención</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="searchType" id="searchByPatientId"
-                       checked="@(searchByPatientId)" @onchange="() => { searchByPatientId = true; searchTerm = string.Empty; }">
-                <label class="form-check-label" for="searchByPatientId">ID Paciente</label>
-            </div>
+    <!-- Filtros de búsqueda mejorados -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+            </h5>
         </div>
+        <div class="card-body">
+            <!-- Filtro por fecha -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Filtrar por fecha</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                        <input type="date" class="form-control" @bind="selectedDate" />
+                        <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                    <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+                </div>
+            </div>
 
-        <div class="input-group">
-            <input type="text" class="form-control"
-                   @bind="searchTerm"
-                   placeholder="@(searchByPatientId ? "Ingrese ID del paciente" : "Ingrese ID de atención")"
-                   @onkeypress="@(async (e) => { if (e.Key == "Enter") await HandleSearch(); })" />
+            <!-- Búsqueda por paciente usando PersonSearchComponent -->
+            <div class="row">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Buscar por paciente</label>
+                    <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                           OnPersonSelected="HandlePersonSelected"
+                                           OnPersonCleared="HandlePersonCleared" />
+                </div>
+            </div>
 
-            <button class="btn btn-primary" @onclick="HandleSearch">
-                <i class="fas fa-search"></i> Buscar
-            </button>
-
-            <button class="btn btn-secondary" @onclick="ClearSearch">
-                <i class="fas fa-times"></i> Limpiar
-            </button>
+            <!-- Botones de acción -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    @if (hasActiveFilters)
+                    {
+                        <span class="badge bg-info me-2">
+                            <i class="fas fa-filter me-1"></i>Filtros activos
+                        </span>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
+                            <i class="fas fa-times me-1"></i>Limpiar todos los filtros
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
     @if (showNoMedicalCareAlert)
     {
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>@searchMessage</strong>
-            <button type="button" class="btn btn-primary ml-3" @onclick="CreateNewMedicalCare">
-                <i class="fas fa-plus"></i> Crear Nueva Atención
-            </button>
-            <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@searchMessage</strong>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
+                        <i class="fas fa-plus"></i> Crear Nueva Atención
+                    </button>
+                    <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     }
 
-    <ManagementTableR TableTitle="Atenciones Médicas"
-                      Columns="MedicalCareColumns"
-                      DocumentTypes="documentTypeList"
-                      RenderActions="RenderMedicalCareActions"
-                      AddCallback="AddMedicalCare"
-                      @ref="table" />
+    <!-- Tabla de atenciones médicas -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas
+            </h5>
+            @if (selectedDate.HasValue)
+            {
+                <span class="badge bg-primary">
+                    <i class="fas fa-calendar me-1"></i>@selectedDate.Value.ToString("dd/MM/yyyy")
+                </span>
+            }
+        </div>
+        <div class="card-body">
+            <ManagementTableR TableTitle=""
+                              Columns="MedicalCareColumns"
+                              DocumentTypes="documentTypeList"
+                              RenderActions="RenderMedicalCareActions"
+                              AddCallback="AddMedicalCare"
+                              @ref="table" />
+        </div>
+    </div>
 
+    <!-- Modal de detalle -->
     @if (showDetail && selectedMedicalCare != null)
     {
         <div class="modal fade show d-flex align-items-center justify-content-center"
@@ -71,7 +115,9 @@
                 <div class="modal-content"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
                     <div class="modal-header">
-                        <h5 class="modal-title">Detalle de Atención Médica</h5>
+                        <h5 class="modal-title">
+                            <i class="fas fa-eye me-2"></i>Detalle de Atención Médica
+                        </h5>
                         <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
                     </div>
                     <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
@@ -82,14 +128,18 @@
         </div>
     }
 
+    <!-- Modal de formulario -->
     @if (showForm)
     {
         <div class="modal-backdrop fade show"></div>
         <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(selectedMedicalCare?.CareId == 0 ? "Nueva Atención Médica" : "Editar Atención Médica")</h5>
+                        <h5 class="modal-title">
+                            <i class="fas @(selectedMedicalCare?.CareId == 0 ? "fa-plus" : "fa-edit") me-2"></i>
+                            @(selectedMedicalCare?.CareId == 0 ? "Nueva Atención Médica" : "Editar Atención Médica")
+                        </h5>
                         <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
@@ -106,151 +156,217 @@
 @code {
     private ManagementTableR table;
     private MedicalCareDTO selectedMedicalCare;
+    private PersonDTO selectedPerson;
     private bool showDetail = false;
     private bool showForm = false;
     private List<DocumentTypeDTO> documentTypeList = new();
-    private List<MedicalCareDTO> medicalCareList = new();
+    private List<MedicalCareDTO> allMedicalCareList = new();
+    private List<MedicalCareDTO> filteredMedicalCareList = new();
     private List<List<string>> MedicalCareData = new();
 
-    //Search
-    private string searchTerm = string.Empty;
-    private bool searchByPatientId = false;
+    // Filtros
+    private DateTime? selectedDate;
+    private string quickSearchTerm = string.Empty;
     private string searchMessage = string.Empty;
     private bool showNoMedicalCareAlert = false;
+    private bool hasActiveFilters = false;
+    private int totalMedicalCareCount = 0;
 
+
+
+    // Columnas de la tabla (sin ID)
     private List<string> MedicalCareColumns = new()
     {
-        "ID", "Paciente", "Área", "Profesional", "Acciones"
+        "Fecha", "Paciente", "Área", "Profesional", "Acciones"
     };
 
     protected override async Task OnInitializedAsync()
     {
-        documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types");
-        await LoadMedicalCareData();
+        documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
+        await LoadAllMedicalCareData();
     }
 
-    private async Task LoadMedicalCareData(string searchTerm = null)
+    private async Task LoadAllMedicalCareData()
     {
-        List<MedicalCareDTO> results = new();
-
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        try
         {
-            var allMedicalCares = await MedicalCareService.GetAllAsync();
-            results = allMedicalCares ?? new List<MedicalCareDTO>();
-            showNoMedicalCareAlert = false;
+            var result = await MedicalCareService.GetAllAsync();
+            allMedicalCareList = result ?? new List<MedicalCareDTO>();
+            totalMedicalCareCount = allMedicalCareList.Count;
+        
+            ApplyFilters();
         }
-        else
+        catch (Exception ex)
         {
-            // Implementar búsqueda según el tipo seleccionado
-            var allMedicalCares = await MedicalCareService.GetAllAsync();
-            if (allMedicalCares != null)
-            {
-                if (searchByPatientId && int.TryParse(searchTerm, out int patientId))
-                {
-                    results = allMedicalCares.Where(mc => mc.PatientId == patientId).ToList();
-                }
-                else if (!searchByPatientId && int.TryParse(searchTerm, out int careId))
-                {
-                    results = allMedicalCares.Where(mc => mc.CareId == careId).ToList();
-                }
-            }
+            await JS.InvokeVoidAsync("console.error", $"Error loading medical care data: {ex.Message}");
+            allMedicalCareList = new List<MedicalCareDTO>();
+            filteredMedicalCareList = new List<MedicalCareDTO>();
+        }
+    }
 
-            if (!results.Any())
-            {
-                searchMessage = searchByPatientId
-                    ? $"No se encontraron atenciones médicas para el paciente ID {searchTerm}"
-                    : $"No se encontró atención médica con ID {searchTerm}";
-                showNoMedicalCareAlert = true;
-            }
-            else
-            {
-                showNoMedicalCareAlert = false;
-            }
+    private void ApplyFilters()
+    {
+        filteredMedicalCareList = allMedicalCareList.ToList();
+        hasActiveFilters = false;
+        showNoMedicalCareAlert = false;
+
+        // Filtro por fecha
+        if (selectedDate.HasValue)
+        {
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.CareDate.Date == selectedDate.Value.Date)
+                .ToList();
+            hasActiveFilters = true;
         }
 
-        medicalCareList = results;
-        MedicalCareData = results.Select(mc => new List<string>
+        // Filtro por paciente seleccionado
+        if (selectedPerson != null)
         {
-            mc.CareId.ToString(),
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.PatientId == selectedPerson.Id)
+                .ToList();
+            hasActiveFilters = true;
+        }
+
+        // Filtro por búsqueda rápida de ID
+        if (!string.IsNullOrWhiteSpace(quickSearchTerm) && int.TryParse(quickSearchTerm, out int careId))
+        {
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.CareId == careId)
+                .ToList();
+            hasActiveFilters = true;
+        }
+
+        // Verificar si no hay resultados
+        if (hasActiveFilters && !filteredMedicalCareList.Any())
+        {
+            SetNoResultsMessage();
+        }
+
+        UpdateTableData();
+    }
+
+    private void SetNoResultsMessage()
+    {
+        var filters = new List<string>();
+        
+        if (selectedDate.HasValue)
+            filters.Add($"fecha {selectedDate.Value:dd/MM/yyyy}");
+        
+        if (selectedPerson != null)
+            filters.Add($"paciente {selectedPerson.FirstName} {selectedPerson.LastName}");
+        
+        if (!string.IsNullOrWhiteSpace(quickSearchTerm))
+            filters.Add($"ID {quickSearchTerm}");
+
+        searchMessage = $"No se encontraron atenciones médicas para: {string.Join(", ", filters)}";
+        showNoMedicalCareAlert = true;
+    }
+
+    private void UpdateTableData()
+    {
+        MedicalCareData = filteredMedicalCareList.Select(mc => new List<string>
+        {
+            mc.CareDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
             mc.NamePatient ?? "N/A",
             mc.Area ?? "N/A",
             mc.NameHealthProfessional ?? "N/A",
-            mc.CareId.ToString()
+            mc.CareId.ToString() // Para las acciones, pero no se muestra en la tabla
         }).ToList();
 
         if (table != null)
         {
-            await table.LoadRecords(MedicalCareData);
+            InvokeAsync(async () => await table.LoadRecords(MedicalCareData));
         }
+
+        StateHasChanged();
     }
 
-    private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
-
-    private async Task Search(string[] data)
+    private async Task HandleDateFilter()
     {
-        string field = data[0];
-        string value = data[1]?.Trim() ?? "";
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value))
-        {
-            await LoadMedicalCareData();
-            return;
-        }
+    private async Task HandleQuickSearch()
+    {
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        // Búsqueda en frontend para los campos disponibles
-        int index = MedicalCareColumns.IndexOf(field);
-        if (index < 0) return;
-
-        var filteredData = MedicalCareData
-            .Where(row => row[index].Contains(value, StringComparison.OrdinalIgnoreCase))
+    private async Task HandlePersonSelected(PersonDTO person)
+    {
+        selectedPerson = person;
+    
+        // Filtrar por el ID de la persona, no por PatientId directamente
+        // Necesitamos buscar las atenciones donde el paciente tenga esta persona
+        filteredMedicalCareList = allMedicalCareList
+            .Where(mc => mc.NamePatient != null && 
+                         mc.NamePatient.Contains(person.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                         mc.NamePatient.Contains(person.LastName, StringComparison.OrdinalIgnoreCase))
             .ToList();
-
-        if (table != null)
+    
+        hasActiveFilters = true;
+    
+        if (!filteredMedicalCareList.Any())
         {
-            await table.LoadRecords(filteredData);
+            searchMessage = $"No se encontraron atenciones médicas para {person.FirstName} {person.LastName}";
+            showNoMedicalCareAlert = true;
         }
+        else
+        {
+            showNoMedicalCareAlert = false;
+        }
+    
+        UpdateTableData();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleSearch()
+    private async Task HandlePersonCleared()
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            await LoadMedicalCareData();
-            return;
-        }
+        selectedPerson = null;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        await LoadMedicalCareData(searchTerm);
+    private async Task ClearDateFilter()
+    {
+        selectedDate = null;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        selectedDate = null;
+        selectedPerson = null;
+        quickSearchTerm = string.Empty;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void CreateNewMedicalCare()
     {
         selectedMedicalCare = new MedicalCareDTO
-            {
-                CareId = 0
-            };
+        {
+            CareId = 0
+        };
         showForm = true;
+        showNoMedicalCareAlert = false;
     }
 
     private Task AddMedicalCare()
     {
-        selectedMedicalCare = new MedicalCareDTO
-            {
-                CareId = 0
-            };
-        ShowForm();
+        CreateNewMedicalCare();
         return Task.CompletedTask;
     }
 
-    private async Task ClearSearch()
-    {
-        searchTerm = string.Empty;
-        await LoadMedicalCareData();
-    }
+
 
     RenderFragment<List<string>> RenderMedicalCareActions => row => builder =>
     {
         int seq = 0;
-        var id = row[0]; // El ID está en la primera columna
+        var id = row[4];
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
@@ -278,7 +394,7 @@
     {
         if (int.TryParse(id, out int idInt))
         {
-            selectedMedicalCare = medicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
+            selectedMedicalCare = filteredMedicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
             if (selectedMedicalCare != null)
             {
                 showDetail = true;
@@ -286,12 +402,29 @@
         }
     }
 
-    private void EditMedicalCare(string id)
+    private async Task EditMedicalCare(string id)
     {
         if (int.TryParse(id, out int idInt))
         {
-            selectedMedicalCare = medicalCareList.FirstOrDefault(mc => mc.CareId == idInt) ?? new MedicalCareDTO();
-            showForm = true;
+            try
+            {
+                // Usar el método directo del servicio
+                var medicalCare = await MedicalCareService.GetByIdAsync(idInt);
+                if (medicalCare != null)
+                {
+                    selectedMedicalCare = medicalCare;
+                    showForm = true;
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "No se pudo cargar la atención médica");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error cargando atención médica: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error al cargar la atención médica");
+            }
         }
     }
 
@@ -303,7 +436,7 @@
             return;
         }
 
-        var medicalCareToDelete = medicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
+        var medicalCareToDelete = filteredMedicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
         if (medicalCareToDelete == null)
         {
             await JS.InvokeVoidAsync("alert", "Atención médica no encontrada");
@@ -311,44 +444,46 @@
         }
 
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Estás seguro de eliminar la atención médica ID {medicalCareToDelete.CareId}?");
+            $"¿Estás seguro de eliminar la atención médica del paciente {medicalCareToDelete.NamePatient}?\n\nEsta acción no se puede deshacer.");
 
         if (confirmed)
         {
-            var result = await MedicalCareService.DeleteAsync(idInt);
-            if (result.Success)
+            try
             {
-                await LoadMedicalCareData();
-                await JS.InvokeVoidAsync("alert", "Atención médica eliminada exitosamente");
+                var result = await MedicalCareService.DeleteAsync(idInt);
+                if (result.Success)
+                {
+                    await LoadAllMedicalCareData();
+                    await JS.InvokeVoidAsync("alert", "Atención médica eliminada exitosamente");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al eliminar la atención médica: {result.Error}");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("alert", $"Error al eliminar la atención médica: {result.Error}");
+                await JS.InvokeVoidAsync("console.error", $"Error eliminando: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error inesperado al eliminar la atención médica");
             }
         }
-    }
-
-    private void ShowForm()
-    {
-        showForm = true;
     }
 
     private void HideForm()
     {
         showForm = false;
         selectedMedicalCare = null;
-        searchMessage = string.Empty;
     }
 
     private async Task OnMedicalCareSaved(MedicalCareDTO savedMedicalCare)
     {
         showForm = false;
-        await LoadMedicalCareData();
-
+        await LoadAllMedicalCareData();
+    
         var message = savedMedicalCare.CareId == 0
             ? "Atención médica creada exitosamente"
             : "Atención médica actualizada exitosamente";
-
+    
         await JS.InvokeVoidAsync("alert", message);
     }
 

@@ -88,6 +88,7 @@ builder.Services.AddScoped<IRepository<IndicationsDTO, int>, IndicationsReposito
 builder.Services.AddScoped<IRepository<DiagnosisTreatmentDTO, int>, DiagnosisTreatmentRepository>();
 builder.Services.AddScoped<IRepository<MedicalServiceDTO, int>, MedicalServiceRepository>();
 builder.Services.AddScoped<IRepository<MedicalProcedureDTO, int>, MedicalProcedureRepository>();
+builder.Services.AddScoped<MedicalCareRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

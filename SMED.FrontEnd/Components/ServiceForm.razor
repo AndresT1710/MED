@@ -1,7 +1,6 @@
 ﻿@using SMED.FrontEnd.Components
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
-
 @inject TypeOfServiceService TypeOfServiceService
 @inject HealthProfessionalService HealthProfessionalService
 @inject IJSRuntime JS
@@ -12,27 +11,31 @@
             <ContainerBox2 Title="Fecha de servicio"
                            Width="full"
                            @bind-SelectedDate="fechaServicio" />
-
             <div class="mb-3">
-                <label class="form-label">Tipo de servicio</label>
-                <select class="form-select" @bind="tipoServicioSeleccionado">
+                <label class="form-label">Tipo de servicio *</label>
+                <select class="form-select @(showValidation && string.IsNullOrEmpty(tipoServicioSeleccionado) ? "is-invalid" : "")"
+                        @bind="tipoServicioSeleccionado">
                     <option value="">Seleccione un tipo de servicio</option>
                     @foreach (var tipo in tiposServicio)
                     {
                         <option value="@tipo.Name">@tipo.Name</option>
                     }
                 </select>
+                @if (showValidation && string.IsNullOrEmpty(tipoServicioSeleccionado))
+                {
+                    <div class="invalid-feedback">
+                        Debe seleccionar un tipo de servicio
+                    </div>
+                }
             </div>
         </div>
         <div class="col-md-6">
             <ContainerBox1 Title="Diagnóstico"
                            Width="full"
                            @bind-Content="diagnostico" />
-
             <ContainerBox1 Title="Observaciones"
                            Width="full"
                            @bind-Content="observaciones" />
-
             <ContainerBox1 Title="Recomendaciones"
                            Width="full"
                            @bind-Content="recomendaciones" />
@@ -40,9 +43,13 @@
     </div>
 
     <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-secondary me-2" @onclick="OnCancel">Cancelar</button>
-        <button class="btn btn-primary" @onclick="GuardarServicio">
-            <i class="fas fa-save me-2"></i>Guardar
+        <button class="btn btn-secondary me-2" @onclick="HandleCancel">Cancelar</button>
+        <button class="btn btn-primary" @onclick="GuardarServicio" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            <i class="fas fa-save me-2"></i>@(IsEditMode ? "Actualizar" : "Guardar")
         </button>
     </div>
 </div>
@@ -57,21 +64,37 @@
     private string diagnostico = "";
     private string observaciones = "";
     private string recomendaciones = "";
+    private bool showValidation = false;
+    private bool isSaving = false;
 
     private List<TypeOfServiceDTO> tiposServicio = new();
 
+    private bool IsEditMode => Service?.ServiceId > 0;
+
     protected override async Task OnInitializedAsync()
     {
-        tiposServicio = await TypeOfServiceService.GetAllAsync();
-        LoadExistingData();
+        await LoadTiposServicio();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        LoadExistingData();
+        await LoadExistingData();
+        StateHasChanged();
     }
 
-    private void LoadExistingData()
+    private async Task LoadTiposServicio()
+    {
+        try
+        {
+            tiposServicio = await TypeOfServiceService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando tipos de servicio: {ex.Message}");
+        }
+    }
+
+    private async Task LoadExistingData()
     {
         if (Service != null)
         {
@@ -80,24 +103,55 @@
             diagnostico = Service.Diagnosis ?? "";
             observaciones = Service.Observations ?? "";
             recomendaciones = Service.Recommendations ?? "";
+
+            await JS.InvokeVoidAsync("console.log", $"Cargando servicio para edición: ID={Service.ServiceId}, Tipo={tipoServicioSeleccionado}");
+        }
+        else
+        {
+            // Limpiar formulario para nuevo servicio
+            fechaServicio = DateTime.Now;
+            tipoServicioSeleccionado = "";
+            diagnostico = "";
+            observaciones = "";
+            recomendaciones = "";
         }
     }
 
     private async Task GuardarServicio()
     {
+        showValidation = true;
+
         if (string.IsNullOrEmpty(tipoServicioSeleccionado))
         {
             await JS.InvokeVoidAsync("alert", "Debe seleccionar un tipo de servicio");
             return;
         }
 
-        var servicio = Service ?? new MedicalServiceDTO();
-        servicio.ServiceDate = fechaServicio;
-        servicio.ServiceType = tipoServicioSeleccionado;
-        servicio.Diagnosis = diagnostico;
-        servicio.Observations = observaciones;
-        servicio.Recommendations = recomendaciones;
+        isSaving = true;
+        try
+        {
+            var servicio = Service ?? new MedicalServiceDTO();
 
-        await OnSaved.InvokeAsync(servicio);
+            servicio.ServiceDate = fechaServicio;
+            servicio.ServiceType = tipoServicioSeleccionado;
+            servicio.Diagnosis = diagnostico;
+            servicio.Observations = observaciones;
+            servicio.Recommendations = recomendaciones;
+
+            await OnSaved.InvokeAsync(servicio);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar el servicio: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
     }
 }

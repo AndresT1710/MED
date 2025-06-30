@@ -10,6 +10,7 @@
 @inject ProceduresService ProceduresService
 @inject MedicalProcedureService MedicalProcedureService
 @inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -148,6 +149,23 @@
                                     </div>
                                 }
                             </div>
+                        </div>
+
+                        <!-- Motivo de Consulta -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta médica..."
+                                      maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                            <small class="text-muted">Máximo 500 caracteres. Caracteres restantes: @(500 - (motivoConsulta?.Length ?? 0))</small>
                         </div>
 
                         <div class="mb-3">
@@ -459,6 +477,7 @@
     private string selectedHistoryNumber = "";
     private string areaSeleccionada = "";
     private string profesionalSeleccionado = "";
+    private string motivoConsulta = ""; // Nueva variable para motivo de consulta
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
     private bool showValidationErrors = false;
@@ -491,6 +510,7 @@
 
     // Para edición
     private VitalSignsDTO? existingVitalSigns;
+    private ReasonForConsultationDTO? existingReasonForConsultation;
 
     // Modales
     private bool showServiceModal = false;
@@ -519,7 +539,8 @@
         return selectedPatientId > 0 &&
                !string.IsNullOrEmpty(lugarSeleccionada) &&
                !string.IsNullOrEmpty(areaSeleccionada) &&
-               !string.IsNullOrEmpty(profesionalSeleccionado);
+               !string.IsNullOrEmpty(profesionalSeleccionado) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta); // Agregar validación del motivo
     }
 
     private void ValidateAndShowErrors()
@@ -552,6 +573,14 @@
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
         lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
+
+        // Cargar motivo de consulta existente
+        var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+        existingReasonForConsultation = existingReasons?.FirstOrDefault();
+        if (existingReasonForConsultation != null)
+        {
+            motivoConsulta = existingReasonForConsultation.Description ?? "";
+        }
 
         // Cargar signos vitales existentes
         var allVitalSigns = await VitalSignsService.GetAllAsync();
@@ -838,6 +867,7 @@
                         HealthProfessionalId = int.Parse(profesionalSeleccionado),
                         LocationId = int.Parse(lugarSeleccionada),
                         Area = areaSeleccionada,
+                        CareDate = DateTime.Now
                     };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
@@ -850,7 +880,27 @@
                 medicalCareResult = result.Data;
             }
 
-            // 2. Guardar o actualizar signos vitales (si hay datos)
+            // 2. Guardar o actualizar motivo de consulta
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = medicalCareResult.CareId
+                    };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            // 3. Guardar o actualizar signos vitales (si hay datos)
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
@@ -881,7 +931,7 @@
                 }
             }
 
-            // 3. Guardar servicios médicos
+            // 4. Guardar servicios médicos
             foreach (var servicio in serviciosList)
             {
                 servicio.CareId = medicalCareResult.CareId;
@@ -895,7 +945,7 @@
                 }
             }
 
-            // 4. Guardar procedimientos médicos
+            // 5. Guardar procedimientos médicos
             foreach (var procedimiento in procedimientosList)
             {
                 procedimiento.CareId = medicalCareResult.CareId;
@@ -909,7 +959,7 @@
                 }
             }
 
-            // 5. Mostrar mensaje de éxito y notificar
+            // 6. Mostrar mensaje de éxito y notificar
             await OnSaved.InvokeAsync(medicalCareResult);
             string successMessage = isCreatingNew
                 ? "Atención médica creada exitosamente"

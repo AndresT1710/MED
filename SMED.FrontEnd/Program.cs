@@ -69,6 +69,7 @@ builder.Services.AddScoped<ProceduresService>();
 builder.Services.AddScoped<MedicalServiceService>();
 builder.Services.AddScoped<MedicalProcedureService>();
 builder.Services.AddScoped<PlaceOfAttentionService>();
+builder.Services.AddScoped<ReasonForConsultationService>();
 
 builder.Services.AddLogging();
 

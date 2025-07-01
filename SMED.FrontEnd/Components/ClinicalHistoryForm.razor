@@ -51,7 +51,29 @@
                                        OnPersonSelected="OnPersonSelected"
                                        OnPersonCleared="OnPersonCleared" />
             }
+
+            <!-- ALERTA MEJORADA PARA HISTORIA EXISTENTE -->
+            @if (showExistingHistoryAlert && existingHistoryInfo != null)
+            {
+                <div class="alert alert-warning mt-3" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div class="flex-grow-1">
+                            <strong>¡Atención!</strong> Este paciente ya tiene una historia clínica activa.
+                            <br />
+                            <small>
+                                <strong>Número:</strong> @existingHistoryInfo.HistoryNumber |
+                                <strong>Fecha:</strong> @existingHistoryInfo.CreationDate?.ToString("dd/MM/yyyy")
+                            </small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="ViewExistingHistory">
+                            <i class="fas fa-eye me-1"></i> Ver Historia
+                        </button>
+                    </div>
+                </div>
+            }
         </div>
+
         <div class="col-md-4">
             <label for="historyNumber" class="form-label fw-bold">Número de Historia *</label>
             <div class="input-group">
@@ -106,7 +128,8 @@
         <button type="button" class="btn btn-outline-secondary me-2" @onclick="HandleCancel" disabled="@isSaving">
             <i class="fas fa-times"></i> Cancelar
         </button>
-        <button type="submit" class="btn btn-primary" disabled="@(isSaving || !IsFormValid())">
+        <button type="submit" class="btn btn-primary"
+                disabled="@(isSaving || !IsFormValid() || (showExistingHistoryAlert && !IsEditMode))">
             @if (isSaving)
             {
                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -126,22 +149,24 @@
     [Parameter] public PersonDTO PreselectedPerson { get; set; }
     [Parameter] public EventCallback<ClinicalHistoryDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<ClinicalHistoryDTO> OnViewExistingHistory { get; set; }
 
     private PersonDTO selectedPerson;
     private bool isSaving = false;
+    private bool showExistingHistoryAlert = false;
+    private ClinicalHistoryDTO? existingHistoryInfo = null;
+
     private bool IsEditMode => History?.ClinicalHistoryId > 0;
 
     protected override async Task OnInitializedAsync()
     {
         History.Patient ??= new PatientDTO();
-
         if (PreselectedPerson != null)
         {
             await SetupPreselectedPerson();
         }
         else if (IsEditMode && History.Patient?.Person != null)
         {
-            // Si estamos en modo edición y ya tenemos datos del paciente
             selectedPerson = History.Patient.Person;
         }
     }
@@ -151,7 +176,13 @@
         History.Patient.PersonId = PreselectedPerson.Id;
         History.Patient.Person = PreselectedPerson;
 
-        if (string.IsNullOrWhiteSpace(History.HistoryNumber) && !IsEditMode)
+        // Verificar si ya tiene historia clínica (solo si no estamos editando)
+        if (!IsEditMode)
+        {
+            await CheckForExistingHistory(PreselectedPerson.Id);
+        }
+
+        if (string.IsNullOrWhiteSpace(History.HistoryNumber) && !IsEditMode && !showExistingHistoryAlert)
         {
             History.HistoryNumber = GenerateHistoryNumber(PreselectedPerson.Document?.DocumentNumber);
         }
@@ -159,29 +190,71 @@
         StateHasChanged();
     }
 
-    private void OnPersonSelected(PersonDTO person)
+    private async Task OnPersonSelected(PersonDTO person)
     {
         selectedPerson = person;
         History.Patient.PersonId = person.Id;
         History.Patient.Person = person;
 
-        // Solo regenerar el número de historia si no estamos en modo edición
+        // Verificar si ya tiene historia clínica (solo si no estamos editando)
         if (!IsEditMode)
         {
-            History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+            await CheckForExistingHistory(person.Id);
+
+            // Solo regenerar el número de historia si no tiene historia existente
+            if (!showExistingHistoryAlert)
+            {
+                History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+            }
         }
 
         StateHasChanged();
     }
 
+    private async Task CheckForExistingHistory(int personId)
+    {
+        try
+        {
+            var (hasHistory, message, existingHistory) = await ClinicalHistoryService.CheckPatientHistoryAsync(personId);
+
+            showExistingHistoryAlert = hasHistory;
+            existingHistoryInfo = existingHistory;
+
+            if (hasHistory)
+            {
+                // Limpiar el número de historia si ya existe una
+                History.HistoryNumber = string.Empty;
+                await JS.InvokeVoidAsync("console.log", "Historia existente encontrada", existingHistory);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al verificar historia existente: {ex.Message}");
+        }
+    }
+
+    private async Task ViewExistingHistory()
+    {
+        if (existingHistoryInfo != null && OnViewExistingHistory.HasDelegate)
+        {
+            await OnViewExistingHistory.InvokeAsync(existingHistoryInfo);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "No se puede mostrar la historia existente en este momento.");
+        }
+    }
+
     private void OnPersonCleared()
     {
-        if (!IsEditMode) // Solo permitir limpiar si no estamos editando
+        if (!IsEditMode)
         {
             selectedPerson = null;
             History.Patient.PersonId = 0;
             History.Patient.Person = null;
             History.HistoryNumber = string.Empty;
+            showExistingHistoryAlert = false;
+            existingHistoryInfo = null;
             StateHasChanged();
         }
     }
@@ -196,7 +269,6 @@
         var currentYear = DateTime.Now.Year;
         var yearSuffix = currentYear.ToString().Substring(2, 2);
         var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
-
         return $"UTA-HC-{yearSuffix}{documentSuffix}";
     }
 
@@ -224,6 +296,13 @@
             if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
             {
                 await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
+                return;
+            }
+
+            // Validación adicional para creación: verificar que no tenga historia existente
+            if (!IsEditMode && showExistingHistoryAlert)
+            {
+                await JS.InvokeVoidAsync("alert", "No se puede crear una nueva historia clínica. Este paciente ya tiene una historia activa.");
                 return;
             }
 
@@ -278,6 +357,10 @@
                 var createdHistory = await ClinicalHistoryService.Add(createDto);
                 await OnSaved.InvokeAsync(createdHistory);
             }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("ya tiene una historia clínica"))
+        {
+            await JS.InvokeVoidAsync("alert", ex.Message);
         }
         catch (Exception ex)
         {

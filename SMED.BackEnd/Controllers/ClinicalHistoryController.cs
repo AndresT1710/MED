@@ -49,21 +49,32 @@ namespace SMED.BackEnd.Controllers
             return Ok(history);
         }
 
+
         [HttpPost]
         public async Task<ActionResult<ClinicalHistoryDTO>> Add(ClinicalHistoryCreateDTO createDto)
         {
-            // Convertir ClinicalHistoryCreateDTO a ClinicalHistoryDTO
-            var clinicalHistoryDto = new ClinicalHistoryDTO
+            try
             {
-                HistoryNumber = createDto.HistoryNumber,
-                CreationDate = createDto.CreationDate ?? DateTime.Now,
-                IsActive = createDto.IsActive ?? true,
-                GeneralObservations = createDto.GeneralObservations,
-                Patient = new PatientDTO { PersonId = createDto.Patient.PersonId }
-            };
+                var clinicalHistoryDto = new ClinicalHistoryDTO
+                {
+                    HistoryNumber = createDto.HistoryNumber,
+                    CreationDate = createDto.CreationDate ?? DateTime.Now,
+                    IsActive = createDto.IsActive ?? true,
+                    GeneralObservations = createDto.GeneralObservations,
+                    Patient = new PatientDTO { PersonId = createDto.Patient.PersonId }
+                };
 
-            var created = await _clinicalHistoryRepository.AddAsync(clinicalHistoryDto);
-            return CreatedAtAction(nameof(GetById), new { id = created.ClinicalHistoryId }, created);
+                var created = await _clinicalHistoryRepository.AddAsync(clinicalHistoryDto);
+                return CreatedAtAction(nameof(GetById), new { id = created.ClinicalHistoryId }, created);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("ya tiene una historia clínica"))
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -106,5 +117,34 @@ namespace SMED.BackEnd.Controllers
 
             return NoContent();
         }
+
+
+        [HttpGet("check-patient/{personId}")]
+        public async Task<ActionResult<object>> CheckPatientHistory(int personId)
+        {
+            try
+            {
+                var hasHistory = await _clinicalHistoryRepository.PatientHasClinicalHistoryAsync(personId);
+
+                if (hasHistory)
+                {
+                    var existingHistory = await _clinicalHistoryRepository.GetByPatientIdAsync(personId);
+                    return Ok(new
+                    {
+                        hasHistory = true,
+                        message = "Este paciente ya tiene una historia clínica activa.",
+                        existingHistory = existingHistory
+                    });
+                }
+
+                return Ok(new { hasHistory = false });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al verificar historia clínica: {ex.Message}");
+            }
+        }
+
+
     }
 }

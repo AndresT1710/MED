@@ -26,6 +26,7 @@
                 <label class="form-check-label" for="searchByIdNumber">Cédula de Identidad</label>
             </div>
         </div>
+
         <div class="input-group">
             <input type="text" class="form-control"
                    @bind="searchTerm"
@@ -60,7 +61,7 @@
                                 @if (foundPerson.BirthDate.HasValue)
                                 {
                                     <br />
-                                    <strong>Edad:</strong> @CalculateAge(foundPerson.BirthDate.Value) @:años
+                                    <strong>Edad:</strong> @(CalculateAge(foundPerson.BirthDate.Value) + " años")
                                 }
                             </small>
                         </div>
@@ -130,7 +131,8 @@
                         <ClinicalHistoryForm History="selectedClinicalHistory"
                                              PreselectedPerson="preselectedPerson"
                                              OnSaved="OnClinicalHistorySaved"
-                                             OnCancel="HideForm" />
+                                             OnCancel="HideForm"
+                                             OnViewExistingHistory="OnViewExistingHistory" />
                     </div>
                 </div>
             </div>
@@ -165,6 +167,35 @@
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types");
         await LoadClinicalHistoryData();
+    }
+
+    // NUEVO MÉTODO para manejar la visualización de historia existente
+    private async Task OnViewExistingHistory(ClinicalHistoryDTO existingHistory)
+    {
+        try
+        {
+            // Cerrar el formulario actual
+            showForm = false;
+            preselectedPerson = null;
+
+            // Cargar la historia completa desde el servidor
+            var fullHistory = await ClinicalHistoryService.GetById(existingHistory.ClinicalHistoryId);
+            if (fullHistory != null)
+            {
+                selectedClinicalHistory = fullHistory;
+                showDetail = true;
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo cargar la historia clínica completa.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al cargar historia existente: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Error al cargar la historia clínica.");
+        }
     }
 
     private async Task LoadClinicalHistoryData(string searchTerm = null)
@@ -314,7 +345,6 @@
         var currentYear = DateTime.Now.Year;
         var yearSuffix = currentYear.ToString().Substring(2, 2);
         var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
-
         return $"UTA-HC-{yearSuffix}{documentSuffix}";
     }
 
@@ -384,9 +414,7 @@
         {
             try
             {
-                // Cargar los datos completos desde el servicio
                 selectedClinicalHistory = await ClinicalHistoryService.GetById(idInt);
-
                 if (selectedClinicalHistory != null)
                 {
                     preselectedPerson = selectedClinicalHistory.Patient?.Person;
@@ -458,11 +486,9 @@
         showForm = false;
         preselectedPerson = null;
         await LoadClinicalHistoryData();
-
         var message = savedHistory.ClinicalHistoryId == 0
             ? "Historia clínica creada exitosamente"
             : "Historia clínica actualizada exitosamente";
-
         await JS.InvokeVoidAsync("alert", message);
     }
 

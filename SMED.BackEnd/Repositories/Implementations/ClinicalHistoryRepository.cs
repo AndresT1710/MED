@@ -5,7 +5,6 @@ using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
 
 namespace SMED.BackEnd.Repositories.Implementations
-
 {
     public class ClinicalHistoryRepository : IClinicalHistoryRepository
     {
@@ -14,6 +13,144 @@ namespace SMED.BackEnd.Repositories.Implementations
         public ClinicalHistoryRepository(SGISContext context)
         {
             _context = context;
+        }
+
+        // CORREGIR: PatientHasClinicalHistoryAsync
+        public async Task<bool> PatientHasClinicalHistoryAsync(int personId)
+        {
+            // Verificar si existe un Patient con ese PersonId
+            var patientExists = await _context.Patients
+                .AnyAsync(p => p.PersonId == personId);
+
+            if (!patientExists)
+                return false;
+
+            // Verificar si ya existe una historia clínica para ese PersonId
+            // PatientId en ClinicalHistory apunta directamente a Patient.PersonId
+            return await _context.ClinicalHistories
+                .AnyAsync(ch => ch.PatientId == personId && ch.IsActive == true);
+        }
+
+        // CORREGIR: GetByPatientIdAsync
+        public async Task<ClinicalHistoryDTO?> GetByPatientIdAsync(int personId)
+        {
+            var history = await _context.ClinicalHistories
+                .Include(ch => ch.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                        .ThenInclude(p => p.PersonDocument)
+                .Include(ch => ch.PersonalHistories)
+                    .ThenInclude(ph => ph.DiseaseNavigation)
+                        .ThenInclude(d => d.DiseaseTypeNavigation)
+                .Include(ch => ch.SurgeryHistories)
+                    .ThenInclude(sh => sh.SurgeryNavigation)
+                .Include(ch => ch.AllergyHistories)
+                    .ThenInclude(ah => ah.AllergyNavigation)
+                .Include(ch => ch.HabitHistories)
+                    .ThenInclude(hh => hh.Habit)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.RelationshipNavigation)
+                .Include(ch => ch.FamilyHistoryDetails)
+                    .ThenInclude(fh => fh.DiseaseNavigation)
+                        .ThenInclude(t => t.DiseaseTypeNavigation)
+                .Include(ch => ch.ObstetricHistories)
+                .Include(ch => ch.GynecologicalHistories)
+                .Include(ch => ch.SportsActivitiesHistories)
+                    .ThenInclude(sp => sp.SportActivityNavigation)
+                .Include(ch => ch.LifeStyleHistories)
+                    .ThenInclude(lsh => lsh.LifeStyleNavigation)
+                .Include(ch => ch.DietaryHabitHistories)
+                .Include(ch => ch.SleepHabitHistories)
+                    .ThenInclude(sh => sh.SleepHabitNavigation)
+                .Include(ch => ch.FoodConsumptionHistories)
+                    .ThenInclude(fd => fd.FoodNavigation)
+                .Include(ch => ch.WaterConsumptionHistories)
+                .FirstOrDefaultAsync(ch => ch.PatientId == personId && ch.IsActive == true);
+
+            return history == null ? null : MapToDTO(history);
+        }
+
+        // CORREGIR: AddAsync
+        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryCreateDTO createDto)
+        {
+            if (createDto.Patient == null || createDto.Patient.PersonId == 0)
+                throw new Exception("Patient information is required.");
+
+            // Verificar que existe el paciente
+            var patientExists = await _context.Patients
+                .AnyAsync(p => p.PersonId == createDto.Patient.PersonId);
+
+            if (!patientExists)
+                throw new Exception("Patient not found.");
+
+            // VALIDACIÓN CORREGIDA: Verificar si ya tiene historia clínica
+            var hasExistingHistory = await _context.ClinicalHistories
+                .AnyAsync(ch => ch.PatientId == createDto.Patient.PersonId && ch.IsActive == true);
+
+            if (hasExistingHistory)
+                throw new InvalidOperationException("Este paciente ya tiene una historia clínica activa. No se puede crear otra.");
+
+            // Crear la historia clínica
+            var clinicalHistory = new ClinicalHistory
+            {
+                HistoryNumber = createDto.HistoryNumber,
+                CreationDate = createDto.CreationDate ?? DateTime.Now,
+                IsActive = createDto.IsActive ?? true,
+                GeneralObservations = createDto.GeneralObservations,
+                PatientId = createDto.Patient.PersonId  // PatientId apunta directamente a PersonId
+            };
+
+            _context.ClinicalHistories.Add(clinicalHistory);
+            await _context.SaveChangesAsync();
+
+            return new ClinicalHistoryDTO
+            {
+                ClinicalHistoryId = clinicalHistory.ClinicalHistoryId,
+                HistoryNumber = clinicalHistory.HistoryNumber,
+                CreationDate = clinicalHistory.CreationDate,
+                IsActive = clinicalHistory.IsActive,
+                GeneralObservations = clinicalHistory.GeneralObservations,
+                Patient = new PatientDTO { PersonId = createDto.Patient.PersonId }
+            };
+        }
+
+        // Método original - CORREGIR también
+        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryDTO dto)
+        {
+            // Verificar que existe el paciente
+            var patientExists = await _context.Patients
+                .AnyAsync(p => p.PersonId == dto.Patient.PersonId);
+
+            if (!patientExists)
+                throw new Exception("Patient not found.");
+
+            // VALIDACIÓN: Verificar si ya tiene historia clínica
+            var hasExistingHistory = await _context.ClinicalHistories
+                .AnyAsync(ch => ch.PatientId == dto.Patient.PersonId && ch.IsActive == true);
+
+            if (hasExistingHistory)
+                throw new InvalidOperationException("Este paciente ya tiene una historia clínica activa. No se puede crear otra.");
+
+            var clinicalHistory = new ClinicalHistory
+            {
+                HistoryNumber = dto.HistoryNumber,
+                CreationDate = dto.CreationDate ?? DateTime.Now,
+                IsActive = dto.IsActive ?? true,
+                GeneralObservations = dto.GeneralObservations,
+                PatientId = dto.Patient.PersonId
+            };
+
+            _context.ClinicalHistories.Add(clinicalHistory);
+            await _context.SaveChangesAsync();
+
+            return new ClinicalHistoryDTO
+            {
+                ClinicalHistoryId = clinicalHistory.ClinicalHistoryId,
+                HistoryNumber = clinicalHistory.HistoryNumber,
+                CreationDate = clinicalHistory.CreationDate,
+                IsActive = clinicalHistory.IsActive,
+                GeneralObservations = clinicalHistory.GeneralObservations,
+                Patient = new PatientDTO { PersonId = clinicalHistory.PatientId ?? 0 }
+            };
         }
 
         public async Task<List<ClinicalHistoryDTO>> GetAllAsync()
@@ -58,7 +195,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var history = await _context.ClinicalHistories
                 .Include(ch => ch.Patient)
                     .ThenInclude(p => p.PersonNavigation)
-                                            .ThenInclude(p => p.PersonDocument)
+                        .ThenInclude(p => p.PersonDocument)
                 .Include(ch => ch.PersonalHistories)
                     .ThenInclude(ph => ph.DiseaseNavigation)
                         .ThenInclude(d => d.DiseaseTypeNavigation)
@@ -85,74 +222,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FoodConsumptionHistories)
                     .ThenInclude(fd => fd.FoodNavigation)
                 .Include(ch => ch.WaterConsumptionHistories)
-
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
         }
 
-        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryCreateDTO createDto)
-        {
-            if (createDto.Patient == null || createDto.Patient.PersonId == 0)
-                throw new Exception("Patient information is required.");
-
-            // Validar que exista el paciente
-            var patientExists = await _context.Patients.AnyAsync(p => p.PersonId == createDto.Patient.PersonId);
-            if (!patientExists)
-                throw new Exception("Patient not found.");
-
-            // Convertir ClinicalHistoryCreateDTO a ClinicalHistoryDTO
-            var clinicalHistoryDto = new ClinicalHistoryDTO
-            {
-                HistoryNumber = createDto.HistoryNumber,
-                CreationDate = createDto.CreationDate ?? DateTime.Now,
-                IsActive = createDto.IsActive ?? true,
-                GeneralObservations = createDto.GeneralObservations,
-                Patient = new PatientDTO
-                {
-                    PersonId = createDto.Patient.PersonId
-                    // Puedes mapear más campos si es necesario
-                }
-            };
-
-            // Llamar al método existente que usa ClinicalHistoryDTO
-            return await AddAsync(clinicalHistoryDto);
-        }
-
-        // Método original
-        public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryDTO dto)
-        {
-            var clinicalHistory = new ClinicalHistory
-            {
-                HistoryNumber = dto.HistoryNumber,
-                CreationDate = dto.CreationDate ?? DateTime.Now,
-                IsActive = dto.IsActive ?? true,
-                GeneralObservations = dto.GeneralObservations,
-                PatientId = dto.Patient.PersonId
-            };
-
-            _context.ClinicalHistories.Add(clinicalHistory);
-            await _context.SaveChangesAsync();
-
-            return new ClinicalHistoryDTO
-            {
-                ClinicalHistoryId = clinicalHistory.ClinicalHistoryId,
-                HistoryNumber = clinicalHistory.HistoryNumber,
-                CreationDate = clinicalHistory.CreationDate,
-                IsActive = clinicalHistory.IsActive,
-                GeneralObservations = clinicalHistory.GeneralObservations,
-                Patient = new PatientDTO { PersonId = clinicalHistory.PatientId ?? 0 }
-            };
-        }
-
-
-
         public async Task<ClinicalHistoryDTO?> UpdateAsync(BasicClinicalHistroyDTO dto)
         {
             var entity = await _context.ClinicalHistories
-                    .Include(ch => ch.Patient)
-                        .ThenInclude(p => p.PersonNavigation)
-                    .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == dto.ClinicalHistoryId);
+                .Include(ch => ch.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == dto.ClinicalHistoryId);
 
             if (entity == null)
                 return null;
@@ -192,7 +272,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 }
             });
         }
-
 
         public async Task<bool> DeleteAsync(int id)
         {
@@ -234,7 +313,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             return query.Select(MapToDTO).ToList();
         }
 
-
         private ClinicalHistoryDTO MapToDTO(ClinicalHistory entity)
         {
             return new ClinicalHistoryDTO
@@ -261,7 +339,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                             DocumentNumber = entity.Patient.PersonNavigation.PersonDocument.DocumentNumber,
                             DocumentTypeId = entity.Patient.PersonNavigation.PersonDocument.DocumentTypeId
                         } : null,
-                        // Agrega otras propiedades según necesites
                     } : null
                 },
                 PatientFullName = entity.Patient?.PersonNavigation != null
@@ -276,7 +353,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     DiseaseTypeName = ph.DiseaseNavigation.DiseaseTypeNavigation.Name,
                     DiseaseName = ph.DiseaseNavigation.Name,
                 }).ToList(),
-
                 SurgeryHistories = entity.SurgeryHistories.Select(sh => new SurgeryHistoryDTO
                 {
                     HistoryNumber = sh.HistoryNumber,
@@ -285,19 +361,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                     SurgeryName = sh.SurgeryNavigation.Name,
                     SurgeryDate = sh.SurgeryDate
                 }).ToList(),
-
                 AllergyHistories = entity.AllergyHistories.Select(ah => new AllergyHistoryDTO
                 {
                     AllergyName = ah.AllergyNavigation.Name,
                     RegistrationDate = ah.RegistrationDate
                 }).ToList(),
-
                 HabitHistories = entity.HabitHistories.Select(hh => new HabitHistoryDTO
                 {
                     HabitName = hh.Habit.Name,
                     RecordDate = hh.RecordDate
                 }).ToList(),
-
                 FamilyHistories = entity.FamilyHistoryDetails.Select(fh => new FamilyHistoryDetailDTO
                 {
                     RelationshipName = fh.RelationshipNavigation?.Name ?? "N/D",
@@ -307,7 +380,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Description = fh.Description,
                     RegistrationDate = fh.RegistrationDate
                 }).ToList(),
-
                 ObstetricHistory = entity.ObstetricHistories.FirstOrDefault() != null ? new ObstetricHistoryDTO
                 {
                     ObstetricHistoryId = entity.ObstetricHistories.First().ObstetricHistoryId,
@@ -348,7 +420,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     RegistrationDate = entity.SportsActivitiesHistories.First().RegistrationDate,
                     SportActivityId = entity.SportsActivitiesHistories.First().SportActivityId,
                     SportActivityName = entity.SportsActivitiesHistories.First().SportActivityNavigation?.Name ?? string.Empty
-                } :null,
+                } : null,
                 LifeStyleHistory = entity.LifeStyleHistories.FirstOrDefault() != null ? new LifeStyleHistoryDTO
                 {
                     LifeStyleHistoryId = entity.LifeStyleHistories.First().LifeStyleHistoryId,
@@ -371,7 +443,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     SleepHabitName = entity.SleepHabitHistories.First().SleepHabitNavigation?.Name ?? string.Empty,
                     Description = entity.SleepHabitHistories.First().Description,
                     RecordDate = entity.SleepHabitHistories.First().RecordDate
-                }:null,
+                } : null,
                 FoodConsumptionHistory = entity.FoodConsumptionHistories.FirstOrDefault() != null ? new FoodConsumptionHistoryDTO
                 {
                     FoodConsumptionHistoryId = entity.FoodConsumptionHistories.First().FoodConsumptionHistoryId,
@@ -392,8 +464,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Description = entity.WaterConsumptionHistories.First().Description,
                     RegistrationDate = entity.WaterConsumptionHistories.First().RegistrationDate
                 } : null
-
-
             };
         }
 
@@ -409,5 +479,4 @@ namespace SMED.BackEnd.Repositories.Implementations
             };
         }
     }
-
 }

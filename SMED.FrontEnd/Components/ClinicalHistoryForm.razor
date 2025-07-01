@@ -52,7 +52,6 @@
                                        OnPersonCleared="OnPersonCleared" />
             }
 
-            <!-- ALERTA MEJORADA PARA HISTORIA EXISTENTE -->
             @if (showExistingHistoryAlert && existingHistoryInfo != null)
             {
                 <div class="alert alert-warning mt-3" role="alert">
@@ -74,20 +73,31 @@
             }
         </div>
 
+        <!-- CAMPO DE NÚMERO DE HISTORIA COMPLETAMENTE BLOQUEADO -->
         <div class="col-md-4">
             <label for="historyNumber" class="form-label fw-bold">Número de Historia *</label>
             <div class="input-group">
                 <span class="input-group-text bg-primary text-white">
                     <i class="fas fa-file-medical"></i>
                 </span>
-                <input id="historyNumber" class="form-control fw-bold" @bind="History.HistoryNumber"
-                       readonly="@(IsEditMode)"
+                <!-- INPUT COMPLETAMENTE BLOQUEADO -->
+                <input id="historyNumber"
+                       class="form-control fw-bold bg-light text-muted"
+                       value="@History.HistoryNumber"
+                       readonly
+                       disabled
+                       style="cursor: not-allowed; background-color: #f8f9fa !important;"
                        placeholder="Se genera automáticamente" />
+                <!-- Icono de candado para indicar que está protegido -->
+                <span class="input-group-text bg-light text-muted">
+                    <i class="fas fa-lock"></i>
+                </span>
             </div>
             <small class="form-text text-muted">
+                <i class="fas fa-info-circle me-1"></i>
                 @if (IsEditMode)
                 {
-                    <span>Número de historia no se puede modificar en edición</span>
+                    <span><strong>Protegido:</strong> El número de historia no se puede modificar para mantener la integridad del sistema</span>
                 }
                 else
                 {
@@ -122,6 +132,18 @@
         <label for="generalObservations" class="form-label fw-bold">Observaciones Generales</label>
         <InputTextArea id="generalObservations" class="form-control" @bind-Value="History.GeneralObservations"
                        rows="4" placeholder="Ingrese observaciones generales sobre la historia clínica..." />
+    </div>
+
+    <!-- Alerta informativa sobre la protección del número de historia -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-shield-alt me-2"></i>
+            <div>
+                <strong>Sistema de Protección de Datos:</strong>
+                El número de historia clínica está protegido contra modificaciones para garantizar
+                la integridad y trazabilidad de los registros médicos.
+            </div>
+        </div>
     </div>
 
     <div class="text-end border-top pt-3">
@@ -176,7 +198,6 @@
         History.Patient.PersonId = PreselectedPerson.Id;
         History.Patient.Person = PreselectedPerson;
 
-        // Verificar si ya tiene historia clínica (solo si no estamos editando)
         if (!IsEditMode)
         {
             await CheckForExistingHistory(PreselectedPerson.Id);
@@ -196,12 +217,9 @@
         History.Patient.PersonId = person.Id;
         History.Patient.Person = person;
 
-        // Verificar si ya tiene historia clínica (solo si no estamos editando)
         if (!IsEditMode)
         {
             await CheckForExistingHistory(person.Id);
-
-            // Solo regenerar el número de historia si no tiene historia existente
             if (!showExistingHistoryAlert)
             {
                 History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
@@ -216,13 +234,11 @@
         try
         {
             var (hasHistory, message, existingHistory) = await ClinicalHistoryService.CheckPatientHistoryAsync(personId);
-
             showExistingHistoryAlert = hasHistory;
             existingHistoryInfo = existingHistory;
 
             if (hasHistory)
             {
-                // Limpiar el número de historia si ya existe una
                 History.HistoryNumber = string.Empty;
                 await JS.InvokeVoidAsync("console.log", "Historia existente encontrada", existingHistory);
             }
@@ -269,6 +285,7 @@
         var currentYear = DateTime.Now.Year;
         var yearSuffix = currentYear.ToString().Substring(2, 2);
         var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
+
         return $"UTA-HC-{yearSuffix}{documentSuffix}";
     }
 
@@ -292,14 +309,12 @@
         isSaving = true;
         try
         {
-            // Validar que hay un paciente seleccionado
             if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
             {
                 await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
                 return;
             }
 
-            // Validación adicional para creación: verificar que no tenga historia existente
             if (!IsEditMode && showExistingHistoryAlert)
             {
                 await JS.InvokeVoidAsync("alert", "No se puede crear una nueva historia clínica. Este paciente ya tiene una historia activa.");
@@ -308,7 +323,6 @@
 
             if (IsEditMode)
             {
-                // Actualizar historia existente
                 var updateDto = new BasicClinicalHistroyDTO
                     {
                         ClinicalHistoryId = History.ClinicalHistoryId,
@@ -327,7 +341,6 @@
             }
             else
             {
-                // Crear nueva historia
                 if (string.IsNullOrWhiteSpace(History.HistoryNumber))
                 {
                     var documentNumber = History.Patient.Person?.Document?.DocumentNumber;

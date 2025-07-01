@@ -9,7 +9,8 @@
             <div class="form-group mb-3">
                 <label class="form-label fw-bold">Calle Principal *</label>
                 <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(MainStreet))"
-                           @bind-Value="MainStreet" placeholder="Calle Principal" />
+                           @bind-Value="MainStreet" 
+                           placeholder="Ingrese Calle Principal" />
                 @if (ShowValidationErrors && string.IsNullOrWhiteSpace(MainStreet))
                 {
                     <div class="invalid-feedback">La calle principal es obligatoria</div>
@@ -20,7 +21,8 @@
             <div class="form-group mb-3">
                 <label class="form-label fw-bold">Calle Secundaria 1 *</label>
                 <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(SecondaryStreet1))"
-                           @bind-Value="SecondaryStreet1" placeholder="Calle Secundaria 1" />
+                           @bind-Value="SecondaryStreet1" 
+                           placeholder="Ingrese Calle Secundaria 1" />
                 @if (ShowValidationErrors && string.IsNullOrWhiteSpace(SecondaryStreet1))
                 {
                     <div class="invalid-feedback">La calle secundaria 1 es obligatoria</div>
@@ -28,24 +30,29 @@
             </div>
         </div>
     </div>
+
     <div class="row">
         <div class="col-md-6">
             <div class="form-group mb-3">
                 <label class="form-label">Calle Secundaria 2</label>
-                <InputText class="form-control" @bind-Value="SecondaryStreet2" placeholder="Calle Secundaria 2" />
+                <InputText class="form-control" @bind-Value="SecondaryStreet2" 
+                placeholder="Ingrese Calle Secundaria 2" />
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group mb-3">
                 <label class="form-label">Número de Casa</label>
-                <InputText class="form-control" @bind-Value="HouseNumber" placeholder="Número de Casa" />
+                <InputText class="form-control" @bind-Value="HouseNumber"
+                           placeholder="Ingrese Número de Casa" />
             </div>
         </div>
     </div>
+
     <div class="form-group mb-3">
         <label class="form-label fw-bold">Referencia *</label>
         <InputText class="@GetInputClass(string.IsNullOrWhiteSpace(Reference))"
-                   @bind-Value="Reference" placeholder="Referencia" />
+                   @bind-Value="Reference" 
+                   placeholder="Ingrese una Referencia" />
         @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Reference))
         {
             <div class="invalid-feedback">La referencia es obligatoria</div>
@@ -59,18 +66,41 @@
         <div class="col-md-6">
             <div class="form-group mb-3">
                 <label class="form-label">Teléfono Fijo</label>
-                <InputText @bind-Value="Landline" class="form-control" />
+                <input type="text"
+                       class="@GetPhoneInputClass("landline")"
+                       @bind="landlineInput"
+                       @oninput="OnLandlineInput"
+                       placeholder="Ingrese el teléfono fijo"
+                       maxlength="9" />
+                @if (!string.IsNullOrEmpty(landlineError))
+                {
+                    <div class="invalid-feedback" style="display: block;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>@landlineError
+                    </div>
+                }
+                <small class="form-text text-muted">Formato: código de área + número (9 dígitos total)</small>
             </div>
         </div>
         <div class="col-md-6">
             <div class="form-group mb-3">
                 <label class="form-label fw-bold">Celular *</label>
-                <InputText @bind-Value="Mobile"
-                           class="@GetInputClass(string.IsNullOrWhiteSpace(Mobile))" />
+                <input type="text"
+                       class="@GetPhoneInputClass("mobile")"
+                       @bind="mobileInput"
+                       @oninput="OnMobileInput"
+                       placeholder="Ingrese el número de celular"
+                       maxlength="10" />
+                @if (!string.IsNullOrEmpty(mobileError))
+                {
+                    <div class="invalid-feedback" style="display: block;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>@mobileError
+                    </div>
+                }
                 @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Mobile))
                 {
                     <div class="invalid-feedback">El número de celular es obligatorio</div>
                 }
+                <small class="form-text text-muted">Formato: 09XXXXXXXX (10 dígitos, debe empezar con 09)</small>
             </div>
         </div>
     </div>
@@ -114,14 +144,12 @@
                         }
                     }
                 </InputSelect>
-
                 @if (ShowValidationErrors && !(Person.Residence?.CityId.HasValue == true))
                 {
                     <div class="invalid-feedback">Debe seleccionar una ciudad</div>
                 }
             </div>
         </div>
-
     </div>
 </div>
 
@@ -134,10 +162,118 @@
     private List<CityDTO>? ciudades;
     private bool isLoading = false;
 
+    // Variables para validación de teléfonos
+    private string landlineInput = "";
+    private string mobileInput = "";
+    private string landlineError = "";
+    private string mobileError = "";
+
     // Método helper para generar clases CSS
     private string GetInputClass(bool hasError)
     {
         return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
+
+    // Método específico para inputs de teléfono
+    private string GetPhoneInputClass(string phoneType)
+    {
+        var baseClass = "form-control";
+        var hasError = phoneType == "landline" ? !string.IsNullOrEmpty(landlineError) : !string.IsNullOrEmpty(mobileError);
+
+        if (hasError)
+            baseClass += " is-invalid";
+        else if ((phoneType == "landline" && !string.IsNullOrEmpty(landlineInput)) ||
+                 (phoneType == "mobile" && !string.IsNullOrEmpty(mobileInput)))
+            baseClass += " is-valid";
+
+        return baseClass;
+    }
+
+    // Validación para teléfono fijo
+    private void OnLandlineInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // Filtrar solo números
+        var numericInput = new string(input.Where(char.IsDigit).ToArray());
+
+        // Limitar a 9 dígitos
+        if (numericInput.Length > 9)
+            numericInput = numericInput.Substring(0, 9);
+
+        landlineInput = numericInput;
+        Landline = numericInput;
+
+        // Validar
+        ValidateLandline(numericInput);
+        StateHasChanged();
+    }
+
+    private void ValidateLandline(string phone)
+    {
+        if (string.IsNullOrEmpty(phone))
+        {
+            landlineError = "";
+            return;
+        }
+
+        if (phone.Length != 9)
+        {
+            landlineError = "Debe tener exactamente 9 dígitos (ej: 032445388)";
+            return;
+        }
+
+        // Verificar código de área válido (02, 03, 04, 05, 06, 07)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0[2-7]"))
+        {
+            landlineError = "Debe empezar con un código de área válido (02, 03, 04, 05, 06, 07)";
+            return;
+        }
+
+        landlineError = "";
+    }
+
+    // Validación para celular
+    private void OnMobileInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // Filtrar solo números
+        var numericInput = new string(input.Where(char.IsDigit).ToArray());
+
+        // Limitar a 10 dígitos
+        if (numericInput.Length > 10)
+            numericInput = numericInput.Substring(0, 10);
+
+        mobileInput = numericInput;
+        Mobile = numericInput;
+
+        // Validar
+        ValidateMobile(numericInput);
+        StateHasChanged();
+    }
+
+    private void ValidateMobile(string mobile)
+    {
+        if (string.IsNullOrEmpty(mobile))
+        {
+            mobileError = "El número de celular es obligatorio";
+            return;
+        }
+
+        if (mobile.Length != 10)
+        {
+            mobileError = "Debe tener exactamente 10 dígitos";
+            return;
+        }
+
+        if (!mobile.StartsWith("09"))
+        {
+            mobileError = "Debe empezar con 09";
+            return;
+        }
+
+        mobileError = "";
     }
 
     protected override async Task OnInitializedAsync()
@@ -146,14 +282,15 @@
         Person.Residence ??= new PersonResidenceDTO();
         Person.Phone ??= new PersonPhoneDTO();
 
+        // Inicializar valores de teléfonos si existen
+        landlineInput = Person.Phone?.Landline ?? "";
+        mobileInput = Person.Phone?.Mobile ?? "";
+
         await LoadProvinces();
 
-        // Si ya tiene provincia seleccionada, cargar ciudades
         if (Person.Residence.ProvinceId.HasValue)
         {
             await LoadCities(Person.Residence.ProvinceId.Value);
-
-            // Actualizar nombre de ciudad si ya está seleccionada
             if (Person.Residence.CityId.HasValue)
             {
                 var ciudad = ciudades?.FirstOrDefault(c => c.Id == Person.Residence.CityId);
@@ -189,8 +326,6 @@
         try
         {
             ciudades = await Http.GetFromJsonAsync<List<CityDTO>>($"api/complements/city/{provinceId}");
-
-            // Actualizar el nombre de la provincia
             var selectedProvince = provincias?.FirstOrDefault(p => p.Id == provinceId);
             if (selectedProvince != null)
             {
@@ -231,7 +366,7 @@
             if (Person.Residence.ProvinceId != value)
             {
                 Person.Residence.ProvinceId = value;
-                Person.Residence.CityId = null; // Reset ciudad
+                Person.Residence.CityId = null;
                 Person.Residence.CityName = null;
 
                 var provincia = provincias?.FirstOrDefault(p => p.Id == value);
@@ -249,12 +384,10 @@
 
         await ProvinceIdChanged.InvokeAsync(provinceId);
         await SaveToLocalStorage();
-
-        // Forzar renderizado para habilitar el combo de ciudad
         StateHasChanged();
     }
 
-    //INPUTS
+    // INPUTS - Propiedades para direcciones (sin cambios)
     private string? MainStreet
     {
         get => Person.Address?.ElementAtOrDefault(0)?.MainStreet;
@@ -315,6 +448,7 @@
         }
     }
 
+    // INPUTS - Propiedades para teléfonos (actualizadas)
     private string? Landline
     {
         get => Person.Phone?.Landline;

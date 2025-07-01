@@ -165,7 +165,6 @@
                                     Debe ingresar el motivo de la consulta
                                 </div>
                             }
-                            <small class="text-muted">Máximo 500 caracteres. Caracteres restantes: @(500 - (motivoConsulta?.Length ?? 0))</small>
                         </div>
 
                         <div class="mb-3">
@@ -222,7 +221,7 @@
             </div>
         </div>
 
-        <!-- Vital Signs Tab -->
+        <!-- VITAL SIGNS TAB CON VALIDACIONES NUMÉRICAS MEJORADAS -->
         <div class="tab-pane @(activeTab == "vitals" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -235,21 +234,221 @@
                 <div class="card-body">
                     @if (selectedPatientId > 0)
                     {
-                        <div class="containerbox1-grid">
-                            <ContainerBox1 Title="Peso (kg)" Width="half" @bind-Content="peso" />
-                            <ContainerBox1 Title="Talla (cm)" Width="half" @bind-Content="talla" />
-                            <ContainerBox1 Title="IMC" Width="half" @bind-Content="imc" />
-                            <ContainerBox1 Title="Perímetro Abdominal (cm)" Width="half" @bind-Content="perimetroAbdominal" />
-                            <ContainerBox1 Title="Presión Arterial" Width="half" @bind-Content="presionArterial" />
-                            <ContainerBox1 Title="Temperatura (°C)" Width="half" @bind-Content="temperatura" />
-                            <ContainerBox1 Title="Presión Arterial Media" Width="half" @bind-Content="pam" />
-                            <ContainerBox1 Title="Frecuencia Cardíaca" Width="half" @bind-Content="frecuenciaCardiaca" />
-                            <ContainerBox1 Title="Saturación Oxígeno (%)" Width="half" @bind-Content="saturacionOxigeno" />
-                            <ContainerBox1 Title="Frecuencia Respiratoria" Width="half" @bind-Content="frecuenciaRespiratoria" />
-                            <ContainerBox1 Title="Glucosa Capilar" Width="half" @bind-Content="glucosaCapilar" />
-                            <ContainerBox1 Title="Hemoglobina" Width="half" @bind-Content="hemoglobina" />
+                        <!-- Alerta informativa sobre validaciones -->
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Información importante:</strong>
+                                    Solo ingrese valores numéricos. Los campos se validan automáticamente y el IMC se calcula al ingresar peso y talla.
+                                    La presión arterial debe tener formato: 120/80
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- Grid de signos vitales con validaciones -->
+                        <div class="row g-3">
+                            <!-- Peso -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Peso (kg)</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("peso")"
+                                       @bind="pesoInput"
+                                       @oninput="@((e) => OnNumericInput(e, "peso"))"
+                                       placeholder="70.5" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("peso")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("peso")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 0.1 - 500 kg</small>
+                            </div>
+
+                            <!-- Talla -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Talla (cm)</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("talla")"
+                                       @bind="tallaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "talla"))"
+                                       placeholder="175" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("talla")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("talla")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 1 - 250 cm</small>
+                            </div>
+
+                            <!-- IMC (calculado automáticamente) -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">IMC</label>
+                                <input type="text"
+                                       class="form-control bg-light"
+                                       value="@imcCalculado"
+                                       readonly
+                                       placeholder="Se calcula automáticamente" />
+                                <small class="form-text text-muted">Se calcula automáticamente: Peso / (Talla/100)²</small>
+                            </div>
+
+                            <!-- Perímetro Abdominal -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Perímetro Abdominal (cm)</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("perimetroAbdominal")"
+                                       @bind="perimetroAbdominalInput"
+                                       @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
+                                       placeholder="85" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("perimetroAbdominal")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("perimetroAbdominal")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 1 - 200 cm</small>
+                            </div>
+
+                            <!-- Presión Arterial (formato especial) -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Presión Arterial</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("presionArterial")"
+                                       @bind="presionArterialInput"
+                                       @oninput="OnBloodPressureInput"
+                                       placeholder="120/80"
+                                       maxlength="7" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("presionArterial")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("presionArterial")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Formato: 120/80 (Sistólica/Diastólica)</small>
+                            </div>
+
+                            <!-- Temperatura -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Temperatura (°C)</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("temperatura")"
+                                       @bind="temperaturaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "temperatura"))"
+                                       placeholder="36.5" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("temperatura")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("temperatura")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 30 - 45°C</small>
+                            </div>
+
+                            <!-- Presión Arterial Media -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Presión Arterial Media</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("pam")"
+                                       @bind="pamInput"
+                                       @oninput="@((e) => OnNumericInput(e, "pam"))"
+                                       placeholder="90" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("pam")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("pam")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 40 - 180 mmHg</small>
+                            </div>
+
+                            <!-- Frecuencia Cardíaca -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Frecuencia Cardíaca</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("frecuenciaCardiaca")"
+                                       @bind="frecuenciaCardiacaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
+                                       placeholder="72" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaCardiaca")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("frecuenciaCardiaca")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 30 - 200 bpm</small>
+                            </div>
+
+                            <!-- Saturación de Oxígeno -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Saturación Oxígeno (%)</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("saturacionOxigeno")"
+                                       @bind="saturacionOxigenoInput"
+                                       @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
+                                       placeholder="98" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("saturacionOxigeno")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("saturacionOxigeno")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 70 - 100%</small>
+                            </div>
+
+                            <!-- Frecuencia Respiratoria -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Frecuencia Respiratoria</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
+                                       @bind="frecuenciaRespiratoriaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
+                                       placeholder="16" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaRespiratoria")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("frecuenciaRespiratoria")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 5 - 60 rpm</small>
+                            </div>
+
+                            <!-- Glucosa Capilar -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Glucosa Capilar</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("glucosaCapilar")"
+                                       @bind="glucosaCapilarInput"
+                                       @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
+                                       placeholder="100" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("glucosaCapilar")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("glucosaCapilar")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 50 - 600 mg/dl</small>
+                            </div>
+
+                            <!-- Hemoglobina -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Hemoglobina</label>
+                                <input type="text"
+                                       class="@GetVitalSignInputClass("hemoglobina")"
+                                       @bind="hemoglobinaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
+                                       placeholder="14.5" />
+                                @if (!string.IsNullOrEmpty(GetVitalSignError("hemoglobina")))
+                                {
+                                    <div class="invalid-feedback" style="display: block;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("hemoglobina")
+                                    </div>
+                                }
+                                <small class="form-text text-muted">Rango válido: 5 - 20 g/dl</small>
+                            </div>
+                        </div>
+
+                        <!-- Botones de navegación -->
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
@@ -306,10 +505,10 @@
                                                 <td>@(string.IsNullOrEmpty(servicio.Observations) ? "N/A" : (servicio.Observations.Length > 50 ? servicio.Observations.Substring(0, 50) + "..." : servicio.Observations))</td>
                                                 <td>
                                                     <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)" title="Editar">
-                                                        <i class="fas fa-edit"></i>
+                                                        <i class="fas fa-edit">Editar</i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)" title="Eliminar">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-trash">Eliminar</i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -380,10 +579,10 @@
                                                 <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
                                                 <td>
                                                     <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)" title="Editar">
-                                                        <i class="fas fa-edit"></i>
+                                                        <i class="fas fa-edit">Editar</i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)" title="Eliminar">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-trash">Eliminar</i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -477,13 +676,30 @@
     private string selectedHistoryNumber = "";
     private string areaSeleccionada = "";
     private string profesionalSeleccionado = "";
-    private string motivoConsulta = ""; // Nueva variable para motivo de consulta
+    private string motivoConsulta = "";
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
     private bool showValidationErrors = false;
     private bool isSaving = false;
 
-    // Signos vitales
+    // Variables para inputs de signos vitales con validación
+    private string pesoInput = "";
+    private string tallaInput = "";
+    private string imcCalculado = "";
+    private string perimetroAbdominalInput = "";
+    private string presionArterialInput = "";
+    private string temperaturaInput = "";
+    private string pamInput = "";
+    private string frecuenciaCardiacaInput = "";
+    private string saturacionOxigenoInput = "";
+    private string frecuenciaRespiratoriaInput = "";
+    private string glucosaCapilarInput = "";
+    private string hemoglobinaInput = "";
+
+    // Diccionario para errores de validación de signos vitales
+    private Dictionary<string, string> vitalSignsErrors = new Dictionary<string, string>();
+
+    // Variables originales para compatibilidad
     private string peso = "";
     private string talla = "";
     private string imc = "";
@@ -520,6 +736,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Inicializar diccionario de errores
+        InitializeVitalSignsErrors();
+
         await LoadTypeOfServices();
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
@@ -534,13 +753,305 @@
         }
     }
 
+    // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
+
+    private void InitializeVitalSignsErrors()
+    {
+        var fields = new[] { "peso", "talla", "perimetroAbdominal", "temperatura", "pam",
+                           "frecuenciaCardiaca", "saturacionOxigeno", "frecuenciaRespiratoria",
+                           "glucosaCapilar", "hemoglobina", "presionArterial" };
+
+        foreach (var field in fields)
+        {
+            vitalSignsErrors[field] = "";
+        }
+    }
+
+    // Método para manejar inputs numéricos
+    private void OnNumericInput(ChangeEventArgs e, string field)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // Filtrar solo números y punto decimal
+        var numericInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d.]", "");
+
+        // Asegurar que solo haya un punto decimal
+        var parts = numericInput.Split('.');
+        if (parts.Length > 2)
+        {
+            numericInput = parts[0] + "." + string.Join("", parts.Skip(1));
+        }
+
+        // Asignar el valor filtrado a las variables de input
+        switch (field)
+        {
+            case "peso":
+                pesoInput = numericInput;
+                peso = numericInput;
+                break;
+            case "talla":
+                tallaInput = numericInput;
+                talla = numericInput;
+                break;
+            case "perimetroAbdominal":
+                perimetroAbdominalInput = numericInput;
+                perimetroAbdominal = numericInput;
+                break;
+            case "temperatura":
+                temperaturaInput = numericInput;
+                temperatura = numericInput;
+                break;
+            case "pam":
+                pamInput = numericInput;
+                pam = numericInput;
+                break;
+            case "frecuenciaCardiaca":
+                frecuenciaCardiacaInput = numericInput;
+                frecuenciaCardiaca = numericInput;
+                break;
+            case "saturacionOxigeno":
+                saturacionOxigenoInput = numericInput;
+                saturacionOxigeno = numericInput;
+                break;
+            case "frecuenciaRespiratoria":
+                frecuenciaRespiratoriaInput = numericInput;
+                frecuenciaRespiratoria = numericInput;
+                break;
+            case "glucosaCapilar":
+                glucosaCapilarInput = numericInput;
+                glucosaCapilar = numericInput;
+                break;
+            case "hemoglobina":
+                hemoglobinaInput = numericInput;
+                hemoglobina = numericInput;
+                break;
+        }
+
+        // Validar el campo
+        ValidateVitalSign(numericInput, field);
+
+        // Calcular IMC si es peso o talla
+        if (field == "peso" || field == "talla")
+        {
+            CalculateIMC();
+        }
+
+        StateHasChanged();
+    }
+
+    // Método especial para presión arterial
+    private void OnBloodPressureInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // Permitir solo números y una barra
+        var filteredInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d/]", "");
+
+        // Asegurar que solo haya una barra
+        var parts = filteredInput.Split('/');
+        if (parts.Length > 2)
+        {
+            filteredInput = parts[0] + "/" + parts[1];
+        }
+
+        presionArterialInput = filteredInput;
+        presionArterial = filteredInput;
+
+        ValidateBloodPressure(filteredInput);
+        StateHasChanged();
+    }
+
+    // Validación para signos vitales
+    private void ValidateVitalSign(string value, string field)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            vitalSignsErrors[field] = "";
+            return;
+        }
+
+        if (!decimal.TryParse(value, out decimal numValue))
+        {
+            vitalSignsErrors[field] = "Debe ser un valor numérico";
+            return;
+        }
+
+        // Validaciones específicas por campo
+        switch (field)
+        {
+            case "peso":
+                if (numValue <= 0 || numValue > 500)
+                    vitalSignsErrors[field] = "El peso debe estar entre 0.1 y 500 kg";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "talla":
+                if (numValue <= 0 || numValue > 250)
+                    vitalSignsErrors[field] = "La talla debe estar entre 1 y 250 cm";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "temperatura":
+                if (numValue < 30 || numValue > 45)
+                    vitalSignsErrors[field] = "La temperatura debe estar entre 30 y 45°C";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "frecuenciaCardiaca":
+                if (numValue < 30 || numValue > 200)
+                    vitalSignsErrors[field] = "La frecuencia cardíaca debe estar entre 30 y 200 bpm";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "saturacionOxigeno":
+                if (numValue < 70 || numValue > 100)
+                    vitalSignsErrors[field] = "La saturación debe estar entre 70 y 100%";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "frecuenciaRespiratoria":
+                if (numValue < 5 || numValue > 60)
+                    vitalSignsErrors[field] = "La frecuencia respiratoria debe estar entre 5 y 60 rpm";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "glucosaCapilar":
+                if (numValue < 50 || numValue > 600)
+                    vitalSignsErrors[field] = "La glucosa debe estar entre 50 y 600 mg/dl";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "hemoglobina":
+                if (numValue < 5 || numValue > 20)
+                    vitalSignsErrors[field] = "La hemoglobina debe estar entre 5 y 20 g/dl";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "perimetroAbdominal":
+                if (numValue <= 0 || numValue > 200)
+                    vitalSignsErrors[field] = "El perímetro abdominal debe estar entre 1 y 200 cm";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            case "pam":
+                if (numValue < 40 || numValue > 180)
+                    vitalSignsErrors[field] = "La PAM debe estar entre 40 y 180 mmHg";
+                else
+                    vitalSignsErrors[field] = "";
+                break;
+            default:
+                vitalSignsErrors[field] = "";
+                break;
+        }
+    }
+
+    // Validación especial para presión arterial
+    private void ValidateBloodPressure(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            vitalSignsErrors["presionArterial"] = "";
+            return;
+        }
+
+        var bpPattern = new System.Text.RegularExpressions.Regex(@"^\d{2,3}/\d{2,3}$");
+        if (!bpPattern.IsMatch(value))
+        {
+            vitalSignsErrors["presionArterial"] = "Formato requerido: 120/80";
+            return;
+        }
+
+        var parts = value.Split('/');
+        if (int.TryParse(parts[0], out int systolic) && int.TryParse(parts[1], out int diastolic))
+        {
+            if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150)
+            {
+                vitalSignsErrors["presionArterial"] = "Valores fuera del rango normal";
+            }
+            else
+            {
+                vitalSignsErrors["presionArterial"] = "";
+            }
+        }
+        else
+        {
+            vitalSignsErrors["presionArterial"] = "Valores inválidos";
+        }
+    }
+
+    // Calcular IMC automáticamente
+    private void CalculateIMC()
+    {
+        if (decimal.TryParse(pesoInput, out decimal weight) &&
+            decimal.TryParse(tallaInput, out decimal height) &&
+            weight > 0 && height > 0)
+        {
+            var heightInMeters = height / 100;
+            var bmi = weight / (heightInMeters * heightInMeters);
+            imcCalculado = bmi.ToString("F1");
+            imc = imcCalculado;
+        }
+        else
+        {
+            imcCalculado = "";
+            imc = "";
+        }
+    }
+
+    // Método para obtener clases CSS de inputs
+    private string GetVitalSignInputClass(string field)
+    {
+        var baseClass = "form-control";
+
+        if (vitalSignsErrors.ContainsKey(field) && !string.IsNullOrEmpty(vitalSignsErrors[field]))
+        {
+            baseClass += " is-invalid";
+        }
+        else if (HasValidValue(field))
+        {
+            baseClass += " is-valid";
+        }
+
+        return baseClass;
+    }
+
+    // Método para obtener errores de validación
+    private string GetVitalSignError(string field)
+    {
+        return vitalSignsErrors.ContainsKey(field) ? vitalSignsErrors[field] : "";
+    }
+
+    // Verificar si un campo tiene un valor válido
+    private bool HasValidValue(string field)
+    {
+        var value = field switch
+        {
+            "peso" => pesoInput,
+            "talla" => tallaInput,
+            "perimetroAbdominal" => perimetroAbdominalInput,
+            "temperatura" => temperaturaInput,
+            "pam" => pamInput,
+            "frecuenciaCardiaca" => frecuenciaCardiacaInput,
+            "saturacionOxigeno" => saturacionOxigenoInput,
+            "frecuenciaRespiratoria" => frecuenciaRespiratoriaInput,
+            "glucosaCapilar" => glucosaCapilarInput,
+            "hemoglobina" => hemoglobinaInput,
+            "presionArterial" => presionArterialInput,
+            _ => ""
+        };
+
+        return !string.IsNullOrEmpty(value) && string.IsNullOrEmpty(GetVitalSignError(field));
+    }
+
+    // MÉTODOS EXISTENTES (sin cambios)
+
     private bool IsPatientTabComplete()
     {
         return selectedPatientId > 0 &&
                !string.IsNullOrEmpty(lugarSeleccionada) &&
                !string.IsNullOrEmpty(areaSeleccionada) &&
                !string.IsNullOrEmpty(profesionalSeleccionado) &&
-               !string.IsNullOrWhiteSpace(motivoConsulta); // Agregar validación del motivo
+               !string.IsNullOrWhiteSpace(motivoConsulta);
     }
 
     private void ValidateAndShowErrors()
@@ -551,7 +1062,6 @@
 
     private async Task SetActiveTab(string tab)
     {
-        // Validar antes de cambiar de pestaña
         if (tab != "patient" && !IsPatientTabComplete())
         {
             showValidationErrors = true;
@@ -567,14 +1077,12 @@
     {
         if (MedicalCare == null) return;
 
-        // Cargar datos básicos de la atención médica
         selectedPatientId = MedicalCare.PatientId;
         areaSeleccionada = MedicalCare.Area;
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
         lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
 
-        // Cargar motivo de consulta existente
         var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
         existingReasonForConsultation = existingReasons?.FirstOrDefault();
         if (existingReasonForConsultation != null)
@@ -582,31 +1090,51 @@
             motivoConsulta = existingReasonForConsultation.Description ?? "";
         }
 
-        // Cargar signos vitales existentes
         var allVitalSigns = await VitalSignsService.GetAllAsync();
         existingVitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
-
         if (existingVitalSigns != null)
         {
-            peso = existingVitalSigns.Weight?.ToString() ?? "";
-            talla = existingVitalSigns.Height?.ToString() ?? "";
-            imc = existingVitalSigns.Icm?.ToString() ?? "";
-            perimetroAbdominal = existingVitalSigns.AbdominalCircumference?.ToString() ?? "";
-            presionArterial = existingVitalSigns.BloodPressure ?? "";
-            temperatura = existingVitalSigns.Temperature?.ToString() ?? "";
-            pam = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
-            frecuenciaCardiaca = existingVitalSigns.HeartRate?.ToString() ?? "";
-            saturacionOxigeno = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
-            frecuenciaRespiratoria = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
-            glucosaCapilar = existingVitalSigns.BloodGlucose?.ToString() ?? "";
-            hemoglobina = existingVitalSigns.Hemoglobin?.ToString() ?? "";
+            // Cargar valores en las variables de input
+            pesoInput = existingVitalSigns.Weight?.ToString() ?? "";
+            peso = pesoInput;
+
+            tallaInput = existingVitalSigns.Height?.ToString() ?? "";
+            talla = tallaInput;
+
+            imcCalculado = existingVitalSigns.Icm?.ToString() ?? "";
+            imc = imcCalculado;
+
+            perimetroAbdominalInput = existingVitalSigns.AbdominalCircumference?.ToString() ?? "";
+            perimetroAbdominal = perimetroAbdominalInput;
+
+            presionArterialInput = existingVitalSigns.BloodPressure ?? "";
+            presionArterial = presionArterialInput;
+
+            temperaturaInput = existingVitalSigns.Temperature?.ToString() ?? "";
+            temperatura = temperaturaInput;
+
+            pamInput = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
+            pam = pamInput;
+
+            frecuenciaCardiacaInput = existingVitalSigns.HeartRate?.ToString() ?? "";
+            frecuenciaCardiaca = frecuenciaCardiacaInput;
+
+            saturacionOxigenoInput = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
+            saturacionOxigeno = saturacionOxigenoInput;
+
+            frecuenciaRespiratoriaInput = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
+            frecuenciaRespiratoria = frecuenciaRespiratoriaInput;
+
+            glucosaCapilarInput = existingVitalSigns.BloodGlucose?.ToString() ?? "";
+            glucosaCapilar = glucosaCapilarInput;
+
+            hemoglobinaInput = existingVitalSigns.Hemoglobin?.ToString() ?? "";
+            hemoglobina = hemoglobinaInput;
         }
 
-        // Cargar servicios médicos existentes
         var existingServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId);
         serviciosList = existingServices ?? new List<MedicalServiceDTO>();
 
-        // Cargar procedimientos médicos existentes
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
@@ -644,7 +1172,6 @@
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
 
-        // Limpiar errores de validación cuando se selecciona un paciente
         if (selectedPatientId > 0)
         {
             showValidationErrors = false;
@@ -679,7 +1206,6 @@
     {
         await JS.InvokeVoidAsync("console.log", $"Editando servicio: {servicio.ServiceId}");
 
-        // Crear una copia del servicio para edición
         currentService = new MedicalServiceDTO
             {
                 ServiceId = servicio.ServiceId,
@@ -701,7 +1227,6 @@
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
             $"¿Está seguro de eliminar el servicio de {servicio.ServiceType}?");
-
         if (confirmed)
         {
             serviciosList.Remove(servicio);
@@ -758,13 +1283,7 @@
     {
         await JS.InvokeVoidAsync("console.log", $"=== EDITANDO PROCEDIMIENTO ===");
         await JS.InvokeVoidAsync("console.log", $"ID: {procedimiento.ProcedureId}");
-        await JS.InvokeVoidAsync("console.log", $"Tipo ID: {procedimiento.TypeOfProcedureId}");
-        await JS.InvokeVoidAsync("console.log", $"Específico ID: {procedimiento.SpecificProcedureId}");
-        await JS.InvokeVoidAsync("console.log", $"Médico ID: {procedimiento.TreatingPhysicianId}");
-        await JS.InvokeVoidAsync("console.log", $"Fecha: {procedimiento.ProcedureDate}");
-        await JS.InvokeVoidAsync("console.log", $"Observaciones: {procedimiento.Observations}");
 
-        // Crear una copia completa del procedimiento para edición
         currentProcedure = new MedicalProcedureDTO
             {
                 ProcedureId = procedimiento.ProcedureId,
@@ -780,19 +1299,14 @@
                 SpecificProcedureName = procedimiento.SpecificProcedureName
             };
 
-        await JS.InvokeVoidAsync("console.log", "Procedimiento copiado para edición");
-
         showProcedureModal = true;
         StateHasChanged();
-
-        await JS.InvokeVoidAsync("console.log", "Modal de procedimiento abierto");
     }
 
     private async Task EliminarProcedimiento(MedicalProcedureDTO procedimiento)
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
             $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
-
         if (confirmed)
         {
             procedimientosList.Remove(procedimiento);
@@ -829,7 +1343,6 @@
         isSaving = true;
         try
         {
-            // Validaciones básicas
             if (!IsPatientTabComplete())
             {
                 showValidationErrors = true;
@@ -841,10 +1354,8 @@
             MedicalCareDTO medicalCareResult;
             bool isCreatingNew = !isEditMode || MedicalCare == null || MedicalCare.CareId == 0;
 
-            // 1. Guardar o actualizar MedicalCare
             if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
-                // Actualizar atención médica existente
                 MedicalCare.Area = areaSeleccionada;
                 MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
                 MedicalCare.LocationId = int.Parse(lugarSeleccionada);
@@ -860,7 +1371,6 @@
             }
             else
             {
-                // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
                     {
                         PatientId = selectedPatientId,
@@ -880,7 +1390,6 @@
                 medicalCareResult = result.Data;
             }
 
-            // 2. Guardar o actualizar motivo de consulta
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
@@ -900,7 +1409,6 @@
                 }
             }
 
-            // 3. Guardar o actualizar signos vitales (si hay datos)
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
@@ -931,7 +1439,6 @@
                 }
             }
 
-            // 4. Guardar servicios médicos
             foreach (var servicio in serviciosList)
             {
                 servicio.CareId = medicalCareResult.CareId;
@@ -945,7 +1452,6 @@
                 }
             }
 
-            // 5. Guardar procedimientos médicos
             foreach (var procedimiento in procedimientosList)
             {
                 procedimiento.CareId = medicalCareResult.CareId;
@@ -959,13 +1465,12 @@
                 }
             }
 
-            // 6. Mostrar mensaje de éxito y notificar
             await OnSaved.InvokeAsync(medicalCareResult);
             string successMessage = isCreatingNew
                 ? "Atención médica creada exitosamente"
                 : "Atención médica actualizada exitosamente";
-            await JS.InvokeVoidAsync("alert", successMessage);
 
+            await JS.InvokeVoidAsync("alert", successMessage);
         }
         catch (Exception ex)
         {

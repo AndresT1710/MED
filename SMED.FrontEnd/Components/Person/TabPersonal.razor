@@ -6,7 +6,8 @@
         <div class="form-group mb-3">
             <label class="form-label fw-bold">Primer Nombre *</label>
             <InputText @bind-Value="Person.FirstName"
-                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.FirstName))" />
+                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.FirstName))" 
+                       placeholder="Ingrese el primer nombre"/>
             @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.FirstName))
             {
                 <div class="invalid-feedback">El primer nombre es obligatorio</div>
@@ -16,7 +17,8 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label class="form-label">Segundo Nombre</label>
-            <InputText @bind-Value="Person.MiddleName" class="form-control" />
+            <InputText @bind-Value="Person.MiddleName" class="form-control"
+                       placeholder="Ingrese el segundo nombre" />
         </div>
     </div>
 </div>
@@ -26,7 +28,8 @@
         <div class="form-group mb-3">
             <label class="form-label fw-bold">Apellido Paterno *</label>
             <InputText @bind-Value="Person.LastName"
-                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.LastName))" />
+                       class="@GetInputClass(string.IsNullOrWhiteSpace(Person.LastName))" 
+                       placeholder="Ingrese el apellido paterno"/>
             @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.LastName))
             {
                 <div class="invalid-feedback">El apellido paterno es obligatorio</div>
@@ -36,7 +39,9 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label class="form-label">Apellido Materno</label>
-            <InputText @bind-Value="Person.SecondLastName" class="form-control" />
+            <InputText @bind-Value="Person.SecondLastName" class="form-control"
+                       placeholder="Ingrese el apellido materno" />
+
         </div>
     </div>
 </div>
@@ -81,15 +86,29 @@
     </div>
 </div>
 
+<!-- CAMPO DE EMAIL CON VALIDACIÓN MEJORADA -->
 <div class="form-group mb-3">
     <label class="form-label fw-bold">Correo Electrónico *</label>
     <InputText @bind-Value="Person.Email"
-               class="@GetInputClass(string.IsNullOrWhiteSpace(Person.Email))"
-               type="email" />
+               @oninput="OnEmailInput"
+               class="@GetEmailInputClass()"
+               type="email"
+               placeholder="ejemplo@correo.com" />
+
+    @if (!string.IsNullOrEmpty(emailValidationMessage))
+    {
+        <div class="@(isEmailValid ? "valid-feedback" : "invalid-feedback")" style="display: block;">
+            <i class="fas @(isEmailValid ? "fa-check-circle" : "fa-exclamation-triangle") me-1"></i>
+            @emailValidationMessage
+        </div>
+    }
+
     @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Email))
     {
         <div class="invalid-feedback">El correo electrónico es obligatorio</div>
     }
+
+    <small class="form-text text-muted">Formato requerido: usuario@dominio.com</small>
 </div>
 
 @code {
@@ -99,10 +118,67 @@
     private List<GenderDTO> genders = new();
     private bool isLoading = false;
 
+    // Variables para validación de email
+    private string emailValidationMessage = "";
+    private bool isEmailValid = false;
+
     // Método helper para generar clases CSS
     private string GetInputClass(bool hasError)
     {
         return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
+    }
+
+    // Método específico para el input de email
+    private string GetEmailInputClass()
+    {
+        var baseClass = "form-control";
+
+        if (!string.IsNullOrEmpty(Person.Email))
+        {
+            if (isEmailValid)
+                baseClass += " is-valid";
+            else if (!string.IsNullOrEmpty(emailValidationMessage))
+                baseClass += " is-invalid";
+        }
+
+        if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Email))
+            baseClass += " is-invalid";
+
+        return baseClass;
+    }
+
+    // Validación de email en tiempo real
+    private void OnEmailInput(ChangeEventArgs e)
+    {
+        var email = e.Value?.ToString() ?? "";
+        Person.Email = email;
+
+        ValidateEmail(email);
+        StateHasChanged();
+    }
+
+    private void ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            emailValidationMessage = "";
+            isEmailValid = false;
+            return;
+        }
+
+        // Regex para validar formato de email
+        var emailRegex = new System.Text.RegularExpressions.Regex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
+
+        if (!emailRegex.IsMatch(email))
+        {
+            emailValidationMessage = "Ingrese un correo electrónico válido (ejemplo: usuario@dominio.com)";
+            isEmailValid = false;
+        }
+        else
+        {
+            emailValidationMessage = "Correo electrónico válido";
+            isEmailValid = true;
+        }
     }
 
     // Intermediario para manejar bind y asignar Gender completo
@@ -122,6 +198,12 @@
         if (Person.GenderId.HasValue && Person.Gender == null && genders != null)
         {
             Person.Gender = genders.FirstOrDefault(g => g.Id == Person.GenderId);
+        }
+
+        // Validar email inicial si ya tiene valor
+        if (!string.IsNullOrEmpty(Person.Email))
+        {
+            ValidateEmail(Person.Email);
         }
     }
 

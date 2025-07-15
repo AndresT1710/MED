@@ -121,7 +121,7 @@
                         <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
                     </div>
                     <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                        <MedicalCareDetail MedicalCare="selectedMedicalCare" />
+                        <NursingDetail MedicalCare="selectedMedicalCare" />
                     </div>
                 </div>
             </div>
@@ -143,7 +143,7 @@
                         <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <MedicalCareForm MedicalCare="selectedMedicalCare"
+                        <NursingForm MedicalCare="selectedMedicalCare"
                                          OnSaved="OnMedicalCareSaved"
                                          OnCancel="HideForm" />
                     </div>

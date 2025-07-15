@@ -4,66 +4,108 @@
 @using SMED.Shared.Entity
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
-@inject ClinicalHistoryService ClinicalHistoryService
+@inject MedicalCareService MedicalCareService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
-<TabContainerA OnSave="GuardarDatos">
+<TabContainerE OnSave="GuardarDatos">
+    <h3 class="mb-4">Gestión de Atenciones Médicas</h3>
 
-    <h3 class="mb-4">Atención Médica</h3>
-
-    <div class="search-container mb-4">
-        <div class="search-options">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="searchType" id="searchByHistory"
-                       checked="@(!searchByIdNumber)" @onchange="() => { searchByIdNumber = false; searchTerm = string.Empty; }">
-                <label class="form-check-label" for="searchByHistory">N° Historia Clínica</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="searchType" id="searchByIdNumber"
-                       checked="@(searchByIdNumber)" @onchange="() => { searchByIdNumber = true; searchTerm = string.Empty; }">
-                <label class="form-check-label" for="searchByIdNumber">Cédula de Identidad</label>
-            </div>
+    <!-- Filtros de búsqueda mejorados -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+            </h5>
         </div>
+        <div class="card-body">
+            <!-- Filtro por fecha -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Filtrar por fecha</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                        <input type="date" class="form-control" @bind="selectedDate" />
+                        <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                    <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+                </div>
+            </div>
 
-        <div class="input-group">
-            <input type="text" class="form-control"
-                   @bind="searchTerm"
-                   placeholder="@(searchByIdNumber ? "Ingrese cédula de identidad" : "Ingrese número de historia")"
-                   @onkeypress="@(async (e) => { if (e.Key == "Enter") await HandleSearch(); })" />
+            <!-- Búsqueda por paciente usando PersonSearchComponent -->
+            <div class="row">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Buscar por paciente</label>
+                    <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                           OnPersonSelected="HandlePersonSelected"
+                                           OnPersonCleared="HandlePersonCleared" />
+                </div>
+            </div>
 
-            <button class="btn btn-primary" @onclick="HandleSearch">
-                <i class="fas fa-search"></i> Buscar
-            </button>
-
-            <button class="btn btn-secondary" @onclick="ClearSearch">
-                <i class="fas fa-times"></i> Limpiar
-            </button>
+            <!-- Botones de acción -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    @if (hasActiveFilters)
+                    {
+                        <span class="badge bg-info me-2">
+                            <i class="fas fa-filter me-1"></i>Filtros activos
+                        </span>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
+                            <i class="fas fa-times me-1"></i>Limpiar todos los filtros
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 
-
-    @if (showNoHistoryAlert)
+    @if (showNoMedicalCareAlert)
     {
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>@searchMessage</strong>
-            <button type="button" class="btn btn-primary ml-3" @onclick="CreateNewHistory">
-                <i class="fas fa-plus"></i> Crear Nueva Historia
-            </button>
-            <button type="button" class="btn-close" @onclick="() => showNoHistoryAlert = false" aria-label="Close"></button>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@searchMessage</strong>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
+                        <i class="fas fa-plus"></i> Crear Nueva Atención
+                    </button>
+                    <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
     }
 
-    <ManagementTableR TableTitle="Historias Clínicas"
-                      Columns="ClinicalHistoryColumns"
-                      DocumentTypes="documentTypeList"
-                      RenderActions="RenderClinicalHistoryActions"
-                      AddCallback="AddClinicalHistory"
-                      @ref="table" />
+    <!-- Tabla de atenciones médicas -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas
+            </h5>
+            @if (selectedDate.HasValue)
+            {
+                <span class="badge bg-primary">
+                    <i class="fas fa-calendar me-1"></i>@selectedDate.Value.ToString("dd/MM/yyyy")
+                </span>
+            }
+        </div>
+        <div class="card-body">
+            <ManagementTableR TableTitle=""
+                              Columns="MedicalCareColumns"
+                              DocumentTypes="documentTypeList"
+                              RenderActions="RenderMedicalCareActions"
+                              AddCallback="AddMedicalCare"
+                              @ref="table" />
+        </div>
+    </div>
 
-
-    @if (showDetail && selectedClinicalHistory != null)
+    <!-- Modal de detalle -->
+    @if (showDetail && selectedMedicalCare != null)
     {
         <div class="modal fade show d-flex align-items-center justify-content-center"
              tabindex="-1"
@@ -73,254 +115,320 @@
                 <div class="modal-content"
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
                     <div class="modal-header">
-                        <h5 class="modal-title">Detalle de Historia Clínica</h5>
+                        <h5 class="modal-title">
+                            <i class="fas fa-eye me-2"></i>Detalle de Atención Médica
+                        </h5>
                         <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
                     </div>
                     <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                        <ClinicalHistoryDetail History="selectedClinicalHistory" />
+                        <MedicalCareDetail MedicalCare="selectedMedicalCare" />
                     </div>
                 </div>
             </div>
         </div>
     }
 
-
+    <!-- Modal de formulario -->
     @if (showForm)
     {
         <div class="modal-backdrop fade show"></div>
         <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(selectedClinicalHistory?.ClinicalHistoryId == 0 ? "Nueva Historia Clínica" : "Editar Historia Clínica")</h5>
+                        <h5 class="modal-title">
+                            <i class="fas @(selectedMedicalCare?.CareId == 0 ? "fa-plus" : "fa-edit") me-2"></i>
+                            @(selectedMedicalCare?.CareId == 0 ? "Nueva Atención Médica" : "Editar Atención Médica")
+                        </h5>
                         <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <ClinicalHistoryForm History="selectedClinicalHistory"
-                                             OnSaved="OnClinicalHistorySaved"
-                                             OnCancel="HideForm" />
+                        <MedicalCareForm MedicalCare="selectedMedicalCare"
+                                     OnSaved="OnMedicalCareSaved"
+                                     OnCancel="HideForm" />
                     </div>
                 </div>
             </div>
         </div>
     }
-</TabContainerA>
+</TabContainerE>
 
 @code {
     private ManagementTableR table;
-    private ClinicalHistoryDTO selectedClinicalHistory;
+    private MedicalCareDTO selectedMedicalCare;
+    private PersonDTO selectedPerson;
     private bool showDetail = false;
     private bool showForm = false;
     private List<DocumentTypeDTO> documentTypeList = new();
-    private List<ClinicalHistoryDTO> clinicalHistoryList = new();
-    private List<List<string>> ClinicalHistoryData = new();
+    private List<MedicalCareDTO> allMedicalCareList = new();
+    private List<MedicalCareDTO> filteredMedicalCareList = new();
+    private List<List<string>> MedicalCareData = new();
 
-    //Search
-    private string searchTerm = string.Empty;
-    private bool searchByIdNumber = false;
+    // Filtros
+    private DateTime? selectedDate;
+    private string quickSearchTerm = string.Empty;
     private string searchMessage = string.Empty;
-    private bool showNoHistoryAlert = false;
+    private bool showNoMedicalCareAlert = false;
+    private bool hasActiveFilters = false;
+    private int totalMedicalCareCount = 0;
 
-    private List<string> ClinicalHistoryColumns = new()
-        {
-        "ID", "Nombre", "Apellido", "Historia", "Fecha", "Acciones"
-        };
 
+
+    // Columnas de la tabla (sin ID)
+    private List<string> MedicalCareColumns = new()
+    {
+        "Fecha", "Paciente", "Área", "Profesional", "Acciones"
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types");
-        await LoadClinicalHistoryData();
+        documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
+        await LoadAllMedicalCareData();
     }
 
-    private async Task LoadClinicalHistoryData(string searchTerm = null)
+    private async Task LoadAllMedicalCareData()
     {
-        List<ClinicalHistoryDTO> results;
-
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        try
         {
-            results = (await ClinicalHistoryService.GetAllClinicalHistories()).ToList();
-            showNoHistoryAlert = false;
+            var result = await MedicalCareService.GetAllAsync();
+            allMedicalCareList = result ?? new List<MedicalCareDTO>();
+            totalMedicalCareCount = allMedicalCareList.Count;
+
+            ApplyFilters();
         }
-        else
+        catch (Exception ex)
         {
-            results = (await ClinicalHistoryService.SearchClinicalHistories(searchTerm, searchByIdNumber)).ToList();
+            await JS.InvokeVoidAsync("console.error", $"Error loading medical care data: {ex.Message}");
+            allMedicalCareList = new List<MedicalCareDTO>();
+            filteredMedicalCareList = new List<MedicalCareDTO>();
+        }
+    }
 
-            if (!results.Any())
-            {
-                searchMessage = searchByIdNumber
-                    ? $"No se encontró historia clínica para la cédula {searchTerm}"
-                    : $"No se encontró historia clínica con el número {searchTerm}";
-                showNoHistoryAlert = true;
-            }
-            else
-            {
-                showNoHistoryAlert = false;
-            }
+    private void ApplyFilters()
+    {
+        filteredMedicalCareList = allMedicalCareList.ToList();
+        hasActiveFilters = false;
+        showNoMedicalCareAlert = false;
+
+        // Filtro por fecha
+        if (selectedDate.HasValue)
+        {
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.CareDate.Date == selectedDate.Value.Date)
+                .ToList();
+            hasActiveFilters = true;
         }
 
-        clinicalHistoryList = results;
-        ClinicalHistoryData = results.Select(ch => new List<string>
+        // Filtro por paciente seleccionado
+        if (selectedPerson != null)
         {
-            ch.ClinicalHistoryId.ToString(),
-            ch.Patient?.Person?.FirstName ?? "N/A",
-            ch.Patient?.Person?.LastName ?? "N/A",
-            ch.HistoryNumber ?? "N/A",
-            ch.CreationDate?.ToString("yyyy-MM-dd") ?? "N/A",
-            ch.ClinicalHistoryId.ToString()
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.PatientId == selectedPerson.Id)
+                .ToList();
+            hasActiveFilters = true;
+        }
+
+        // Filtro por búsqueda rápida de ID
+        if (!string.IsNullOrWhiteSpace(quickSearchTerm) && int.TryParse(quickSearchTerm, out int careId))
+        {
+            filteredMedicalCareList = filteredMedicalCareList
+                .Where(mc => mc.CareId == careId)
+                .ToList();
+            hasActiveFilters = true;
+        }
+
+        // Verificar si no hay resultados
+        if (hasActiveFilters && !filteredMedicalCareList.Any())
+        {
+            SetNoResultsMessage();
+        }
+
+        UpdateTableData();
+    }
+
+    private void SetNoResultsMessage()
+    {
+        var filters = new List<string>();
+
+        if (selectedDate.HasValue)
+            filters.Add($"fecha {selectedDate.Value:dd/MM/yyyy}");
+
+        if (selectedPerson != null)
+            filters.Add($"paciente {selectedPerson.FirstName} {selectedPerson.LastName}");
+
+        if (!string.IsNullOrWhiteSpace(quickSearchTerm))
+            filters.Add($"ID {quickSearchTerm}");
+
+        searchMessage = $"No se encontraron atenciones médicas para: {string.Join(", ", filters)}";
+        showNoMedicalCareAlert = true;
+    }
+
+    private void UpdateTableData()
+    {
+        MedicalCareData = filteredMedicalCareList.Select(mc => new List<string>
+        {
+            mc.CareDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
+            mc.NamePatient ?? "N/A",
+            mc.Area ?? "N/A",
+            mc.NameHealthProfessional ?? "N/A",
+            mc.CareId.ToString() // Para las acciones, pero no se muestra en la tabla
         }).ToList();
 
         if (table != null)
         {
-            await table.LoadRecords(ClinicalHistoryData);
+            InvokeAsync(async () => await table.LoadRecords(MedicalCareData));
         }
+
+        StateHasChanged();
     }
 
-    private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
-
-    private async Task Search(string[] data)
+    private async Task HandleDateFilter()
     {
-        string field = data[0];
-        string value = data[1]?.Trim() ?? "";
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value))
-        {
-            await LoadClinicalHistoryData();
-            return;
-        }
+    private async Task HandleQuickSearch()
+    {
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        // Búsqueda en backend cuando el campo es "Paciente"
-        if (field == "Paciente")
+    private async Task HandlePersonSelected(PersonDTO person)
+    {
+        selectedPerson = person;
+
+        // Filtrar por el ID de la persona, no por PatientId directamente
+        // Necesitamos buscar las atenciones donde el paciente tenga esta persona
+        filteredMedicalCareList = allMedicalCareList
+            .Where(mc => mc.NamePatient != null &&
+                         mc.NamePatient.Contains(person.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                         mc.NamePatient.Contains(person.LastName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        hasActiveFilters = true;
+
+        if (!filteredMedicalCareList.Any())
         {
-            await LoadClinicalHistoryData(value);
+            searchMessage = $"No se encontraron atenciones médicas para {person.FirstName} {person.LastName}";
+            showNoMedicalCareAlert = true;
         }
         else
         {
-            // Búsqueda en frontend para otros campos
-            int index = ClinicalHistoryColumns.IndexOf(field);
-            if (index < 0) return;
+            showNoMedicalCareAlert = false;
+        }
 
-            var filteredData = ClinicalHistoryData
-                .Where(row => row[index].Contains(value, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        UpdateTableData();
+        await InvokeAsync(StateHasChanged);
+    }
 
-            if (table != null)
+    private async Task HandlePersonCleared()
+    {
+        selectedPerson = null;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearDateFilter()
+    {
+        selectedDate = null;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        selectedDate = null;
+        selectedPerson = null;
+        quickSearchTerm = string.Empty;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void CreateNewMedicalCare()
+    {
+        selectedMedicalCare = new MedicalCareDTO
             {
-                await table.LoadRecords(filteredData);
-            }
-        }
-    }
-
-    private async Task HandleSearch()
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            await LoadClinicalHistoryData();
-            return;
-        }
-
-        await LoadClinicalHistoryData(searchTerm);
-    }
-
-    private void CreateNewHistory()
-    {
-        selectedClinicalHistory = new ClinicalHistoryDTO
-        {
-            ClinicalHistoryId = 0,
-            CreationDate = DateTime.Now,
-            Patient = new PatientDTO(),
-            HistoryNumber = GenerateNextHistoryNumber()
-        };
+                CareId = 0
+            };
         showForm = true;
+        showNoMedicalCareAlert = false;
     }
 
-    private string GenerateNextHistoryNumber()
+    private Task AddMedicalCare()
     {
-        if (!clinicalHistoryList.Any()) return "UTA-HC-0001";
-
-        var lastNumber = clinicalHistoryList
-            .Select(h => h.HistoryNumber)
-            .Where(hn => hn != null && hn.StartsWith("UTA-HC-"))
-            .Select(hn =>
-            {
-                var numberPart = hn.Replace("UTA-HC-", "");
-                return int.TryParse(numberPart, out var num) ? num : 0;
-            })
-            .DefaultIfEmpty(0)
-            .Max();
-
-        return $"UTA-HC-{(lastNumber + 1).ToString("D4")}";
-    }
-
-
-    private Task AddClinicalHistory()
-    {
-        selectedClinicalHistory = new ClinicalHistoryDTO
-        {
-            CreationDate = DateTime.Now
-        };
-        ShowForm();
+        CreateNewMedicalCare();
         return Task.CompletedTask;
     }
 
-    private async Task ClearSearch()
-    {
-        searchTerm = string.Empty;
-        // await table.ClearSearch();
-        await LoadClinicalHistoryData();
-    }
 
 
-
-    RenderFragment<List<string>> RenderClinicalHistoryActions => row => builder =>
+    RenderFragment<List<string>> RenderMedicalCareActions => row => builder =>
     {
         int seq = 0;
-        var id = row[0]; // El ID está en la primera columna
+        var id = row[4];
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
         builder.AddAttribute(seq++, "title", "Ver");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewClinicalHistory(id)));
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewMedicalCare(id)));
         builder.AddContent(seq++, "Ver");
         builder.CloseElement();
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
         builder.AddAttribute(seq++, "title", "Editar");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditClinicalHistory(id)));
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditMedicalCare(id)));
         builder.AddContent(seq++, "Editar");
         builder.CloseElement();
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
         builder.AddAttribute(seq++, "title", "Eliminar");
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeleteClinicalHistory(id)));
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeleteMedicalCare(id)));
         builder.AddContent(seq++, "Eliminar");
         builder.CloseElement();
     };
 
-    private void ViewClinicalHistory(string id)
+    private void ViewMedicalCare(string id)
     {
         if (int.TryParse(id, out int idInt))
         {
-            selectedClinicalHistory = clinicalHistoryList.FirstOrDefault(ch => ch.ClinicalHistoryId == idInt);
-            if (selectedClinicalHistory != null)
+            selectedMedicalCare = filteredMedicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
+            if (selectedMedicalCare != null)
             {
                 showDetail = true;
             }
         }
     }
 
-    private void EditClinicalHistory(string id)
+    private async Task EditMedicalCare(string id)
     {
         if (int.TryParse(id, out int idInt))
         {
-            selectedClinicalHistory = clinicalHistoryList.FirstOrDefault(ch => ch.ClinicalHistoryId == idInt) ?? new ClinicalHistoryDTO();
-            showForm = true;
+            try
+            {
+                // Usar el método directo del servicio
+                var medicalCare = await MedicalCareService.GetByIdAsync(idInt);
+                if (medicalCare != null)
+                {
+                    selectedMedicalCare = medicalCare;
+                    showForm = true;
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "No se pudo cargar la atención médica");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error cargando atención médica: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error al cargar la atención médica");
+            }
         }
     }
 
-    private async Task DeleteClinicalHistory(string id)
+    private async Task DeleteMedicalCare(string id)
     {
         if (!int.TryParse(id, out int idInt))
         {
@@ -328,52 +436,53 @@
             return;
         }
 
-        var historyToDelete = clinicalHistoryList.FirstOrDefault(ch => ch.ClinicalHistoryId == idInt);
-        if (historyToDelete == null)
+        var medicalCareToDelete = filteredMedicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
+        if (medicalCareToDelete == null)
         {
-            await JS.InvokeVoidAsync("alert", "Historia clínica no encontrada");
+            await JS.InvokeVoidAsync("alert", "Atención médica no encontrada");
             return;
         }
 
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Estás seguro de eliminar la historia clínica del paciente {historyToDelete.Patient?.Person.FirstName}?");
+            $"¿Estás seguro de eliminar la atención médica del paciente {medicalCareToDelete.NamePatient}?\n\nEsta acción no se puede deshacer.");
 
         if (confirmed)
         {
-            var success = await ClinicalHistoryService.Delete(idInt);
-            if (success)
+            try
             {
-                await LoadClinicalHistoryData();
-                await JS.InvokeVoidAsync("alert", "Historia clínica eliminada exitosamente");
+                var result = await MedicalCareService.DeleteAsync(idInt);
+                if (result.Success)
+                {
+                    await LoadAllMedicalCareData();
+                    await JS.InvokeVoidAsync("alert", "Atención médica eliminada exitosamente");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al eliminar la atención médica: {result.Error}");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("alert", "Error al eliminar la historia clínica");
+                await JS.InvokeVoidAsync("console.error", $"Error eliminando: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error inesperado al eliminar la atención médica");
             }
         }
-    }
-
-    private void ShowForm()
-    {
-        showForm = true;
     }
 
     private void HideForm()
     {
         showForm = false;
-        selectedClinicalHistory = null;
-        searchMessage = string.Empty;
+        selectedMedicalCare = null;
     }
 
-
-    private async Task OnClinicalHistorySaved(ClinicalHistoryDTO savedHistory)
+    private async Task OnMedicalCareSaved(MedicalCareDTO savedMedicalCare)
     {
         showForm = false;
-        await LoadClinicalHistoryData();
+        await LoadAllMedicalCareData();
 
-        var message = savedHistory.ClinicalHistoryId == 0
-            ? "Historia clínica creada exitosamente"
-            : "Historia clínica actualizada exitosamente";
+        var message = savedMedicalCare.CareId == 0
+            ? "Atención médica creada exitosamente"
+            : "Atención médica actualizada exitosamente";
 
         await JS.InvokeVoidAsync("alert", message);
     }
@@ -382,5 +491,4 @@
     {
         // Lógica para guardar los datos
     }
-
 }

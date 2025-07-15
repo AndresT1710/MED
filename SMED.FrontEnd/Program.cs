@@ -14,8 +14,8 @@ builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient
     {
-        //BaseAddress = new Uri("https://localhost:59166/"),
-        BaseAddress = new Uri("https://localhost:7009/"),
+        BaseAddress = new Uri("https://localhost:59166/"),
+        //BaseAddress = new Uri("https://localhost:7009/"),
         
         //Dirección para Docker
         //BaseAddress = new Uri("http://localhost:2023/"),
@@ -70,6 +70,8 @@ builder.Services.AddScoped<MedicalServiceService>();
 builder.Services.AddScoped<MedicalProcedureService>();
 builder.Services.AddScoped<PlaceOfAttentionService>();
 builder.Services.AddScoped<ReasonForConsultationService>();
+builder.Services.AddScoped<ReviewSystemDevicesService>();
+builder.Services.AddScoped<SystemsDevicesService>();
 
 builder.Services.AddLogging();
 

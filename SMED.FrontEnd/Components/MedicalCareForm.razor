@@ -11,6 +11,8 @@
 @inject MedicalProcedureService MedicalProcedureService
 @inject PlaceOfAttentionService PlaceService
 @inject ReasonForConsultationService ReasonForConsultationService
+@inject ReviewSystemDevicesService ReviewSystemDevicesService
+@inject SystemsDevicesService SystemsDevicesService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -32,28 +34,33 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("vitals"))"
+            <button class="nav-link @(activeTab == "systems" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("systems"))"
                     type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
-                <i class="fas fa-heartbeat me-2"></i>Signos Vitales
-                @if (HasVitalSignsData())
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
+                @if (systemsList.Any())
                 {
-                    <span class="badge bg-success ms-1">✓</span>
+                    <span class="badge bg-info ms-1">@systemsList.Count</span>
                 }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "services" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("services"))"
+            <button class="nav-link @(activeTab == "physical-exam" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("physical-exam"))"
                     type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
-                <i class="fas fa-stethoscope me-2"></i>Servicios
-                @if (serviciosList.Any())
-                {
-                    <span class="badge bg-primary ms-1">@serviciosList.Count</span>
-                }
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-stethoscope me-2"></i>Examen Físico
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "additional-data" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("additional-data"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -61,12 +68,48 @@
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
                     @onclick="@(() => SetActiveTab("procedures"))"
                     type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
                     <span class="badge bg-info ms-1">@procedimientosList.Count</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "diagnosis" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("diagnosis"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-diagnoses me-2"></i>Diagnóstico
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("treatment"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "referral" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("referral"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-share me-2"></i>Derivación
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("evolution"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-chart-line me-2"></i>Evolución
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -131,6 +174,7 @@
                                     </div>
                                 }
                             </div>
+
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Área *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(areaSeleccionada) ? "is-invalid" : "")"
@@ -204,9 +248,19 @@
                             <div>
                                 @if (IsPatientTabComplete())
                                 {
-                                    <button class="btn btn-primary" @onclick="@(() => SetActiveTab("vitals"))">
-                                        Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
                                     </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("systems"))">
+                                            Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
                                 }
                                 else
                                 {
@@ -221,320 +275,175 @@
             </div>
         </div>
 
-        <!-- VITAL SIGNS TAB CON VALIDACIONES NUMÉRICAS MEJORADAS -->
-        <div class="tab-pane @(activeTab == "vitals" ? "show active" : "")" role="tabpanel">
+        <!-- Aparatos y Sistemas Tab -->
+        <div class="tab-pane @(activeTab == "systems" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-heartbeat me-2"></i>Signos Vitales
+                        <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Complete solo si es necesario</small>
+                    <small class="text-muted">Evaluación de aparatos y sistemas</small>
                 </div>
                 <div class="card-body">
-                    @if (selectedPatientId > 0)
+                    @if (currentMedicalCareId > 0)
                     {
-                        <!-- Alerta informativa sobre validaciones -->
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <div>
-                                    <strong>Información importante:</strong>
-                                    Solo ingrese valores numéricos. Los campos se validan automáticamente y el IMC se calcula al ingresar peso y talla.
-                                    La presión arterial debe tener formato: 120/80
+                        <EditableTable Title="Revisión de Aparatos y Sistemas"
+                                       ColumnHeaders="@systemsHeaders"
+                                       Rows="@systemsRows"
+                                       RowIds="@systemsIds"
+                                       EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
+                                       OnAddRequested="@OnAddSystemRequested"
+                                       OnEditRequested="@OnEditSystemRequested"
+                                       OnDeleteRequested="@OnDeleteSystemRequested"
+                                       OnSaveRequested="@OnSaveSystemRequested"
+                                       IsValidForm="@IsSystemFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Tipo de Aparato/Sistema <span class="text-danger">*</span></label>
+                                        <select class="form-select @(systemErrors.ContainsKey("SystemsDevicesId") ? "is-invalid" : "")"
+                                                @bind="currentSystem.SystemsDevicesId">
+                                            <option value="0">Seleccione un aparato o sistema</option>
+                                            @foreach (var system in availableSystems)
+                                            {
+                                                <option value="@system.Id">@system.Name</option>
+                                            }
+                                        </select>
+                                        @if (systemErrors.ContainsKey("SystemsDevicesId"))
+                                        {
+                                            <div class="invalid-feedback">@systemErrors["SystemsDevicesId"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Estado <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(systemErrors.ContainsKey("State") ? "is-invalid" : "")"
+                                                  @bind="currentSystem.State"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa el estado actual del aparato o sistema..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (systemErrors.ContainsKey("State"))
+                                        {
+                                            <div class="invalid-feedback">@systemErrors["State"]</div>
+                                        }
+                                        <small class="form-text text-muted">Máximo 500 caracteres</small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Observaciones</label>
+                                        <textarea class="form-control"
+                                                  @bind="currentSystem.Observations"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Observaciones adicionales (opcional)..."
+                                                  style="resize: vertical; max-height: 200px;"></textarea>
+                                        <small class="form-text text-muted">Máximo 1000 caracteres</small>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </EditModalContent>
+                        </EditableTable>
 
-                        <!-- Grid de signos vitales con validaciones -->
-                        <div class="row g-3">
-                            <!-- Peso -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Peso (kg)</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("peso")"
-                                       @bind="pesoInput"
-                                       @oninput="@((e) => OnNumericInput(e, "peso"))"
-                                       placeholder="70.5" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("peso")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("peso")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 0.1 - 500 kg</small>
-                            </div>
-
-                            <!-- Talla -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Talla (cm)</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("talla")"
-                                       @bind="tallaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "talla"))"
-                                       placeholder="175" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("talla")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("talla")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 1 - 250 cm</small>
-                            </div>
-
-                            <!-- IMC (calculado automáticamente) -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">IMC</label>
-                                <input type="text"
-                                       class="form-control bg-light"
-                                       value="@imcCalculado"
-                                       readonly
-                                       placeholder="Se calcula automáticamente" />
-                                <small class="form-text text-muted">Se calcula automáticamente: Peso / (Talla/100)²</small>
-                            </div>
-
-                            <!-- Perímetro Abdominal -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Perímetro Abdominal (cm)</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("perimetroAbdominal")"
-                                       @bind="perimetroAbdominalInput"
-                                       @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
-                                       placeholder="85" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("perimetroAbdominal")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("perimetroAbdominal")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 1 - 200 cm</small>
-                            </div>
-
-                            <!-- Presión Arterial (formato especial) -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Presión Arterial</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("presionArterial")"
-                                       @bind="presionArterialInput"
-                                       @oninput="OnBloodPressureInput"
-                                       placeholder="120/80"
-                                       maxlength="7" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("presionArterial")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("presionArterial")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Formato: 120/80 (Sistólica/Diastólica)</small>
-                            </div>
-
-                            <!-- Temperatura -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Temperatura (°C)</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("temperatura")"
-                                       @bind="temperaturaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "temperatura"))"
-                                       placeholder="36.5" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("temperatura")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("temperatura")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 30 - 45°C</small>
-                            </div>
-
-                            <!-- Presión Arterial Media -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Presión Arterial Media</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("pam")"
-                                       @bind="pamInput"
-                                       @oninput="@((e) => OnNumericInput(e, "pam"))"
-                                       placeholder="90" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("pam")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("pam")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 40 - 180 mmHg</small>
-                            </div>
-
-                            <!-- Frecuencia Cardíaca -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Frecuencia Cardíaca</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("frecuenciaCardiaca")"
-                                       @bind="frecuenciaCardiacaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
-                                       placeholder="72" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaCardiaca")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("frecuenciaCardiaca")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 30 - 200 bpm</small>
-                            </div>
-
-                            <!-- Saturación de Oxígeno -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Saturación Oxígeno (%)</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("saturacionOxigeno")"
-                                       @bind="saturacionOxigenoInput"
-                                       @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
-                                       placeholder="98" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("saturacionOxigeno")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("saturacionOxigeno")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 70 - 100%</small>
-                            </div>
-
-                            <!-- Frecuencia Respiratoria -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Frecuencia Respiratoria</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
-                                       @bind="frecuenciaRespiratoriaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
-                                       placeholder="16" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaRespiratoria")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("frecuenciaRespiratoria")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 5 - 60 rpm</small>
-                            </div>
-
-                            <!-- Glucosa Capilar -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Glucosa Capilar</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("glucosaCapilar")"
-                                       @bind="glucosaCapilarInput"
-                                       @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
-                                       placeholder="100" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("glucosaCapilar")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("glucosaCapilar")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 50 - 600 mg/dl</small>
-                            </div>
-
-                            <!-- Hemoglobina -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Hemoglobina</label>
-                                <input type="text"
-                                       class="@GetVitalSignInputClass("hemoglobina")"
-                                       @bind="hemoglobinaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
-                                       placeholder="14.5" />
-                                @if (!string.IsNullOrEmpty(GetVitalSignError("hemoglobina")))
-                                {
-                                    <div class="invalid-feedback" style="display: block;">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("hemoglobina")
-                                    </div>
-                                }
-                                <small class="form-text text-muted">Rango válido: 5 - 20 g/dl</small>
-                            </div>
-                        </div>
-
-                        <!-- Botones de navegación -->
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <div>
-                                <button class="btn btn-outline-primary me-2" @onclick="@(() => SetActiveTab("services"))">
-                                    Ir a Servicios <i class="fas fa-arrow-right ms-2"></i>
-                                </button>
-                                <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("procedures"))">
-                                    Ir a Procedimientos <i class="fas fa-arrow-right ms-2"></i>
-                                </button>
-                            </div>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("physical-exam"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Services Tab -->
-        <div class="tab-pane @(activeTab == "services" ? "show active" : "")" role="tabpanel">
+        <!-- Examen Físico Tab -->
+        <div class="tab-pane @(activeTab == "physical-exam" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-stethoscope me-2"></i>Servicios Médicos
+                        <i class="fas fa-stethoscope me-2"></i>Examen Físico
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <button class="btn btn-sm btn-primary" @onclick="AgregarServicio">
-                        <i class="fas fa-plus me-1"></i>Agregar Servicio
-                    </button>
+                    <small class="text-muted">Evaluación física del paciente</small>
                 </div>
                 <div class="card-body">
-                    @if (selectedPatientId > 0)
+                    @if (currentMedicalCareId > 0)
                     {
-                        @if (serviciosList.Any())
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Tipo</th>
-                                            <th>Diagnóstico</th>
-                                            <th>Observaciones</th>
-                                            <th width="120">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var servicio in serviciosList)
-                                        {
-                                            <tr>
-                                                <td>@servicio.ServiceDate?.ToString("dd/MM/yyyy")</td>
-                                                <td>@servicio.ServiceType</td>
-                                                <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
-                                                <td>@(string.IsNullOrEmpty(servicio.Observations) ? "N/A" : (servicio.Observations.Length > 50 ? servicio.Observations.Substring(0, 50) + "..." : servicio.Observations))</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)" title="Editar">
-                                                        <i class="fas fa-edit">Editar</i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)" title="Eliminar">
-                                                        <i class="fas fa-trash">Eliminar</i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Examen Físico</strong>
+                                    <p class="mb-0">Aquí se registrará el examen físico completo del paciente.</p>
+                                </div>
                             </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-4">
-                                <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No hay servicios agregados</p>
-                                <button class="btn btn-primary" @onclick="AgregarServicio">
-                                    <i class="fas fa-plus me-2"></i>Agregar Primer Servicio
-                                </button>
-                            </div>
-                        }
+                        </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("vitals"))">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("systems"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("procedures"))">
-                                Ir a Procedimientos <i class="fas fa-arrow-right ms-2"></i>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("additional-data"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos Adicionales Tab -->
+        <div class="tab-pane @(activeTab == "additional-data" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Información complementaria</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Datos Adicionales</strong>
+                                    <p class="mb-0">Aquí se registrarán datos adicionales relevantes para la atención médica.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("physical-exam"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("procedures"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
                         </div>
                     }
                 </div>
@@ -549,12 +458,15 @@
                         <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
-                        <i class="fas fa-plus me-1"></i>Agregar Procedimiento
-                    </button>
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
+                            <i class="fas fa-plus me-1"></i>Agregar Procedimiento
+                        </button>
+                    }
                 </div>
                 <div class="card-body">
-                    @if (selectedPatientId > 0)
+                    @if (currentMedicalCareId > 0)
                     {
                         @if (procedimientosList.Any())
                         {
@@ -579,10 +491,10 @@
                                                 <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
                                                 <td>
                                                     <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)" title="Editar">
-                                                        <i class="fas fa-edit">Editar</i>
+                                                        <i class="fas fa-edit"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)" title="Eliminar">
-                                                        <i class="fas fa-trash">Eliminar</i>
+                                                        <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -603,16 +515,195 @@
                         }
 
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("services"))">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("additional-data"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-success" @onclick="GuardarAtencionMedica" disabled="@isSaving">
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("diagnosis"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnóstico Tab -->
+        <div class="tab-pane @(activeTab == "diagnosis" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-diagnoses me-2"></i>Diagnóstico
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Diagnóstico médico</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Diagnóstico</strong>
+                                    <p class="mb-0">Aquí se registrará el diagnóstico médico del paciente.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("procedures"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Enfermedad/Tratamiento Tab -->
+        <div class="tab-pane @(activeTab == "treatment" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Plan de tratamiento</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Enfermedad/Tratamiento</strong>
+                                    <p class="mb-0">Aquí se registrará la enfermedad diagnosticada y el plan de tratamiento.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diagnosis"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("referral"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Derivación Tab -->
+        <div class="tab-pane @(activeTab == "referral" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-share me-2"></i>Derivación
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Derivación a especialistas</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Derivación</strong>
+                                    <p class="mb-0">Aquí se registrarán las derivaciones a especialistas o servicios específicos.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("treatment"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Evolución Tab -->
+        <div class="tab-pane @(activeTab == "evolution" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Evolución
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Evolución del paciente</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Evolución</strong>
+                                    <p class="mb-0">Aquí se registrará la evolución y seguimiento del paciente.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("referral"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="FinalizarAtencionMedica" disabled="@isSaving">
                                 @if (isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
+                                <i class="fas fa-check me-2"></i>Finalizar Atención Médica
                             </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
                         </div>
                     }
                 </div>
@@ -620,28 +711,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal para Servicio -->
-@if (showServiceModal)
-{
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-stethoscope me-2"></i>
-                        @(currentService?.ServiceId > 0 ? "Editar" : "Agregar") Servicio
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CerrarModalServicio"></button>
-                </div>
-                <div class="modal-body">
-                    <ServiceForm Service="currentService" OnSaved="OnServiceSaved" OnCancel="CerrarModalServicio" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 <!-- Modal para Procedimiento -->
 @if (showProcedureModal)
@@ -682,36 +751,8 @@
     private bool showValidationErrors = false;
     private bool isSaving = false;
 
-    // Variables para inputs de signos vitales con validación
-    private string pesoInput = "";
-    private string tallaInput = "";
-    private string imcCalculado = "";
-    private string perimetroAbdominalInput = "";
-    private string presionArterialInput = "";
-    private string temperaturaInput = "";
-    private string pamInput = "";
-    private string frecuenciaCardiacaInput = "";
-    private string saturacionOxigenoInput = "";
-    private string frecuenciaRespiratoriaInput = "";
-    private string glucosaCapilarInput = "";
-    private string hemoglobinaInput = "";
-
-    // Diccionario para errores de validación de signos vitales
-    private Dictionary<string, string> vitalSignsErrors = new Dictionary<string, string>();
-
-    // Variables originales para compatibilidad
-    private string peso = "";
-    private string talla = "";
-    private string imc = "";
-    private string perimetroAbdominal = "";
-    private string presionArterial = "";
-    private string temperatura = "";
-    private string pam = "";
-    private string frecuenciaCardiaca = "";
-    private string saturacionOxigeno = "";
-    private string frecuenciaRespiratoria = "";
-    private string glucosaCapilar = "";
-    private string hemoglobina = "";
+    // ID de la atención médica actual (clave para permitir guardar en otras pestañas)
+    private int currentMedicalCareId = 0;
 
     // Listas dinámicas
     private List<TypeOfServiceDTO> tipoServicios = new();
@@ -720,8 +761,7 @@
     private List<ProceduresDTO> todosProcedimientos = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
 
-    // Listas de servicios y procedimientos
-    private List<MedicalServiceDTO> serviciosList = new();
+    // Listas de procedimientos
     private List<MedicalProcedureDTO> procedimientosList = new();
 
     // Para edición
@@ -729,321 +769,35 @@
     private ReasonForConsultationDTO? existingReasonForConsultation;
 
     // Modales
-    private bool showServiceModal = false;
     private bool showProcedureModal = false;
-    private MedicalServiceDTO? currentService;
     private MedicalProcedureDTO? currentProcedure;
+
+    // Variables para Aparatos y Sistemas
+    private List<SystemsDevicesDTO> availableSystems = new();
+    private List<ReviewSystemDevicesDTO> systemsList = new();
+    private ReviewSystemDevicesDTO currentSystem = new();
+    private List<string> systemsHeaders = new() { "Tipo de Aparato/Sistema", "Estado", "Observaciones" };
+    private List<List<string>> systemsRows = new();
+    private List<int> systemsIds = new();
+    private Dictionary<string, string> systemErrors = new();
 
     protected override async Task OnInitializedAsync()
     {
-        // Inicializar diccionario de errores
-        InitializeVitalSignsErrors();
-
         await LoadTypeOfServices();
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
         await LoadProcedures();
         await LoadLugaresAtencion();
+        await LoadSystemsData();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
             isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
             await LoadExistingData();
         }
     }
-
-    // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
-
-    private void InitializeVitalSignsErrors()
-    {
-        var fields = new[] { "peso", "talla", "perimetroAbdominal", "temperatura", "pam",
-                           "frecuenciaCardiaca", "saturacionOxigeno", "frecuenciaRespiratoria",
-                           "glucosaCapilar", "hemoglobina", "presionArterial" };
-
-        foreach (var field in fields)
-        {
-            vitalSignsErrors[field] = "";
-        }
-    }
-
-    // Método para manejar inputs numéricos
-    private void OnNumericInput(ChangeEventArgs e, string field)
-    {
-        var input = e.Value?.ToString() ?? "";
-
-        // Filtrar solo números y punto decimal
-        var numericInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d.]", "");
-
-        // Asegurar que solo haya un punto decimal
-        var parts = numericInput.Split('.');
-        if (parts.Length > 2)
-        {
-            numericInput = parts[0] + "." + string.Join("", parts.Skip(1));
-        }
-
-        // Asignar el valor filtrado a las variables de input
-        switch (field)
-        {
-            case "peso":
-                pesoInput = numericInput;
-                peso = numericInput;
-                break;
-            case "talla":
-                tallaInput = numericInput;
-                talla = numericInput;
-                break;
-            case "perimetroAbdominal":
-                perimetroAbdominalInput = numericInput;
-                perimetroAbdominal = numericInput;
-                break;
-            case "temperatura":
-                temperaturaInput = numericInput;
-                temperatura = numericInput;
-                break;
-            case "pam":
-                pamInput = numericInput;
-                pam = numericInput;
-                break;
-            case "frecuenciaCardiaca":
-                frecuenciaCardiacaInput = numericInput;
-                frecuenciaCardiaca = numericInput;
-                break;
-            case "saturacionOxigeno":
-                saturacionOxigenoInput = numericInput;
-                saturacionOxigeno = numericInput;
-                break;
-            case "frecuenciaRespiratoria":
-                frecuenciaRespiratoriaInput = numericInput;
-                frecuenciaRespiratoria = numericInput;
-                break;
-            case "glucosaCapilar":
-                glucosaCapilarInput = numericInput;
-                glucosaCapilar = numericInput;
-                break;
-            case "hemoglobina":
-                hemoglobinaInput = numericInput;
-                hemoglobina = numericInput;
-                break;
-        }
-
-        // Validar el campo
-        ValidateVitalSign(numericInput, field);
-
-        // Calcular IMC si es peso o talla
-        if (field == "peso" || field == "talla")
-        {
-            CalculateIMC();
-        }
-
-        StateHasChanged();
-    }
-
-    // Método especial para presión arterial
-    private void OnBloodPressureInput(ChangeEventArgs e)
-    {
-        var input = e.Value?.ToString() ?? "";
-
-        // Permitir solo números y una barra
-        var filteredInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d/]", "");
-
-        // Asegurar que solo haya una barra
-        var parts = filteredInput.Split('/');
-        if (parts.Length > 2)
-        {
-            filteredInput = parts[0] + "/" + parts[1];
-        }
-
-        presionArterialInput = filteredInput;
-        presionArterial = filteredInput;
-
-        ValidateBloodPressure(filteredInput);
-        StateHasChanged();
-    }
-
-    // Validación para signos vitales
-    private void ValidateVitalSign(string value, string field)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            vitalSignsErrors[field] = "";
-            return;
-        }
-
-        if (!decimal.TryParse(value, out decimal numValue))
-        {
-            vitalSignsErrors[field] = "Debe ser un valor numérico";
-            return;
-        }
-
-        // Validaciones específicas por campo
-        switch (field)
-        {
-            case "peso":
-                if (numValue <= 0 || numValue > 500)
-                    vitalSignsErrors[field] = "El peso debe estar entre 0.1 y 500 kg";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "talla":
-                if (numValue <= 0 || numValue > 250)
-                    vitalSignsErrors[field] = "La talla debe estar entre 1 y 250 cm";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "temperatura":
-                if (numValue < 30 || numValue > 45)
-                    vitalSignsErrors[field] = "La temperatura debe estar entre 30 y 45°C";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "frecuenciaCardiaca":
-                if (numValue < 30 || numValue > 200)
-                    vitalSignsErrors[field] = "La frecuencia cardíaca debe estar entre 30 y 200 bpm";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "saturacionOxigeno":
-                if (numValue < 70 || numValue > 100)
-                    vitalSignsErrors[field] = "La saturación debe estar entre 70 y 100%";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "frecuenciaRespiratoria":
-                if (numValue < 5 || numValue > 60)
-                    vitalSignsErrors[field] = "La frecuencia respiratoria debe estar entre 5 y 60 rpm";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "glucosaCapilar":
-                if (numValue < 50 || numValue > 600)
-                    vitalSignsErrors[field] = "La glucosa debe estar entre 50 y 600 mg/dl";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "hemoglobina":
-                if (numValue < 5 || numValue > 20)
-                    vitalSignsErrors[field] = "La hemoglobina debe estar entre 5 y 20 g/dl";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "perimetroAbdominal":
-                if (numValue <= 0 || numValue > 200)
-                    vitalSignsErrors[field] = "El perímetro abdominal debe estar entre 1 y 200 cm";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            case "pam":
-                if (numValue < 40 || numValue > 180)
-                    vitalSignsErrors[field] = "La PAM debe estar entre 40 y 180 mmHg";
-                else
-                    vitalSignsErrors[field] = "";
-                break;
-            default:
-                vitalSignsErrors[field] = "";
-                break;
-        }
-    }
-
-    // Validación especial para presión arterial
-    private void ValidateBloodPressure(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            vitalSignsErrors["presionArterial"] = "";
-            return;
-        }
-
-        var bpPattern = new System.Text.RegularExpressions.Regex(@"^\d{2,3}/\d{2,3}$");
-        if (!bpPattern.IsMatch(value))
-        {
-            vitalSignsErrors["presionArterial"] = "Formato requerido: 120/80";
-            return;
-        }
-
-        var parts = value.Split('/');
-        if (int.TryParse(parts[0], out int systolic) && int.TryParse(parts[1], out int diastolic))
-        {
-            if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150)
-            {
-                vitalSignsErrors["presionArterial"] = "Valores fuera del rango normal";
-            }
-            else
-            {
-                vitalSignsErrors["presionArterial"] = "";
-            }
-        }
-        else
-        {
-            vitalSignsErrors["presionArterial"] = "Valores inválidos";
-        }
-    }
-
-    // Calcular IMC automáticamente
-    private void CalculateIMC()
-    {
-        if (decimal.TryParse(pesoInput, out decimal weight) &&
-            decimal.TryParse(tallaInput, out decimal height) &&
-            weight > 0 && height > 0)
-        {
-            var heightInMeters = height / 100;
-            var bmi = weight / (heightInMeters * heightInMeters);
-            imcCalculado = bmi.ToString("F1");
-            imc = imcCalculado;
-        }
-        else
-        {
-            imcCalculado = "";
-            imc = "";
-        }
-    }
-
-    // Método para obtener clases CSS de inputs
-    private string GetVitalSignInputClass(string field)
-    {
-        var baseClass = "form-control";
-
-        if (vitalSignsErrors.ContainsKey(field) && !string.IsNullOrEmpty(vitalSignsErrors[field]))
-        {
-            baseClass += " is-invalid";
-        }
-        else if (HasValidValue(field))
-        {
-            baseClass += " is-valid";
-        }
-
-        return baseClass;
-    }
-
-    // Método para obtener errores de validación
-    private string GetVitalSignError(string field)
-    {
-        return vitalSignsErrors.ContainsKey(field) ? vitalSignsErrors[field] : "";
-    }
-
-    // Verificar si un campo tiene un valor válido
-    private bool HasValidValue(string field)
-    {
-        var value = field switch
-        {
-            "peso" => pesoInput,
-            "talla" => tallaInput,
-            "perimetroAbdominal" => perimetroAbdominalInput,
-            "temperatura" => temperaturaInput,
-            "pam" => pamInput,
-            "frecuenciaCardiaca" => frecuenciaCardiacaInput,
-            "saturacionOxigeno" => saturacionOxigenoInput,
-            "frecuenciaRespiratoria" => frecuenciaRespiratoriaInput,
-            "glucosaCapilar" => glucosaCapilarInput,
-            "hemoglobina" => hemoglobinaInput,
-            "presionArterial" => presionArterialInput,
-            _ => ""
-        };
-
-        return !string.IsNullOrEmpty(value) && string.IsNullOrEmpty(GetVitalSignError(field));
-    }
-
-    // MÉTODOS EXISTENTES (sin cambios)
 
     private bool IsPatientTabComplete()
     {
@@ -1069,6 +823,12 @@
             return;
         }
 
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
         activeTab = tab;
         StateHasChanged();
     }
@@ -1090,53 +850,12 @@
             motivoConsulta = existingReasonForConsultation.Description ?? "";
         }
 
-        var allVitalSigns = await VitalSignsService.GetAllAsync();
-        existingVitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
-        if (existingVitalSigns != null)
-        {
-            // Cargar valores en las variables de input
-            pesoInput = existingVitalSigns.Weight?.ToString() ?? "";
-            peso = pesoInput;
-
-            tallaInput = existingVitalSigns.Height?.ToString() ?? "";
-            talla = tallaInput;
-
-            imcCalculado = existingVitalSigns.Icm?.ToString() ?? "";
-            imc = imcCalculado;
-
-            perimetroAbdominalInput = existingVitalSigns.AbdominalCircumference?.ToString() ?? "";
-            perimetroAbdominal = perimetroAbdominalInput;
-
-            presionArterialInput = existingVitalSigns.BloodPressure ?? "";
-            presionArterial = presionArterialInput;
-
-            temperaturaInput = existingVitalSigns.Temperature?.ToString() ?? "";
-            temperatura = temperaturaInput;
-
-            pamInput = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
-            pam = pamInput;
-
-            frecuenciaCardiacaInput = existingVitalSigns.HeartRate?.ToString() ?? "";
-            frecuenciaCardiaca = frecuenciaCardiacaInput;
-
-            saturacionOxigenoInput = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
-            saturacionOxigeno = saturacionOxigenoInput;
-
-            frecuenciaRespiratoriaInput = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
-            frecuenciaRespiratoria = frecuenciaRespiratoriaInput;
-
-            glucosaCapilarInput = existingVitalSigns.BloodGlucose?.ToString() ?? "";
-            glucosaCapilar = glucosaCapilarInput;
-
-            hemoglobinaInput = existingVitalSigns.Hemoglobin?.ToString() ?? "";
-            hemoglobina = hemoglobinaInput;
-        }
-
-        var existingServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId);
-        serviciosList = existingServices ?? new List<MedicalServiceDTO>();
-
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
+
+        // Cargar sistemas existentes
+        systemsList = await ReviewSystemDevicesService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        await RefreshSystemsTable();
 
         StateHasChanged();
     }
@@ -1171,134 +890,173 @@
         clinicalHistoryId = paciente.ClinicalHistoryId;
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
-
         if (selectedPatientId > 0)
         {
             showValidationErrors = false;
         }
-
         StateHasChanged();
         return Task.CompletedTask;
     }
 
-    // Métodos para servicios
-    private async Task AgregarServicio()
+    // NUEVO MÉTODO: Guardar solo los datos básicos del paciente
+    private async Task GuardarDatosPaciente()
     {
-        if (!IsPatientTabComplete())
+        isSaving = true;
+        try
         {
-            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar servicios.");
-            return;
-        }
-
-        currentService = new MedicalServiceDTO
+            if (!IsPatientTabComplete())
             {
-                ServiceId = 0,
-                PatientId = selectedPatientId,
-                ServiceDate = DateTime.Now,
-                HealthProfessionalId = int.Parse(profesionalSeleccionado)
-            };
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
 
-        showServiceModal = true;
-        StateHasChanged();
-    }
+            MedicalCareDTO medicalCareResult;
 
-    private async Task EditarServicio(MedicalServiceDTO servicio)
-    {
-        await JS.InvokeVoidAsync("console.log", $"Editando servicio: {servicio.ServiceId}");
-
-        currentService = new MedicalServiceDTO
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
-                ServiceId = servicio.ServiceId,
-                PatientId = servicio.PatientId,
-                HealthProfessionalId = servicio.HealthProfessionalId,
-                CareId = servicio.CareId,
-                ServiceDate = servicio.ServiceDate,
-                ServiceType = servicio.ServiceType,
-                Diagnosis = servicio.Diagnosis,
-                Observations = servicio.Observations,
-                Recommendations = servicio.Recommendations
-            };
+                // Actualizar atención médica existente
+                MedicalCare.Area = areaSeleccionada;
+                MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
+                MedicalCare.LocationId = int.Parse(lugarSeleccionada);
 
-        showServiceModal = true;
-        StateHasChanged();
-    }
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
+                    return;
+                }
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                // Crear nueva atención médica
+                var medicalCareDto = new MedicalCareDTO
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    LocationId = int.Parse(lugarSeleccionada),
+                    Area = areaSeleccionada,
+                    CareDate = DateTime.Now
+                };
 
-    private async Task EliminarServicio(MedicalServiceDTO servicio)
-    {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Está seguro de eliminar el servicio de {servicio.ServiceType}?");
-        if (confirmed)
-        {
-            serviciosList.Remove(servicio);
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
+                    return;
+                }
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+
+                // Cambiar a modo edición después de crear
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            // Guardar motivo de consulta
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    var reasonResult = await ReasonForConsultationService.CreateAsync(reasonDto);
+                    if (reasonResult.Success)
+                    {
+                        existingReasonForConsultation = reasonResult.Data;
+                    }
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos básicos guardados exitosamente. Ahora puede continuar con las demás secciones.");
             StateHasChanged();
         }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
     }
 
-    private void OnServiceSaved(MedicalServiceDTO servicio)
+    // MÉTODO MODIFICADO: Solo finalizar (ya no guarda todo)
+    private async Task FinalizarAtencionMedica()
     {
-        var existing = serviciosList.FirstOrDefault(s => s.ServiceId == servicio.ServiceId);
-        if (existing != null)
+        isSaving = true;
+        try
         {
-            var index = serviciosList.IndexOf(existing);
-            serviciosList[index] = servicio;
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención médica válida para finalizar.");
+                return;
+            }
+
+            // Aquí podrías agregar lógica adicional de finalización si es necesaria
+            // Por ejemplo, cambiar el estado de la atención médica a "Finalizada"
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención médica finalizada exitosamente.");
         }
-        else
+        catch (Exception ex)
         {
-            serviciosList.Add(servicio);
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
         }
-
-        CerrarModalServicio();
-        StateHasChanged();
-    }
-
-    private void CerrarModalServicio()
-    {
-        showServiceModal = false;
-        currentService = null;
-        StateHasChanged();
+        finally
+        {
+            isSaving = false;
+        }
     }
 
     // Métodos para procedimientos
     private async Task AgregarProcedimiento()
     {
-        if (!IsPatientTabComplete())
+        if (currentMedicalCareId == 0)
         {
-            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar procedimientos.");
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente.");
             return;
         }
 
         currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = 0,
-                PatientId = selectedPatientId,
-                ProcedureDate = DateTime.Now,
-                HealthProfessionalId = int.Parse(profesionalSeleccionado)
-            };
-
+        {
+            ProcedureId = 0,
+            PatientId = selectedPatientId,
+            CareId = currentMedicalCareId,
+            ProcedureDate = DateTime.Now,
+            HealthProfessionalId = int.Parse(profesionalSeleccionado)
+        };
         showProcedureModal = true;
         StateHasChanged();
     }
 
     private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
     {
-        await JS.InvokeVoidAsync("console.log", $"=== EDITANDO PROCEDIMIENTO ===");
-        await JS.InvokeVoidAsync("console.log", $"ID: {procedimiento.ProcedureId}");
-
         currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = procedimiento.ProcedureId,
-                PatientId = procedimiento.PatientId,
-                HealthProfessionalId = procedimiento.HealthProfessionalId,
-                CareId = procedimiento.CareId,
-                ProcedureDate = procedimiento.ProcedureDate,
-                SpecificProcedureId = procedimiento.SpecificProcedureId,
-                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
-                TreatingPhysicianId = procedimiento.TreatingPhysicianId,
-                Observations = procedimiento.Observations,
-                TypeOfProcedureName = procedimiento.TypeOfProcedureName,
-                SpecificProcedureName = procedimiento.SpecificProcedureName
-            };
-
+        {
+            ProcedureId = procedimiento.ProcedureId,
+            PatientId = procedimiento.PatientId,
+            HealthProfessionalId = procedimiento.HealthProfessionalId,
+            CareId = procedimiento.CareId,
+            ProcedureDate = procedimiento.ProcedureDate,
+            SpecificProcedureId = procedimiento.SpecificProcedureId,
+            TypeOfProcedureId = procedimiento.TypeOfProcedureId,
+            TreatingPhysicianId = procedimiento.TreatingPhysicianId,
+            Observations = procedimiento.Observations,
+            TypeOfProcedureName = procedimiento.TypeOfProcedureName,
+            SpecificProcedureName = procedimiento.SpecificProcedureName
+        };
         showProcedureModal = true;
         StateHasChanged();
     }
@@ -1307,6 +1065,7 @@
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
             $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
+
         if (confirmed)
         {
             procedimientosList.Remove(procedimiento);
@@ -1326,7 +1085,6 @@
         {
             procedimientosList.Add(procedimiento);
         }
-
         CerrarModalProcedimiento();
         StateHasChanged();
     }
@@ -1338,164 +1096,159 @@
         StateHasChanged();
     }
 
-    private async Task GuardarAtencionMedica()
+    // Métodos para Aparatos y Sistemas
+    private async Task LoadSystemsData()
     {
-        isSaving = true;
-        try
+        availableSystems = await SystemsDevicesService.GetAllAsync();
+    }
+
+    private async Task RefreshSystemsTable()
+    {
+        systemsRows.Clear();
+        systemsIds.Clear();
+
+        foreach (var system in systemsList)
         {
-            if (!IsPatientTabComplete())
+            var systemName = await SystemsDevicesService.GetSystemNameByIdAsync(system.SystemsDevicesId);
+            var state = !string.IsNullOrEmpty(system.State)
+                ? (system.State.Length > 50 ? system.State.Substring(0, 50) + "..." : system.State)
+                : "No especificado";
+            var observations = !string.IsNullOrEmpty(system.Observations)
+                ? (system.Observations.Length > 50 ? system.Observations.Substring(0, 50) + "..." : system.Observations)
+                : "Sin observaciones";
+
+            systemsRows.Add(new List<string> { systemName, state, observations });
+            systemsIds.Add(system.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddSystemRequested()
+    {
+        currentSystem = new ReviewSystemDevicesDTO
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            SystemsDevicesId = 0,
+            State = "",
+            Observations = ""
+        };
+        systemErrors.Clear();
+    }
+
+    private async Task OnEditSystemRequested(int id)
+    {
+        var existing = systemsList.FirstOrDefault(s => s.Id == id);
+        if (existing != null)
+        {
+            currentSystem = new ReviewSystemDevicesDTO
             {
-                showValidationErrors = true;
-                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
-                await SetActiveTab("patient");
-                return;
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                SystemsDevicesId = existing.SystemsDevicesId,
+                State = existing.State ?? "",
+                Observations = existing.Observations ?? ""
+            };
+        }
+        systemErrors.Clear();
+    }
+
+    private async Task OnDeleteSystemRequested(int id)
+    {
+        var result = await ReviewSystemDevicesService.DeleteAsync(id);
+        if (result.Success)
+        {
+            var toRemove = systemsList.FirstOrDefault(s => s.Id == id);
+            if (toRemove != null)
+            {
+                systemsList.Remove(toRemove);
+                await RefreshSystemsTable();
             }
+            await JS.InvokeVoidAsync("alert", "Revisión eliminada exitosamente.");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+        }
+    }
 
-            MedicalCareDTO medicalCareResult;
-            bool isCreatingNew = !isEditMode || MedicalCare == null || MedicalCare.CareId == 0;
+    private async Task OnSaveSystemRequested()
+    {
+        if (!ValidateSystemForm()) return;
 
-            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+        // Asegurar que tenemos el MedicalCareId correcto
+        currentSystem.MedicalCareId = currentMedicalCareId;
+
+        if (currentSystem.Id == 0)
+        {
+            // Crear nuevo
+            var result = await ReviewSystemDevicesService.CreateAsync(currentSystem);
+            if (result.Success && result.Data != null)
             {
-                MedicalCare.Area = areaSeleccionada;
-                MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
-                MedicalCare.LocationId = int.Parse(lugarSeleccionada);
-
-                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
-                if (!updateResult.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
-                    return;
-                }
-
-                medicalCareResult = MedicalCare;
+                systemsList.Add(result.Data);
+                await RefreshSystemsTable();
+                await JS.InvokeVoidAsync("alert", "Revisión agregada exitosamente.");
             }
             else
             {
-                var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                        LocationId = int.Parse(lugarSeleccionada),
-                        Area = areaSeleccionada,
-                        CareDate = DateTime.Now
-                    };
-
-                var result = await MedicalCareService.CreateAsync(medicalCareDto);
-                if (!result.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
-                    return;
-                }
-
-                medicalCareResult = result.Data;
+                await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
             }
-
-            if (!string.IsNullOrWhiteSpace(motivoConsulta))
-            {
-                var reasonDto = new ReasonForConsultationDTO
-                    {
-                        Id = existingReasonForConsultation?.Id ?? 0,
-                        Description = motivoConsulta.Trim(),
-                        MedicalCareId = medicalCareResult.CareId
-                    };
-
-                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
-                {
-                    await ReasonForConsultationService.UpdateAsync(reasonDto);
-                }
-                else
-                {
-                    await ReasonForConsultationService.CreateAsync(reasonDto);
-                }
-            }
-
-            if (HasVitalSignsData())
-            {
-                var vitalSignsDto = new VitalSignsDTO
-                    {
-                        Id = existingVitalSigns?.Id ?? 0,
-                        MedicalCareId = medicalCareResult.CareId,
-                        Weight = ParseDecimal(peso),
-                        Height = ParseDecimal(talla),
-                        Icm = ParseDecimal(imc),
-                        AbdominalCircumference = ParseDecimal(perimetroAbdominal),
-                        BloodPressure = presionArterial,
-                        Temperature = ParseDecimal(temperatura),
-                        MeanArterialPressure = ParseDecimal(pam),
-                        HeartRate = ParseInt(frecuenciaCardiaca),
-                        OxygenSaturation = ParseDecimal(saturacionOxigeno),
-                        RespiratoryRate = ParseInt(frecuenciaRespiratoria),
-                        BloodGlucose = ParseDecimal(glucosaCapilar),
-                        Hemoglobin = ParseDecimal(hemoglobina)
-                    };
-
-                if (existingVitalSigns != null && existingVitalSigns.Id > 0)
-                {
-                    await VitalSignsService.UpdateAsync(vitalSignsDto);
-                }
-                else
-                {
-                    await VitalSignsService.CreateAsync(vitalSignsDto);
-                }
-            }
-
-            foreach (var servicio in serviciosList)
-            {
-                servicio.CareId = medicalCareResult.CareId;
-                if (servicio.ServiceId == 0)
-                {
-                    await MedicalServiceService.CreateAsync(servicio);
-                }
-                else
-                {
-                    await MedicalServiceService.UpdateAsync(servicio);
-                }
-            }
-
-            foreach (var procedimiento in procedimientosList)
-            {
-                procedimiento.CareId = medicalCareResult.CareId;
-                if (procedimiento.ProcedureId == 0)
-                {
-                    await MedicalProcedureService.CreateAsync(procedimiento);
-                }
-                else
-                {
-                    await MedicalProcedureService.UpdateAsync(procedimiento);
-                }
-            }
-
-            await OnSaved.InvokeAsync(medicalCareResult);
-            string successMessage = isCreatingNew
-                ? "Atención médica creada exitosamente"
-                : "Atención médica actualizada exitosamente";
-
-            await JS.InvokeVoidAsync("alert", successMessage);
         }
-        catch (Exception ex)
+        else
         {
-            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+            // Actualizar existente
+            var result = await ReviewSystemDevicesService.UpdateAsync(currentSystem);
+            if (result.Success && result.Data != null)
+            {
+                var index = systemsList.FindIndex(s => s.Id == currentSystem.Id);
+                if (index >= 0)
+                {
+                    systemsList[index] = result.Data;
+                    await RefreshSystemsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Revisión actualizada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+            }
         }
-        finally
+    }
+
+    private bool ValidateSystemForm()
+    {
+        systemErrors.Clear();
+        bool isValid = true;
+
+        if (currentSystem.SystemsDevicesId <= 0)
         {
-            isSaving = false;
+            systemErrors["SystemsDevicesId"] = "Debe seleccionar un tipo de aparato o sistema.";
+            isValid = false;
         }
+
+        if (string.IsNullOrWhiteSpace(currentSystem.State))
+        {
+            systemErrors["State"] = "El estado es obligatorio.";
+            isValid = false;
+        }
+
+        // Verificar duplicados (excluyendo el registro actual si está editando)
+        var duplicateExists = systemsList.Any(s =>
+            s.SystemsDevicesId == currentSystem.SystemsDevicesId &&
+            s.Id != currentSystem.Id);
+
+        if (duplicateExists)
+        {
+            systemErrors["SystemsDevicesId"] = "Ya existe una revisión para este aparato o sistema.";
+            isValid = false;
+        }
+
+        return isValid;
     }
 
-    private bool HasVitalSignsData()
+    private bool IsSystemFormValid()
     {
-        return !string.IsNullOrWhiteSpace(peso) || !string.IsNullOrWhiteSpace(talla) ||
-               !string.IsNullOrWhiteSpace(presionArterial) || !string.IsNullOrWhiteSpace(temperatura) ||
-               !string.IsNullOrWhiteSpace(frecuenciaCardiaca) || !string.IsNullOrWhiteSpace(saturacionOxigeno);
-    }
-
-    private decimal? ParseDecimal(string value)
-    {
-        return decimal.TryParse(value, out var result) ? result : null;
-    }
-
-    private int? ParseInt(string value)
-    {
-        return int.TryParse(value, out var result) ? result : null;
+        return currentSystem.SystemsDevicesId > 0 && !string.IsNullOrWhiteSpace(currentSystem.State);
     }
 }

@@ -23,13 +23,58 @@ namespace SMED.FrontEnd.Services
                 {
                     return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
                 }
-
                 _logger.LogWarning("Error al obtener atenciones médicas: {StatusCode}", response.StatusCode);
                 return new List<MedicalCareDTO>();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener todas las atenciones médicas");
+                return new List<MedicalCareDTO>();
+            }
+        }
+
+        // Nuevo método para obtener solo atenciones de enfermería
+        public async Task<List<MedicalCareDTO>?> GetNursingCareAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalCare/nursing");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones de enfermería: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de enfermería");
+                return new List<MedicalCareDTO>();
+            }
+        }
+
+        // Método para obtener por área y fecha
+        public async Task<List<MedicalCareDTO>?> GetByAreaAndDateAsync(string area, DateTime? date = null)
+        {
+            try
+            {
+                var url = $"api/MedicalCare/by-area-and-date?area={Uri.EscapeDataString(area)}";
+                if (date.HasValue)
+                {
+                    url += $"&date={date.Value:yyyy-MM-dd}";
+                }
+
+                var response = await _httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones por área y fecha: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones por área y fecha");
                 return new List<MedicalCareDTO>();
             }
         }
@@ -43,7 +88,6 @@ namespace SMED.FrontEnd.Services
                 {
                     return await response.Content.ReadFromJsonAsync<MedicalCareDTO>();
                 }
-
                 return null;
             }
             catch (Exception ex)
@@ -63,7 +107,6 @@ namespace SMED.FrontEnd.Services
                     var created = await response.Content.ReadFromJsonAsync<MedicalCareDTO>();
                     return (true, created, string.Empty);
                 }
-
                 var error = await response.Content.ReadAsStringAsync();
                 return (false, null, error);
             }
@@ -83,7 +126,6 @@ namespace SMED.FrontEnd.Services
                 {
                     return (true, string.Empty);
                 }
-
                 var error = await response.Content.ReadAsStringAsync();
                 return (false, error);
             }
@@ -103,7 +145,6 @@ namespace SMED.FrontEnd.Services
                 {
                     return (true, string.Empty);
                 }
-
                 var error = await response.Content.ReadAsStringAsync();
                 return (false, error);
             }
@@ -113,6 +154,7 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
         public async Task<List<MedicalCareDTO>?> GetByPatientDocumentAsync(string documentNumber)
         {
             try

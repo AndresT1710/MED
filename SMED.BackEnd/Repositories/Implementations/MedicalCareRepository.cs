@@ -9,7 +9,6 @@ namespace SMED.BackEnd.Repositories.Implementations
     public class MedicalCareRepository : IRepository<MedicalCareDTO, int>
     {
         private readonly SGISContext _context;
-
         public MedicalCareRepository(SGISContext context) => _context = context;
 
         public async Task<List<MedicalCareDTO>> GetAllAsync()
@@ -20,7 +19,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .OrderByDescending(m => m.CareDate) // Ordenar por fecha más reciente
+                .OrderByDescending(m => m.CareDate)
                 .ToListAsync();
 
             return medicalCares.Select(m => new MedicalCareDTO
@@ -30,20 +29,108 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NameLocation = m.PlaceOfAttentionNavigation?.Name,
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    m.Patient.PersonNavigation.FirstName,
-                    m.Patient.PersonNavigation.MiddleName,
-                    m.Patient.PersonNavigation.LastName,
-                    m.Patient.PersonNavigation.SecondLastName
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 PatientId = m.PatientId,
                 HealthProfessionalId = m.HealthProfessionalId,
                 NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    m.HealthProfessional.PersonNavigation.FirstName,
-                    m.HealthProfessional.PersonNavigation.MiddleName,
-                    m.HealthProfessional.PersonNavigation.LastName,
-                    m.HealthProfessional.PersonNavigation.SecondLastName
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                Area = m.Area,
+                CareDate = m.CareDate
+            }).ToList();
+        }
+
+        public async Task<List<MedicalCareDTO>> GetNursingCareAsync()
+        {
+            var medicalCares = await _context.MedicalCares
+                .Include(m => m.PlaceOfAttentionNavigation)
+                .Include(m => m.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .Include(m => m.HealthProfessional)
+                    .ThenInclude(h => h.PersonNavigation)
+                .Where(m => m.Area.ToLower() == "enfermería" || m.Area.ToLower() == "enfermeria")
+                .OrderByDescending(m => m.CareDate)
+                .ToListAsync();
+
+            return medicalCares.Select(m => new MedicalCareDTO
+            {
+                CareId = m.CareId,
+                LocationId = m.LocationId,
+                NameLocation = m.PlaceOfAttentionNavigation?.Name,
+                NamePatient = m.Patient?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                PatientId = m.PatientId,
+                HealthProfessionalId = m.HealthProfessionalId,
+                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                Area = m.Area,
+                CareDate = m.CareDate
+            }).ToList();
+        }
+
+        // Método para filtrar por área y fecha
+        public async Task<List<MedicalCareDTO>> GetByAreaAndDateAsync(string area, DateTime? date = null)
+        {
+            var query = _context.MedicalCares
+                .Include(m => m.PlaceOfAttentionNavigation)
+                .Include(m => m.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .Include(m => m.HealthProfessional)
+                    .ThenInclude(h => h.PersonNavigation)
+                .Where(m => m.Area.ToLower() == area.ToLower());
+
+            if (date.HasValue)
+            {
+                query = query.Where(m => m.CareDate.Date == date.Value.Date);
+            }
+
+            var medicalCares = await query
+                .OrderByDescending(m => m.CareDate)
+                .ToListAsync();
+
+            return medicalCares.Select(m => new MedicalCareDTO
+            {
+                CareId = m.CareId,
+                LocationId = m.LocationId,
+                NameLocation = m.PlaceOfAttentionNavigation?.Name,
+                NamePatient = m.Patient?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                PatientId = m.PatientId,
+                HealthProfessionalId = m.HealthProfessionalId,
+                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,
@@ -69,19 +156,19 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PatientId = entity.PatientId,
                 NamePatient = entity.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    entity.Patient.PersonNavigation.FirstName,
-                    entity.Patient.PersonNavigation.MiddleName,
-                    entity.Patient.PersonNavigation.LastName,
-                    entity.Patient.PersonNavigation.SecondLastName
+                entity.Patient.PersonNavigation.FirstName,
+                entity.Patient.PersonNavigation.MiddleName,
+                entity.Patient.PersonNavigation.LastName,
+                entity.Patient.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 HealthProfessionalId = entity.HealthProfessionalId,
                 NameHealthProfessional = entity.HealthProfessional?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    entity.HealthProfessional.PersonNavigation.FirstName,
-                    entity.HealthProfessional.PersonNavigation.MiddleName,
-                    entity.HealthProfessional.PersonNavigation.LastName,
-                    entity.HealthProfessional.PersonNavigation.SecondLastName
+                entity.HealthProfessional.PersonNavigation.FirstName,
+                entity.HealthProfessional.PersonNavigation.MiddleName,
+                entity.HealthProfessional.PersonNavigation.LastName,
+                entity.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = entity.Area,
@@ -102,7 +189,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             _context.MedicalCares.Add(entity);
             await _context.SaveChangesAsync();
-
             dto.CareId = entity.CareId;
             return dto;
         }
@@ -132,7 +218,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // Método adicional para búsqueda por cédula
         public async Task<List<MedicalCareDTO>> GetByPatientDocumentAsync(string documentNumber)
         {
             var medicalCares = await _context.MedicalCares
@@ -153,20 +238,20 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NameLocation = m.PlaceOfAttentionNavigation?.Name,
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    m.Patient.PersonNavigation.FirstName,
-                    m.Patient.PersonNavigation.MiddleName,
-                    m.Patient.PersonNavigation.LastName,
-                    m.Patient.PersonNavigation.SecondLastName
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 PatientId = m.PatientId,
                 HealthProfessionalId = m.HealthProfessionalId,
                 NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                    m.HealthProfessional.PersonNavigation.FirstName,
-                    m.HealthProfessional.PersonNavigation.MiddleName,
-                    m.HealthProfessional.PersonNavigation.LastName,
-                    m.HealthProfessional.PersonNavigation.SecondLastName
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,

@@ -10,8 +10,8 @@
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
-    <h3 class="mb-4">Gestión de Atenciones Médicas</h3>
-
+    <h3 class="mb-4">Gestión de Atenciones Médicas - Enfermería</h3>
+    
     <!-- Filtros de búsqueda mejorados -->
     <div class="card mb-4">
         <div class="card-header">
@@ -28,7 +28,9 @@
                         <span class="input-group-text">
                             <i class="fas fa-calendar"></i>
                         </span>
-                        <input type="date" class="form-control" @bind="selectedDate" />
+                        <input type="date" 
+                               class="form-control" 
+                               @bind="selectedDate"/>
                         <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
                             <i class="fas fa-times"></i> Limpiar
                         </button>
@@ -36,7 +38,7 @@
                     <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
                 </div>
             </div>
-
+            
             <!-- Búsqueda por paciente usando PersonSearchComponent -->
             <div class="row">
                 <div class="col-12">
@@ -46,7 +48,7 @@
                                            OnPersonCleared="HandlePersonCleared" />
                 </div>
             </div>
-
+            
             <!-- Botones de acción -->
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div>
@@ -81,18 +83,38 @@
         </div>
     }
 
+    <!-- Información de filtros activos -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-success">
+                    <i class="fas fa-hospital me-1"></i>Área: Enfermería
+                </span>
+                @if (selectedDate.HasValue)
+                {
+                    <span class="badge bg-primary">
+                        <i class="fas fa-calendar me-1"></i>Fecha: @selectedDate.Value.ToString("dd/MM/yyyy")
+                    </span>
+                }
+                @if (selectedPerson != null)
+                {
+                    <span class="badge bg-info">
+                        <i class="fas fa-user me-1"></i>Paciente: @selectedPerson.FirstName @selectedPerson.LastName
+                    </span>
+                }
+                <span class="badge bg-secondary">
+                    <i class="fas fa-list me-1"></i>Total: @filteredMedicalCareList.Count registros
+                </span>
+            </div>
+        </div>
+    </div>
+
     <!-- Tabla de atenciones médicas -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas - Enfermeria
+                <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas - Enfermería
             </h5>
-            @if (selectedDate.HasValue)
-            {
-                <span class="badge bg-primary">
-                    <i class="fas fa-calendar me-1"></i>@selectedDate.Value.ToString("dd/MM/yyyy")
-                </span>
-            }
         </div>
         <div class="card-body">
             <ManagementTableR TableTitle=""
@@ -144,8 +166,8 @@
                     </div>
                     <div class="modal-body">
                         <NursingForm MedicalCare="selectedMedicalCare"
-                                         OnSaved="OnMedicalCareSaved"
-                                         OnCancel="HideForm" />
+                                     OnSaved="OnMedicalCareSaved"
+                                     OnCancel="HideForm" />
                     </div>
                 </div>
             </div>
@@ -165,14 +187,22 @@
     private List<List<string>> MedicalCareData = new();
 
     // Filtros
-    private DateTime? selectedDate;
+    private DateTime? _selectedDate;
     private string quickSearchTerm = string.Empty;
     private string searchMessage = string.Empty;
     private bool showNoMedicalCareAlert = false;
     private bool hasActiveFilters = false;
     private int totalMedicalCareCount = 0;
 
-
+    private DateTime? selectedDate
+    {
+        get => _selectedDate;
+        set
+        {
+            _selectedDate = value;
+            HandleDateFilter();
+        }
+    }
 
     // Columnas de la tabla (sin ID)
     private List<string> MedicalCareColumns = new()
@@ -183,22 +213,23 @@
     protected override async Task OnInitializedAsync()
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
-        await LoadAllMedicalCareData();
+        await LoadNursingMedicalCareData();
     }
 
-    private async Task LoadAllMedicalCareData()
+    // Método modificado para cargar solo datos de enfermería
+    private async Task LoadNursingMedicalCareData()
     {
         try
         {
-            var result = await MedicalCareService.GetAllAsync();
+            var result = await MedicalCareService.GetNursingCareAsync();
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
             totalMedicalCareCount = allMedicalCareList.Count;
-        
+            
             ApplyFilters();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("console.error", $"Error loading medical care data: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"Error loading nursing medical care data: {ex.Message}");
             allMedicalCareList = new List<MedicalCareDTO>();
             filteredMedicalCareList = new List<MedicalCareDTO>();
         }
@@ -223,7 +254,9 @@
         if (selectedPerson != null)
         {
             filteredMedicalCareList = filteredMedicalCareList
-                .Where(mc => mc.PatientId == selectedPerson.Id)
+                .Where(mc => mc.NamePatient != null &&
+                             mc.NamePatient.Contains(selectedPerson.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                             mc.NamePatient.Contains(selectedPerson.LastName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             hasActiveFilters = true;
         }
@@ -259,7 +292,7 @@
         if (!string.IsNullOrWhiteSpace(quickSearchTerm))
             filters.Add($"ID {quickSearchTerm}");
 
-        searchMessage = $"No se encontraron atenciones médicas para: {string.Join(", ", filters)}";
+        searchMessage = $"No se encontraron atenciones médicas de enfermería para: {string.Join(", ", filters)}";
         showNoMedicalCareAlert = true;
     }
 
@@ -278,7 +311,6 @@
         {
             InvokeAsync(async () => await table.LoadRecords(MedicalCareData));
         }
-
         StateHasChanged();
     }
 
@@ -288,37 +320,10 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleQuickSearch()
-    {
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
     private async Task HandlePersonSelected(PersonDTO person)
     {
         selectedPerson = person;
-    
-        // Filtrar por el ID de la persona, no por PatientId directamente
-        // Necesitamos buscar las atenciones donde el paciente tenga esta persona
-        filteredMedicalCareList = allMedicalCareList
-            .Where(mc => mc.NamePatient != null && 
-                         mc.NamePatient.Contains(person.FirstName, StringComparison.OrdinalIgnoreCase) &&
-                         mc.NamePatient.Contains(person.LastName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    
-        hasActiveFilters = true;
-    
-        if (!filteredMedicalCareList.Any())
-        {
-            searchMessage = $"No se encontraron atenciones médicas para {person.FirstName} {person.LastName}";
-            showNoMedicalCareAlert = true;
-        }
-        else
-        {
-            showNoMedicalCareAlert = false;
-        }
-    
-        UpdateTableData();
+        ApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -349,7 +354,8 @@
     {
         selectedMedicalCare = new MedicalCareDTO
         {
-            CareId = 0
+            CareId = 0,
+            Area = "Enfermería" // Establecer área por defecto
         };
         showForm = true;
         showNoMedicalCareAlert = false;
@@ -361,13 +367,11 @@
         return Task.CompletedTask;
     }
 
-
-
     RenderFragment<List<string>> RenderMedicalCareActions => row => builder =>
     {
         int seq = 0;
         var id = row[4];
-
+        
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
         builder.AddAttribute(seq++, "title", "Ver");
@@ -408,7 +412,6 @@
         {
             try
             {
-                // Usar el método directo del servicio
                 var medicalCare = await MedicalCareService.GetByIdAsync(idInt);
                 if (medicalCare != null)
                 {
@@ -453,7 +456,7 @@
                 var result = await MedicalCareService.DeleteAsync(idInt);
                 if (result.Success)
                 {
-                    await LoadAllMedicalCareData();
+                    await LoadNursingMedicalCareData();
                     await JS.InvokeVoidAsync("alert", "Atención médica eliminada exitosamente");
                 }
                 else
@@ -478,12 +481,12 @@
     private async Task OnMedicalCareSaved(MedicalCareDTO savedMedicalCare)
     {
         showForm = false;
-        await LoadAllMedicalCareData();
-    
+        await LoadNursingMedicalCareData();
+        
         var message = savedMedicalCare.CareId == 0
             ? "Atención médica creada exitosamente"
             : "Atención médica actualizada exitosamente";
-    
+            
         await JS.InvokeVoidAsync("alert", message);
     }
 

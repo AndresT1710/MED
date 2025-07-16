@@ -20,8 +20,8 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -35,9 +35,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "systems" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("systems"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("systems"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                 @if (systemsList.Any())
                 {
@@ -48,27 +48,27 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "physical-exam" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("physical-exam"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("physical-exam"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-stethoscope me-2"></i>Examen Físico
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "additional-data" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("additional-data"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("additional-data"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("procedures"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("procedures"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
@@ -79,36 +79,36 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "diagnosis" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("diagnosis"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("diagnosis"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-diagnoses me-2"></i>Diagnóstico
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("treatment"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("treatment"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "referral" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("referral"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("referral"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-share me-2"></i>Derivación
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("evolution"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("evolution"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-chart-line me-2"></i>Evolución
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -124,6 +124,10 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user me-2"></i>Selección de Paciente
                         <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <!-- Badge para mostrar el área fija -->
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-hospital me-1"></i>Área: Medicina General
+                        </span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -132,7 +136,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                                             OnPatientSelected="HandlePatientSelected" />
+                            OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -156,11 +160,23 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
+                        <!-- Información del área fija -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Medicina General
+                                    <br>
+                                    <small class="text-muted">Esta atención médica se registrará automáticamente en el área de Medicina General.</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                        @bind="lugarSeleccionada">
+                                @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -174,35 +190,16 @@
                                     </div>
                                 }
                             </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Área *</label>
-                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(areaSeleccionada) ? "is-invalid" : "")"
-                                        @bind="areaSeleccionada">
-                                    <option value="">Seleccione un área</option>
-                                    <option value="Enfermería">Enfermería</option>
-                                    <option value="Psicología">Psicología</option>
-                                    <option value="Ginecología">Ginecología</option>
-                                    <option value="Medicina General">Medicina General</option>
-                                    <option value="Pediatría">Pediatría</option>
-                                </select>
-                                @if (showValidationErrors && string.IsNullOrEmpty(areaSeleccionada))
-                                {
-                                    <div class="invalid-feedback">
-                                        Debe seleccionar un área
-                                    </div>
-                                }
-                            </div>
                         </div>
 
                         <!-- Motivo de Consulta -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                                      @bind="motivoConsulta"
-                                      rows="3"
-                                      placeholder="Describa el motivo principal de la consulta médica..."
-                                      maxlength="500"></textarea>
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta médica..."
+                            maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -214,7 +211,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Profesional responsable *</label>
                             <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
-                                    @bind="profesionalSeleccionado">
+                            @bind="profesionalSeleccionado">
                                 <option value="">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
@@ -289,22 +286,22 @@
                     @if (currentMedicalCareId > 0)
                     {
                         <EditableTable Title="Revisión de Aparatos y Sistemas"
-                                       ColumnHeaders="@systemsHeaders"
-                                       Rows="@systemsRows"
-                                       RowIds="@systemsIds"
-                                       EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
-                                       OnAddRequested="@OnAddSystemRequested"
-                                       OnEditRequested="@OnEditSystemRequested"
-                                       OnDeleteRequested="@OnDeleteSystemRequested"
-                                       OnSaveRequested="@OnSaveSystemRequested"
-                                       IsValidForm="@IsSystemFormValid">
+                        ColumnHeaders="@systemsHeaders"
+                        Rows="@systemsRows"
+                        RowIds="@systemsIds"
+                        EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
+                        OnAddRequested="@OnAddSystemRequested"
+                        OnEditRequested="@OnEditSystemRequested"
+                        OnDeleteRequested="@OnDeleteSystemRequested"
+                        OnSaveRequested="@OnSaveSystemRequested"
+                        IsValidForm="@IsSystemFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Tipo de Aparato/Sistema <span class="text-danger">*</span></label>
                                         <select class="form-select @(systemErrors.ContainsKey("SystemsDevicesId") ? "is-invalid" : "")"
-                                                @bind="currentSystem.SystemsDevicesId">
+                                        @bind="currentSystem.SystemsDevicesId">
                                             <option value="0">Seleccione un aparato o sistema</option>
                                             @foreach (var system in availableSystems)
                                             {
@@ -319,11 +316,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Estado <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(systemErrors.ContainsKey("State") ? "is-invalid" : "")"
-                                                  @bind="currentSystem.State"
-                                                  rows="3"
-                                                  maxlength="500"
-                                                  placeholder="Describa el estado actual del aparato o sistema..."
-                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @bind="currentSystem.State"
+                                        rows="3"
+                                        maxlength="500"
+                                        placeholder="Describa el estado actual del aparato o sistema..."
+                                        style="resize: vertical; max-height: 150px;"></textarea>
                                         @if (systemErrors.ContainsKey("State"))
                                         {
                                             <div class="invalid-feedback">@systemErrors["State"]</div>
@@ -333,11 +330,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Observaciones</label>
                                         <textarea class="form-control"
-                                                  @bind="currentSystem.Observations"
-                                                  rows="4"
-                                                  maxlength="1000"
-                                                  placeholder="Observaciones adicionales (opcional)..."
-                                                  style="resize: vertical; max-height: 200px;"></textarea>
+                                        @bind="currentSystem.Observations"
+                                        rows="4"
+                                        maxlength="1000"
+                                        placeholder="Observaciones adicionales (opcional)..."
+                                        style="resize: vertical; max-height: 200px;"></textarea>
                                         <small class="form-text text-muted">Máximo 1000 caracteres</small>
                                     </div>
                                 </div>
@@ -743,7 +740,7 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private string areaSeleccionada = "";
+    private string areaSeleccionada = "Medicina General";
     private string profesionalSeleccionado = "";
     private string motivoConsulta = "";
     private bool isEditMode = false;
@@ -784,6 +781,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadTypeOfServices();
+        areaSeleccionada = "Medicina General";
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
         await LoadProcedures();
@@ -803,7 +801,6 @@
     {
         return selectedPatientId > 0 &&
                !string.IsNullOrEmpty(lugarSeleccionada) &&
-               !string.IsNullOrEmpty(areaSeleccionada) &&
                !string.IsNullOrEmpty(profesionalSeleccionado) &&
                !string.IsNullOrWhiteSpace(motivoConsulta);
     }
@@ -838,7 +835,7 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        areaSeleccionada = MedicalCare.Area;
+        areaSeleccionada = "Medicina General";
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
         lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";

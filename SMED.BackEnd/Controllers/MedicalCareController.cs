@@ -21,6 +21,34 @@ namespace SMED.BackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetAll() => Ok(await _repository.GetAllAsync());
 
+        [HttpGet("nursing")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetNursingCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetNursingCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al obtener atenciones de enfermería: {ex.Message}");
+            }
+        }
+
+        [HttpGet("by-area-and-date")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetByAreaAndDate([FromQuery] string area, [FromQuery] DateTime? date = null)
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetByAreaAndDateAsync(area, date);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al obtener atenciones por área y fecha: {ex.Message}");
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<MedicalCareDTO>> GetById(int id) =>
             await _repository.GetByIdAsync(id) is { } dto ? Ok(dto) : NotFound();
@@ -50,7 +78,6 @@ namespace SMED.BackEnd.Controllers
         public async Task<IActionResult> Update(int id, MedicalCareDTO dto)
         {
             if (id != dto.CareId) return BadRequest();
-
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
         }
@@ -62,5 +89,6 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
+
 
 }

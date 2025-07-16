@@ -81,6 +81,10 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user me-2"></i>Selección de Paciente
                         <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <!-- Badge para mostrar el área fija -->
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-hospital me-1"></i>Área: Enfermería
+                        </span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -113,8 +117,20 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
+                        <!-- Información del área fija -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Enfermería
+                                    <br>
+                                    <small class="text-muted">Esta atención médica se registrará automáticamente en el área de Enfermería.</small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
                                         @bind="lugarSeleccionada">
@@ -128,24 +144,6 @@
                                 {
                                     <div class="invalid-feedback">
                                         Debe seleccionar un lugar de atención
-                                    </div>
-                                }
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Área *</label>
-                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(areaSeleccionada) ? "is-invalid" : "")"
-                                        @bind="areaSeleccionada">
-                                    <option value="">Seleccione un área</option>
-                                    <option value="Enfermería">Enfermería</option>
-                                    <option value="Psicología">Psicología</option>
-                                    <option value="Ginecología">Ginecología</option>
-                                    <option value="Medicina General">Medicina General</option>
-                                    <option value="Pediatría">Pediatría</option>
-                                </select>
-                                @if (showValidationErrors && string.IsNullOrEmpty(areaSeleccionada))
-                                {
-                                    <div class="invalid-feedback">
-                                        Debe seleccionar un área
                                     </div>
                                 }
                             </div>
@@ -674,7 +672,7 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private string areaSeleccionada = "";
+    private string areaSeleccionada = "Enfermería";
     private string profesionalSeleccionado = "";
     private string motivoConsulta = "";
     private bool isEditMode = false;
@@ -739,6 +737,9 @@
         // Inicializar diccionario de errores
         InitializeVitalSignsErrors();
 
+        // Establecer área por defecto
+        areaSeleccionada = "Enfermería";
+
         await LoadTypeOfServices();
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
@@ -754,13 +755,11 @@
     }
 
     // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
-
     private void InitializeVitalSignsErrors()
     {
         var fields = new[] { "peso", "talla", "perimetroAbdominal", "temperatura", "pam",
                            "frecuenciaCardiaca", "saturacionOxigeno", "frecuenciaRespiratoria",
                            "glucosaCapilar", "hemoglobina", "presionArterial" };
-
         foreach (var field in fields)
         {
             vitalSignsErrors[field] = "";
@@ -771,7 +770,6 @@
     private void OnNumericInput(ChangeEventArgs e, string field)
     {
         var input = e.Value?.ToString() ?? "";
-
         // Filtrar solo números y punto decimal
         var numericInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d.]", "");
 
@@ -843,7 +841,6 @@
     private void OnBloodPressureInput(ChangeEventArgs e)
     {
         var input = e.Value?.ToString() ?? "";
-
         // Permitir solo números y una barra
         var filteredInput = System.Text.RegularExpressions.Regex.Replace(input, @"[^\d/]", "");
 
@@ -856,7 +853,6 @@
 
         presionArterialInput = filteredInput;
         presionArterial = filteredInput;
-
         ValidateBloodPressure(filteredInput);
         StateHasChanged();
     }
@@ -1002,7 +998,6 @@
     private string GetVitalSignInputClass(string field)
     {
         var baseClass = "form-control";
-
         if (vitalSignsErrors.ContainsKey(field) && !string.IsNullOrEmpty(vitalSignsErrors[field]))
         {
             baseClass += " is-invalid";
@@ -1011,7 +1006,6 @@
         {
             baseClass += " is-valid";
         }
-
         return baseClass;
     }
 
@@ -1043,15 +1037,14 @@
         return !string.IsNullOrEmpty(value) && string.IsNullOrEmpty(GetVitalSignError(field));
     }
 
-    // MÉTODOS EXISTENTES (sin cambios)
-
+    // MÉTODOS EXISTENTES (actualizados para no validar área)
     private bool IsPatientTabComplete()
     {
         return selectedPatientId > 0 &&
                !string.IsNullOrEmpty(lugarSeleccionada) &&
-               !string.IsNullOrEmpty(areaSeleccionada) &&
                !string.IsNullOrEmpty(profesionalSeleccionado) &&
                !string.IsNullOrWhiteSpace(motivoConsulta);
+        // Removido: !string.IsNullOrEmpty(areaSeleccionada) porque ahora es fijo
     }
 
     private void ValidateAndShowErrors()
@@ -1068,7 +1061,6 @@
             await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
             return;
         }
-
         activeTab = tab;
         StateHasChanged();
     }
@@ -1078,7 +1070,8 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        areaSeleccionada = MedicalCare.Area;
+        // Mantener área como "Enfermería" siempre
+        areaSeleccionada = "Enfermería";
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
         lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
@@ -1097,37 +1090,26 @@
             // Cargar valores en las variables de input
             pesoInput = existingVitalSigns.Weight?.ToString() ?? "";
             peso = pesoInput;
-
             tallaInput = existingVitalSigns.Height?.ToString() ?? "";
             talla = tallaInput;
-
             imcCalculado = existingVitalSigns.Icm?.ToString() ?? "";
             imc = imcCalculado;
-
             perimetroAbdominalInput = existingVitalSigns.AbdominalCircumference?.ToString() ?? "";
             perimetroAbdominal = perimetroAbdominalInput;
-
             presionArterialInput = existingVitalSigns.BloodPressure ?? "";
             presionArterial = presionArterialInput;
-
             temperaturaInput = existingVitalSigns.Temperature?.ToString() ?? "";
             temperatura = temperaturaInput;
-
             pamInput = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
             pam = pamInput;
-
             frecuenciaCardiacaInput = existingVitalSigns.HeartRate?.ToString() ?? "";
             frecuenciaCardiaca = frecuenciaCardiacaInput;
-
             saturacionOxigenoInput = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
             saturacionOxigeno = saturacionOxigenoInput;
-
             frecuenciaRespiratoriaInput = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
             frecuenciaRespiratoria = frecuenciaRespiratoriaInput;
-
             glucosaCapilarInput = existingVitalSigns.BloodGlucose?.ToString() ?? "";
             glucosaCapilar = glucosaCapilarInput;
-
             hemoglobinaInput = existingVitalSigns.Hemoglobin?.ToString() ?? "";
             hemoglobina = hemoglobinaInput;
         }
@@ -1171,12 +1153,10 @@
         clinicalHistoryId = paciente.ClinicalHistoryId;
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
-
         if (selectedPatientId > 0)
         {
             showValidationErrors = false;
         }
-
         StateHasChanged();
         return Task.CompletedTask;
     }
@@ -1197,7 +1177,6 @@
                 ServiceDate = DateTime.Now,
                 HealthProfessionalId = int.Parse(profesionalSeleccionado)
             };
-
         showServiceModal = true;
         StateHasChanged();
     }
@@ -1205,7 +1184,6 @@
     private async Task EditarServicio(MedicalServiceDTO servicio)
     {
         await JS.InvokeVoidAsync("console.log", $"Editando servicio: {servicio.ServiceId}");
-
         currentService = new MedicalServiceDTO
             {
                 ServiceId = servicio.ServiceId,
@@ -1218,7 +1196,6 @@
                 Observations = servicio.Observations,
                 Recommendations = servicio.Recommendations
             };
-
         showServiceModal = true;
         StateHasChanged();
     }
@@ -1246,7 +1223,6 @@
         {
             serviciosList.Add(servicio);
         }
-
         CerrarModalServicio();
         StateHasChanged();
     }
@@ -1274,7 +1250,6 @@
                 ProcedureDate = DateTime.Now,
                 HealthProfessionalId = int.Parse(profesionalSeleccionado)
             };
-
         showProcedureModal = true;
         StateHasChanged();
     }
@@ -1283,7 +1258,6 @@
     {
         await JS.InvokeVoidAsync("console.log", $"=== EDITANDO PROCEDIMIENTO ===");
         await JS.InvokeVoidAsync("console.log", $"ID: {procedimiento.ProcedureId}");
-
         currentProcedure = new MedicalProcedureDTO
             {
                 ProcedureId = procedimiento.ProcedureId,
@@ -1298,7 +1272,6 @@
                 TypeOfProcedureName = procedimiento.TypeOfProcedureName,
                 SpecificProcedureName = procedimiento.SpecificProcedureName
             };
-
         showProcedureModal = true;
         StateHasChanged();
     }
@@ -1326,7 +1299,6 @@
         {
             procedimientosList.Add(procedimiento);
         }
-
         CerrarModalProcedimiento();
         StateHasChanged();
     }
@@ -1366,7 +1338,6 @@
                     await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
                     return;
                 }
-
                 medicalCareResult = MedicalCare;
             }
             else
@@ -1386,7 +1357,6 @@
                     await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
                     return;
                 }
-
                 medicalCareResult = result.Data;
             }
 
@@ -1467,9 +1437,8 @@
 
             await OnSaved.InvokeAsync(medicalCareResult);
             string successMessage = isCreatingNew
-                ? "Atención médica creada exitosamente"
-                : "Atención médica actualizada exitosamente";
-
+                ? "Atención médica de enfermería creada exitosamente"
+                : "Atención médica de enfermería actualizada exitosamente";
             await JS.InvokeVoidAsync("alert", successMessage);
         }
         catch (Exception ex)

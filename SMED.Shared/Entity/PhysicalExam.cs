@@ -21,7 +21,7 @@ namespace SMED.Shared.Entity
 
         public int PathologicalEvidenceId { get; set; }
 
-        public int PhysicalExamTypeId { get; set; }
+        public int? PhysicalExamTypeId { get; set; }
 
         public int MedicalCareId { get; set; }
 

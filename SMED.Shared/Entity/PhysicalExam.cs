@@ -35,7 +35,7 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("PhysicalExamTypeId")]
         [InverseProperty("PhysicalExams")]
-        public virtual PhysicalExamType PhysicalExamTypeNavigation { get; set; } = null!;
+        public virtual PhysicalExamType? PhysicalExamTypeNavigation { get; set; } = null!;
 
         [ForeignKey("MedicalCareId")]
         [InverseProperty("PhysicalExam")]

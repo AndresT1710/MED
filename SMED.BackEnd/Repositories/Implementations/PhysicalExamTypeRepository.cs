@@ -1,10 +1,10 @@
-﻿using SGIS.Models;
-using SMED.BackEnd.Repositories.Interface;
+﻿using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
+using SGIS.Models;
+using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.Entity;
-using Microsoft.EntityFrameworkCore;
 
-namespace SMED.BackEnd.Repositories.Implementations
+namespace SMED.BackEnd.Repositories
 {
     public class PhysicalExamTypeRepository : IRepository<PhysicalExamTypeDTO, int>
     {
@@ -17,7 +17,10 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<PhysicalExamTypeDTO>> GetAllAsync()
         {
-            var types = await _context.PhysicalExamTypes.ToListAsync();
+            var types = await _context.PhysicalExamTypes
+                .OrderBy(t => t.Name)
+                .ToListAsync();
+
             return types.Select(MapToDto).ToList();
         }
 
@@ -31,11 +34,12 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new PhysicalExamType
             {
-                Name = dto.Name
+                Name = dto.Name ?? string.Empty
             };
 
             _context.PhysicalExamTypes.Add(entity);
             await _context.SaveChangesAsync();
+
             dto.Id = entity.Id;
             return dto;
         }
@@ -45,7 +49,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PhysicalExamTypes.FindAsync(dto.Id);
             if (entity == null) return null;
 
-            entity.Name = dto.Name;
+            entity.Name = dto.Name ?? string.Empty;
             await _context.SaveChangesAsync();
 
             return dto;
@@ -58,7 +62,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             _context.PhysicalExamTypes.Remove(entity);
             await _context.SaveChangesAsync();
-
             return true;
         }
 
@@ -68,5 +71,4 @@ namespace SMED.BackEnd.Repositories.Implementations
             Name = type.Name
         };
     }
-
 }

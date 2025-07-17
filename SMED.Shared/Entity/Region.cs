@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public class PhysicalExamType
+    public class Region
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -17,7 +17,7 @@ namespace SMED.Shared.Entity
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        [InverseProperty("PhysicalExamTypeNavigation")]
+        [InverseProperty("RegionNavigation")]
         public virtual ICollection<PhysicalExam> PhysicalExams { get; set; } = new List<PhysicalExam>();
     }
 }

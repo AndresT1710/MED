@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.DTOs
 {
-    public class PhysicalExamDetailDTO
+    public class RegionDTO
     {
         public int Id { get; set; }
-        public string? Description { get; set; }
-        public int PhysicalExamTypeId { get; set; }
+        public string? Name { get; set; }
     }
 }

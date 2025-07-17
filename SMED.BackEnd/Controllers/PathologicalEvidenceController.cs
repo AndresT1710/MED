@@ -1,40 +1,40 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
+using SMED.BackEnd.Repositories.Interface;
 
 namespace SMED.BackEnd.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PhysicalExamDetailController : ControllerBase
+    public class PathologicalEvidenceController : ControllerBase
     {
-        private readonly IRepository<PhysicalExamDetailDTO, int> _repository;
+        private readonly IRepository<PathologicalEvidenceDTO, int> _repository;
 
-        public PhysicalExamDetailController(IRepository<PhysicalExamDetailDTO, int> repository)
+        public PathologicalEvidenceController(IRepository<PathologicalEvidenceDTO, int> repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PhysicalExamDetailDTO>>> GetAll() =>
+        public async Task<ActionResult<List<PathologicalEvidenceDTO>>> GetAll() =>
             Ok(await _repository.GetAllAsync());
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<PhysicalExamDetailDTO>> GetById(int id)
+        public async Task<ActionResult<PathologicalEvidenceDTO>> GetById(int id)
         {
             var dto = await _repository.GetByIdAsync(id);
             return dto != null ? Ok(dto) : NotFound();
         }
 
         [HttpPost]
-        public async Task<ActionResult<PhysicalExamDetailDTO>> Create(PhysicalExamDetailDTO dto)
+        public async Task<ActionResult<PathologicalEvidenceDTO>> Create(PathologicalEvidenceDTO dto)
         {
             var created = await _repository.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, PhysicalExamDetailDTO dto)
+        public async Task<IActionResult> Update(int id, PathologicalEvidenceDTO dto)
         {
             if (id != dto.Id) return BadRequest();
             var updated = await _repository.UpdateAsync(dto);
@@ -48,5 +48,4 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
-
 }

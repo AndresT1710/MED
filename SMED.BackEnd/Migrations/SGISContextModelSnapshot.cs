@@ -1642,7 +1642,7 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("PathologicalEvidenceId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PhysicalExamTypeId")
+                    b.Property<int>("PhysicalExamTypeId")
                         .HasColumnType("int");
 
                     b.Property<int>("RegionId")
@@ -3195,7 +3195,9 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasOne("SMED.Shared.Entity.PhysicalExamType", "PhysicalExamTypeNavigation")
                         .WithMany("PhysicalExams")
-                        .HasForeignKey("PhysicalExamTypeId");
+                        .HasForeignKey("PhysicalExamTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("SMED.Shared.Entity.Region", "RegionNavigation")
                         .WithMany("PhysicalExams")

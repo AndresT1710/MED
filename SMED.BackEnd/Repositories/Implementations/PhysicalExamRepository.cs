@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SMED.Shared.DTOs;
-using SGIS.Models;
+﻿using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
+using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
+using Microsoft.EntityFrameworkCore;
 
-namespace SMED.BackEnd.Repositories
+namespace SMED.BackEnd.Repositories.Implementations
 {
     public class PhysicalExamRepository : IRepository<PhysicalExamDTO, int>
     {
@@ -17,23 +17,13 @@ namespace SMED.BackEnd.Repositories
 
         public async Task<List<PhysicalExamDTO>> GetAllAsync()
         {
-            var exams = await _context.PhysicalExams
-                .Include(p => p.RegionNavigation)
-                .Include(p => p.PathologicalEvidenceNavigation)
-                .Include(p => p.PhysicalExamTypeNavigation)
-                .ToListAsync();
-
+            var exams = await _context.PhysicalExams.ToListAsync();
             return exams.Select(MapToDto).ToList();
         }
 
         public async Task<PhysicalExamDTO?> GetByIdAsync(int id)
         {
-            var exam = await _context.PhysicalExams
-                .Include(p => p.RegionNavigation)
-                .Include(p => p.PathologicalEvidenceNavigation)
-                .Include(p => p.PhysicalExamTypeNavigation)
-                .FirstOrDefaultAsync(p => p.PhysicalExamId == id);
-
+            var exam = await _context.PhysicalExams.FindAsync(id);
             return exam == null ? null : MapToDto(exam);
         }
 
@@ -41,16 +31,13 @@ namespace SMED.BackEnd.Repositories
         {
             var entity = new PhysicalExam
             {
-                Description = dto.Description,
-                RegionId = dto.RegionId,
-                PathologicalEvidenceId = dto.PathologicalEvidenceId,
-                PhysicalExamTypeId = dto.PhysicalExamTypeId,
+                Extremities = dto.Extremities,
+                PhysicalExamDetailId = dto.PhysicalExamDetailId,
                 MedicalCareId = dto.MedicalCareId
             };
 
             _context.PhysicalExams.Add(entity);
             await _context.SaveChangesAsync();
-
             dto.PhysicalExamId = entity.PhysicalExamId;
             return dto;
         }
@@ -60,13 +47,11 @@ namespace SMED.BackEnd.Repositories
             var entity = await _context.PhysicalExams.FindAsync(dto.PhysicalExamId);
             if (entity == null) return null;
 
-            entity.Description = dto.Description;
-            entity.RegionId = dto.RegionId;
-            entity.PathologicalEvidenceId = dto.PathologicalEvidenceId;
-            entity.PhysicalExamTypeId = dto.PhysicalExamTypeId;
+            entity.Extremities = dto.Extremities;
+            entity.PhysicalExamDetailId = dto.PhysicalExamDetailId;
             entity.MedicalCareId = dto.MedicalCareId;
-
             await _context.SaveChangesAsync();
+
             return dto;
         }
 
@@ -77,32 +62,17 @@ namespace SMED.BackEnd.Repositories
 
             _context.PhysicalExams.Remove(entity);
             await _context.SaveChangesAsync();
+
             return true;
-        }
-
-        public async Task<List<PhysicalExamDTO>> GetByMedicalCareIdAsync(int medicalCareId)
-        {
-            var exams = await _context.PhysicalExams
-                .Include(p => p.RegionNavigation)
-                .Include(p => p.PathologicalEvidenceNavigation)
-                .Include(p => p.PhysicalExamTypeNavigation)
-                .Where(p => p.MedicalCareId == medicalCareId)
-                .ToListAsync();
-
-            return exams.Select(MapToDto).ToList();
         }
 
         private static PhysicalExamDTO MapToDto(PhysicalExam exam) => new PhysicalExamDTO
         {
             PhysicalExamId = exam.PhysicalExamId,
-            Description = exam.Description,
-            RegionId = exam.RegionId,
-            RegionName = exam.RegionNavigation?.Name,
-            PathologicalEvidenceId = exam.PathologicalEvidenceId,
-            PathologicalEvidenceName = exam.PathologicalEvidenceNavigation?.Name,
-            PhysicalExamTypeId = exam.PhysicalExamTypeId,
-            PhysicalExamTypeName = exam.PhysicalExamTypeNavigation?.Name,
+            Extremities = exam.Extremities,
+            PhysicalExamDetailId = exam.PhysicalExamDetailId,
             MedicalCareId = exam.MedicalCareId
         };
     }
+
 }

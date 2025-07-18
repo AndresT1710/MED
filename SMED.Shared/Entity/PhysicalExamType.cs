@@ -15,9 +15,9 @@ namespace SMED.Shared.Entity
         public int Id { get; set; }
 
         [StringLength(100)]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; } = null!;
 
-        [InverseProperty("PhysicalExamTypeNavigation")]
-        public virtual ICollection<PhysicalExam> PhysicalExams { get; set; } = new List<PhysicalExam>();
+        [InverseProperty("ExamTypeNavigation")]
+        public virtual ICollection<PhysicalExamDetail> PhysicalExamDetails { get; set; } = new List<PhysicalExamDetail>();
     }
 }

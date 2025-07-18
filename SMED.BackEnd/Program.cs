@@ -9,7 +9,6 @@ using SMED.Shared.DTOs;
 using System.Text;
 using SGIS.Models;
 using SMED.Shared.Entity;
-using SMED.BackEnd.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +72,7 @@ builder.Services.AddScoped<IRepository<SystemsDevicesDTO, int>, SystemsDevicesRe
 builder.Services.AddScoped<IRepository<ReviewSystemDevicesDTO, int>, ReviewSystemDevicesRepository>();
 builder.Services.AddScoped<IRepository<PlaceOfAttentionDTO, int>, PlaceOfAttentionRepository>();
 builder.Services.AddScoped<IRepository<PhysicalExamDTO, int>, PhysicalExamRepository>();
+builder.Services.AddScoped<IRepository<PhysicalExamDetailDTO, int>, PhysicalExamDetailRepository>();
 builder.Services.AddScoped<IRepository<PhysicalExamTypeDTO, int>, PhysicalExamTypeRepository>();
 builder.Services.AddScoped<IRepository<IdentifiedDiseaseDTO, int>, IdentifiedDiseaseRepository>();
 builder.Services.AddScoped<IRepository<ExamResultsDTO, int>, ExamResultsRepository>();
@@ -89,8 +89,6 @@ builder.Services.AddScoped<IRepository<DiagnosisTreatmentDTO, int>, DiagnosisTre
 builder.Services.AddScoped<IRepository<MedicalServiceDTO, int>, MedicalServiceRepository>();
 builder.Services.AddScoped<IRepository<MedicalProcedureDTO, int>, MedicalProcedureRepository>();
 builder.Services.AddScoped<MedicalCareRepository>();
-builder.Services.AddScoped<IRepository<RegionDTO, int>, RegionRepository>();
-builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, PathologicalEvidenceRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

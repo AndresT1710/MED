@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.Shared.DTOs;
-using SMED.BackEnd.Repositories;
 using SMED.BackEnd.Repositories.Interface;
+using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -10,12 +9,10 @@ namespace SMED.BackEnd.Controllers
     public class PhysicalExamController : ControllerBase
     {
         private readonly IRepository<PhysicalExamDTO, int> _repository;
-        private readonly PhysicalExamRepository _physicalExamRepository;
 
-        public PhysicalExamController(IRepository<PhysicalExamDTO, int> repository, PhysicalExamRepository physicalExamRepository)
+        public PhysicalExamController(IRepository<PhysicalExamDTO, int> repository)
         {
             _repository = repository;
-            _physicalExamRepository = physicalExamRepository;
         }
 
         [HttpGet]
@@ -27,20 +24,6 @@ namespace SMED.BackEnd.Controllers
         {
             var dto = await _repository.GetByIdAsync(id);
             return dto != null ? Ok(dto) : NotFound();
-        }
-
-        [HttpGet("by-medical-care/{medicalCareId}")]
-        public async Task<ActionResult<List<PhysicalExamDTO>>> GetByMedicalCareId(int medicalCareId)
-        {
-            try
-            {
-                var result = await _physicalExamRepository.GetByMedicalCareIdAsync(medicalCareId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Error al obtener exámenes físicos por atención médica: {ex.Message}");
-            }
         }
 
         [HttpPost]
@@ -65,4 +48,5 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
+
 }

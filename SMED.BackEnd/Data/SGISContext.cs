@@ -94,8 +94,7 @@ namespace SGIS.Models
         public DbSet<ReviewSystemDevices> ReviewSystemDevices { get; set; }
         public DbSet<PlaceOfAttention> PlaceOfAttentions { get; set; }
         public DbSet<PhysicalExam> PhysicalExams { get; set; }
-        public DbSet<Region> Regions { get; set; }
-        public DbSet<PathologicalEvidence> PathologicalEvidences { get; set; }
+        public DbSet<PhysicalExamDetail> PhysicalExamDetails { get; set; }
         public DbSet<PhysicalExamType> PhysicalExamTypes { get; set; }
         public DbSet<IdentifiedDisease> IdentifiedDiseases { get; set; }
         public DbSet<VitalSigns> VitalSigns { get; set; }
@@ -632,6 +631,12 @@ namespace SGIS.Models
             });
 
 
+            modelBuilder.Entity<PhysicalExam>()
+                .HasOne(p => p.PhysicalExamDetail)
+                .WithOne(d => d.PhysicalExam)
+                .HasForeignKey<PhysicalExam>(p => p.PhysicalExamDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<SystemsDevices>()
                 .HasOne(s => s.Review)
                 .WithOne(r => r.SystemsDevices)
@@ -746,11 +751,6 @@ namespace SGIS.Models
                 .WithMany(mc => mc.MedicalProcedures)
                 .HasForeignKey(ms => ms.CareId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Region>()
-                .ToTable("Region");
-            modelBuilder.Entity<PathologicalEvidence>()
-                .ToTable("PathologicalEvidence");
 
             base.OnModelCreating(modelBuilder);
         }

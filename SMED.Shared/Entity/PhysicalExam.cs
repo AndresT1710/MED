@@ -14,32 +14,19 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PhysicalExamId { get; set; }
 
-        [StringLength(500)]
-        public string? Description { get; set; }
+        public string Extremities { get; set; }
 
-        public int RegionId { get; set; }
+        public int? PhysicalExamDetailId { get; set; }
 
-        public int PathologicalEvidenceId { get; set; }
-
-        public int PhysicalExamTypeId { get; set; }
+        [ForeignKey("PhysicalExamDetailId")]
+        public virtual PhysicalExamDetail? PhysicalExamDetail { get; set; }
 
         public int MedicalCareId { get; set; }
-
-        [ForeignKey("RegionId")]
-        [InverseProperty("PhysicalExams")]
-        public virtual Region RegionNavigation { get; set; } = null!;
-
-        [ForeignKey("PathologicalEvidenceId")]
-        [InverseProperty("PhysicalExams")]
-        public virtual PathologicalEvidence PathologicalEvidenceNavigation { get; set; } = null!;
-
-        [ForeignKey("PhysicalExamTypeId")]
-        [InverseProperty("PhysicalExams")]
-        public virtual PhysicalExamType PhysicalExamTypeNavigation { get; set; } = null!;
 
         [ForeignKey("MedicalCareId")]
         [InverseProperty("PhysicalExam")]
         public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
+
 
 }

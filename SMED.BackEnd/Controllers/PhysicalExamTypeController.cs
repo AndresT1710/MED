@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.Shared.DTOs;
 using SMED.BackEnd.Repositories.Interface;
+using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -48,4 +48,5 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
     }
+
 }

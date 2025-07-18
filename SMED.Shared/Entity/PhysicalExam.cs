@@ -28,5 +28,5 @@ namespace SMED.Shared.Entity
         public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
 
-
+    //REGRESADO
 }

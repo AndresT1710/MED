@@ -14,7 +14,7 @@ namespace SMED.Shared.DTOs
         public string? RegionName { get; set; }
         public int PathologicalEvidenceId { get; set; }
         public string? PathologicalEvidenceName { get; set; }
-        public int? PhysicalExamTypeId { get; set; }
+        public int PhysicalExamTypeId { get; set; }
         public string? PhysicalExamTypeName { get; set; }
         public int MedicalCareId { get; set; }
     }

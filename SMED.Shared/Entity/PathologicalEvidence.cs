@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public class PhysicalExamType
+    public class PathologicalEvidence
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [StringLength(100)]
+        [StringLength(200)]
         public string Name { get; set; } = string.Empty;
 
-        [InverseProperty("PhysicalExamTypeNavigation")]
+        [InverseProperty("PathologicalEvidenceNavigation")]
         public virtual ICollection<PhysicalExam> PhysicalExams { get; set; } = new List<PhysicalExam>();
     }
 }

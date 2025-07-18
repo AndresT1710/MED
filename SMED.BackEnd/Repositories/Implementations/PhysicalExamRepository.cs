@@ -17,13 +17,23 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<PhysicalExamDTO>> GetAllAsync()
         {
-            var exams = await _context.PhysicalExams.ToListAsync();
+            var exams = await _context.PhysicalExams
+                .Include(p => p.RegionNavigation)
+                .Include(p => p.PathologicalEvidenceNavigation)
+                .Include(p => p.PhysicalExamTypeNavigation)
+                .ToListAsync();
+
             return exams.Select(MapToDto).ToList();
         }
 
         public async Task<PhysicalExamDTO?> GetByIdAsync(int id)
         {
-            var exam = await _context.PhysicalExams.FindAsync(id);
+            var exam = await _context.PhysicalExams
+                .Include(p => p.RegionNavigation)
+                .Include(p => p.PathologicalEvidenceNavigation)
+                .Include(p => p.PhysicalExamTypeNavigation)
+                .FirstOrDefaultAsync(p => p.PhysicalExamId == id);
+
             return exam == null ? null : MapToDto(exam);
         }
 
@@ -31,13 +41,16 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new PhysicalExam
             {
-                Extremities = dto.Extremities,
-                PhysicalExamDetailId = dto.PhysicalExamDetailId,
+                Observations = dto.Observations,
+                RegionId = dto.RegionId,
+                PathologicalEvidenceId = dto.PathologicalEvidenceId,
+                PhysicalExamTypeId = dto.PhysicalExamTypeId,
                 MedicalCareId = dto.MedicalCareId
             };
 
             _context.PhysicalExams.Add(entity);
             await _context.SaveChangesAsync();
+
             dto.PhysicalExamId = entity.PhysicalExamId;
             return dto;
         }
@@ -47,11 +60,13 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PhysicalExams.FindAsync(dto.PhysicalExamId);
             if (entity == null) return null;
 
-            entity.Extremities = dto.Extremities;
-            entity.PhysicalExamDetailId = dto.PhysicalExamDetailId;
+            entity.Observations = dto.Observations;
+            entity.RegionId = dto.RegionId;
+            entity.PathologicalEvidenceId = dto.PathologicalEvidenceId;
+            entity.PhysicalExamTypeId = dto.PhysicalExamTypeId;
             entity.MedicalCareId = dto.MedicalCareId;
-            await _context.SaveChangesAsync();
 
+            await _context.SaveChangesAsync();
             return dto;
         }
 
@@ -62,15 +77,31 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             _context.PhysicalExams.Remove(entity);
             await _context.SaveChangesAsync();
-
             return true;
+        }
+
+        public async Task<List<PhysicalExamDTO>> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            var exams = await _context.PhysicalExams
+                .Include(p => p.RegionNavigation)
+                .Include(p => p.PathologicalEvidenceNavigation)
+                .Include(p => p.PhysicalExamTypeNavigation)
+                .Where(p => p.MedicalCareId == medicalCareId)
+                .ToListAsync();
+
+            return exams.Select(MapToDto).ToList();
         }
 
         private static PhysicalExamDTO MapToDto(PhysicalExam exam) => new PhysicalExamDTO
         {
             PhysicalExamId = exam.PhysicalExamId,
-            Extremities = exam.Extremities,
-            PhysicalExamDetailId = exam.PhysicalExamDetailId,
+            Observations = exam.Observations,
+            RegionId = exam.RegionId,
+            RegionName = exam.RegionNavigation?.Name,
+            PathologicalEvidenceId = exam.PathologicalEvidenceId,
+            PathologicalEvidenceName = exam.PathologicalEvidenceNavigation?.Name,
+            PhysicalExamTypeId = exam.PhysicalExamTypeId,
+            PhysicalExamTypeName = exam.PhysicalExamTypeNavigation?.Name,
             MedicalCareId = exam.MedicalCareId
         };
     }

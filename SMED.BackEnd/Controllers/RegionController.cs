@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
+using SMED.BackEnd.Repositories.Interface;
 
 namespace SMED.BackEnd.Controllers
 {

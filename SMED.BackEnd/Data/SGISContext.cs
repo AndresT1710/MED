@@ -747,10 +747,8 @@ namespace SGIS.Models
                 .HasForeignKey(ms => ms.CareId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
             modelBuilder.Entity<Region>()
                 .ToTable("Region");
-
             modelBuilder.Entity<PathologicalEvidence>()
                 .ToTable("PathologicalEvidence");
 

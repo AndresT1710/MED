@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public partial class HealthProfessional
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int HealthProfessionalId { get; set; }
 
         public int? HealthProfessionalTypeId { get; set; }

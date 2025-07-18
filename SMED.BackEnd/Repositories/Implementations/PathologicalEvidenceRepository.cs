@@ -1,10 +1,10 @@
-﻿using SGIS.Models;
-using SMED.BackEnd.Repositories.Interface;
+﻿using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
+using SGIS.Models;
+using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.Entity;
-using Microsoft.EntityFrameworkCore;
 
-namespace SMED.BackEnd.Repositories.Implementations
+namespace SMED.BackEnd.Repositories
 {
     public class PathologicalEvidenceRepository : IRepository<PathologicalEvidenceDTO, int>
     {

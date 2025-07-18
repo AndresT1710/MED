@@ -12,8 +12,8 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    [Migration("20250629154035_ResolvedMedicalCare")]
-    partial class ResolvedMedicalCare
+    [Migration("20250718080148_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -758,6 +758,7 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.HealthProfessional", b =>
                 {
                     b.Property<int>("HealthProfessionalId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     b.Property<int?>("HealthProfessionalTypeId")
@@ -985,6 +986,9 @@ namespace SMED.BackEnd.Migrations
                     b.Property<string>("Area")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CareDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("HealthProfessionalId")
                         .HasColumnType("int");
@@ -1293,6 +1297,24 @@ namespace SMED.BackEnd.Migrations
                     b.HasDiscriminator<string>("Discriminator").HasValue("Orders");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PathologicalEvidence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PathologicalEvidence", (string)null);
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Patient", b =>
@@ -1614,14 +1636,20 @@ namespace SMED.BackEnd.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhysicalExamId"));
 
-                    b.Property<string>("Extremities")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PhysicalExamDetailId")
+                    b.Property<int>("PathologicalEvidenceId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PhysicalExamTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RegionId")
                         .HasColumnType("int");
 
                     b.HasKey("PhysicalExamId");
@@ -1629,34 +1657,13 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("MedicalCareId")
                         .IsUnique();
 
-                    b.HasIndex("PhysicalExamDetailId")
-                        .IsUnique()
-                        .HasFilter("[PhysicalExamDetailId] IS NOT NULL");
-
-                    b.ToTable("PhysicalExams");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.PhysicalExamDetail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int>("PhysicalExamTypeId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
+                    b.HasIndex("PathologicalEvidenceId");
 
                     b.HasIndex("PhysicalExamTypeId");
 
-                    b.ToTable("PhysicalExamDetails");
+                    b.HasIndex("RegionId");
+
+                    b.ToTable("PhysicalExams");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.PhysicalExamType", b =>
@@ -1827,6 +1834,24 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("FoodId");
 
                     b.ToTable("RecommendedFoods");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Region", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Region", (string)null);
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Relationship", b =>
@@ -3166,25 +3191,29 @@ namespace SMED.BackEnd.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SMED.Shared.Entity.PhysicalExamDetail", "PhysicalExamDetail")
-                        .WithOne("PhysicalExam")
-                        .HasForeignKey("SMED.Shared.Entity.PhysicalExam", "PhysicalExamDetailId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("MedicalCare");
-
-                    b.Navigation("PhysicalExamDetail");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.PhysicalExamDetail", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.PhysicalExamType", "ExamTypeNavigation")
-                        .WithMany("PhysicalExamDetails")
-                        .HasForeignKey("PhysicalExamTypeId")
+                    b.HasOne("SMED.Shared.Entity.PathologicalEvidence", "PathologicalEvidenceNavigation")
+                        .WithMany("PhysicalExams")
+                        .HasForeignKey("PathologicalEvidenceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ExamTypeNavigation");
+                    b.HasOne("SMED.Shared.Entity.PhysicalExamType", "PhysicalExamTypeNavigation")
+                        .WithMany("PhysicalExams")
+                        .HasForeignKey("PhysicalExamTypeId");
+
+                    b.HasOne("SMED.Shared.Entity.Region", "RegionNavigation")
+                        .WithMany("PhysicalExams")
+                        .HasForeignKey("RegionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("PathologicalEvidenceNavigation");
+
+                    b.Navigation("PhysicalExamTypeNavigation");
+
+                    b.Navigation("RegionNavigation");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Procedures", b =>
@@ -3583,6 +3612,11 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("OrderDiagnosis");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.PathologicalEvidence", b =>
+                {
+                    b.Navigation("PhysicalExams");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Patient", b =>
                 {
                     b.Navigation("ClinicalHistory")
@@ -3634,14 +3668,9 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.PhysicalExamDetail", b =>
-                {
-                    b.Navigation("PhysicalExam");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.PhysicalExamType", b =>
                 {
-                    b.Navigation("PhysicalExamDetails");
+                    b.Navigation("PhysicalExams");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.PlaceOfAttention", b =>
@@ -3667,6 +3696,11 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.RecommendedFoods", b =>
                 {
                     b.Navigation("FoodPlans");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Region", b =>
+                {
+                    b.Navigation("PhysicalExams");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Relationship", b =>

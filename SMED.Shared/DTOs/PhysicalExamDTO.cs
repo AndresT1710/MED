@@ -9,7 +9,7 @@ namespace SMED.Shared.DTOs
     public class PhysicalExamDTO
     {
         public int PhysicalExamId { get; set; }
-        public string? Observations { get; set; }
+        public string? Observation { get; set; }
         public int RegionId { get; set; }
         public string? RegionName { get; set; }
         public int PathologicalEvidenceId { get; set; }

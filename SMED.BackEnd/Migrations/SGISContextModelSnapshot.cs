@@ -755,6 +755,7 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.HealthProfessional", b =>
                 {
                     b.Property<int>("HealthProfessionalId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     b.Property<int?>("HealthProfessionalTypeId")
@@ -1635,7 +1636,7 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Observations")
+                    b.Property<string>("Observation")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 

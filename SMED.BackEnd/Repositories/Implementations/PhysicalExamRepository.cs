@@ -1,10 +1,10 @@
-﻿using SGIS.Models;
-using SMED.BackEnd.Repositories.Interface;
+﻿using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
+using SGIS.Models;
+using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.Entity;
-using Microsoft.EntityFrameworkCore;
 
-namespace SMED.BackEnd.Repositories.Implementations
+namespace SMED.BackEnd.Repositories
 {
     public class PhysicalExamRepository : IRepository<PhysicalExamDTO, int>
     {
@@ -41,7 +41,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new PhysicalExam
             {
-                Observations = dto.Observations,
+                Observation = dto.Observation,
                 RegionId = dto.RegionId,
                 PathologicalEvidenceId = dto.PathologicalEvidenceId,
                 PhysicalExamTypeId = dto.PhysicalExamTypeId,
@@ -60,7 +60,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PhysicalExams.FindAsync(dto.PhysicalExamId);
             if (entity == null) return null;
 
-            entity.Observations = dto.Observations;
+            entity.Observation = dto.Observation;
             entity.RegionId = dto.RegionId;
             entity.PathologicalEvidenceId = dto.PathologicalEvidenceId;
             entity.PhysicalExamTypeId = dto.PhysicalExamTypeId;
@@ -95,7 +95,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         private static PhysicalExamDTO MapToDto(PhysicalExam exam) => new PhysicalExamDTO
         {
             PhysicalExamId = exam.PhysicalExamId,
-            Observations = exam.Observations,
+            Observation = exam.Observation,
             RegionId = exam.RegionId,
             RegionName = exam.RegionNavigation?.Name,
             PathologicalEvidenceId = exam.PathologicalEvidenceId,
@@ -105,5 +105,4 @@ namespace SMED.BackEnd.Repositories.Implementations
             MedicalCareId = exam.MedicalCareId
         };
     }
-
 }

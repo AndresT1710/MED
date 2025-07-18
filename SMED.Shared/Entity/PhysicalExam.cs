@@ -15,7 +15,7 @@ namespace SMED.Shared.Entity
         public int PhysicalExamId { get; set; }
 
         [StringLength(500)]
-        public string? Observations { get; set; }
+        public string? Observation { get; set; }
 
         public int RegionId { get; set; }
 
@@ -41,4 +41,5 @@ namespace SMED.Shared.Entity
         [InverseProperty("PhysicalExam")]
         public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
+
 }

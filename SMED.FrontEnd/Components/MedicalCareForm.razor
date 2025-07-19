@@ -42,9 +42,9 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
-                @if (systemsList.Any())
+                @if (IsSystemsTabComplete())
                 {
-                    <span class="badge bg-info ms-1">@systemsList.Count</span>
+                    <span class="badge bg-success ms-1">✓</span>
                 }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -55,9 +55,9 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-stethoscope me-2"></i>Examen Físico
-                @if (physicalExamsList.Any())
+                @if (IsPhysicalExamTabComplete())
                 {
-                    <span class="badge bg-info ms-1">@physicalExamsList.Count</span>
+                    <span class="badge bg-success ms-1">✓</span>
                 }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -77,9 +77,9 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
-                @if (procedimientosList.Any())
+                @if (IsProceduresTabComplete())
                 {
-                    <span class="badge bg-info ms-1">@procedimientosList.Count</span>
+                    <span class="badge bg-success ms-1">✓</span>
                 }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -259,7 +259,7 @@
                                     @if (currentMedicalCareId > 0)
                                     {
                                         <button class="btn btn-primary" @onclick="@(() => SetActiveTab("systems"))">
-                                            Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                            Continuar <i class="fas fa-arrow-right ms-2"></i>
                                         </button>
                                     }
                                 }
@@ -366,7 +366,6 @@
                                         </small>
                                     </div>
                                 </div>
-
                                 @if (!string.IsNullOrEmpty(systemFormError))
                                 {
                                     <div class="alert alert-danger mt-3">
@@ -381,9 +380,17 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("physical-exam"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                            <div>
+                                @if (hasUnsavedSystemsData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("physical-exam"))">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -397,7 +404,7 @@
             </div>
         </div>
 
-        <!-- Examen Físico Tab - CORRECTO PARA USAR Observation -->
+        <!-- Examen Físico Tab -->
         <div class="tab-pane @(activeTab == "physical-exam" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -490,7 +497,6 @@
                                         </small>
                                     </div>
                                 </div>
-
                                 @if (!string.IsNullOrEmpty(physicalExamFormError))
                                 {
                                     <div class="alert alert-danger mt-3">
@@ -505,9 +511,17 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("systems"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("additional-data"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                            <div>
+                                @if (hasUnsavedPhysicalExamData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("additional-data"))">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -549,7 +563,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("procedures"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -633,7 +647,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("diagnosis"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -676,7 +690,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -719,7 +733,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("referral"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -762,7 +776,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
-                                Guardar <i class="fas fa-arrow-right ms-2"></i>
+                                Continuar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -896,18 +910,20 @@
     private Dictionary<string, string> systemErrors = new();
     private string systemFormError = "";
 
-    // ============================================================================
-    // VARIABLES PARA EXAMEN FÍSICO - CORRECTO PARA USAR Observation
-    // ============================================================================
+    // Variables para Examen Físico
     private List<RegionDTO> availableRegions = new();
     private List<PathologicalEvidenceDTO> availablePathologicalEvidences = new();
     private List<PhysicalExamDTO> physicalExamsList = new();
     private PhysicalExamDTO currentPhysicalExam = new();
-    private List<string> physicalExamHeaders = new() { "Región", "Evidencia Patológica", "Observación" }; // CORRECTO
+    private List<string> physicalExamHeaders = new() { "Región", "Evidencia Patológica", "Observación" };
     private List<List<string>> physicalExamRows = new();
     private List<int> physicalExamIds = new();
     private Dictionary<string, string> physicalExamErrors = new();
     private string physicalExamFormError = "";
+
+    // Variables para controlar datos sin guardar (ahora son bool simples)
+    private bool hasUnsavedSystemsData = false;
+    private bool hasUnsavedPhysicalExamData = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -927,6 +943,29 @@
             currentMedicalCareId = MedicalCare.CareId;
             await LoadExistingData();
         }
+
+        // Verificar datos sin guardar al inicializar
+        await CheckUnsavedData();
+    }
+
+    private async Task CheckUnsavedData()
+    {
+        if (currentMedicalCareId > 0)
+        {
+            try
+            {
+                var systemsData = await JS.InvokeAsync<string>("localStorage.getItem", $"systems_data_{currentMedicalCareId}");
+                hasUnsavedSystemsData = !string.IsNullOrEmpty(systemsData);
+
+                var physicalExamData = await JS.InvokeAsync<string>("localStorage.getItem", $"physical_exam_data_{currentMedicalCareId}");
+                hasUnsavedPhysicalExamData = !string.IsNullOrEmpty(physicalExamData);
+            }
+            catch
+            {
+                hasUnsavedSystemsData = false;
+                hasUnsavedPhysicalExamData = false;
+            }
+        }
     }
 
     private bool IsPatientTabComplete()
@@ -935,6 +974,22 @@
                !string.IsNullOrEmpty(lugarSeleccionada) &&
                !string.IsNullOrEmpty(profesionalSeleccionado) &&
                !string.IsNullOrWhiteSpace(motivoConsulta);
+    }
+
+    // Métodos para verificar si las pestañas están completas (con ✓)
+    private bool IsSystemsTabComplete()
+    {
+        return systemsList.Any();
+    }
+
+    private bool IsPhysicalExamTabComplete()
+    {
+        return physicalExamsList.Any();
+    }
+
+    private bool IsProceduresTabComplete()
+    {
+        return procedimientosList.Any();
     }
 
     private void ValidateAndShowErrors()
@@ -956,6 +1011,41 @@
         {
             await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
             return;
+        }
+
+        // Verificar datos sin guardar antes de cambiar de pestaña
+        if (activeTab == "systems" && tab != "systems")
+        {
+            await CheckUnsavedData(); // Actualizar estado
+            if (hasUnsavedSystemsData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Aparatos y Sistemas. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (activeTab == "physical-exam" && tab != "physical-exam")
+        {
+            await CheckUnsavedData(); // Actualizar estado
+            if (hasUnsavedPhysicalExamData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Examen Físico. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
         }
 
         activeTab = tab;
@@ -1023,10 +1113,12 @@
         clinicalHistoryId = paciente.ClinicalHistoryId;
         selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
+
         if (selectedPatientId > 0)
         {
             showValidationErrors = false;
         }
+
         StateHasChanged();
         return Task.CompletedTask;
     }
@@ -1058,6 +1150,7 @@
                     await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención médica: {updateResult.Error}");
                     return;
                 }
+
                 medicalCareResult = MedicalCare;
                 currentMedicalCareId = MedicalCare.CareId;
             }
@@ -1079,6 +1172,7 @@
                     await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
                     return;
                 }
+
                 medicalCareResult = result.Data;
                 currentMedicalCareId = medicalCareResult.CareId;
 
@@ -1165,6 +1259,7 @@
             ProcedureDate = DateTime.Now,
             HealthProfessionalId = int.Parse(profesionalSeleccionado)
         };
+
         showProcedureModal = true;
         StateHasChanged();
     }
@@ -1185,6 +1280,7 @@
             TypeOfProcedureName = procedimiento.TypeOfProcedureName,
             SpecificProcedureName = procedimiento.SpecificProcedureName
         };
+
         showProcedureModal = true;
         StateHasChanged();
     }
@@ -1213,6 +1309,7 @@
         {
             procedimientosList.Add(procedimiento);
         }
+
         CerrarModalProcedimiento();
         StateHasChanged();
     }
@@ -1227,7 +1324,6 @@
     // ============================================================================
     // MÉTODOS PARA APARATOS Y SISTEMAS - CON RESTRICCIÓN DE UN SOLO REGISTRO
     // ============================================================================
-
     private async Task LoadSystemsData()
     {
         availableSystems = await SystemsDevicesService.GetAllAsync();
@@ -1272,6 +1368,7 @@
             State = "",
             Observations = ""
         };
+
         systemErrors.Clear();
         systemFormError = "";
     }
@@ -1290,6 +1387,7 @@
                 Observations = existing.Observations ?? ""
             };
         }
+
         systemErrors.Clear();
         systemFormError = "";
     }
@@ -1349,6 +1447,10 @@
                     systemsList.Add(result.Data);
                     await RefreshSystemsTable();
                     await JS.InvokeVoidAsync("alert", "Revisión agregada exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"systems_data_{currentMedicalCareId}");
+                    hasUnsavedSystemsData = false;
                 }
                 else
                 {
@@ -1370,6 +1472,10 @@
                         await RefreshSystemsTable();
                     }
                     await JS.InvokeVoidAsync("alert", "Revisión actualizada exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"systems_data_{currentMedicalCareId}");
+                    hasUnsavedSystemsData = false;
                 }
                 else
                 {
@@ -1383,6 +1489,7 @@
             currentSystem = new ReviewSystemDevicesDTO();
             systemErrors.Clear();
             systemFormError = "";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -1439,7 +1546,6 @@
     // ============================================================================
     // MÉTODOS PARA EXAMEN FÍSICO - CORRECTO PARA USAR Observation
     // ============================================================================
-
     private async Task LoadPhysicalExamData()
     {
         availableRegions = await RegionService.GetAllAsync();
@@ -1455,8 +1561,8 @@
         {
             var regionName = await RegionService.GetRegionNameByIdAsync(exam.RegionId);
             var evidenceName = await PathologicalEvidenceService.GetPathologicalEvidenceNameByIdAsync(exam.PathologicalEvidenceId);
-            var observation = !string.IsNullOrEmpty(exam.Observation) 
-                ? (exam.Observation.Length > 50 ? exam.Observation.Substring(0, 50) + "..." : exam.Observation)
+            var observation = !string.IsNullOrEmpty(exam.Observation)
+                 ? (exam.Observation.Length > 50 ? exam.Observation.Substring(0, 50) + "..." : exam.Observation)
                 : "Sin observación";
 
             physicalExamRows.Add(new List<string> { regionName, evidenceName, observation });
@@ -1481,8 +1587,9 @@
             MedicalCareId = currentMedicalCareId,
             RegionId = 0,
             PathologicalEvidenceId = 0,
-            Observation = "" 
+            Observation = ""
         };
+
         physicalExamErrors.Clear();
         physicalExamFormError = "";
     }
@@ -1498,9 +1605,10 @@
                 MedicalCareId = existing.MedicalCareId,
                 RegionId = existing.RegionId,
                 PathologicalEvidenceId = existing.PathologicalEvidenceId,
-                Observation = existing.Observation ?? "" 
+                Observation = existing.Observation ?? ""
             };
         }
+
         physicalExamErrors.Clear();
         physicalExamFormError = "";
     }
@@ -1560,6 +1668,10 @@
                     physicalExamsList.Add(result.Data);
                     await RefreshPhysicalExamsTable();
                     await JS.InvokeVoidAsync("alert", "Examen físico agregado exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"physical_exam_data_{currentMedicalCareId}");
+                    hasUnsavedPhysicalExamData = false;
                 }
                 else
                 {
@@ -1581,6 +1693,10 @@
                         await RefreshPhysicalExamsTable();
                     }
                     await JS.InvokeVoidAsync("alert", "Examen físico actualizado exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"physical_exam_data_{currentMedicalCareId}");
+                    hasUnsavedPhysicalExamData = false;
                 }
                 else
                 {
@@ -1594,6 +1710,7 @@
             currentPhysicalExam = new PhysicalExamDTO();
             physicalExamErrors.Clear();
             physicalExamFormError = "";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -1620,7 +1737,7 @@
             isValid = false;
         }
 
-        if (string.IsNullOrWhiteSpace(currentPhysicalExam.Observation)) 
+        if (string.IsNullOrWhiteSpace(currentPhysicalExam.Observation))
         {
             physicalExamErrors["Observation"] = "La observación es obligatoria.";
             isValid = false;
@@ -1643,7 +1760,7 @@
     {
         return currentPhysicalExam.RegionId > 0 &&
                currentPhysicalExam.PathologicalEvidenceId > 0 &&
-               !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) && 
+               !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) &&
                (currentPhysicalExam.Observation?.Length ?? 0) <= 500;
     }
 }

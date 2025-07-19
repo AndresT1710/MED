@@ -73,6 +73,7 @@ builder.Services.AddScoped<IRepository<SystemsDevicesDTO, int>, SystemsDevicesRe
 builder.Services.AddScoped<IRepository<ReviewSystemDevicesDTO, int>, ReviewSystemDevicesRepository>();
 builder.Services.AddScoped<IRepository<PlaceOfAttentionDTO, int>, PlaceOfAttentionRepository>();
 builder.Services.AddScoped<IRepository<PhysicalExamDTO, int>, PhysicalExamRepository>();
+builder.Services.AddScoped<PhysicalExamRepository>();
 builder.Services.AddScoped<IRepository<PhysicalExamTypeDTO, int>, PhysicalExamTypeRepository>();
 builder.Services.AddScoped<IRepository<IdentifiedDiseaseDTO, int>, IdentifiedDiseaseRepository>();
 builder.Services.AddScoped<IRepository<ExamResultsDTO, int>, ExamResultsRepository>();

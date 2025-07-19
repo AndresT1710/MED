@@ -13,6 +13,9 @@
 @inject ReasonForConsultationService ReasonForConsultationService
 @inject ReviewSystemDevicesService ReviewSystemDevicesService
 @inject SystemsDevicesService SystemsDevicesService
+@inject PhysicalExamService PhysicalExamService
+@inject RegionService RegionService
+@inject PathologicalEvidenceService PathologicalEvidenceService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -20,8 +23,8 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("patient"))"
-            type="button" role="tab">
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -35,9 +38,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "systems" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("systems"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("systems"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                 @if (systemsList.Any())
                 {
@@ -48,27 +51,31 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "physical-exam" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("physical-exam"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("physical-exam"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-stethoscope me-2"></i>Examen Físico
+                @if (physicalExamsList.Any())
+                {
+                    <span class="badge bg-info ms-1">@physicalExamsList.Count</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "additional-data" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("additional-data"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("additional-data"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("procedures"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("procedures"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
@@ -79,36 +86,36 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "diagnosis" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("diagnosis"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("diagnosis"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-diagnoses me-2"></i>Diagnóstico
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("treatment"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("treatment"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "referral" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("referral"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("referral"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-share me-2"></i>Derivación
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("evolution"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                    @onclick="@(() => SetActiveTab("evolution"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-chart-line me-2"></i>Evolución
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -124,7 +131,6 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user me-2"></i>Selección de Paciente
                         <span class="badge bg-danger ms-2">Obligatorio</span>
-                        <!-- Badge para mostrar el área fija -->
                         <span class="badge bg-success ms-2">
                             <i class="fas fa-hospital me-1"></i>Área: Medicina General
                         </span>
@@ -136,7 +142,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                            OnPatientSelected="HandlePatientSelected" />
+                                             OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -160,7 +166,6 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
-                        <!-- Información del área fija -->
                         <div class="alert alert-info mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-info-circle me-2"></i>
@@ -176,7 +181,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                @bind="lugarSeleccionada">
+                                        @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -192,14 +197,13 @@
                             </div>
                         </div>
 
-                        <!-- Motivo de Consulta -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                            @bind="motivoConsulta"
-                            rows="3"
-                            placeholder="Describa el motivo principal de la consulta médica..."
-                            maxlength="500"></textarea>
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta médica..."
+                                      maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -211,7 +215,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Profesional responsable *</label>
                             <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
-                            @bind="profesionalSeleccionado">
+                                    @bind="profesionalSeleccionado">
                                 <option value="">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
@@ -255,7 +259,7 @@
                                     @if (currentMedicalCareId > 0)
                                     {
                                         <button class="btn btn-primary" @onclick="@(() => SetActiveTab("systems"))">
-                                            Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                            Guardar <i class="fas fa-arrow-right ms-2"></i>
                                         </button>
                                     }
                                 }
@@ -280,28 +284,48 @@
                         <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Evaluación de aparatos y sistemas</small>
+                    <small class="text-muted">Evaluación de aparatos y sistemas (máximo 1 registro por atención)</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
+                        @if (systemsList.Count >= 1)
+                        {
+                            <div class="alert alert-warning mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Límite alcanzado:</strong> Solo se permite un registro de aparatos y sistemas por atención médica.
+                                Puede editar o eliminar el registro existente.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Información:</strong> Solo se permite un registro de aparatos y sistemas por atención médica.
+                            </div>
+                        }
+
                         <EditableTable Title="Revisión de Aparatos y Sistemas"
-                        ColumnHeaders="@systemsHeaders"
-                        Rows="@systemsRows"
-                        RowIds="@systemsIds"
-                        EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
-                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
-                        OnAddRequested="@OnAddSystemRequested"
-                        OnEditRequested="@OnEditSystemRequested"
-                        OnDeleteRequested="@OnDeleteSystemRequested"
-                        OnSaveRequested="@OnSaveSystemRequested"
-                        IsValidForm="@IsSystemFormValid">
+                                       ColumnHeaders="@systemsHeaders"
+                                       Rows="@systemsRows"
+                                       RowIds="@systemsIds"
+                                       EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
+                                       ShowAddButton="@(systemsList.Count < 1)"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddSystemRequested"
+                                       OnEditRequested="@OnEditSystemRequested"
+                                       OnDeleteRequested="@OnDeleteSystemRequested"
+                                       OnSaveRequested="@OnSaveSystemRequested"
+                                       IsValidForm="@IsSystemFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Tipo de Aparato/Sistema <span class="text-danger">*</span></label>
                                         <select class="form-select @(systemErrors.ContainsKey("SystemsDevicesId") ? "is-invalid" : "")"
-                                        @bind="currentSystem.SystemsDevicesId">
+                                                @bind="currentSystem.SystemsDevicesId">
                                             <option value="0">Seleccione un aparato o sistema</option>
                                             @foreach (var system in availableSystems)
                                             {
@@ -316,28 +340,40 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Estado <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(systemErrors.ContainsKey("State") ? "is-invalid" : "")"
-                                        @bind="currentSystem.State"
-                                        rows="3"
-                                        maxlength="500"
-                                        placeholder="Describa el estado actual del aparato o sistema..."
-                                        style="resize: vertical; max-height: 150px;"></textarea>
+                                                  @bind="currentSystem.State"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa el estado actual del aparato o sistema..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
                                         @if (systemErrors.ContainsKey("State"))
                                         {
                                             <div class="invalid-feedback">@systemErrors["State"]</div>
                                         }
-                                        <small class="form-text text-muted">Máximo 500 caracteres</small>
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentSystem.State?.Length ?? 0))
+                                        </small>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Observaciones</label>
                                         <textarea class="form-control"
-                                        @bind="currentSystem.Observations"
-                                        rows="4"
-                                        maxlength="1000"
-                                        placeholder="Observaciones adicionales (opcional)..."
-                                        style="resize: vertical; max-height: 200px;"></textarea>
-                                        <small class="form-text text-muted">Máximo 1000 caracteres</small>
+                                                  @bind="currentSystem.Observations"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Observaciones adicionales (opcional)..."
+                                                  style="resize: vertical; max-height: 200px;"></textarea>
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentSystem.Observations?.Length ?? 0))
+                                        </small>
                                     </div>
                                 </div>
+
+                                @if (!string.IsNullOrEmpty(systemFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @systemFormError
+                                    </div>
+                                }
                             </EditModalContent>
                         </EditableTable>
 
@@ -346,7 +382,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("physical-exam"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -361,7 +397,7 @@
             </div>
         </div>
 
-        <!-- Examen Físico Tab -->
+        <!-- Examen Físico Tab - CORRECTO PARA USAR Observation -->
         <div class="tab-pane @(activeTab == "physical-exam" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -369,27 +405,108 @@
                         <i class="fas fa-stethoscope me-2"></i>Examen Físico
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Evaluación física del paciente</small>
+                    <small class="text-muted">Evaluación física del paciente (máximo 1 registro por atención)</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
+                        @if (physicalExamsList.Count >= 1)
+                        {
+                            <div class="alert alert-warning mb-3">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <div>
-                                    <strong>Examen Físico</strong>
-                                    <p class="mb-0">Aquí se registrará el examen físico completo del paciente.</p>
-                                </div>
+                                <strong>Límite alcanzado:</strong> Solo se permite un registro de examen físico por atención médica.
+                                Puede editar o eliminar el registro existente.
                             </div>
-                        </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Información:</strong> Solo se permite un registro de examen físico por atención médica.
+                            </div>
+                        }
+
+                        <EditableTable Title="Examen Físico del Paciente"
+                                       ColumnHeaders="@physicalExamHeaders"
+                                       Rows="@physicalExamRows"
+                                       RowIds="@physicalExamIds"
+                                       EmptyMessage="No se han registrado exámenes físicos"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este examen físico?"
+                                       ShowAddButton="@(physicalExamsList.Count < 1)"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddPhysicalExamRequested"
+                                       OnEditRequested="@OnEditPhysicalExamRequested"
+                                       OnDeleteRequested="@OnDeletePhysicalExamRequested"
+                                       OnSaveRequested="@OnSavePhysicalExamRequested"
+                                       IsValidForm="@IsPhysicalExamFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Región <span class="text-danger">*</span></label>
+                                        <select class="form-select @(physicalExamErrors.ContainsKey("RegionId") ? "is-invalid" : "")"
+                                                @bind="currentPhysicalExam.RegionId">
+                                            <option value="0">Seleccione una región</option>
+                                            @foreach (var region in availableRegions)
+                                            {
+                                                <option value="@region.Id">@region.Name</option>
+                                            }
+                                        </select>
+                                        @if (physicalExamErrors.ContainsKey("RegionId"))
+                                        {
+                                            <div class="invalid-feedback">@physicalExamErrors["RegionId"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Evidencia Patológica <span class="text-danger">*</span></label>
+                                        <select class="form-select @(physicalExamErrors.ContainsKey("PathologicalEvidenceId") ? "is-invalid" : "")"
+                                                @bind="currentPhysicalExam.PathologicalEvidenceId">
+                                            <option value="0">Seleccione una evidencia patológica</option>
+                                            @foreach (var evidence in availablePathologicalEvidences)
+                                            {
+                                                <option value="@evidence.Id">@evidence.Name</option>
+                                            }
+                                        </select>
+                                        @if (physicalExamErrors.ContainsKey("PathologicalEvidenceId"))
+                                        {
+                                            <div class="invalid-feedback">@physicalExamErrors["PathologicalEvidenceId"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Observación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(physicalExamErrors.ContainsKey("Observation") ? "is-invalid" : "")"
+                                                  @bind="currentPhysicalExam.Observation"
+                                                  rows="4"
+                                                  maxlength="500"
+                                                  placeholder="Describa las observaciones del examen físico..."
+                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @if (physicalExamErrors.ContainsKey("Observation"))
+                                        {
+                                            <div class="invalid-feedback">@physicalExamErrors["Observation"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentPhysicalExam.Observation?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(physicalExamFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @physicalExamFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("systems"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("additional-data"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -432,7 +549,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("procedures"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -516,7 +633,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("diagnosis"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -559,7 +676,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -602,7 +719,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("referral"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -645,7 +762,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                Guardar <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -748,7 +865,7 @@
     private bool showValidationErrors = false;
     private bool isSaving = false;
 
-    // ID de la atención médica actual (clave para permitir guardar en otras pestañas)
+    // ID de la atención médica actual
     private int currentMedicalCareId = 0;
 
     // Listas dinámicas
@@ -777,6 +894,20 @@
     private List<List<string>> systemsRows = new();
     private List<int> systemsIds = new();
     private Dictionary<string, string> systemErrors = new();
+    private string systemFormError = "";
+
+    // ============================================================================
+    // VARIABLES PARA EXAMEN FÍSICO - CORRECTO PARA USAR Observation
+    // ============================================================================
+    private List<RegionDTO> availableRegions = new();
+    private List<PathologicalEvidenceDTO> availablePathologicalEvidences = new();
+    private List<PhysicalExamDTO> physicalExamsList = new();
+    private PhysicalExamDTO currentPhysicalExam = new();
+    private List<string> physicalExamHeaders = new() { "Región", "Evidencia Patológica", "Observación" }; // CORRECTO
+    private List<List<string>> physicalExamRows = new();
+    private List<int> physicalExamIds = new();
+    private Dictionary<string, string> physicalExamErrors = new();
+    private string physicalExamFormError = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -787,6 +918,7 @@
         await LoadProcedures();
         await LoadLugaresAtencion();
         await LoadSystemsData();
+        await LoadPhysicalExamData();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -854,6 +986,10 @@
         systemsList = await ReviewSystemDevicesService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshSystemsTable();
 
+        // Cargar exámenes físicos existentes
+        physicalExamsList = await PhysicalExamService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        await RefreshPhysicalExamsTable();
+
         StateHasChanged();
     }
 
@@ -895,7 +1031,6 @@
         return Task.CompletedTask;
     }
 
-    // NUEVO MÉTODO: Guardar solo los datos básicos del paciente
     private async Task GuardarDatosPaciente()
     {
         isSaving = true;
@@ -989,7 +1124,6 @@
         }
     }
 
-    // MÉTODO MODIFICADO: Solo finalizar (ya no guarda todo)
     private async Task FinalizarAtencionMedica()
     {
         isSaving = true;
@@ -1000,9 +1134,6 @@
                 await JS.InvokeVoidAsync("alert", "No hay una atención médica válida para finalizar.");
                 return;
             }
-
-            // Aquí podrías agregar lógica adicional de finalización si es necesaria
-            // Por ejemplo, cambiar el estado de la atención médica a "Finalizada"
 
             await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
             await JS.InvokeVoidAsync("alert", "Atención médica finalizada exitosamente.");
@@ -1093,7 +1224,10 @@
         StateHasChanged();
     }
 
-    // Métodos para Aparatos y Sistemas
+    // ============================================================================
+    // MÉTODOS PARA APARATOS Y SISTEMAS - CON RESTRICCIÓN DE UN SOLO REGISTRO
+    // ============================================================================
+
     private async Task LoadSystemsData()
     {
         availableSystems = await SystemsDevicesService.GetAllAsync();
@@ -1123,6 +1257,13 @@
 
     private async Task OnAddSystemRequested()
     {
+        // VALIDACIÓN: Solo permitir agregar si no hay registros
+        if (systemsList.Count >= 1)
+        {
+            await JS.InvokeVoidAsync("alert", "Solo se permite un registro de aparatos y sistemas por atención médica. Puede editar o eliminar el registro existente.");
+            return;
+        }
+
         currentSystem = new ReviewSystemDevicesDTO
         {
             Id = 0,
@@ -1132,6 +1273,7 @@
             Observations = ""
         };
         systemErrors.Clear();
+        systemFormError = "";
     }
 
     private async Task OnEditSystemRequested(int id)
@@ -1149,73 +1291,110 @@
             };
         }
         systemErrors.Clear();
+        systemFormError = "";
     }
 
     private async Task OnDeleteSystemRequested(int id)
     {
-        var result = await ReviewSystemDevicesService.DeleteAsync(id);
-        if (result.Success)
+        try
         {
-            var toRemove = systemsList.FirstOrDefault(s => s.Id == id);
-            if (toRemove != null)
+            var result = await ReviewSystemDevicesService.DeleteAsync(id);
+            if (result.Success)
             {
-                systemsList.Remove(toRemove);
-                await RefreshSystemsTable();
+                var toRemove = systemsList.FirstOrDefault(s => s.Id == id);
+                if (toRemove != null)
+                {
+                    systemsList.Remove(toRemove);
+                    await RefreshSystemsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Revisión eliminada exitosamente.");
             }
-            await JS.InvokeVoidAsync("alert", "Revisión eliminada exitosamente.");
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
         }
     }
 
     private async Task OnSaveSystemRequested()
     {
-        if (!ValidateSystemForm()) return;
-
-        // Asegurar que tenemos el MedicalCareId correcto
-        currentSystem.MedicalCareId = currentMedicalCareId;
-
-        if (currentSystem.Id == 0)
+        try
         {
-            // Crear nuevo
-            var result = await ReviewSystemDevicesService.CreateAsync(currentSystem);
-            if (result.Success && result.Data != null)
+            if (!ValidateSystemForm())
             {
-                systemsList.Add(result.Data);
-                await RefreshSystemsTable();
-                await JS.InvokeVoidAsync("alert", "Revisión agregada exitosamente.");
+                return;
             }
-            else
+
+            // VALIDACIÓN ADICIONAL: Verificar límite antes de crear
+            if (currentSystem.Id == 0 && systemsList.Count >= 1)
             {
-                await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                systemFormError = "Solo se permite un registro de aparatos y sistemas por atención médica.";
+                await JS.InvokeVoidAsync("alert", systemFormError);
+                return;
             }
-        }
-        else
-        {
-            // Actualizar existente
-            var result = await ReviewSystemDevicesService.UpdateAsync(currentSystem);
-            if (result.Success && result.Data != null)
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentSystem.MedicalCareId = currentMedicalCareId;
+
+            if (currentSystem.Id == 0)
             {
-                var index = systemsList.FindIndex(s => s.Id == currentSystem.Id);
-                if (index >= 0)
+                // Crear nuevo
+                var result = await ReviewSystemDevicesService.CreateAsync(currentSystem);
+                if (result.Success && result.Data != null)
                 {
-                    systemsList[index] = result.Data;
+                    systemsList.Add(result.Data);
                     await RefreshSystemsTable();
+                    await JS.InvokeVoidAsync("alert", "Revisión agregada exitosamente.");
                 }
-                await JS.InvokeVoidAsync("alert", "Revisión actualizada exitosamente.");
+                else
+                {
+                    systemFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                    return;
+                }
             }
             else
             {
-                await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                // Actualizar existente
+                var result = await ReviewSystemDevicesService.UpdateAsync(currentSystem);
+                if (result.Success && result.Data != null)
+                {
+                    var index = systemsList.FindIndex(s => s.Id == currentSystem.Id);
+                    if (index >= 0)
+                    {
+                        systemsList[index] = result.Data;
+                        await RefreshSystemsTable();
+                    }
+                    await JS.InvokeVoidAsync("alert", "Revisión actualizada exitosamente.");
+                }
+                else
+                {
+                    systemFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                    return;
+                }
             }
+
+            // Limpiar el formulario
+            currentSystem = new ReviewSystemDevicesDTO();
+            systemErrors.Clear();
+            systemFormError = "";
+        }
+        catch (Exception ex)
+        {
+            systemFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", systemFormError);
         }
     }
 
     private bool ValidateSystemForm()
     {
         systemErrors.Clear();
+        systemFormError = "";
         bool isValid = true;
 
         if (currentSystem.SystemsDevicesId <= 0)
@@ -1229,16 +1408,21 @@
             systemErrors["State"] = "El estado es obligatorio.";
             isValid = false;
         }
-
-        // Verificar duplicados (excluyendo el registro actual si está editando)
-        var duplicateExists = systemsList.Any(s =>
-            s.SystemsDevicesId == currentSystem.SystemsDevicesId &&
-            s.Id != currentSystem.Id);
-
-        if (duplicateExists)
+        else if (currentSystem.State.Length > 500)
         {
-            systemErrors["SystemsDevicesId"] = "Ya existe una revisión para este aparato o sistema.";
+            systemErrors["State"] = "El estado no puede exceder 500 caracteres.";
             isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentSystem.Observations) && currentSystem.Observations.Length > 1000)
+        {
+            systemErrors["Observations"] = "Las observaciones no pueden exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            systemFormError = "Por favor, corrija los errores antes de continuar.";
         }
 
         return isValid;
@@ -1246,6 +1430,220 @@
 
     private bool IsSystemFormValid()
     {
-        return currentSystem.SystemsDevicesId > 0 && !string.IsNullOrWhiteSpace(currentSystem.State);
+        return currentSystem.SystemsDevicesId > 0 &&
+               !string.IsNullOrWhiteSpace(currentSystem.State) &&
+               (currentSystem.State?.Length ?? 0) <= 500 &&
+               (currentSystem.Observations?.Length ?? 0) <= 1000;
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA EXAMEN FÍSICO - CORRECTO PARA USAR Observation
+    // ============================================================================
+
+    private async Task LoadPhysicalExamData()
+    {
+        availableRegions = await RegionService.GetAllAsync();
+        availablePathologicalEvidences = await PathologicalEvidenceService.GetAllAsync();
+    }
+
+    private async Task RefreshPhysicalExamsTable()
+    {
+        physicalExamRows.Clear();
+        physicalExamIds.Clear();
+
+        foreach (var exam in physicalExamsList)
+        {
+            var regionName = await RegionService.GetRegionNameByIdAsync(exam.RegionId);
+            var evidenceName = await PathologicalEvidenceService.GetPathologicalEvidenceNameByIdAsync(exam.PathologicalEvidenceId);
+            var observation = !string.IsNullOrEmpty(exam.Observation) // CORRECTO: usar Observation
+                ? (exam.Observation.Length > 50 ? exam.Observation.Substring(0, 50) + "..." : exam.Observation)
+                : "Sin observación";
+
+            physicalExamRows.Add(new List<string> { regionName, evidenceName, observation });
+            physicalExamIds.Add(exam.PhysicalExamId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddPhysicalExamRequested()
+    {
+        // VALIDACIÓN: Solo permitir agregar si no hay registros
+        if (physicalExamsList.Count >= 1)
+        {
+            await JS.InvokeVoidAsync("alert", "Solo se permite un registro de examen físico por atención médica. Puede editar o eliminar el registro existente.");
+            return;
+        }
+
+        currentPhysicalExam = new PhysicalExamDTO
+        {
+            PhysicalExamId = 0,
+            MedicalCareId = currentMedicalCareId,
+            RegionId = 0,
+            PathologicalEvidenceId = 0,
+            Observation = "" // CORRECTO: usar Observation
+        };
+        physicalExamErrors.Clear();
+        physicalExamFormError = "";
+    }
+
+    private async Task OnEditPhysicalExamRequested(int id)
+    {
+        var existing = physicalExamsList.FirstOrDefault(e => e.PhysicalExamId == id);
+        if (existing != null)
+        {
+            currentPhysicalExam = new PhysicalExamDTO
+            {
+                PhysicalExamId = existing.PhysicalExamId,
+                MedicalCareId = existing.MedicalCareId,
+                RegionId = existing.RegionId,
+                PathologicalEvidenceId = existing.PathologicalEvidenceId,
+                Observation = existing.Observation ?? "" // CORRECTO: usar Observation
+            };
+        }
+        physicalExamErrors.Clear();
+        physicalExamFormError = "";
+    }
+
+    private async Task OnDeletePhysicalExamRequested(int id)
+    {
+        try
+        {
+            var result = await PhysicalExamService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = physicalExamsList.FirstOrDefault(e => e.PhysicalExamId == id);
+                if (toRemove != null)
+                {
+                    physicalExamsList.Remove(toRemove);
+                    await RefreshPhysicalExamsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Examen físico eliminado exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSavePhysicalExamRequested()
+    {
+        try
+        {
+            if (!ValidatePhysicalExamForm())
+            {
+                return;
+            }
+
+            // VALIDACIÓN ADICIONAL: Verificar límite antes de crear
+            if (currentPhysicalExam.PhysicalExamId == 0 && physicalExamsList.Count >= 1)
+            {
+                physicalExamFormError = "Solo se permite un registro de examen físico por atención médica.";
+                await JS.InvokeVoidAsync("alert", physicalExamFormError);
+                return;
+            }
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentPhysicalExam.MedicalCareId = currentMedicalCareId;
+
+            if (currentPhysicalExam.PhysicalExamId == 0)
+            {
+                // Crear nuevo
+                var result = await PhysicalExamService.CreateAsync(currentPhysicalExam);
+                if (result.Success && result.Data != null)
+                {
+                    physicalExamsList.Add(result.Data);
+                    await RefreshPhysicalExamsTable();
+                    await JS.InvokeVoidAsync("alert", "Examen físico agregado exitosamente.");
+                }
+                else
+                {
+                    physicalExamFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                // Actualizar existente
+                var result = await PhysicalExamService.UpdateAsync(currentPhysicalExam);
+                if (result.Success && result.Data != null)
+                {
+                    var index = physicalExamsList.FindIndex(e => e.PhysicalExamId == currentPhysicalExam.PhysicalExamId);
+                    if (index >= 0)
+                    {
+                        physicalExamsList[index] = result.Data;
+                        await RefreshPhysicalExamsTable();
+                    }
+                    await JS.InvokeVoidAsync("alert", "Examen físico actualizado exitosamente.");
+                }
+                else
+                {
+                    physicalExamFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentPhysicalExam = new PhysicalExamDTO();
+            physicalExamErrors.Clear();
+            physicalExamFormError = "";
+        }
+        catch (Exception ex)
+        {
+            physicalExamFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", physicalExamFormError);
+        }
+    }
+
+    private bool ValidatePhysicalExamForm()
+    {
+        physicalExamErrors.Clear();
+        physicalExamFormError = "";
+        bool isValid = true;
+
+        if (currentPhysicalExam.RegionId <= 0)
+        {
+            physicalExamErrors["RegionId"] = "Debe seleccionar una región.";
+            isValid = false;
+        }
+
+        if (currentPhysicalExam.PathologicalEvidenceId <= 0)
+        {
+            physicalExamErrors["PathologicalEvidenceId"] = "Debe seleccionar una evidencia patológica.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPhysicalExam.Observation)) // CORRECTO: usar Observation
+        {
+            physicalExamErrors["Observation"] = "La observación es obligatoria.";
+            isValid = false;
+        }
+        else if (currentPhysicalExam.Observation.Length > 500)
+        {
+            physicalExamErrors["Observation"] = "La observación no puede exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            physicalExamFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsPhysicalExamFormValid()
+    {
+        return currentPhysicalExam.RegionId > 0 &&
+               currentPhysicalExam.PathologicalEvidenceId > 0 &&
+               !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) && // CORRECTO: usar Observation
+               (currentPhysicalExam.Observation?.Length ?? 0) <= 500;
     }
 }

@@ -18,16 +18,13 @@ namespace SMED.Shared.Entity
         public string Observations { get; set; } = null!;
 
         public int SystemsDevicesId { get; set; }
-
         [ForeignKey("SystemsDevicesId")]
-        [InverseProperty("Review")]
+        [InverseProperty("Reviews")] // Cambiado de "Review" a "Reviews"
         public virtual SystemsDevices SystemsDevices { get; set; } = null!;
 
         public int MedicalCareId { get; set; }
-
         [ForeignKey("MedicalCareId")]
         [InverseProperty("ReviewSystemDevices")]
         public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
-
 }

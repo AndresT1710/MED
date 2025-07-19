@@ -1455,7 +1455,7 @@
         {
             var regionName = await RegionService.GetRegionNameByIdAsync(exam.RegionId);
             var evidenceName = await PathologicalEvidenceService.GetPathologicalEvidenceNameByIdAsync(exam.PathologicalEvidenceId);
-            var observation = !string.IsNullOrEmpty(exam.Observation) // CORRECTO: usar Observation
+            var observation = !string.IsNullOrEmpty(exam.Observation) 
                 ? (exam.Observation.Length > 50 ? exam.Observation.Substring(0, 50) + "..." : exam.Observation)
                 : "Sin observación";
 
@@ -1481,7 +1481,7 @@
             MedicalCareId = currentMedicalCareId,
             RegionId = 0,
             PathologicalEvidenceId = 0,
-            Observation = "" // CORRECTO: usar Observation
+            Observation = "" 
         };
         physicalExamErrors.Clear();
         physicalExamFormError = "";
@@ -1498,7 +1498,7 @@
                 MedicalCareId = existing.MedicalCareId,
                 RegionId = existing.RegionId,
                 PathologicalEvidenceId = existing.PathologicalEvidenceId,
-                Observation = existing.Observation ?? "" // CORRECTO: usar Observation
+                Observation = existing.Observation ?? "" 
             };
         }
         physicalExamErrors.Clear();
@@ -1620,7 +1620,7 @@
             isValid = false;
         }
 
-        if (string.IsNullOrWhiteSpace(currentPhysicalExam.Observation)) // CORRECTO: usar Observation
+        if (string.IsNullOrWhiteSpace(currentPhysicalExam.Observation)) 
         {
             physicalExamErrors["Observation"] = "La observación es obligatoria.";
             isValid = false;
@@ -1643,7 +1643,7 @@
     {
         return currentPhysicalExam.RegionId > 0 &&
                currentPhysicalExam.PathologicalEvidenceId > 0 &&
-               !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) && // CORRECTO: usar Observation
+               !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) && 
                (currentPhysicalExam.Observation?.Length ?? 0) <= 500;
     }
 }

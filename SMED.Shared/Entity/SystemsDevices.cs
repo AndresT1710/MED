@@ -17,9 +17,8 @@ namespace SMED.Shared.Entity
         [StringLength(100)]
         public string Name { get; set; } = null!;
 
+        // Cambiamos el nombre de la propiedad para que coincida con el InverseProperty
         [InverseProperty("SystemsDevices")]
-        public virtual ReviewSystemDevices? Review { get; set; }
+        public virtual ICollection<ReviewSystemDevices> Reviews { get; set; } = new List<ReviewSystemDevices>();
     }
-
-
 }

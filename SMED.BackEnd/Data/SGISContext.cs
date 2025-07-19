@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using System;
 using SMED.Shared.Entity;
 using Infrastructure.Models;
+
 namespace SGIS.Models
 {
     public class SGISContext : DbContext
@@ -50,7 +51,6 @@ namespace SGIS.Models
         public DbSet<MedicalInsurance> MedicalInsurances { get; set; }
         public DbSet<PersonMedicalInsurance> PersonMedicalInsurances { get; set; }
 
-
         // Historia clínica y antecedentes
         public DbSet<ClinicalHistory> ClinicalHistories { get; set; }
         public DbSet<Allergy> Allergies { get; set; }
@@ -60,7 +60,6 @@ namespace SGIS.Models
         public DbSet<DiseaseType> DiseaseTypes { get; set; }
         public DbSet<Disease> Diseases { get; set; }
         public DbSet<FamilyHistoryDetail> FamilyHistoryDetails { get; set; }
-
         public DbSet<GynecologicalHistory> GynecologicalHistories { get; set; }
         public DbSet<ToxicHabit> ToxicHabits { get; set; }
         public DbSet<ToxicHabitBackground> ToxicHabitHistories { get; set; }
@@ -70,7 +69,6 @@ namespace SGIS.Models
         public DbSet<PersonalHistory> PersonalHistories { get; set; }
         public DbSet<Habits> Habits { get; set; }
         public DbSet<HabitHistory> HabitHistories { get; set; }
-
         public DbSet<SportsActivities> SportsActivities { get; set; }
         public DbSet<SportsActivitiesHistory> SportsActivitiesHistories { get; set; }
         public DbSet<LifeStyle> LifeStyles { get; set; }
@@ -121,12 +119,8 @@ namespace SGIS.Models
         public DbSet<MedicalService> MedicalServices { get; set; }
         public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
 
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
-
-
             modelBuilder.Entity<Patient>()
             .HasKey(p => p.PersonId);
 
@@ -134,9 +128,6 @@ namespace SGIS.Models
                 .HasOne(p => p.PersonNavigation)
                 .WithOne(p => p.Patient)
                 .HasForeignKey<Patient>(p => p.PersonId);
-
-
-
 
             //PROVINCE - CITY (1:N)
             modelBuilder.Entity<Province>()
@@ -283,7 +274,6 @@ namespace SGIS.Models
                 .WithMany(bg => bg.PersonBloodGroups)
                 .HasForeignKey(pb => pb.BloodGroupId);
 
-
             //PERSONLABORACTIVITY
             modelBuilder.Entity<PersonLaborActivity>()
                 .HasKey(pl => new { pl.PersonId, pl.LaborActivityId });
@@ -297,7 +287,6 @@ namespace SGIS.Models
                 .HasOne(pl => pl.LaborActivityNavigation)
                 .WithMany(la => la.PersonLaborActivities)
                 .HasForeignKey(pl => pl.LaborActivityId);
-
 
             //PERSONADDRESS
             modelBuilder.Entity<PersonAddress>()
@@ -387,7 +376,6 @@ namespace SGIS.Models
             {
                 entity.HasKey(e => e.ClinicalHistoryId);
                 entity.HasIndex(e => e.HistoryNumber).IsUnique();
-
                 entity.Property(e => e.HistoryNumber).HasMaxLength(50).IsUnicode(false);
                 entity.Property(e => e.GeneralObservations).IsUnicode(false);
                 entity.Property(e => e.CreationDate).HasColumnType("datetime");
@@ -399,17 +387,14 @@ namespace SGIS.Models
                     .HasConstraintName("FK_ClinicalHistory_Patient");
             });
 
-
             //ALLERGYHISTORY
             modelBuilder.Entity<AllergyHistory>(entity =>
             {
                 entity.HasKey(e => e.AllergyHistoryId);
-
                 entity.Property(e => e.HistoryNumber)
                       .IsRequired()
                       .HasMaxLength(50)
                       .IsUnicode(false);
-
                 entity.Property(e => e.RegistrationDate)
                       .HasColumnType("datetime");
 
@@ -428,7 +413,6 @@ namespace SGIS.Models
             modelBuilder.Entity<Allergy>(entity =>
             {
                 entity.HasKey(e => e.AllergyId);
-
                 entity.Property(e => e.Name)
                       .IsRequired()
                       .HasMaxLength(100)
@@ -439,7 +423,6 @@ namespace SGIS.Models
             modelBuilder.Entity<Food>(entity =>
             {
                 entity.HasKey(e => e.FoodId);
-
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasMaxLength(100)
@@ -450,16 +433,13 @@ namespace SGIS.Models
             modelBuilder.Entity<FoodIntoleranceHistory>(entity =>
             {
                 entity.HasKey(e => e.FoodIntoleranceHistoryId);
-
                 entity.Property(e => e.HistoryNumber)
                     .IsRequired()
                     .HasMaxLength(50)
                     .IsUnicode(false);
-
                 entity.Property(e => e.Description)
                     .IsRequired()
                     .IsUnicode(false);
-
                 entity.Property(e => e.RegistrationDate)
                     .HasColumnType("datetime");
 
@@ -478,7 +458,6 @@ namespace SGIS.Models
             modelBuilder.Entity<Surgery>(entity =>
             {
                 entity.HasKey(e => e.SurgeryId);
-
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasMaxLength(100)
@@ -489,19 +468,15 @@ namespace SGIS.Models
             modelBuilder.Entity<SurgeryHistory>(entity =>
             {
                 entity.HasKey(e => e.SurgeryHistoryId);
-
                 entity.Property(e => e.HistoryNumber)
                     .IsRequired()
                     .HasMaxLength(50)
                     .IsUnicode(false);
-
                 entity.Property(e => e.Description)
                     .IsRequired()
                     .IsUnicode(false);
-
                 entity.Property(e => e.RegistrationDate)
                     .HasColumnType("datetime");
-
                 // Configuración añadida para SurgeryDate
                 entity.Property(e => e.SurgeryDate)
                     .HasColumnType("datetime");  // Mismo tipo que RegistrationDate
@@ -521,7 +496,6 @@ namespace SGIS.Models
             modelBuilder.Entity<ObstetricHistory>(entity =>
             {
                 entity.HasKey(e => e.ObstetricHistoryId);
-
                 entity.Property(e => e.HistoryNumber)
                     .IsRequired()
                     .HasMaxLength(50)
@@ -537,7 +511,6 @@ namespace SGIS.Models
             modelBuilder.Entity<Disease>(entity =>
             {
                 entity.HasKey(e => e.DiseaseId);
-
                 entity.Property(e => e.Name)
                     .HasMaxLength(100)
                     .IsUnicode(false);
@@ -547,7 +520,6 @@ namespace SGIS.Models
                     .HasForeignKey(d => d.DiseaseTypeId)
                     .HasConstraintName("FK_Disease_DiseaseType");
             });
-
 
             //PersonalHistory
             modelBuilder.Entity<PersonalHistory>(entity =>
@@ -579,7 +551,6 @@ namespace SGIS.Models
                     .WithMany(mr => mr.GynecologicalHistories)
                     .HasForeignKey(gh => gh.ClinicalHistoryId)
                     .OnDelete(DeleteBehavior.Cascade);
-
             });
 
             modelBuilder.Entity<HabitHistory>(entity =>
@@ -588,7 +559,6 @@ namespace SGIS.Models
                     .WithMany(p => p.HabitHistories)
                     .HasForeignKey(d => d.HabitId)
                     .HasConstraintName("FK_HabitHistory_Habits");
-
 
                 entity.HasOne(d => d.ClinicalHistory)
                     .WithMany(p => p.HabitHistories)
@@ -605,14 +575,17 @@ namespace SGIS.Models
             {
                 entity.ToTable("LifeStyle");
             });
+
             modelBuilder.Entity<LifeStyleHistory>(entity =>
             {
                 entity.ToTable("LifeStyleHistory");
             });
+
             modelBuilder.Entity<DietaryHabitsHistory>(entity =>
             {
                 entity.ToTable("DietaryHabitsHistory");
             });
+
             modelBuilder.Entity<SleepHabit>(entity =>
             {
                 entity.ToTable("SleepHabit");
@@ -622,21 +595,30 @@ namespace SGIS.Models
             {
                 entity.ToTable("SleepHabitHistory");
             });
+
             modelBuilder.Entity<FoodConsumptionHistory>(entity =>
             {
                 entity.ToTable("FoodConsumptionHistory");
             });
+
             modelBuilder.Entity<WaterConsumptionHistory>(entity =>
             {
                 entity.ToTable("WaterConsumptionHistory");
             });
 
+            // CONFIGURACIÓN CORREGIDA PARA SYSTEMSDEVICES Y REVIEWSYSTEMDEVICES
+            // Cambio de relación 1:1 a 1:N - Un SystemsDevices puede tener muchos ReviewSystemDevices
+            modelBuilder.Entity<ReviewSystemDevices>()
+                .HasOne(r => r.SystemsDevices)
+                .WithMany(s => s.Reviews)
+                .HasForeignKey(r => r.SystemsDevicesId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<SystemsDevices>()
-                .HasOne(s => s.Review)
-                .WithOne(r => r.SystemsDevices)
-                .HasForeignKey<ReviewSystemDevices>(r => r.SystemsDevicesId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Índice único compuesto para evitar duplicados por atención médica
+            modelBuilder.Entity<ReviewSystemDevices>()
+                .HasIndex(r => new { r.SystemsDevicesId, r.MedicalCareId })
+                .IsUnique()
+                .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId");
 
             modelBuilder.Entity<OrderDiagnosis>()
                .HasIndex(od => new { od.OrderId, od.DiagnosisId })
@@ -663,8 +645,6 @@ namespace SGIS.Models
                 .WithOne(p => p.TypeOfProcedure)
                 .HasForeignKey(p => p.TypeOfProcedureId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-
 
             modelBuilder.Entity<MedicalCare>(entity =>
             {
@@ -749,6 +729,7 @@ namespace SGIS.Models
 
             modelBuilder.Entity<Region>()
                 .ToTable("Region");
+
             modelBuilder.Entity<PathologicalEvidence>()
                 .ToTable("PathologicalEvidence");
 

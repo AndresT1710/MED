@@ -51,7 +51,6 @@
                         </span>
                     }
                 </div>
-
                 <!-- Contador de dígitos -->
                 @if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
                 {
@@ -59,7 +58,6 @@
                         @Person.Document.DocumentNumber.Length / 10 dígitos
                     </small>
                 }
-
                 @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
                 {
                     <div class="invalid-feedback d-block">El número de documento es obligatorio</div>
@@ -136,7 +134,28 @@
     private Timer validationTimer;
     private ElementReference documentInput;
 
-    private bool ShowProfessionalFields => SelectedHealthProfessionalTypeId.HasValue && SelectedHealthProfessionalTypeId.Value != 25;
+    // Método helper para verificar si la opción seleccionada es "Ninguno"
+    private bool IsNoneProfessionalType
+    {
+        get
+        {
+            if (!SelectedHealthProfessionalTypeId.HasValue)
+                return false;
+
+            var selectedType = HealthProfessionalTypes.FirstOrDefault(t => t.Id == SelectedHealthProfessionalTypeId.Value);
+            if (selectedType == null)
+                return false;
+
+            // Verificar si el nombre contiene "ninguno" (case insensitive)
+            return selectedType.Name.ToLower().Contains("ninguno") ||
+                   selectedType.Name.ToLower().Contains("ninguna") ||
+                   selectedType.Name.ToLower() == "ninguno" ||
+                   selectedType.Name.ToLower() == "ninguna";
+        }
+    }
+
+    // Modificar ShowProfessionalFields para usar el nuevo método
+    private bool ShowProfessionalFields => SelectedHealthProfessionalTypeId.HasValue && !IsNoneProfessionalType;
 
     // Propiedades para validación
     private bool IsCedulaType => SelectedDocumentTypeId.HasValue &&
@@ -187,7 +206,6 @@
     private async Task OnDocumentNumberInput(ChangeEventArgs e)
     {
         var value = e.Value?.ToString() ?? string.Empty;
-
         // Filtrar solo números y limitar a 10 dígitos
         var filteredValue = new string(value.Where(char.IsDigit).Take(10).ToArray());
 
@@ -292,11 +310,9 @@
             {
                 // Verificar si la cédula ya existe en el sistema
                 var response = await Http.GetAsync($"api/Person/by-document/{documentNumber}");
-
                 if (response.IsSuccessStatusCode)
                 {
                     var existingPerson = await response.Content.ReadFromJsonAsync<PersonDTO>();
-
                     // Si existe y no es la misma persona que estamos editando
                     if (existingPerson != null && existingPerson.Id != Person.Id)
                     {
@@ -370,15 +386,16 @@
             {
                 var selectedType = HealthProfessionalTypes.FirstOrDefault(t => t.Id == value.Value);
                 Person.HealthProfessional.NameTypeProfessional = selectedType?.Name;
+
+                // Si se selecciona "Ninguno", limpiar el número de registro
+                if (IsNoneProfessionalType)
+                {
+                    Person.HealthProfessional.RegistrationNumber = null;
+                }
             }
             else
             {
                 Person.HealthProfessional.NameTypeProfessional = null;
-            }
-
-            // Resetear campos si se selecciona "Ninguno" (25)
-            if (value == 25)
-            {
                 Person.HealthProfessional.RegistrationNumber = null;
             }
         }
@@ -407,6 +424,12 @@
             if (tipo != null)
             {
                 Person.HealthProfessional.NameTypeProfessional = tipo.Name;
+
+                // Si es "Ninguno", asegurar que RegistrationNumber sea null
+                if (IsNoneProfessionalType)
+                {
+                    Person.HealthProfessional.RegistrationNumber = null;
+                }
             }
         }
 

@@ -16,6 +16,7 @@
 @inject PhysicalExamService PhysicalExamService
 @inject RegionService RegionService
 @inject PathologicalEvidenceService PathologicalEvidenceService
+@inject EvolutionService EvolutionService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -117,6 +118,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-chart-line me-2"></i>Evolución
+                @if (IsEvolutionTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -799,32 +804,99 @@
                         <i class="fas fa-chart-line me-2"></i>Evolución
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Evolución del paciente</small>
+                    <small class="text-muted">Evolución y seguimiento del paciente</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <div>
-                                    <strong>Evolución</strong>
-                                    <p class="mb-0">Aquí se registrará la evolución y seguimiento del paciente.</p>
-                                </div>
-                            </div>
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples evoluciones para hacer seguimiento del progreso del paciente.
                         </div>
+
+                        <EditableTable Title="Evolución del Paciente"
+                                       ColumnHeaders="@evolutionHeaders"
+                                       Rows="@evolutionRows"
+                                       RowIds="@evolutionIds"
+                                       EmptyMessage="No se han registrado evoluciones del paciente"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta evolución?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddEvolutionRequested"
+                                       OnEditRequested="@OnEditEvolutionRequested"
+                                       OnDeleteRequested="@OnDeleteEvolutionRequested"
+                                       OnSaveRequested="@OnSaveEvolutionRequested"
+                                       IsValidForm="@IsEvolutionFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Observación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(evolutionErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                                  @bind="currentEvolution.Description"
+                                                  rows="6"
+                                                  maxlength="1000"
+                                                  placeholder="Describa la evolución del paciente, síntomas, mejoras, cambios en el tratamiento, etc..."
+                                                  style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
+                                        @if (evolutionErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@evolutionErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentEvolution.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Porcentaje de Mejora <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number"
+                                                   class="form-control @(evolutionErrors.ContainsKey("Percentage") ? "is-invalid" : "")"
+                                                   @bind="currentEvolution.Percentage"
+                                                   min="0"
+                                                   max="100"
+                                                   step="0.1"
+                                                   placeholder="Ingrese el porcentaje de mejora" />
+                                            <span class="input-group-text">%</span>
+                                            @if (evolutionErrors.ContainsKey("Percentage"))
+                                            {
+                                                <div class="invalid-feedback">@evolutionErrors["Percentage"]</div>
+                                            }
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Ingrese un valor entre 0 y 100 para indicar el porcentaje de mejora del paciente.
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(evolutionFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @evolutionFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("referral"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-success" @onclick="FinalizarAtencionMedica" disabled="@isSaving">
-                                @if (isSaving)
+                            <div>
+                                @if (hasUnsavedEvolutionData)
                                 {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
                                 }
-                                <i class="fas fa-check me-2"></i>Finalizar Atención Médica
-                            </button>
+                                <button class="btn btn-success" @onclick="FinalizarAtencionMedica" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="fas fa-check me-2"></i>Finalizar Atención Médica
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -921,9 +993,19 @@
     private Dictionary<string, string> physicalExamErrors = new();
     private string physicalExamFormError = "";
 
-    // Variables para controlar datos sin guardar (ahora son bool simples)
+    // Variables para Evolución
+    private List<EvolutionDTO> evolutionsList = new();
+    private EvolutionDTO currentEvolution = new();
+    private List<string> evolutionHeaders = new() { "Observación", "Porcentaje" };
+    private List<List<string>> evolutionRows = new();
+    private List<int> evolutionIds = new();
+    private Dictionary<string, string> evolutionErrors = new();
+    private string evolutionFormError = "";
+
+    // Variables para controlar datos sin guardar
     private bool hasUnsavedSystemsData = false;
     private bool hasUnsavedPhysicalExamData = false;
+    private bool hasUnsavedEvolutionData = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -959,11 +1041,15 @@
 
                 var physicalExamData = await JS.InvokeAsync<string>("localStorage.getItem", $"physical_exam_data_{currentMedicalCareId}");
                 hasUnsavedPhysicalExamData = !string.IsNullOrEmpty(physicalExamData);
+
+                var evolutionData = await JS.InvokeAsync<string>("localStorage.getItem", $"evolution_data_{currentMedicalCareId}");
+                hasUnsavedEvolutionData = !string.IsNullOrEmpty(evolutionData);
             }
             catch
             {
                 hasUnsavedSystemsData = false;
                 hasUnsavedPhysicalExamData = false;
+                hasUnsavedEvolutionData = false;
             }
         }
     }
@@ -992,6 +1078,11 @@
         return procedimientosList.Any();
     }
 
+    private bool IsEvolutionTabComplete()
+    {
+        return evolutionsList.Any();
+    }
+
     private void ValidateAndShowErrors()
     {
         showValidationErrors = true;
@@ -1016,7 +1107,7 @@
         // Verificar datos sin guardar antes de cambiar de pestaña
         if (activeTab == "systems" && tab != "systems")
         {
-            await CheckUnsavedData(); // Actualizar estado
+            await CheckUnsavedData();
             if (hasUnsavedSystemsData)
             {
                 bool confirmed = await JS.InvokeAsync<bool>("confirm",
@@ -1033,11 +1124,28 @@
 
         if (activeTab == "physical-exam" && tab != "physical-exam")
         {
-            await CheckUnsavedData(); // Actualizar estado
+            await CheckUnsavedData();
             if (hasUnsavedPhysicalExamData)
             {
                 bool confirmed = await JS.InvokeAsync<bool>("confirm",
                     "Hay cambios sin guardar en la sección de Examen Físico. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (activeTab == "evolution" && tab != "evolution")
+        {
+            await CheckUnsavedData();
+            if (hasUnsavedEvolutionData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Evolución. " +
                     "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
                     "¿Desea continuar sin guardar? (Se perderán los cambios)");
 
@@ -1079,6 +1187,10 @@
         // Cargar exámenes físicos existentes
         physicalExamsList = await PhysicalExamService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshPhysicalExamsTable();
+
+        // Cargar evoluciones existentes
+        evolutionsList = await EvolutionService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        await RefreshEvolutionsTable();
 
         StateHasChanged();
     }
@@ -1762,5 +1874,196 @@
                currentPhysicalExam.PathologicalEvidenceId > 0 &&
                !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) &&
                (currentPhysicalExam.Observation?.Length ?? 0) <= 500;
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA EVOLUCIÓN - PERMITE MÚLTIPLES REGISTROS
+    // ============================================================================
+    private async Task RefreshEvolutionsTable()
+    {
+        evolutionRows.Clear();
+        evolutionIds.Clear();
+
+        foreach (var evolution in evolutionsList)
+        {
+            var description = !string.IsNullOrEmpty(evolution.Description)
+                ? (evolution.Description.Length > 50 ? evolution.Description.Substring(0, 50) + "..." : evolution.Description)
+                : "Sin descripción";
+            var percentage = $"{evolution.Percentage:F1}%";
+
+            evolutionRows.Add(new List<string> { description, percentage });
+            evolutionIds.Add(evolution.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddEvolutionRequested()
+    {
+        currentEvolution = new EvolutionDTO
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            Description = "",
+            Percentage = 0
+        };
+
+        evolutionErrors.Clear();
+        evolutionFormError = "";
+    }
+
+    private async Task OnEditEvolutionRequested(int id)
+    {
+        var existing = evolutionsList.FirstOrDefault(e => e.Id == id);
+        if (existing != null)
+        {
+            currentEvolution = new EvolutionDTO
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                Description = existing.Description ?? "",
+                Percentage = existing.Percentage
+            };
+        }
+
+        evolutionErrors.Clear();
+        evolutionFormError = "";
+    }
+
+    private async Task OnDeleteEvolutionRequested(int id)
+    {
+        try
+        {
+            var result = await EvolutionService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = evolutionsList.FirstOrDefault(e => e.Id == id);
+                if (toRemove != null)
+                {
+                    evolutionsList.Remove(toRemove);
+                    await RefreshEvolutionsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Evolución eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveEvolutionRequested()
+    {
+        try
+        {
+            if (!ValidateEvolutionForm())
+            {
+                return;
+            }
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentEvolution.MedicalCareId = currentMedicalCareId;
+
+            if (currentEvolution.Id == 0)
+            {
+                // Crear nuevo
+                var result = await EvolutionService.CreateAsync(currentEvolution);
+                if (result.Success && result.Data != null)
+                {
+                    evolutionsList.Add(result.Data);
+                    await RefreshEvolutionsTable();
+                    await JS.InvokeVoidAsync("alert", "Evolución agregada exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"evolution_data_{currentMedicalCareId}");
+                    hasUnsavedEvolutionData = false;
+                }
+                else
+                {
+                    evolutionFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                // Actualizar existente
+                var result = await EvolutionService.UpdateAsync(currentEvolution);
+                if (result.Success && result.Data != null)
+                {
+                    var index = evolutionsList.FindIndex(e => e.Id == currentEvolution.Id);
+                    if (index >= 0)
+                    {
+                        evolutionsList[index] = result.Data;
+                        await RefreshEvolutionsTable();
+                    }
+                    await JS.InvokeVoidAsync("alert", "Evolución actualizada exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"evolution_data_{currentMedicalCareId}");
+                    hasUnsavedEvolutionData = false;
+                }
+                else
+                {
+                    evolutionFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentEvolution = new EvolutionDTO();
+            evolutionErrors.Clear();
+            evolutionFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            evolutionFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", evolutionFormError);
+        }
+    }
+
+    private bool ValidateEvolutionForm()
+    {
+        evolutionErrors.Clear();
+        evolutionFormError = "";
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(currentEvolution.Description))
+        {
+            evolutionErrors["Description"] = "La observación es obligatoria.";
+            isValid = false;
+        }
+        else if (currentEvolution.Description.Length > 1000)
+        {
+            evolutionErrors["Description"] = "La observación no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (currentEvolution.Percentage < 0 || currentEvolution.Percentage > 100)
+        {
+            evolutionErrors["Percentage"] = "El porcentaje debe estar entre 0 y 100.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            evolutionFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsEvolutionFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(currentEvolution.Description) &&
+               (currentEvolution.Description?.Length ?? 0) <= 1000 &&
+               currentEvolution.Percentage >= 0 &&
+               currentEvolution.Percentage <= 100;
     }
 }

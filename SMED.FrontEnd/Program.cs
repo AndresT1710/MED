@@ -75,6 +75,7 @@ builder.Services.AddScoped<SystemsDevicesService>();
 builder.Services.AddScoped<PhysicalExamService>();
 builder.Services.AddScoped<RegionService>();
 builder.Services.AddScoped<PathologicalEvidenceService>();
+builder.Services.AddScoped<EvolutionService>();
 
 
 builder.Services.AddLogging();

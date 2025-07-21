@@ -110,6 +110,7 @@ namespace SGIS.Models
         public DbSet<MedicalCare> MedicalCares { get; set; }
         public DbSet<ReasonForConsultation> ReasonForConsultations { get; set; }
         public DbSet<Indications> Indications { get; set; }
+        public DbSet<AdditionalData> AdditionalData { get; set; }
 
         //Enfermeria
         public DbSet<TypeOfService> TypeOfServices { get; set; }

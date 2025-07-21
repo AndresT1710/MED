@@ -92,6 +92,7 @@ builder.Services.AddScoped<IRepository<MedicalProcedureDTO, int>, MedicalProcedu
 builder.Services.AddScoped<MedicalCareRepository>();
 builder.Services.AddScoped<IRepository<RegionDTO, int>, RegionRepository>();
 builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, PathologicalEvidenceRepository>();
+builder.Services.AddScoped<IRepository<AdditionalDataDTO, int>, AdditionalDataRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

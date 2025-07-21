@@ -177,12 +177,14 @@
     private bool isSaving = false;
     private bool showExistingHistoryAlert = false;
     private ClinicalHistoryDTO? existingHistoryInfo = null;
+    private bool isProcessingPersonSelection = false; // Nueva variable para controlar el proceso
 
     private bool IsEditMode => History?.ClinicalHistoryId > 0;
 
     protected override async Task OnInitializedAsync()
     {
         History.Patient ??= new PatientDTO();
+
         if (PreselectedPerson != null)
         {
             await SetupPreselectedPerson();
@@ -213,20 +215,45 @@
 
     private async Task OnPersonSelected(PersonDTO person)
     {
-        selectedPerson = person;
-        History.Patient.PersonId = person.Id;
-        History.Patient.Person = person;
+        // Evitar procesamiento múltiple
+        if (isProcessingPersonSelection)
+            return;
 
-        if (!IsEditMode)
+        try
         {
-            await CheckForExistingHistory(person.Id);
-            if (!showExistingHistoryAlert)
-            {
-                History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
-            }
-        }
+            isProcessingPersonSelection = true;
 
-        StateHasChanged();
+            // Solo actualizar los datos de la persona seleccionada
+            selectedPerson = person;
+            History.Patient.PersonId = person.Id;
+            History.Patient.Person = person;
+
+            // Solo verificar historia existente y generar número si no estamos en modo edición
+            if (!IsEditMode)
+            {
+                await CheckForExistingHistory(person.Id);
+
+                // Solo generar el número de historia si no hay una historia existente
+                if (!showExistingHistoryAlert)
+                {
+                    History.HistoryNumber = GenerateHistoryNumber(person.Document?.DocumentNumber);
+                }
+            }
+
+            // Forzar actualización de la UI
+            await InvokeAsync(StateHasChanged);
+
+            // Log para debugging
+            await JS.InvokeVoidAsync("console.log", "Persona seleccionada correctamente:", person.FirstName + " " + person.LastName);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al seleccionar persona: {ex.Message}");
+        }
+        finally
+        {
+            isProcessingPersonSelection = false;
+        }
     }
 
     private async Task CheckForExistingHistory(int personId)
@@ -285,7 +312,6 @@
         var currentYear = DateTime.Now.Year;
         var yearSuffix = currentYear.ToString().Substring(2, 2);
         var documentSuffix = documentNumber.Substring(documentNumber.Length - 2, 2);
-
         return $"UTA-HC-{yearSuffix}{documentSuffix}";
     }
 
@@ -306,9 +332,18 @@
 
     private async Task HandleSave()
     {
+        // Verificar que no estemos procesando una selección de persona
+        if (isProcessingPersonSelection)
+        {
+            await JS.InvokeVoidAsync("console.log", "Guardado cancelado: procesando selección de persona");
+            return;
+        }
+
         isSaving = true;
+
         try
         {
+            // Validaciones previas
             if (History.Patient?.PersonId == null || History.Patient.PersonId == 0)
             {
                 await JS.InvokeVoidAsync("alert", "Debe seleccionar un paciente válido.");
@@ -320,6 +355,9 @@
                 await JS.InvokeVoidAsync("alert", "No se puede crear una nueva historia clínica. Este paciente ya tiene una historia activa.");
                 return;
             }
+
+            // Log para debugging
+            await JS.InvokeVoidAsync("console.log", "Iniciando guardado de historia clínica");
 
             if (IsEditMode)
             {
@@ -341,6 +379,7 @@
             }
             else
             {
+                // Generar número de historia si no existe
                 if (string.IsNullOrWhiteSpace(History.HistoryNumber))
                 {
                     var documentNumber = History.Patient.Person?.Document?.DocumentNumber;

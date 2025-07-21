@@ -68,5 +68,8 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<MedicalProcedure> MedicalProcedures { get; set; } = new List<MedicalProcedure>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual AdditionalData? AdditionalData { get; set; }
+
     }
 }

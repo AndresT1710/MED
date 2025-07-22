@@ -17,6 +17,7 @@
 @inject RegionService RegionService
 @inject PathologicalEvidenceService PathologicalEvidenceService
 @inject EvolutionService EvolutionService
+@inject AdditionalDataService AdditionalDataService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -69,6 +70,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
+                @if (IsAdditionalDataTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -548,7 +553,7 @@
                         <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Información complementaria</small>
+                    <small class="text-muted">Información complementaria de la atención médica</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
@@ -558,8 +563,16 @@
                                 <i class="fas fa-info-circle me-2"></i>
                                 <div>
                                     <strong>Datos Adicionales</strong>
-                                    <p class="mb-0">Aquí se registrarán datos adicionales relevantes para la atención médica.</p>
+                                    <p class="mb-0">Registre información complementaria relevante para la atención médica. Haga clic en el campo para editarlo.</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <ContainerBox1 Title="Observaciones Adicionales"
+                                               Width="full"
+                                               @bind-Content="additionalDataContent" />
                             </div>
                         </div>
 
@@ -993,6 +1006,22 @@
     private Dictionary<string, string> physicalExamErrors = new();
     private string physicalExamFormError = "";
 
+    // Variables para Datos Adicionales
+    private AdditionalDataDTO? currentAdditionalData;
+    private string _additionalDataContent = "";
+    private string additionalDataContent
+    {
+        get => _additionalDataContent;
+        set
+        {
+            if (_additionalDataContent != value)
+            {
+                _additionalDataContent = value;
+                _ = Task.Run(async () => await SaveAdditionalData());
+            }
+        }
+    }
+
     // Variables para Evolución
     private List<EvolutionDTO> evolutionsList = new();
     private EvolutionDTO currentEvolution = new();
@@ -1071,6 +1100,11 @@
     private bool IsPhysicalExamTabComplete()
     {
         return physicalExamsList.Any();
+    }
+
+    private bool IsAdditionalDataTabComplete()
+    {
+        return !string.IsNullOrWhiteSpace(additionalDataContent);
     }
 
     private bool IsProceduresTabComplete()
@@ -1187,6 +1221,14 @@
         // Cargar exámenes físicos existentes
         physicalExamsList = await PhysicalExamService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshPhysicalExamsTable();
+
+        // Cargar datos adicionales existentes
+        var existingAdditionalData = await AdditionalDataService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        currentAdditionalData = existingAdditionalData?.FirstOrDefault();
+        if (currentAdditionalData != null)
+        {
+            _additionalDataContent = currentAdditionalData.Observacion ?? "";
+        }
 
         // Cargar evoluciones existentes
         evolutionsList = await EvolutionService.GetByMedicalCareIdAsync(MedicalCare.CareId);
@@ -1351,6 +1393,59 @@
         finally
         {
             isSaving = false;
+        }
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA DATOS ADICIONALES - USANDO CONTAINERBOX1
+    // ============================================================================
+    private async Task SaveAdditionalData()
+    {
+        try
+        {
+            if (currentMedicalCareId == 0) return;
+
+            if (string.IsNullOrWhiteSpace(additionalDataContent))
+            {
+                // Si el contenido está vacío y existe un registro, eliminarlo
+                if (currentAdditionalData != null && currentAdditionalData.AdditionalDataId > 0)
+                {
+                    await AdditionalDataService.DeleteAsync(currentAdditionalData.AdditionalDataId);
+                    currentAdditionalData = null;
+                }
+                return;
+            }
+
+            if (currentAdditionalData != null && currentAdditionalData.AdditionalDataId > 0)
+            {
+                // Actualizar existente
+                currentAdditionalData.Observacion = additionalDataContent;
+                var updateResult = await AdditionalDataService.UpdateAsync(currentAdditionalData);
+                if (updateResult.Success && updateResult.Data != null)
+                {
+                    currentAdditionalData = updateResult.Data;
+                }
+            }
+            else
+            {
+                // Crear nuevo
+                var newAdditionalData = new AdditionalDataDTO
+                {
+                    AdditionalDataId = 0,
+                    Observacion = additionalDataContent,
+                    MedicalCareId = currentMedicalCareId
+                };
+
+                var createResult = await AdditionalDataService.CreateAsync(newAdditionalData);
+                if (createResult.Success && createResult.Data != null)
+                {
+                    currentAdditionalData = createResult.Data;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar datos adicionales: {ex.Message}");
         }
     }
 

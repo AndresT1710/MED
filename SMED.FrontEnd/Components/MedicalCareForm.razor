@@ -294,26 +294,15 @@
                         <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Evaluación de aparatos y sistemas (máximo 1 registro por atención)</small>
+                    <small class="text-muted">Evaluación de aparatos y sistemas del paciente</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        @if (systemsList.Count >= 1)
-                        {
-                            <div class="alert alert-warning mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Límite alcanzado:</strong> Solo se permite un registro de aparatos y sistemas por atención médica.
-                                Puede editar o eliminar el registro existente.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-info mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Información:</strong> Solo se permite un registro de aparatos y sistemas por atención médica.
-                            </div>
-                        }
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples evaluaciones de aparatos y sistemas para esta atención médica.
+                        </div>
 
                         <EditableTable Title="Revisión de Aparatos y Sistemas"
                                        ColumnHeaders="@systemsHeaders"
@@ -321,7 +310,7 @@
                                        RowIds="@systemsIds"
                                        EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
                                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
-                                       ShowAddButton="@(systemsList.Count < 1)"
+                                       ShowAddButton="true"
                                        ShowEditButton="true"
                                        ShowDeleteButton="true"
                                        ShowActions="true"
@@ -422,26 +411,15 @@
                         <i class="fas fa-stethoscope me-2"></i>Examen Físico
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Evaluación física del paciente (máximo 1 registro por atención)</small>
+                    <small class="text-muted">Evaluación física del paciente</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        @if (physicalExamsList.Count >= 1)
-                        {
-                            <div class="alert alert-warning mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Límite alcanzado:</strong> Solo se permite un registro de examen físico por atención médica.
-                                Puede editar o eliminar el registro existente.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-info mb-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Información:</strong> Solo se permite un registro de examen físico por atención médica.
-                            </div>
-                        }
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples exámenes físicos para esta atención médica.
+                        </div>
 
                         <EditableTable Title="Examen Físico del Paciente"
                                        ColumnHeaders="@physicalExamHeaders"
@@ -449,7 +427,7 @@
                                        RowIds="@physicalExamIds"
                                        EmptyMessage="No se han registrado exámenes físicos"
                                        DeleteConfirmationMessage="¿Está seguro que desea eliminar este examen físico?"
-                                       ShowAddButton="@(physicalExamsList.Count < 1)"
+                                       ShowAddButton="true"
                                        ShowEditButton="true"
                                        ShowDeleteButton="true"
                                        ShowActions="true"
@@ -1529,7 +1507,7 @@
     }
 
     // ============================================================================
-    // MÉTODOS PARA APARATOS Y SISTEMAS - CON RESTRICCIÓN DE UN SOLO REGISTRO
+    // MÉTODOS PARA APARATOS Y SISTEMAS - AHORA PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
     private async Task LoadSystemsData()
     {
@@ -1560,13 +1538,6 @@
 
     private async Task OnAddSystemRequested()
     {
-        // VALIDACIÓN: Solo permitir agregar si no hay registros
-        if (systemsList.Count >= 1)
-        {
-            await JS.InvokeVoidAsync("alert", "Solo se permite un registro de aparatos y sistemas por atención médica. Puede editar o eliminar el registro existente.");
-            return;
-        }
-
         currentSystem = new ReviewSystemDevicesDTO
         {
             Id = 0,
@@ -1631,14 +1602,6 @@
         {
             if (!ValidateSystemForm())
             {
-                return;
-            }
-
-            // VALIDACIÓN ADICIONAL: Verificar límite antes de crear
-            if (currentSystem.Id == 0 && systemsList.Count >= 1)
-            {
-                systemFormError = "Solo se permite un registro de aparatos y sistemas por atención médica.";
-                await JS.InvokeVoidAsync("alert", systemFormError);
                 return;
             }
 
@@ -1751,7 +1714,7 @@
     }
 
     // ============================================================================
-    // MÉTODOS PARA EXAMEN FÍSICO - CORRECTO PARA USAR Observation
+    // MÉTODOS PARA EXAMEN FÍSICO - AHORA PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
     private async Task LoadPhysicalExamData()
     {
@@ -1781,13 +1744,6 @@
 
     private async Task OnAddPhysicalExamRequested()
     {
-        // VALIDACIÓN: Solo permitir agregar si no hay registros
-        if (physicalExamsList.Count >= 1)
-        {
-            await JS.InvokeVoidAsync("alert", "Solo se permite un registro de examen físico por atención médica. Puede editar o eliminar el registro existente.");
-            return;
-        }
-
         currentPhysicalExam = new PhysicalExamDTO
         {
             PhysicalExamId = 0,
@@ -1852,14 +1808,6 @@
         {
             if (!ValidatePhysicalExamForm())
             {
-                return;
-            }
-
-            // VALIDACIÓN ADICIONAL: Verificar límite antes de crear
-            if (currentPhysicalExam.PhysicalExamId == 0 && physicalExamsList.Count >= 1)
-            {
-                physicalExamFormError = "Solo se permite un registro de examen físico por atención médica.";
-                await JS.InvokeVoidAsync("alert", physicalExamFormError);
                 return;
             }
 

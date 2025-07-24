@@ -44,16 +44,14 @@ namespace SMED.Shared.Entity
         public virtual ICollection<IdentifiedDisease> IdentifiedDiseases { get; set; } = new List<IdentifiedDisease>();
 
         [InverseProperty("MedicalCare")]
-        public virtual PhysicalExam? PhysicalExam { get; set; }
+        public virtual ICollection<PhysicalExam> PhysicalExams { get; set; } = new List<PhysicalExam>();
 
         [InverseProperty("MedicalCare")]
-        public virtual ReviewSystemDevices? ReviewSystemDevices { get; set; }
-
+        public virtual ICollection<ReviewSystemDevices> ReviewSystemDevices { get; set; } = new List<ReviewSystemDevices>();
 
         [ForeignKey("HealthProfessionalId")]
         [InverseProperty("MedicalCares")]
         public virtual HealthProfessional HealthProfessional { get; set; } = null!;
-
 
         [ForeignKey("PatientId")]
         [InverseProperty("MedicalCares")]

@@ -671,21 +671,26 @@ namespace SGIS.Models
                       .HasForeignKey<VitalSigns>(v => v.MedicalCareId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(m => m.PhysicalExam)
-                      .WithOne(p => p.MedicalCare)
-                      .HasForeignKey<PhysicalExam>(p => p.MedicalCareId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(m => m.ReviewSystemDevices)
-                      .WithOne(r => r.MedicalCare)
-                      .HasForeignKey<ReviewSystemDevices>(r => r.MedicalCareId)
-                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(m => m.MedicalReferral)
                       .WithOne(mr => mr.MedicalCare)
                       .HasForeignKey<MedicalReferral>(mr => mr.MedicalCareId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+
+            // Una atención médica tiene muchos exámenes físicos
+            modelBuilder.Entity<MedicalCare>()
+                .HasMany(mc => mc.PhysicalExams)
+                .WithOne(pe => pe.MedicalCare)
+                .HasForeignKey(pe => pe.MedicalCareId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Una atención médica tiene muchas revisiones de sistemas
+            modelBuilder.Entity<MedicalCare>()
+                .HasMany(mc => mc.ReviewSystemDevices)
+                .WithOne(rs => rs.MedicalCare)
+                .HasForeignKey(rs => rs.MedicalCareId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<DiagnosisTreatment>(entity =>
             {

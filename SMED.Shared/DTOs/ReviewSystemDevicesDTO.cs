@@ -12,6 +12,6 @@ namespace SMED.Shared.DTOs
         public string? State { get; set; }
         public string? Observations { get; set; }
         public int SystemsDevicesId { get; set; }
-        public int MedicalCareId { get; set; }
+        public int? MedicalCareId { get; set; }
     }
 }

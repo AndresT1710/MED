@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250724213131_UpdatePhysicalExam-ReviewSystemDeviceRelation")]
+    partial class UpdatePhysicalExamReviewSystemDeviceRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1656,7 +1659,7 @@ namespace SMED.BackEnd.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhysicalExamId"));
 
-                    b.Property<int?>("MedicalCareId")
+                    b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
                     b.Property<string>("Observation")
@@ -1937,7 +1940,7 @@ namespace SMED.BackEnd.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("MedicalCareId")
+                    b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
                     b.Property<string>("Observations")
@@ -1957,8 +1960,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasIndex("SystemsDevicesId", "MedicalCareId")
                         .IsUnique()
-                        .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId")
-                        .HasFilter("[MedicalCareId] IS NOT NULL");
+                        .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId");
 
                     b.ToTable("ReviewSystemDevices");
                 });
@@ -3219,7 +3221,8 @@ namespace SMED.BackEnd.Migrations
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
                         .WithMany("PhysicalExams")
                         .HasForeignKey("MedicalCareId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("SMED.Shared.Entity.PathologicalEvidence", "PathologicalEvidenceNavigation")
                         .WithMany("PhysicalExams")
@@ -3306,7 +3309,8 @@ namespace SMED.BackEnd.Migrations
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
                         .WithMany("ReviewSystemDevices")
                         .HasForeignKey("MedicalCareId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("SMED.Shared.Entity.SystemsDevices", "SystemsDevices")
                         .WithMany("Reviews")

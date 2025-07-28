@@ -52,7 +52,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 mp.TreatingPhysician.PersonNavigation.MiddleName,
                 mp.TreatingPhysician.PersonNavigation.LastName,
                 mp.TreatingPhysician.PersonNavigation.SecondLastName
-                    }.Where(n => !string.IsNullOrWhiteSpace(n))) : null
+                    }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
+                Status = mp.Status
             }).ToList();
         }
 
@@ -98,7 +99,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 mp.TreatingPhysician.PersonNavigation.LastName,
                 mp.TreatingPhysician.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
-                    : null
+                    : null,
+                Status = mp.Status
             };
         }
 
@@ -112,7 +114,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 HealthProfessionalId = dto.HealthProfessionalId,
                 PatientId = dto.PatientId,
                 TreatingPhysicianId = dto.TreatingPhysicianId,
-                Observations = dto.Observations
+                Observations = dto.Observations,
+                Status = dto.Status
             };
 
             _context.MedicalProcedures.Add(entity);
@@ -133,6 +136,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.PatientId = dto.PatientId;
             entity.TreatingPhysicianId = dto.TreatingPhysicianId;
             entity.Observations = dto.Observations;
+            entity.Status = dto.Status;
 
             await _context.SaveChangesAsync();
             return await GetByIdAsync(entity.ProcedureId);

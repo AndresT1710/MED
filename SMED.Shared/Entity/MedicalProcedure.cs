@@ -35,6 +35,9 @@ namespace SMED.Shared.Entity
         // Observaciones adicionales
         public string? Observations { get; set; }
 
+        public string Status { get; set; }
+
+
         [ForeignKey("SpecificProcedureId")]
         [InverseProperty("MedicalProcedures")]
         public virtual Procedures? Procedure { get; set; }

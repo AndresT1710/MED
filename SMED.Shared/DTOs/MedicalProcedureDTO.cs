@@ -16,6 +16,7 @@ namespace SMED.Shared.DTOs
         public int PatientId { get; set; }
         public int? TreatingPhysicianId { get; set; }
         public string? Observations { get; set; }
+        public string Status { get; set; }
 
 
         // Propiedades de navegación para mostrar nombres

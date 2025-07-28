@@ -18,6 +18,8 @@
 @inject PathologicalEvidenceService PathologicalEvidenceService
 @inject EvolutionService EvolutionService
 @inject AdditionalDataService AdditionalDataService
+@inject MedicalDiagnosisService MedicalDiagnosisService
+@inject DiagnosticTypeService DiagnosticTypeService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -96,6 +98,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-diagnoses me-2"></i>Diagnóstico
+                @if (IsDiagnosisTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -666,28 +672,137 @@
                         <i class="fas fa-diagnoses me-2"></i>Diagnóstico
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <small class="text-muted">Diagnóstico médico</small>
+                    <small class="text-muted">Diagnóstico médico del paciente</small>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <div>
-                                    <strong>Diagnóstico</strong>
-                                    <p class="mb-0">Aquí se registrará el diagnóstico médico del paciente.</p>
-                                </div>
-                            </div>
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples diagnósticos médicos para esta atención médica.
                         </div>
+
+                        <EditableTable Title="Diagnósticos Médicos"
+                                       ColumnHeaders="@diagnosisHeaders"
+                                       Rows="@diagnosisRows"
+                                       RowIds="@diagnosisIds"
+                                       EmptyMessage="No se han registrado diagnósticos médicos"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este diagnóstico?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddDiagnosisRequested"
+                                       OnEditRequested="@OnEditDiagnosisRequested"
+                                       OnDeleteRequested="@OnDeleteDiagnosisRequested"
+                                       OnSaveRequested="@OnSaveDiagnosisRequested"
+                                       IsValidForm="@IsDiagnosisFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">CIE10 <span class="text-danger">*</span></label>
+                                        <input type="text"
+                                               class="form-control @(diagnosisErrors.ContainsKey("Cie10") ? "is-invalid" : "")"
+                                               @bind="currentDiagnosis.Cie10"
+                                               maxlength="20"
+                                               placeholder="Ingrese el código CIE10" />
+                                        @if (diagnosisErrors.ContainsKey("Cie10"))
+                                        {
+                                            <div class="invalid-feedback">@diagnosisErrors["Cie10"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 20 caracteres. Restantes: @(20 - (currentDiagnosis.Cie10?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Tipo de Diagnóstico <span class="text-danger">*</span></label>
+                                        <select class="form-select @(diagnosisErrors.ContainsKey("DiagnosticTypeId") ? "is-invalid" : "")"
+                                                @bind="currentDiagnosis.DiagnosticTypeId">
+                                            <option value="0">Seleccione un tipo de diagnóstico</option>
+                                            @foreach (var type in availableDiagnosticTypes)
+                                            {
+                                                <option value="@type.Id">@type.Name</option>
+                                            }
+                                        </select>
+                                        @if (diagnosisErrors.ContainsKey("DiagnosticTypeId"))
+                                        {
+                                            <div class="invalid-feedback">@diagnosisErrors["DiagnosticTypeId"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Denominación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(diagnosisErrors.ContainsKey("Denomination") ? "is-invalid" : "")"
+                                                  @bind="currentDiagnosis.Denomination"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa la denominación del diagnóstico..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (diagnosisErrors.ContainsKey("Denomination"))
+                                        {
+                                            <div class="invalid-feedback">@diagnosisErrors["Denomination"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentDiagnosis.Denomination?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Recurrencia <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(diagnosisErrors.ContainsKey("Recurrence") ? "is-invalid" : "")"
+                                                  @bind="currentDiagnosis.Recurrence"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa la recurrencia del diagnóstico..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (diagnosisErrors.ContainsKey("Recurrence"))
+                                        {
+                                            <div class="invalid-feedback">@diagnosisErrors["Recurrence"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentDiagnosis.Recurrence?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivación del Diagnóstico <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(diagnosisErrors.ContainsKey("DiagnosisMotivation") ? "is-invalid" : "")"
+                                                  @bind="currentDiagnosis.DiagnosisMotivation"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa la motivación del diagnóstico..."
+                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @if (diagnosisErrors.ContainsKey("DiagnosisMotivation"))
+                                        {
+                                            <div class="invalid-feedback">@diagnosisErrors["DiagnosisMotivation"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentDiagnosis.DiagnosisMotivation?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(diagnosisFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @diagnosisFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("procedures"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                            <div>
+                                @if (hasUnsavedDiagnosisData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -1009,10 +1124,21 @@
     private Dictionary<string, string> evolutionErrors = new();
     private string evolutionFormError = "";
 
+    // Variables para Diagnóstico
+    private List<DiagnosticTypeDTO> availableDiagnosticTypes = new();
+    private List<MedicalDiagnosisDTO> diagnosisList = new();
+    private MedicalDiagnosisDTO currentDiagnosis = new();
+    private List<string> diagnosisHeaders = new() { "CIE10", "Denominación", "Tipo Diagnóstico", "Recurrencia", "Motivación Diagnóstico" };
+    private List<List<string>> diagnosisRows = new();
+    private List<int> diagnosisIds = new();
+    private Dictionary<string, string> diagnosisErrors = new();
+    private string diagnosisFormError = "";
+
     // Variables para controlar datos sin guardar
     private bool hasUnsavedSystemsData = false;
     private bool hasUnsavedPhysicalExamData = false;
     private bool hasUnsavedEvolutionData = false;
+    private bool hasUnsavedDiagnosisData = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1024,6 +1150,7 @@
         await LoadLugaresAtencion();
         await LoadSystemsData();
         await LoadPhysicalExamData();
+        await LoadDiagnosisData();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -1051,12 +1178,16 @@
 
                 var evolutionData = await JS.InvokeAsync<string>("localStorage.getItem", $"evolution_data_{currentMedicalCareId}");
                 hasUnsavedEvolutionData = !string.IsNullOrEmpty(evolutionData);
+
+                var diagnosisData = await JS.InvokeAsync<string>("localStorage.getItem", $"diagnosis_data_{currentMedicalCareId}");
+                hasUnsavedDiagnosisData = !string.IsNullOrEmpty(diagnosisData);
             }
             catch
             {
                 hasUnsavedSystemsData = false;
                 hasUnsavedPhysicalExamData = false;
                 hasUnsavedEvolutionData = false;
+                hasUnsavedDiagnosisData = false;
             }
         }
     }
@@ -1088,6 +1219,11 @@
     private bool IsProceduresTabComplete()
     {
         return procedimientosList.Any();
+    }
+
+    private bool IsDiagnosisTabComplete()
+    {
+        return diagnosisList.Any();
     }
 
     private bool IsEvolutionTabComplete()
@@ -1141,6 +1277,23 @@
             {
                 bool confirmed = await JS.InvokeAsync<bool>("confirm",
                     "Hay cambios sin guardar en la sección de Examen Físico. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
+        }
+
+        if (activeTab == "diagnosis" && tab != "diagnosis")
+        {
+            await CheckUnsavedData();
+            if (hasUnsavedDiagnosisData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Diagnóstico. " +
                     "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
                     "¿Desea continuar sin guardar? (Se perderán los cambios)");
 
@@ -1207,6 +1360,10 @@
         {
             _additionalDataContent = currentAdditionalData.Observacion ?? "";
         }
+
+        // Cargar diagnósticos existentes
+        diagnosisList = await MedicalDiagnosisService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        await RefreshDiagnosisTable();
 
         // Cargar evoluciones existentes
         evolutionsList = await EvolutionService.GetByMedicalCareIdAsync(MedicalCare.CareId);
@@ -1917,6 +2074,254 @@
                currentPhysicalExam.PathologicalEvidenceId > 0 &&
                !string.IsNullOrWhiteSpace(currentPhysicalExam.Observation) &&
                (currentPhysicalExam.Observation?.Length ?? 0) <= 500;
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA DIAGNÓSTICO - PERMITE MÚLTIPLES REGISTROS
+    // ============================================================================
+    private async Task LoadDiagnosisData()
+    {
+        availableDiagnosticTypes = await DiagnosticTypeService.GetAllAsync();
+    }
+
+    private async Task RefreshDiagnosisTable()
+    {
+        diagnosisRows.Clear();
+        diagnosisIds.Clear();
+
+        foreach (var diagnosis in diagnosisList)
+        {
+            var cie10 = !string.IsNullOrEmpty(diagnosis.Cie10) ? diagnosis.Cie10 : "N/A";
+            var denomination = !string.IsNullOrEmpty(diagnosis.Denomination)
+                ? (diagnosis.Denomination.Length > 50 ? diagnosis.Denomination.Substring(0, 50) + "..." : diagnosis.Denomination)
+                : "Sin denominación";
+            var diagnosticTypeName = await DiagnosticTypeService.GetDiagnosticTypeNameByIdAsync(diagnosis.DiagnosticTypeId);
+            var recurrence = !string.IsNullOrEmpty(diagnosis.Recurrence)
+                ? (diagnosis.Recurrence.Length > 30 ? diagnosis.Recurrence.Substring(0, 30) + "..." : diagnosis.Recurrence)
+                : "Sin recurrencia";
+            var motivation = !string.IsNullOrEmpty(diagnosis.DiagnosisMotivation)
+                ? (diagnosis.DiagnosisMotivation.Length > 40 ? diagnosis.DiagnosisMotivation.Substring(0, 40) + "..." : diagnosis.DiagnosisMotivation)
+                : "Sin motivación";
+
+            diagnosisRows.Add(new List<string> { cie10, denomination, diagnosticTypeName, recurrence, motivation });
+            diagnosisIds.Add(diagnosis.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddDiagnosisRequested()
+    {
+        currentDiagnosis = new MedicalDiagnosisDTO
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            Cie10 = "",
+            Denomination = "",
+            DiagnosticTypeId = 0,
+            Recurrence = "",
+            DiagnosisMotivation = ""
+        };
+
+        diagnosisErrors.Clear();
+        diagnosisFormError = "";
+    }
+
+    private async Task OnEditDiagnosisRequested(int id)
+    {
+        var existing = diagnosisList.FirstOrDefault(d => d.Id == id);
+        if (existing != null)
+        {
+            currentDiagnosis = new MedicalDiagnosisDTO
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                Cie10 = existing.Cie10 ?? "",
+                Denomination = existing.Denomination ?? "",
+                DiagnosticTypeId = existing.DiagnosticTypeId,
+                Recurrence = existing.Recurrence ?? "",
+                DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
+                DiseaseId = existing.DiseaseId
+            };
+        }
+
+        diagnosisErrors.Clear();
+        diagnosisFormError = "";
+    }
+
+    private async Task OnDeleteDiagnosisRequested(int id)
+    {
+        try
+        {
+            var result = await MedicalDiagnosisService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = diagnosisList.FirstOrDefault(d => d.Id == id);
+                if (toRemove != null)
+                {
+                    diagnosisList.Remove(toRemove);
+                    await RefreshDiagnosisTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Diagnóstico eliminado exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveDiagnosisRequested()
+    {
+        try
+        {
+            if (!ValidateDiagnosisForm())
+            {
+                return;
+            }
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentDiagnosis.MedicalCareId = currentMedicalCareId;
+
+            if (currentDiagnosis.Id == 0)
+            {
+                // Crear nuevo
+                var result = await MedicalDiagnosisService.CreateAsync(currentDiagnosis);
+                if (result.Success && result.Data != null)
+                {
+                    diagnosisList.Add(result.Data);
+                    await RefreshDiagnosisTable();
+                    await JS.InvokeVoidAsync("alert", "Diagnóstico agregado exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"diagnosis_data_{currentMedicalCareId}");
+                    hasUnsavedDiagnosisData = false;
+                }
+                else
+                {
+                    diagnosisFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                // Actualizar existente
+                var result = await MedicalDiagnosisService.UpdateAsync(currentDiagnosis);
+                if (result.Success && result.Data != null)
+                {
+                    var index = diagnosisList.FindIndex(d => d.Id == currentDiagnosis.Id);
+                    if (index >= 0)
+                    {
+                        diagnosisList[index] = result.Data;
+                        await RefreshDiagnosisTable();
+                    }
+                    await JS.InvokeVoidAsync("alert", "Diagnóstico actualizado exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"diagnosis_data_{currentMedicalCareId}");
+                    hasUnsavedDiagnosisData = false;
+                }
+                else
+                {
+                    diagnosisFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentDiagnosis = new MedicalDiagnosisDTO();
+            diagnosisErrors.Clear();
+            diagnosisFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            diagnosisFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", diagnosisFormError);
+        }
+    }
+
+    private bool ValidateDiagnosisForm()
+    {
+        diagnosisErrors.Clear();
+        diagnosisFormError = "";
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(currentDiagnosis.Cie10))
+        {
+            diagnosisErrors["Cie10"] = "El código CIE10 es obligatorio.";
+            isValid = false;
+        }
+        else if (currentDiagnosis.Cie10.Length > 20)
+        {
+            diagnosisErrors["Cie10"] = "El código CIE10 no puede exceder 20 caracteres.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentDiagnosis.Denomination))
+        {
+            diagnosisErrors["Denomination"] = "La denominación es obligatoria.";
+            isValid = false;
+        }
+        else if (currentDiagnosis.Denomination.Length > 500)
+        {
+            diagnosisErrors["Denomination"] = "La denominación no puede exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (currentDiagnosis.DiagnosticTypeId <= 0)
+        {
+            diagnosisErrors["DiagnosticTypeId"] = "Debe seleccionar un tipo de diagnóstico.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentDiagnosis.Recurrence))
+        {
+            diagnosisErrors["Recurrence"] = "La recurrencia es obligatoria.";
+            isValid = false;
+        }
+        else if (currentDiagnosis.Recurrence.Length > 500)
+        {
+            diagnosisErrors["Recurrence"] = "La recurrencia no puede exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentDiagnosis.DiagnosisMotivation))
+        {
+            diagnosisErrors["DiagnosisMotivation"] = "La motivación del diagnóstico es obligatoria.";
+            isValid = false;
+        }
+        else if (currentDiagnosis.DiagnosisMotivation.Length > 1000)
+        {
+            diagnosisErrors["DiagnosisMotivation"] = "La motivación del diagnóstico no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            diagnosisFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsDiagnosisFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(currentDiagnosis.Cie10) &&
+               (currentDiagnosis.Cie10?.Length ?? 0) <= 20 &&
+               !string.IsNullOrWhiteSpace(currentDiagnosis.Denomination) &&
+               (currentDiagnosis.Denomination?.Length ?? 0) <= 500 &&
+               currentDiagnosis.DiagnosticTypeId > 0 &&
+               !string.IsNullOrWhiteSpace(currentDiagnosis.Recurrence) &&
+               (currentDiagnosis.Recurrence?.Length ?? 0) <= 500 &&
+               !string.IsNullOrWhiteSpace(currentDiagnosis.DiagnosisMotivation) &&
+               (currentDiagnosis.DiagnosisMotivation?.Length ?? 0) <= 1000;
     }
 
     // ============================================================================

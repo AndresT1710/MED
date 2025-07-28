@@ -77,6 +77,8 @@ builder.Services.AddScoped<RegionService>();
 builder.Services.AddScoped<PathologicalEvidenceService>();
 builder.Services.AddScoped<EvolutionService>();
 builder.Services.AddScoped<AdditionalDataService>();
+builder.Services.AddScoped<MedicalDiagnosisService>();
+builder.Services.AddScoped<DiagnosticTypeService>();
 
 
 builder.Services.AddLogging();

@@ -63,7 +63,7 @@ builder.Services.AddScoped<IRepository<ProceduresDTO, int>, ProceduresRepository
 builder.Services.AddScoped<IRepository<HealthProfessionalDTO, int>, HealthProfessionalRepository>();
 builder.Services.AddScoped<IRepository<MedicalCareDTO, int>, MedicalCareRepository>();
 builder.Services.AddScoped<IRepository<VitalSignsDTO, int>, VitalSignsRepository>();
-builder.Services.AddScoped<IRepository<DiagnosisDTO, int>, DiagnosisRepository>();
+builder.Services.AddScoped<IRepository<MedicalDiagnosisDTO, int>, MedicalDiagnosisRepository>();
 builder.Services.AddScoped<IRepository<OrdersDTO, int>, OrdersRepository>();
 builder.Services.AddScoped<IRepository<ImageOrdersDTO, int>, ImageOrdersRepository>();
 builder.Services.AddScoped<IRepository<LaboratoryOrdersDTO, int>, LaboratoryOrdersRepository>();
@@ -93,6 +93,7 @@ builder.Services.AddScoped<MedicalCareRepository>();
 builder.Services.AddScoped<IRepository<RegionDTO, int>, RegionRepository>();
 builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, PathologicalEvidenceRepository>();
 builder.Services.AddScoped<IRepository<AdditionalDataDTO, int>, AdditionalDataRepository>();
+builder.Services.AddScoped<IRepository<DiagnosticTypeDTO, int>, DiagnosticTypeRepository>();
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

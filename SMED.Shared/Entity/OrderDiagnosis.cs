@@ -20,7 +20,7 @@ namespace SMED.Shared.Entity
         public virtual Orders Order { get; set; } = null!;
 
         [ForeignKey("DiagnosisId")]
-        public virtual Diagnosis Diagnosis { get; set; } = null!;
+        public virtual MedicalDiagnosis Diagnosis { get; set; } = null!;
     }
 
 }

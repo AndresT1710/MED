@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public class Diagnosis
+    public class MedicalDiagnosis
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -16,7 +16,7 @@ namespace SMED.Shared.Entity
 
         public string Cie10 { get; set; } = null!;
         public string Denomination { get; set; } = null!;
-        public string DiagnosticType { get; set; } = null!;
+        public int DiagnosticTypeId { get; set; }
         public string Recurrence { get; set; } = null!;
         public string DiagnosisMotivation { get; set; } = null!;
         public int MedicalCareId { get; set; }
@@ -40,6 +40,10 @@ namespace SMED.Shared.Entity
         [InverseProperty("Diagnosis")]
         public virtual ICollection<Interconsultation> Interconsultations { get; set; } = new List<Interconsultation>();
 
+
+        [ForeignKey("DiagnosticTypeId")]
+        [InverseProperty("Diagnoses")]
+        public virtual DiagnosticType DiagnosticTypeNavigation { get; set; } = null!;
     }
 
 }

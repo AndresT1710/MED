@@ -19,7 +19,7 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("DiagnosisId")]
         [InverseProperty("Interconsultations")]
-        public virtual Diagnosis Diagnosis { get; set; } = null!;
+        public virtual MedicalDiagnosis Diagnosis { get; set; } = null!;
 
         [ForeignKey("ServiceId")]
         [InverseProperty("Interconsultations")]

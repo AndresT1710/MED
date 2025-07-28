@@ -26,7 +26,7 @@ namespace SMED.Shared.Entity
         public virtual PlaceOfAttention PlaceOfAttentionNavigation { get; set; } = null!;
 
         [InverseProperty("MedicalCare")]
-        public virtual ICollection<Diagnosis> Diagnoses { get; set; } = new List<Diagnosis>();
+        public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();
 
         [InverseProperty("MedicalCare")]
         public virtual VitalSigns? VitalSigns { get; set; }

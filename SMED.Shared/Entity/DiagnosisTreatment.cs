@@ -18,7 +18,7 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("DiagnosisId")]
         [InverseProperty("DiagnosisTreatments")]
-        public virtual Diagnosis Diagnosis { get; set; } = null!;
+        public virtual MedicalDiagnosis Diagnosis { get; set; } = null!;
 
         // FK a Treatment
         public int TreatmentId { get; set; }

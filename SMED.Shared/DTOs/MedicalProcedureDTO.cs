@@ -17,6 +17,7 @@ namespace SMED.Shared.DTOs
         public int? TreatingPhysicianId { get; set; }
         public string? Observations { get; set; }
 
+
         // Propiedades de navegación para mostrar nombres
         public string? SpecificProcedureName { get; set; }
         public string? HealthProfessionalName { get; set; }

@@ -111,11 +111,12 @@ namespace SGIS.Models
         public DbSet<ReasonForConsultation> ReasonForConsultations { get; set; }
         public DbSet<Indications> Indications { get; set; }
         public DbSet<AdditionalData> AdditionalData { get; set; }
+        public DbSet<DiagnosticType> DiagnosticTypes { get; set; }
 
         //Enfermeria
         public DbSet<TypeOfService> TypeOfServices { get; set; }
         public DbSet<CostOfService> CostOfServices { get; set; }
-        public DbSet<Diagnosis> Diagnosis { get; set; }
+        public DbSet<MedicalDiagnosis> Diagnosis { get; set; }
         public DbSet<DiagnosisTreatment> DiagnosisTreatments { get; set; }
         public DbSet<MedicalService> MedicalServices { get; set; }
         public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
@@ -738,6 +739,14 @@ namespace SGIS.Models
 
             modelBuilder.Entity<PathologicalEvidence>()
                 .ToTable("PathologicalEvidence");
+
+            modelBuilder.Entity<MedicalDiagnosis>()
+                .ToTable("MedicalDiagnosis")
+                .HasOne(d => d.DiagnosticTypeNavigation)
+                .WithMany(dt => dt.Diagnoses)
+                .HasForeignKey(d => d.DiagnosticTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
 
             base.OnModelCreating(modelBuilder);
         }

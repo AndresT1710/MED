@@ -6,35 +6,35 @@ namespace SMED.BackEnd.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DiagnosisController : ControllerBase
+    public class DiagnosticTypeController : ControllerBase
     {
-        private readonly IRepository<DiagnosisDTO, int> _repository;
+        private readonly IRepository<DiagnosticTypeDTO, int> _repository;
 
-        public DiagnosisController(IRepository<DiagnosisDTO, int> repository)
+        public DiagnosticTypeController(IRepository<DiagnosticTypeDTO, int> repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<DiagnosisDTO>>> GetAll() =>
+        public async Task<ActionResult<List<DiagnosticTypeDTO>>> GetAll() =>
             Ok(await _repository.GetAllAsync());
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<DiagnosisDTO>> GetById(int id)
+        public async Task<ActionResult<DiagnosticTypeDTO>> GetById(int id)
         {
             var dto = await _repository.GetByIdAsync(id);
             return dto != null ? Ok(dto) : NotFound();
         }
 
         [HttpPost]
-        public async Task<ActionResult<DiagnosisDTO>> Create(DiagnosisDTO dto)
+        public async Task<ActionResult<DiagnosticTypeDTO>> Create(DiagnosticTypeDTO dto)
         {
             var created = await _repository.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, DiagnosisDTO dto)
+        public async Task<IActionResult> Update(int id, DiagnosticTypeDTO dto)
         {
             if (id != dto.Id) return BadRequest();
             var updated = await _repository.UpdateAsync(dto);

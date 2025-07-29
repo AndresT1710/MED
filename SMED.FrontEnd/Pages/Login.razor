@@ -1,10 +1,6 @@
 ﻿@page "/login"
 @layout SMED.FrontEnd.Layout.LoginLayout
 
-@inject HttpClient Http
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JS
-
 <h3 class="mb-4 text-center">Iniciar Sesión</h3>
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -44,4 +40,6 @@
     </button>
 </EditForm>
 
+@code {
 
+}

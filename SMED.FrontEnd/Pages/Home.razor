@@ -1,8 +1,10 @@
 ﻿@page "/home"
 @layout MainLayout
 @using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject IAuthorizationService AuthService
 
 <div class="container py-4">
     <div class="row mb-4">
@@ -14,72 +16,113 @@
     </div>
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-        <div class="col">
-            <Card Title="Personas"
-                  ImageUrl="/images/usuario.png"
-                  Description="Gestión de personas registradas en el sistema"
-                  Route="/persons" />
-        </div>
+        @if (allowedModules.Contains("Personas") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Personas"
+                      ImageUrl="/images/usuario.png"
+                      Description="Gestión de personas registradas en el sistema"
+                      Route="/persons" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Historia Clínica"
-                  ImageUrl="/images/historiaclinica.png"
-                  Description="Consulta y registro de historias clínicas"
-                  Route="/medical-history/registro" />
-        </div>
+        @if (allowedModules.Contains("Historia Clínica") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Historia Clínica"
+                      ImageUrl="/images/historiaclinica.png"
+                      Description="Consulta y registro de historias clínicas"
+                      Route="/medical-history/registro" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Atención Médica"
-                  ImageUrl="/images/atencionmedica.png"
-                  Description="Registro de consultas y atenciones médicas"
-                  Route="/medical-attention/registro" />
-        </div>
+        @if (allowedModules.Contains("Atención Médica") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Atención Médica"
+                      ImageUrl="/images/atencionmedica.png"
+                      Description="Registro de consultas y atenciones médicas"
+                      Route="/medical-attention/registro" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Nutrición"
-                  ImageUrl="/images/nutricion.png"
-                  Description="Evaluación y seguimiento nutricional"
-                  Route="/nutrition" />
-        </div>
+        @if (allowedModules.Contains("Nutrición") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Nutrición"
+                      ImageUrl="/images/nutricion.png"
+                      Description="Evaluación y seguimiento nutricional"
+                      Route="/nutrition" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Enfermería"
-                  ImageUrl="/images/enfermeria.png"
-                  Description="Servicios y procedimientos de enfermería"
-                  Route="/nursing-module/registro" />
-        </div>
+        @if (allowedModules.Contains("Enfermería") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Enfermería"
+                      ImageUrl="/images/enfermeria.png"
+                      Description="Servicios y procedimientos de enfermería"
+                      Route="/nursing-module/registro" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Psicología"
-                  ImageUrl="/images/psicologia.png"
-                  Description="Consultas y evaluaciones psicológicas"
-                  Route="/psychology" />
-        </div>
+        @if (allowedModules.Contains("Psicología") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Psicología"
+                      ImageUrl="/images/psicologia.png"
+                      Description="Consultas y evaluaciones psicológicas"
+                      Route="/psychology" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Estimulación Temprana"
-                  ImageUrl="/images/estimulaciontemprana.png"
-                  Description="Programas de estimulación infantil"
-                  Route="/earlystimulation" />
-        </div>
+        @if (allowedModules.Contains("Estimulación Temprana") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Estimulación Temprana"
+                      ImageUrl="/images/estimulaciontemprana.png"
+                      Description="Programas de estimulación infantil"
+                      Route="/earlystimulation" />
+            </div>
+        }
 
-        <div class="col">
-            <Card Title="Fisioterapia"
-                  ImageUrl="/images/fisioterapia.png"
-                  Description="Tratamientos y terapias de rehabilitación"
-                  Route="/physiotherapy" />
-        </div>
+        @if (allowedModules.Contains("Fisioterapia") || isAdmin)
+        {
+            <div class="col">
+                <Card Title="Fisioterapia"
+                      ImageUrl="/images/fisioterapia.png"
+                      Description="Tratamientos y terapias de rehabilitación"
+                      Route="/physiotherapy" />
+            </div>
+        }
+
+        @if (isAdmin)
+        {
+            <div class="col">
+                <Card Title="Usuarios"
+                      ImageUrl="/images/usuarios.png"
+                      Description="Gestión de usuarios del sistema"
+                      Route="/users" />
+            </div>
+        }
     </div>
 </div>
 
 @code {
+    private List<string> allowedModules = new();
+    private bool isAdmin = false;
+
     protected override async Task OnInitializedAsync()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
-
         if (string.IsNullOrWhiteSpace(token))
         {
             Navigation.NavigateTo("/login", true);
+            return;
         }
+
+        // Obtener módulos permitidos para el usuario
+        allowedModules = await AuthService.GetUserModulesAsync();
+        isAdmin = await AuthService.IsAdminAsync();
     }
 }

@@ -6,31 +6,53 @@ namespace SMED.FrontEnd.Services
     public class HealthProfessionalService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<HealthProfessionalService> _logger;
 
-        public HealthProfessionalService(HttpClient httpClient, ILogger<HealthProfessionalService> logger)
+        public HealthProfessionalService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _logger = logger;
         }
 
-        public async Task<List<HealthProfessionalDTO>> GetAllAsync()
+        public async Task<List<HealthProfessionalDTO>> GetAllHealthProfessionalsAsync()
         {
             try
             {
-                var response = await _httpClient.GetAsync("api/HealthProfessional");
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<List<HealthProfessionalDTO>>() ?? new List<HealthProfessionalDTO>();
-                }
+                var response = await _httpClient.GetFromJsonAsync<List<HealthProfessionalDTO>>("api/HealthProfessional");
+                return response ?? new List<HealthProfessionalDTO>();
+            }
+            catch (Exception)
+            {
                 return new List<HealthProfessionalDTO>();
+            }
+        }
+
+        public async Task<HealthProfessionalDTO?> GetByIdAsync(int id)
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<HealthProfessionalDTO>($"api/HealthProfessional/{id}");
+                return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener profesionales de salud");
+                Console.WriteLine($"Error getting health professional by ID {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<HealthProfessionalDTO>> SearchHealthProfessionalsAsync(string searchTerm)
+        {
+            try
+            {
+                var allProfessionals = await GetAllHealthProfessionalsAsync();
+                return allProfessionals.Where(p =>
+                    p.FullName.ToLower().Contains(searchTerm.ToLower()) ||
+                    (p.RegistrationNumber != null && p.RegistrationNumber.ToLower().Contains(searchTerm.ToLower()))
+                ).ToList();
+            }
+            catch (Exception)
+            {
                 return new List<HealthProfessionalDTO>();
             }
         }
     }
-
 }

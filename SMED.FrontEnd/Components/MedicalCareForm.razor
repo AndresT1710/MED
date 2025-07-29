@@ -1384,7 +1384,7 @@
 
     private async Task LoadHealthProfessionals()
     {
-        profesionales = await HealthProfessionalService.GetAllAsync();
+        profesionales = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
     }
 
     private async Task LoadTypeOfProcedures()

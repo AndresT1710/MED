@@ -192,7 +192,7 @@
 
     private async Task LoadProfesionales()
     {
-        profesionales = await HealthProfessionalService.GetAllAsync();
+        profesionales = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
     }
 
     private async Task LoadExistingData()

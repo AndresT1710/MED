@@ -9,6 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using SGIS.Models;
+using SMED.Shared.Entity;
 
 namespace SMED.BackEnd.Services.Implementations
 {
@@ -16,29 +19,35 @@ namespace SMED.BackEnd.Services.Implementations
     {
         private readonly IRepository<UserDTO, int> _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly SGISContext _context;
 
-        public AuthService(IRepository<UserDTO, int> userRepository, IConfiguration configuration)
+        public AuthService(
+            IRepository<UserDTO, int> userRepository,
+            IConfiguration configuration,
+            SGISContext context)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _context = context;
         }
 
         public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequest)
         {
             try
             {
-                var users = await _userRepository.GetAllAsync();
-
-                var user = users.FirstOrDefault(u =>
-                    u.Email != null &&
-                    u.Email.Equals(loginRequest.Email, StringComparison.OrdinalIgnoreCase));
+                // Buscar usuario por email
+                var user = await _context.Users
+                    .Include(u => u.PersonNavigation)
+                        .ThenInclude(p => p.HealthProfessional)
+                            .ThenInclude(hp => hp.HealthProfessionalTypeNavigation)
+                    .FirstOrDefaultAsync(u => u.PersonNavigation.Email == loginRequest.Email);
 
                 if (user == null)
                 {
                     return new LoginResponseDTO
                     {
                         IsAuthenticated = false,
-                        Message = "User not found."
+                        Message = "Usuario no encontrado."
                     };
                 }
 
@@ -47,54 +56,86 @@ namespace SMED.BackEnd.Services.Implementations
                     return new LoginResponseDTO
                     {
                         IsAuthenticated = false,
-                        Message = "User is inactive."
+                        Message = "Usuario inactivo."
                     };
                 }
 
-                // En este ejemplo, aún está en texto plano.
+                // Verificar contraseña (en producción usar hash)
                 if (user.Password != loginRequest.Password)
                 {
                     return new LoginResponseDTO
                     {
                         IsAuthenticated = false,
-                        Message = "Invalid password."
+                        Message = "Contraseña incorrecta."
                     };
                 }
 
-                var token = GenerateJwtToken(user);
+                // Determinar si es admin (no tiene registro en HealthProfessional)
+                bool isAdmin = user.PersonNavigation?.HealthProfessional == null;
+
+                // Crear UserDTO con información completa
+                var userDto = new UserDTO
+                {
+                    Id = user.Id,
+                    PersonId = user.PersonId,
+                    Email = user.PersonNavigation?.Email,
+                    Name = user.PersonNavigation != null
+                        ? string.Join(" ", new[] {
+                            user.PersonNavigation.FirstName,
+                            user.PersonNavigation.LastName,
+                        }.Where(s => !string.IsNullOrWhiteSpace(s)))
+                        : "Usuario",
+                    IsActive = user.IsActive,
+                    Password = null
+                };
+
+                Console.WriteLine($"[Backend AuthService] UserDto Name before token generation: '{userDto.Name}'");
+
+                var token = GenerateJwtToken(userDto, isAdmin, user.PersonNavigation?.HealthProfessional);
 
                 return new LoginResponseDTO
                 {
                     IsAuthenticated = true,
                     Token = token,
-                    Message = "Login successful.",
-                    User = user
+                    Message = "Login exitoso.",
+                    User = userDto
                 };
             }
             catch (Exception ex)
             {
-                // Puedes loggear ex.Message aquí si usas un sistema de logging
+                Console.WriteLine($"[Backend AuthService] Error during authentication: {ex.Message}");
                 return new LoginResponseDTO
                 {
                     IsAuthenticated = false,
-                    Message = "An error occurred while trying to authenticate. Please try again later."
+                    Message = "Error durante la autenticación. Intente nuevamente."
                 };
             }
         }
 
-        private string GenerateJwtToken(UserDTO user)
+        private string GenerateJwtToken(UserDTO user, bool isAdmin, HealthProfessional? healthProfessional)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Name, user.Name ?? ""),
+                new Claim("PersonId", user.PersonId?.ToString() ?? ""),
+                new Claim("IsAdmin", isAdmin.ToString())
+            };
+
+            if (healthProfessional != null)
+            {
+                claims.Add(new Claim("HealthProfessionalTypeId", healthProfessional.HealthProfessionalTypeId?.ToString() ?? ""));
+                claims.Add(new Claim("ProfessionalTypeName", healthProfessional.HealthProfessionalTypeNavigation?.Name ?? ""));
+                claims.Add(new Claim("RegistrationNumber", healthProfessional.RegistrationNumber ?? ""));
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email ?? ""),
-                    new Claim(ClaimTypes.Name, user.Name ?? "")
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpirationMinutes"])),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
                 Issuer = jwtSettings["Issuer"],
@@ -103,7 +144,6 @@ namespace SMED.BackEnd.Services.Implementations
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-
             return tokenHandler.WriteToken(token);
         }
     }

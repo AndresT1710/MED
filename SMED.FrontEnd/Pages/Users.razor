@@ -1,0 +1,275 @@
+﻿@page "/users"
+@layout MainLayout
+@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject UserService UserService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject HttpClient Http
+@inject IAuthorizationService AuthService
+
+<h3 class="mb-4">Gestión de Usuarios</h3>
+
+@if (!isAuthorized)
+{
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i>
+        No tiene permisos para acceder a esta página.
+    </div>
+    return;
+}
+
+<ManagementTable TableTitle="Usuarios del Sistema"
+                 Columns="UserColumns"
+                 SearchOptions="UserColumns"
+                 SearchCallback="SearchHandler"
+                 AddCallback="@EventCallback.Factory.Create(this, AddUser)"
+                 ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
+                 RenderActions="RenderUserActions"
+                 @ref="table" />
+
+<!-- Modal para formulario de usuario -->
+@if (showForm)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((selectedUser == null || selectedUser.Id == 0) ? "Nuevo Usuario" : "Editar Usuario")</h5>
+                    <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <UserForm User="selectedUser" OnSaved="OnUserSaved" OnCancel="HideForm" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
+    private ManagementTable? table;
+    private List<string> UserColumns = new()
+    {
+        "Nombre", "Email", "Estado", "Tipo Profesional", "Acciones"
+    };
+
+    private UserDTO selectedUser = new();
+    private bool showForm = false;
+    private bool isAuthorized = false;
+    private List<UserDTO> userList = new();
+    private List<List<string>> UserData = new();
+    private List<List<string>> FilteredData = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Verificar si es admin
+        isAuthorized = await AuthService.IsAdminAsync();
+
+        if (!isAuthorized)
+        {
+            return;
+        }
+
+        await LoadUserData();
+        if (table != null)
+        {
+            await table.LoadRecords(UserData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+        }
+    }
+
+    private async Task LoadUserData()
+    {
+        try
+        {
+            userList = await UserService.GetAllUsersAsync();
+            UserData = userList.Select(u => new List<string>
+            {
+                u.Name ?? "Sin nombre",
+                u.Email ?? "Sin email",
+                u.IsActive == true ? "Activo" : "Inactivo",
+                GetProfessionalType(u),
+                u.Id.ToString()
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading users: {ex.Message}");
+        }
+    }
+
+    private string GetProfessionalType(UserDTO user)
+    {
+        // Aquí podrías hacer una llamada adicional para obtener el tipo de profesional
+        // Por ahora retornamos un valor por defecto
+        return "Profesional de Salud";
+    }
+
+    private async Task Search(string[] data)
+    {
+        string field = data[0];
+        string value = data[1]?.Trim().ToLower() ?? "";
+
+        if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value))
+        {
+            if (table != null)
+            {
+                await table.LoadRecords(UserData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+            }
+            return;
+        }
+
+        int index = UserColumns.IndexOf(field);
+        if (index < 0) return;
+
+        FilteredData = UserData
+            .Where(row => row[index].ToLower().Contains(value))
+            .Select(r => r.Concat(new[] { r[0] }).ToList())
+            .ToList();
+
+        if (table != null)
+        {
+            await table.LoadRecords(FilteredData);
+        }
+    }
+
+    private Task AddUser()
+    {
+        selectedUser = new UserDTO { IsActive = true };
+        ShowForm();
+        return Task.CompletedTask;
+    }
+
+    private async Task ClearSearch()
+    {
+        if (table != null)
+        {
+            await table.ClearSearch();
+            await LoadUserData();
+            await table.LoadRecords(UserData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+        }
+    }
+
+    RenderFragment<List<string>> RenderUserActions => row => builder =>
+    {
+        int seq = 0;
+        var id = row[4]; // ID está en la posición 4
+        var userToEdit = userList.FirstOrDefault(u => u.Id.ToString() == id);
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
+        builder.AddAttribute(seq++, "title", "Editar");
+        if (userToEdit != null)
+        {
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditUser(userToEdit)));
+        }
+        builder.AddContent(seq++, "Editar");
+        builder.CloseElement();
+
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
+        builder.AddAttribute(seq++, "title", "Eliminar");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeleteUser(id)));
+        builder.AddContent(seq++, "Eliminar");
+        builder.CloseElement();
+    };
+
+    private void EditUser(UserDTO userToEdit)
+    {
+        selectedUser = userToEdit;
+        showForm = true;
+    }
+
+    private async Task DeleteUser(string id)
+    {
+        if (!int.TryParse(id, out int idInt))
+        {
+            await JS.InvokeVoidAsync("alert", "ID inválido");
+            return;
+        }
+
+        var user = userList.FirstOrDefault(u => u.Id == idInt);
+        if (user == null)
+        {
+            await JS.InvokeVoidAsync("alert", $"No se encontró el usuario con ID: {id}");
+            return;
+        }
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"¿Estás seguro de eliminar el usuario {user.Name}?");
+        if (confirmed)
+        {
+            var success = await UserService.DeleteUserAsync(idInt);
+            if (success)
+            {
+                userList.Remove(user);
+                await LoadUserData();
+                await JS.InvokeVoidAsync("alert", "Usuario eliminado exitosamente");
+                if (table != null)
+                {
+                    await table.LoadRecords(UserData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al eliminar el usuario");
+            }
+        }
+    }
+
+    private void ShowForm()
+    {
+        showForm = true;
+    }
+
+    private void HideForm()
+    {
+        showForm = false;
+        selectedUser = new();
+    }
+
+    private async Task OnUserSaved(UserDTO newUser)
+    {
+        showForm = false;
+
+        try
+        {
+            UserDTO? result = null;
+
+            if (newUser.Id == 0)
+            {
+                result = await UserService.CreateUserAsync(newUser);
+                if (result != null)
+                {
+                    await JS.InvokeVoidAsync("alert", "Usuario creado exitosamente");
+                }
+            }
+            else
+            {
+                result = await UserService.UpdateUserAsync(newUser);
+                if (result != null)
+                {
+                    await JS.InvokeVoidAsync("alert", "Usuario actualizado exitosamente");
+                }
+            }
+
+            if (result != null)
+            {
+                await LoadUserData();
+                if (table != null)
+                {
+                    await table.LoadRecords(UserData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al guardar el usuario");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+}

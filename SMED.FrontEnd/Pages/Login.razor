@@ -5,7 +5,13 @@
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+    <!--Alerta con ícono-->
+    <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+            @ErrorMessage
+        </div>
+    </div>
 }
 
 <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
@@ -34,12 +40,17 @@
     </div>
 
     <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
-        <span class="me-2">Ingresar</span>
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
-              style="display: @(IsLoading ? "inline-block" : "none")"></span>
+        @if (IsLoading)
+        {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span>Iniciando sesión...</span>
+        }
+        else
+        {
+            <span>Ingresar</span>
+        }
     </button>
 </EditForm>
 
 @code {
-
 }

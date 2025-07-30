@@ -4,11 +4,23 @@
 @inject IJSRuntime JS
 @inject HealthProfessionalService HealthProfessionalService
 @inject PersonService PersonService
+@inject UserService UserService
 
 <div class="user-form-container">
+    <!-- ✅ Alerta informativa cuando se detecta usuario existente -->
+    @if (showExistingUserAlert)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Usuario existente detectado:</strong> Se ha cargado automáticamente la información del usuario existente para <strong>@selectedProfessionalName</strong>.
+            <br />
+            <small class="text-muted">Ahora estás editando el usuario existente en lugar de crear uno nuevo.</small>
+            <button type="button" class="btn-close" @onclick="() => showExistingUserAlert = false" aria-label="Close"></button>
+        </div>
+    }
+
     <EditForm Model="@User" OnValidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator />
-
         <div class="row">
             <div class="col-md-12 mb-3">
                 <label class="form-label">Profesional de Salud *</label>
@@ -22,6 +34,14 @@
                 {
                     <div class="alert alert-info">
                         <strong>Profesional seleccionado:</strong> @selectedProfessionalName
+                        @if (User.Id > 0)
+                        {
+                            <span class="badge bg-success ms-2">Usuario Existente</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-primary ms-2">Nuevo Usuario</span>
+                        }
                         <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearProfessionalSelection">
                             Cambiar
                         </button>
@@ -30,21 +50,31 @@
                 <ValidationMessage For="@(() => User.PersonId)" />
             </div>
         </div>
-
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label for="email" class="form-label">Email *</label>
                 <InputText id="email" class="form-control" @bind-Value="User.Email" placeholder="usuario@ejemplo.com" readonly />
                 <ValidationMessage For="@(() => User.Email)" />
             </div>
-
             <div class="col-md-6 mb-3">
                 <label for="password" class="form-label">Contraseña *</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="User.Password" />
+                <!-- ✅ USANDO EL MISMO PATRÓN QUE FUNCIONA EN LOGIN.RAZOR -->
+                <div class="input-group password-group">
+                    <InputText id="password"
+                               class="form-control"
+                               type="@PasswordInputType"
+                               @bind-Value="User.Password"
+                               placeholder="Ingrese la contraseña" />
+                    <button type="button"
+                            class="btn toggle-password-btn @(ShowPassword ? "btn-hide" : "btn-show")"
+                            @onclick="TogglePasswordVisibility"
+                            aria-label="Mostrar/ocultar contraseña">
+                        <i class="@PasswordToggleIcon me-1"></i> @(ShowPassword ? "Ocultar" : "Mostrar")
+                    </button>
+                </div>
                 <ValidationMessage For="@(() => User.Password)" />
             </div>
         </div>
-
         <div class="row">
             <div class="col-md-6 mb-3">
                 <div class="form-check">
@@ -57,7 +87,6 @@
                 </div>
             </div>
         </div>
-
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-secondary" @onclick="OnCancel">
                 <i class="fas fa-times"></i> Cancelar
@@ -81,11 +110,20 @@
     private HealthProfessionalDTO? selectedProfessional;
     private string selectedProfessionalName = string.Empty;
     private bool isSubmitting = false;
+    private bool showExistingUserAlert = false;
+
+    // ✅ USANDO EL MISMO PATRÓN QUE FUNCIONA EN LOGIN.RAZOR
+    private bool ShowPassword = false;
+    private string PasswordInputType => ShowPassword ? "text" : "password";
+    private string PasswordToggleIcon => ShowPassword ? "fas fa-eye-slash" : "fas fa-eye";
+
+    private void TogglePasswordVisibility()
+    {
+        ShowPassword = !ShowPassword;
+    }
 
     protected override async Task OnParametersSetAsync()
     {
-        // Si el usuario ya tiene un PersonId (que en este contexto es HealthProfessionalId)
-        // y no hemos cargado el profesional, cárgalo.
         if (User.PersonId.HasValue && selectedProfessional == null)
         {
             // Obtener el profesional de salud por su ID
@@ -93,8 +131,6 @@
             if (selectedProfessional != null)
             {
                 selectedProfessionalName = selectedProfessional.FullName;
-
-                // Obtener la persona asociada para obtener el email
                 var person = await PersonService.GetPersonById(User.PersonId.Value);
                 if (person != null)
                 {
@@ -107,41 +143,118 @@
             }
         }
 
-        // Asegurar que IsActive tenga un valor por defecto si es null
         if (!User.IsActive.HasValue)
         {
             User.IsActive = true;
         }
     }
 
+    // ✅ Detecta automáticamente usuarios existentes
     private async Task OnProfessionalSelected(HealthProfessionalDTO professional)
     {
         selectedProfessional = professional;
         selectedProfessionalName = professional.FullName;
-        User.PersonId = professional.HealthProfessionalId; // El PersonId del usuario es el HealthProfessionalId
-        User.Name = professional.FullName; // Asignar el nombre completo del profesional
+        showExistingUserAlert = false;
 
-        // Obtener el email de la persona asociada al profesional
-        var person = await PersonService.GetPersonById(professional.HealthProfessionalId);
-        if (person != null)
+        try
         {
-            User.Email = person.Email; // Autocargar el email de la persona seleccionada
+            // ✅ CLAVE: Buscar si ya existe un usuario para este profesional
+            var allUsers = await UserService.GetAllUsersAsync();
+            var existingUser = allUsers.FirstOrDefault(u => u.PersonId == professional.HealthProfessionalId);
+
+            if (existingUser != null)
+            {
+                // ✅ USUARIO EXISTENTE: Cargar toda la información incluyendo contraseña
+                var fullUserData = await UserService.GetUserByIdAsync(existingUser.Id);
+                if (fullUserData != null)
+                {
+                    // ✅ Cargar TODOS los datos del usuario existente
+                    User.Id = fullUserData.Id;
+                    User.PersonId = fullUserData.PersonId;
+                    User.Name = fullUserData.Name;
+                    User.Email = fullUserData.Email;
+                    User.Password = fullUserData.Password; // ✅ Cargar también la contraseña
+                    User.IsActive = fullUserData.IsActive;
+                    User.HealthProfessionalTypeName = fullUserData.HealthProfessionalTypeName;
+
+                    // ✅ Mostrar alerta informativa
+                    showExistingUserAlert = true;
+
+                    // ✅ Auto-ocultar la alerta después de 5 segundos
+                    _ = Task.Delay(5000).ContinueWith(_ => InvokeAsync(() =>
+                    {
+                        showExistingUserAlert = false;
+                        StateHasChanged();
+                    }));
+                }
+            }
+            else
+            {
+                // ✅ USUARIO NUEVO: Configurar para creación
+                User.Id = 0; // Asegurar que es un nuevo usuario
+                User.PersonId = professional.HealthProfessionalId;
+                User.Name = professional.FullName;
+                User.Password = string.Empty; // Limpiar contraseña para nuevo usuario
+                User.IsActive = true;
+                User.HealthProfessionalTypeName = professional.NameTypeProfessional;
+
+                // Obtener el email de la persona asociada al profesional
+                var person = await PersonService.GetPersonById(professional.HealthProfessionalId);
+                if (person != null)
+                {
+                    User.Email = person.Email;
+                }
+                else
+                {
+                    User.Email = null;
+                }
+            }
         }
-        else
+        catch (Exception ex)
         {
-            User.Email = null; // Si no se encuentra la persona, el email queda nulo
+            await JS.InvokeVoidAsync("console.error", $"Error verificando usuario existente: {ex.Message}");
+
+            // ✅ En caso de error, proceder como usuario nuevo
+            User.Id = 0;
+            User.PersonId = professional.HealthProfessionalId;
+            User.Name = professional.FullName;
+            User.Password = string.Empty;
+            User.IsActive = true;
+            User.HealthProfessionalTypeName = professional.NameTypeProfessional;
+
+            // Intentar cargar email
+            try
+            {
+                var person = await PersonService.GetPersonById(professional.HealthProfessionalId);
+                if (person != null)
+                {
+                    User.Email = person.Email;
+                }
+            }
+            catch
+            {
+                User.Email = null;
+            }
         }
 
         StateHasChanged();
     }
 
-    private void ClearProfessionalSelection() // Renombrado para mayor claridad
+    private void ClearProfessionalSelection()
     {
         selectedProfessional = null;
         selectedProfessionalName = string.Empty;
+        showExistingUserAlert = false;
+
+        // ✅ Limpiar TODOS los datos del usuario
+        User.Id = 0;
         User.PersonId = null;
         User.Name = null;
-        User.Email = null; // Limpiar también el email
+        User.Email = null;
+        User.Password = string.Empty;
+        User.IsActive = true;
+        User.HealthProfessionalTypeName = null;
+
         StateHasChanged();
     }
 
@@ -152,13 +265,6 @@
             await JS.InvokeVoidAsync("alert", "Debe seleccionar un profesional de salud");
             return;
         }
-
-        // El email se autocarga y es readonly, así que no se valida aquí
-        // if (string.IsNullOrWhiteSpace(User.Email))
-        // {
-        //     await JS.InvokeVoidAsync("alert", "El email es requerido");
-        //     return;
-        // }
 
         if (string.IsNullOrWhiteSpace(User.Password))
         {

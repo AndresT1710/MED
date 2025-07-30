@@ -43,14 +43,12 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                var allProfessionals = await GetAllHealthProfessionalsAsync();
-                return allProfessionals.Where(p =>
-                    p.FullName.ToLower().Contains(searchTerm.ToLower()) ||
-                    (p.RegistrationNumber != null && p.RegistrationNumber.ToLower().Contains(searchTerm.ToLower()))
-                ).ToList();
+                var response = await _httpClient.GetFromJsonAsync<List<HealthProfessionalDTO>>($"api/HealthProfessional/search?searchTerm={Uri.EscapeDataString(searchTerm)}");
+                return response ?? new List<HealthProfessionalDTO>();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error searching health professionals: {ex.Message}");
                 return new List<HealthProfessionalDTO>();
             }
         }

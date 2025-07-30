@@ -1,0 +1,136 @@
+﻿@using Microsoft.AspNetCore.Components
+@inject IJSRuntime JS
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">@TableTitle</h5>
+        <button class="btn btn-primary btn-sm" @onclick="OnAddClick">
+            <i class="fas fa-plus"></i> Agregar
+        </button>
+    </div>
+    <div class="card-body">
+        @if (isLoading)
+        {
+            <div class="text-center p-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando registros...</p>
+            </div>
+        }
+        else if (!records.Any())
+        {
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i>
+                No hay registros para mostrar
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="@tableId">
+                    <thead class="table-dark">
+                        <tr>
+                            @foreach (var column in Columns)
+                            {
+                                <th>@column</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in records)
+                        {
+                            <tr>
+                                @for (int i = 0; i < Columns.Count; i++)
+                                {
+                                    <td>
+                                        @if (i == Columns.Count - 1 && RenderActions != null)
+                                        {
+                                            @RenderActions(record)
+                                        }
+                                        else if (i < record.Count)
+                                        {
+                                            @record[i]
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">
+                    Mostrando @records.Count registro(s)
+                </small>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string TableTitle { get; set; } = "Tabla";
+    [Parameter] public List<string> Columns { get; set; } = new();
+    [Parameter] public RenderFragment<List<string>>? RenderActions { get; set; }
+    [Parameter] public Func<Task>? AddCallback { get; set; }
+
+    private List<List<string>> records = new();
+    private bool isLoading = true;
+    private string tableId = $"table_{Guid.NewGuid():N}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Pequeño delay para asegurar que el DOM esté listo
+            await Task.Delay(100);
+            StateHasChanged();
+        }
+    }
+
+    public async Task LoadRecords(List<List<string>> data)
+    {
+        await JS.InvokeVoidAsync("console.log", $"📊 ManagementTableR.LoadRecords: Recibiendo {data?.Count ?? 0} registros");
+        isLoading = true;
+        StateHasChanged();
+
+        // Simular un pequeño delay para mostrar el loading
+        await Task.Delay(50);
+
+        records = data ?? new List<List<string>>();
+        await JS.InvokeVoidAsync("console.log", $"📊 ManagementTableR.LoadRecords: records.Count = {records.Count}, isLoading = {isLoading}");
+        isLoading = false;
+        StateHasChanged();
+
+        // Opcional: Inicializar DataTable si lo necesitas
+        if (records.Any())
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("console.log", $"Loaded {records.Count} records in table {tableId}");
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error initializing table: {ex.Message}");
+            }
+        }
+    }
+
+    public async Task ClearRecords()
+    {
+        records.Clear();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OnAddClick()
+    {
+        if (AddCallback != null)
+        {
+            await AddCallback.Invoke();
+        }
+    }
+
+    public int GetRecordCount() => records.Count;
+}

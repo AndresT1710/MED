@@ -23,6 +23,7 @@ builder.Services.AddDbContext<SGISContext>(options =>
 
 // 3. Services and repositories
 builder.Services.AddScoped<IRepository<UserDTO, int>, UserRepository>();
+builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PersonRepository>();
 builder.Services.AddScoped<ClinicalHistoryRepository>();

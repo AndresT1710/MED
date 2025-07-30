@@ -11,7 +11,7 @@
         <input type="text" class="form-control"
                @bind="searchTerm"
                @oninput="OnSearchInput"
-               placeholder="Buscar profesional por nombre o número de registro (mín. 3 caracteres)..."
+               placeholder="Buscar por nombre, tipo profesional o número de cédula (mín. 3 caracteres)..."
                autocomplete="off" />
         <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
             <i class="fas fa-times"></i>
@@ -47,9 +47,13 @@
                                 {
                                     <span> | Registro: @professional.RegistrationNumber</span>
                                 }
+                                @if (!string.IsNullOrWhiteSpace(professional.DocumentNumber))
+                                {
+                                    <span> | Cédula: @professional.DocumentNumber</span>
+                                }
                             </small>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary">
+                        <button class="btn btn-sm btn-outline-primary" type="button">
                             <i class="fas fa-check"></i> Seleccionar
                         </button>
                     </div>
@@ -71,6 +75,10 @@
                         @if (!string.IsNullOrWhiteSpace(SelectedProfessional.RegistrationNumber))
                         {
                             <span> | Registro: @SelectedProfessional.RegistrationNumber</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(SelectedProfessional.DocumentNumber))
+                        {
+                            <span> | Cédula: @SelectedProfessional.DocumentNumber</span>
                         }
                     </small>
                 </div>
@@ -141,6 +149,7 @@
 
             try
             {
+                // ✅ SIMPLIFICADO: El backend ahora maneja toda la búsqueda
                 searchResults = await HealthProfessionalService.SearchHealthProfessionalsAsync(searchTerm);
             }
             catch (Exception ex)

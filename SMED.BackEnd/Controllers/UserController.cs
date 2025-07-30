@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.Shared.DTOs;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -8,24 +10,33 @@ namespace SMED.BackEnd.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly IRepository<UserDTO, int> _repository;
+        private readonly UserRepository _userRepository;
 
-        public UserController(IRepository<UserDTO, int> repository)
+        public UserController(UserRepository userRepository)
         {
-            _repository = repository;
+            _userRepository = userRepository;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAll()
         {
-            var users = await _repository.GetAllAsync();
+            var users = await _userRepository.GetAllAsync();
             return Ok(users);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDTO>> GetById(int id)
         {
-            var user = await _repository.GetByIdAsync(id);
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null)
+                return NotFound();
+            return Ok(user);
+        }
+
+        [HttpGet("by-person/{personId}")]
+        public async Task<ActionResult<UserDTO>> GetByPersonId(int personId)
+        {
+            var user = await _userRepository.GetUserByPersonIdAsync(personId);
             if (user == null)
                 return NotFound();
             return Ok(user);
@@ -34,14 +45,14 @@ namespace SMED.BackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<UserDTO>> Create(UserDTO userDto)
         {
-            var created = await _repository.AddAsync(userDto);
+            var created = await _userRepository.AddAsync(userDto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut]
         public async Task<ActionResult<UserDTO>> Update(UserDTO userDto)
         {
-            var updated = await _repository.UpdateAsync(userDto);
+            var updated = await _userRepository.UpdateAsync(userDto);
             if (updated == null)
                 return NotFound();
             return Ok(updated);
@@ -50,7 +61,7 @@ namespace SMED.BackEnd.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _repository.DeleteAsync(id);
+            var success = await _userRepository.DeleteAsync(id);
             if (!success)
                 return NotFound();
             return NoContent();

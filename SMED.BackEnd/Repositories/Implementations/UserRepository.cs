@@ -12,7 +12,6 @@ namespace SMED.BackEnd.Repositories.Implementations
     public class UserRepository : IRepository<UserDTO, int>
     {
         private readonly SGISContext _context;
-
         public UserRepository(SGISContext context)
         {
             _context = context;
@@ -22,8 +21,9 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var users = await _context.Users
                 .Include(u => u.PersonNavigation)
+                    .ThenInclude(p => p.HealthProfessional)
+                        .ThenInclude(hp => hp.HealthProfessionalTypeNavigation)
                 .ToListAsync();
-
             return users.Select(u => MapToDTO(u)).ToList();
         }
 
@@ -31,8 +31,17 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var user = await _context.Users
                 .Include(u => u.PersonNavigation)
+                    .ThenInclude(p => p.HealthProfessional)
+                        .ThenInclude(hp => hp.HealthProfessionalTypeNavigation)
                 .FirstOrDefaultAsync(u => u.Id == id);
+            return user == null ? null : MapToDTO(user);
+        }
 
+        public async Task<UserDTO?> GetUserByPersonIdAsync(int personId)
+        {
+            var user = await _context.Users
+                .Include(u => u.PersonNavigation)
+                .FirstOrDefaultAsync(u => u.PersonId == personId);
             return user == null ? null : MapToDTO(user);
         }
 
@@ -44,29 +53,22 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Password = dto.Password,
                 IsActive = dto.IsActive
             };
-
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-
             dto.Id = user.Id;
             return dto;
         }
 
         public async Task<UserDTO?> UpdateAsync(UserDTO dto)
         {
-            // Incluimos PersonNavigation para mapear bien el DTO
             var user = await _context.Users
                 .Include(u => u.PersonNavigation)
                 .FirstOrDefaultAsync(u => u.Id == dto.Id);
-
             if (user == null) return null;
-
             user.PersonId = dto.PersonId;
             user.Password = dto.Password;
             user.IsActive = dto.IsActive;
-
             await _context.SaveChangesAsync();
-
             return MapToDTO(user);
         }
 
@@ -74,13 +76,11 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;
-
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Mapping helpers
         private static UserDTO MapToDTO(User user)
         {
             return new UserDTO
@@ -90,7 +90,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Password = user.Password,
                 IsActive = user.IsActive,
                 Email = user.PersonNavigation?.Email,
-                Name = user.PersonNavigation != null ? $"{user.PersonNavigation.FirstName} {user.PersonNavigation.LastName}" : null
+                Name = user.PersonNavigation != null ? $"{user.PersonNavigation.FirstName} {user.PersonNavigation.LastName}" : null,
+                HealthProfessionalTypeName = user.PersonNavigation?.HealthProfessional?.HealthProfessionalTypeNavigation?.Name
             };
         }
     }

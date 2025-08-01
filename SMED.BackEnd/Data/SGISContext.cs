@@ -748,6 +748,65 @@ namespace SGIS.Models
                 .OnDelete(DeleteBehavior.Restrict);
 
 
+            // Tabla base Treatment
+            modelBuilder.Entity<Treatment>()
+                .ToTable("Treatments");
+
+            // Tabla para tratamientos farmacológicos
+            modelBuilder.Entity<PharmacologicalTreatment>()
+                .ToTable("PharmacologicalTreatments");
+
+            // Tabla para tratamientos no farmacológicos
+            modelBuilder.Entity<Non_PharmacologicalTreatment>()
+                .ToTable("NonPharmacologicalTreatments");
+
+            // Relación PharmacologicalTreatment con Medicine
+            modelBuilder.Entity<PharmacologicalTreatment>()
+                .HasOne(pt => pt.Medicine)
+                .WithMany(m => m.PharmacologicalTreatments)
+                .HasForeignKey(pt => pt.MedicineId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configuración de DiagnosisTreatment (si existe)
+            modelBuilder.Entity<DiagnosisTreatment>()
+                .HasOne(dt => dt.Diagnosis)
+                .WithMany(d => d.DiagnosisTreatments)
+                .HasForeignKey(dt => dt.DiagnosisId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DiagnosisTreatment>()
+                .HasOne(dt => dt.Treatment)
+                .WithMany(t => t.DiagnosisTreatments)
+                .HasForeignKey(dt => dt.TreatmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configuración de MedicalDiagnosis (mantener la existente)
+            modelBuilder.Entity<MedicalDiagnosis>()
+                .HasOne(md => md.MedicalCare)
+                .WithMany(mc => mc.Diagnoses)
+                .HasForeignKey(md => md.MedicalCareId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MedicalDiagnosis>()
+                .HasOne(md => md.DiseaseNavigation)
+                .WithMany(d => d.Diagnosis)
+                .HasForeignKey(md => md.DiseaseId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<MedicalDiagnosis>()
+                .HasOne(md => md.DiagnosticTypeNavigation)
+                .WithMany(dt => dt.Diagnoses)
+                .HasForeignKey(md => md.DiagnosticTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PharmacologicalTreatment>()
+                      .HasOne(pt => pt.Medicine)
+                      .WithMany(m => m.PharmacologicalTreatments)
+                      .HasForeignKey(pt => pt.MedicineId)
+                      .OnDelete(DeleteBehavior.Restrict) // No eliminar Medicine si tiene tratamientos
+                      .HasConstraintName("FK_PharmacologicalTreatment_Medicine");
+
+
             base.OnModelCreating(modelBuilder);
         }
     }

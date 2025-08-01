@@ -13,7 +13,6 @@ namespace SMED.Shared.Entity
         public string Frequency { get; set; } = null!;
         public string Duration { get; set; } = null!;
         public string ViaAdmission { get; set; } = null!;
-
         public int MedicineId { get; set; }
 
         [ForeignKey("MedicineId")]

@@ -35,15 +35,12 @@ namespace SMED.Shared.Entity
         public virtual ICollection<OrderDiagnosis> OrderDiagnosis { get; set; } = new List<OrderDiagnosis>();
 
         [InverseProperty("Diagnosis")]
-        public virtual ICollection<DiagnosisTreatment> DiagnosisTreatments { get; set; } = new List<DiagnosisTreatment>();
-
-        [InverseProperty("Diagnosis")]
         public virtual ICollection<Interconsultation> Interconsultations { get; set; } = new List<Interconsultation>();
-
 
         [ForeignKey("DiagnosticTypeId")]
         [InverseProperty("Diagnoses")]
         public virtual DiagnosticType DiagnosticTypeNavigation { get; set; } = null!;
-    }
 
+        public virtual ICollection<Treatment> Treatments { get; set; } = new List<Treatment>();
+    }
 }

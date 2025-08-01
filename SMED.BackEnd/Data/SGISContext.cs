@@ -117,7 +117,6 @@ namespace SGIS.Models
         public DbSet<TypeOfService> TypeOfServices { get; set; }
         public DbSet<CostOfService> CostOfServices { get; set; }
         public DbSet<MedicalDiagnosis> Diagnosis { get; set; }
-        public DbSet<DiagnosisTreatment> DiagnosisTreatments { get; set; }
         public DbSet<MedicalService> MedicalServices { get; set; }
         public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
 
@@ -693,11 +692,6 @@ namespace SGIS.Models
                 .HasForeignKey(rs => rs.MedicalCareId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<DiagnosisTreatment>(entity =>
-            {
-                entity.ToTable("DiagnosisTreatment");
-            });
-
             modelBuilder.Entity<MedicalService>()
                 .HasOne(ms => ms.Patient)
                 .WithMany(p => p.MedicalServices)
@@ -767,37 +761,9 @@ namespace SGIS.Models
                 .HasForeignKey(pt => pt.MedicineId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Configuración de DiagnosisTreatment (si existe)
-            modelBuilder.Entity<DiagnosisTreatment>()
-                .HasOne(dt => dt.Diagnosis)
-                .WithMany(d => d.DiagnosisTreatments)
-                .HasForeignKey(dt => dt.DiagnosisId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<DiagnosisTreatment>()
-                .HasOne(dt => dt.Treatment)
-                .WithMany(t => t.DiagnosisTreatments)
-                .HasForeignKey(dt => dt.TreatmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Configuración de MedicalDiagnosis (mantener la existente)
             modelBuilder.Entity<MedicalDiagnosis>()
-                .HasOne(md => md.MedicalCare)
-                .WithMany(mc => mc.Diagnoses)
-                .HasForeignKey(md => md.MedicalCareId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<MedicalDiagnosis>()
-                .HasOne(md => md.DiseaseNavigation)
-                .WithMany(d => d.Diagnosis)
-                .HasForeignKey(md => md.DiseaseId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            modelBuilder.Entity<MedicalDiagnosis>()
-                .HasOne(md => md.DiagnosticTypeNavigation)
-                .WithMany(dt => dt.Diagnoses)
-                .HasForeignKey(md => md.DiagnosticTypeId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasMany(d => d.Treatments)
+                .WithMany(t => t.Diagnoses);
 
             modelBuilder.Entity<PharmacologicalTreatment>()
                       .HasOne(pt => pt.Medicine)

@@ -87,7 +87,6 @@ builder.Services.AddScoped<IRepository<PharmacologicalTreatmentDTO, int>, Pharma
 builder.Services.AddScoped<IRepository<OrderDiagnosisDTO, int>, OrderDiagnosisRepository>();
 builder.Services.AddScoped<IRepository<ReasonForConsultationDTO, int>, ReasonForConsultationRepository>();
 builder.Services.AddScoped<IRepository<IndicationsDTO, int>, IndicationsRepository>();
-builder.Services.AddScoped<IRepository<DiagnosisTreatmentDTO, int>, DiagnosisTreatmentRepository>();
 builder.Services.AddScoped<IRepository<MedicalServiceDTO, int>, MedicalServiceRepository>();
 builder.Services.AddScoped<IRepository<MedicalProcedureDTO, int>, MedicalProcedureRepository>();
 builder.Services.AddScoped<MedicalCareRepository>();

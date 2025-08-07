@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
-using SMED.BackEnd.Repositories.Implementations;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -10,12 +9,10 @@ namespace SMED.BackEnd.Controllers
     public class MedicalDiagnosisController : ControllerBase
     {
         private readonly IRepository<MedicalDiagnosisDTO, int> _repository;
-        private readonly MedicalDiagnosisRepository _diagnosisRepository;
 
-        public MedicalDiagnosisController(IRepository<MedicalDiagnosisDTO, int> repository, MedicalDiagnosisRepository diagnosisRepository)
+        public MedicalDiagnosisController(IRepository<MedicalDiagnosisDTO, int> repository)
         {
             _repository = repository;
-            _diagnosisRepository = diagnosisRepository;
         }
 
         [HttpGet]
@@ -51,12 +48,5 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-        // ✅ Endpoint adicional para asignar tratamientos
-        [HttpPost("{diagnosisId}/assign-treatments")]
-        public async Task<IActionResult> AssignTreatments(int diagnosisId, [FromBody] List<int> treatmentIds)
-        {
-            var result = await _diagnosisRepository.AssignTreatmentsAsync(diagnosisId, treatmentIds);
-            return result ? Ok(new { Message = "Tratamientos asignados exitosamente" }) : NotFound();
-        }
     }
 }

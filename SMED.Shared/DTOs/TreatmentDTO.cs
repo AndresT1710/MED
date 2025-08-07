@@ -10,9 +10,8 @@ namespace SMED.Shared.DTOs
     {
         public int Id { get; set; }
         public string? Recommendations { get; set; }
-        public List<int> DiagnosisIds { get; set; } = new List<int>();
+        public string? Description { get; set; } = null!;
+        public int MedicalCareId { get; set; }
 
     }
-
-
 }

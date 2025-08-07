@@ -18,7 +18,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<TreatmentDTO>> GetAllAsync()
         {
             var treatments = await _context.Treatments
-                .Include(t => t.Diagnoses) // ✅ Incluir diagnósticos
                 .ToListAsync();
 
             return treatments.Select(MapToDto).ToList();
@@ -27,7 +26,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<TreatmentDTO?> GetByIdAsync(int id)
         {
             var treatment = await _context.Treatments
-                .Include(t => t.Diagnoses) // ✅ Incluir diagnósticos
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             return treatment == null ? null : MapToDto(treatment);
@@ -37,18 +35,10 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new Treatment
             {
-                Recommendations = dto.Recommendations
+                Recommendations = dto.Recommendations,
+                MedicalCareId = dto.MedicalCareId,
+                Description = dto.Description
             };
-
-            // ✅ Asignar diagnósticos si se proporcionan
-            if (dto.DiagnosisIds.Any())
-            {
-                var diagnoses = await _context.Diagnosis
-                    .Where(d => dto.DiagnosisIds.Contains(d.Id))
-                    .ToListAsync();
-
-                entity.Diagnoses = diagnoses;
-            }
 
             _context.Treatments.Add(entity);
             await _context.SaveChangesAsync();
@@ -60,26 +50,13 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<TreatmentDTO?> UpdateAsync(TreatmentDTO dto)
         {
             var entity = await _context.Treatments
-                .Include(t => t.Diagnoses)
                 .FirstOrDefaultAsync(t => t.Id == dto.Id);
 
             if (entity == null) return null;
 
             entity.Recommendations = dto.Recommendations;
-
-            // ✅ Actualizar diagnósticos
-            entity.Diagnoses.Clear();
-            if (dto.DiagnosisIds.Any())
-            {
-                var diagnoses = await _context.Diagnosis
-                    .Where(d => dto.DiagnosisIds.Contains(d.Id))
-                    .ToListAsync();
-
-                foreach (var diagnosis in diagnoses)
-                {
-                    entity.Diagnoses.Add(diagnosis);
-                }
-            }
+            entity.MedicalCareId = dto.MedicalCareId;
+            entity.Description = dto.Description;
 
             await _context.SaveChangesAsync();
             return dto;
@@ -88,7 +65,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.Treatments
-                .Include(t => t.Diagnoses)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (entity == null) return false;
@@ -98,36 +74,22 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // ✅ Método adicional para asignar diagnósticos
-        public async Task<bool> AssignDiagnosesAsync(int treatmentId, List<int> diagnosisIds)
+        // ✅ Método para obtener tratamientos por MedicalCareId
+        public async Task<List<TreatmentDTO>> GetByMedicalCareIdAsync(int medicalCareId)
         {
-            var treatment = await _context.Treatments
-                .Include(t => t.Diagnoses)
-                .FirstOrDefaultAsync(t => t.Id == treatmentId);
-
-            if (treatment == null) return false;
-
-            var diagnoses = await _context.Diagnosis
-                .Where(d => diagnosisIds.Contains(d.Id))
+            var treatments = await _context.Treatments
+                .Where(t => t.MedicalCareId == medicalCareId)
                 .ToListAsync();
 
-            // Limpiar diagnósticos existentes y agregar los nuevos
-            treatment.Diagnoses.Clear();
-            foreach (var diagnosis in diagnoses)
-            {
-                treatment.Diagnoses.Add(diagnosis);
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
+            return treatments.Select(MapToDto).ToList();
         }
 
-        // ✅ Mapeo simple con solo IDs
         private static TreatmentDTO MapToDto(Treatment treatment) => new TreatmentDTO
         {
             Id = treatment.Id,
             Recommendations = treatment.Recommendations,
-            DiagnosisIds = treatment.Diagnoses.Select(d => d.Id).ToList()
+            MedicalCareId = treatment.MedicalCareId,
+            Description = treatment.Description
         };
     }
 }

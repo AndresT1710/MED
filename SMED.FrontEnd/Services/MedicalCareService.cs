@@ -33,7 +33,6 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        // Nuevo método para obtener solo atenciones de enfermería
         public async Task<List<MedicalCareDTO>?> GetNursingCareAsync()
         {
             try
@@ -53,7 +52,6 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        // Método para obtener por área y fecha
         public async Task<List<MedicalCareDTO>?> GetByAreaAndDateAsync(string area, DateTime? date = null)
         {
             try
@@ -63,7 +61,6 @@ namespace SMED.FrontEnd.Services
                 {
                     url += $"&date={date.Value:yyyy-MM-dd}";
                 }
-
                 var response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
@@ -94,6 +91,25 @@ namespace SMED.FrontEnd.Services
             {
                 _logger.LogError(ex, "Error al obtener atención médica por ID: {Id}", id);
                 return null;
+            }
+        }
+
+        public async Task<List<MedicalCareDTO>?> GetByPatientDocumentAsync(string documentNumber)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/MedicalCare/by-document/{documentNumber}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones por cédula: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones por cédula: {DocumentNumber}", documentNumber);
+                return new List<MedicalCareDTO>();
             }
         }
 
@@ -155,24 +171,24 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        public async Task<List<MedicalCareDTO>?> GetByPatientDocumentAsync(string documentNumber)
+        // ✅ Nuevo método para asignar tratamientos a una atención médica
+        public async Task<(bool Success, string Error)> AssignTreatmentsAsync(int medicalCareId, List<int> treatmentIds)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/MedicalCare/by-document/{documentNumber}");
+                var response = await _httpClient.PostAsJsonAsync($"api/MedicalCare/{medicalCareId}/assign-treatments", treatmentIds);
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                    return (true, string.Empty);
                 }
-                _logger.LogWarning("Error al obtener atenciones por cédula: {StatusCode}", response.StatusCode);
-                return new List<MedicalCareDTO>();
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener atenciones por cédula: {DocumentNumber}", documentNumber);
-                return new List<MedicalCareDTO>();
+                _logger.LogError(ex, "Error al asignar tratamientos a la atención médica: {MedicalCareId}", medicalCareId);
+                return (false, ex.Message);
             }
         }
     }
-
 }

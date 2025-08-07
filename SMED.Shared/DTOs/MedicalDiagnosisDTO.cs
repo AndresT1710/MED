@@ -16,12 +16,9 @@ namespace SMED.Shared.DTOs
         public string DiagnosisMotivation { get; set; } = null!;
         public int MedicalCareId { get; set; }
         public int? DiseaseId { get; set; }
-
         public string? DiseaseName { get; set; }
         public List<int>? OrderIds { get; set; }
-        public List<int> TreatmentIds { get; set; } = new List<int>();
         public List<int>? InterconsultationIds { get; set; }
 
     }
-
 }

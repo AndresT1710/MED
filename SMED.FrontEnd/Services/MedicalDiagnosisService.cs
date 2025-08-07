@@ -1,51 +1,38 @@
 ﻿using SMED.Shared.DTOs;
-using System.Text.Json;
+using System.Net.Http.Json;
 
 namespace SMED.FrontEnd.Services
 {
-    /// <summary>
-    /// Servicio para gestionar las operaciones CRUD de MedicalDiagnosis
-    /// Maneja los diagnósticos médicos de los pacientes
-    /// </summary>
     public class MedicalDiagnosisService
     {
         private readonly HttpClient _httpClient;
-        private readonly JsonSerializerOptions _jsonOptions;
+        private readonly ILogger<MedicalDiagnosisService> _logger;
 
-        public MedicalDiagnosisService(HttpClient httpClient)
+        public MedicalDiagnosisService(HttpClient httpClient, ILogger<MedicalDiagnosisService> logger)
         {
             _httpClient = httpClient;
-            _jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+            _logger = logger;
         }
 
-        /// <summary>
-        /// Obtiene todos los diagnósticos médicos
-        /// </summary>
-        public async Task<List<MedicalDiagnosisDTO>> GetAllAsync()
+        public async Task<List<MedicalDiagnosisDTO>?> GetAllAsync()
         {
             try
             {
                 var response = await _httpClient.GetAsync("api/MedicalDiagnosis");
                 if (response.IsSuccessStatusCode)
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    return JsonSerializer.Deserialize<List<MedicalDiagnosisDTO>>(json, _jsonOptions) ?? new List<MedicalDiagnosisDTO>();
+                    return await response.Content.ReadFromJsonAsync<List<MedicalDiagnosisDTO>>();
                 }
+                _logger.LogWarning("Error al obtener diagnósticos médicos: {StatusCode}", response.StatusCode);
                 return new List<MedicalDiagnosisDTO>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener diagnósticos médicos: {ex.Message}");
+                _logger.LogError(ex, "Error al obtener todos los diagnósticos médicos");
                 return new List<MedicalDiagnosisDTO>();
             }
         }
 
-        /// <summary>
-        /// Obtiene un diagnóstico médico específico por ID
-        /// </summary>
         public async Task<MedicalDiagnosisDTO?> GetByIdAsync(int id)
         {
             try
@@ -53,92 +40,57 @@ namespace SMED.FrontEnd.Services
                 var response = await _httpClient.GetAsync($"api/MedicalDiagnosis/{id}");
                 if (response.IsSuccessStatusCode)
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    return JsonSerializer.Deserialize<MedicalDiagnosisDTO>(json, _jsonOptions);
+                    return await response.Content.ReadFromJsonAsync<MedicalDiagnosisDTO>();
                 }
                 return null;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener diagnóstico médico por ID: {ex.Message}");
+                _logger.LogError(ex, "Error al obtener diagnóstico médico por ID: {Id}", id);
                 return null;
             }
         }
 
-        /// <summary>
-        /// Obtiene todos los diagnósticos médicos asociados a una atención médica específica
-        /// </summary>
-        public async Task<List<MedicalDiagnosisDTO>> GetByMedicalCareIdAsync(int medicalCareId)
-        {
-            try
-            {
-                var allDiagnoses = await GetAllAsync();
-                return allDiagnoses.Where(d => d.MedicalCareId == medicalCareId).ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error al obtener diagnósticos médicos por MedicalCareId: {ex.Message}");
-                return new List<MedicalDiagnosisDTO>();
-            }
-        }
-
-        /// <summary>
-        /// Crea un nuevo diagnóstico médico
-        /// </summary>
         public async Task<(bool Success, MedicalDiagnosisDTO? Data, string Error)> CreateAsync(MedicalDiagnosisDTO dto)
         {
             try
             {
-                var json = JsonSerializer.Serialize(dto, _jsonOptions);
-                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync("api/MedicalDiagnosis", content);
-
+                var response = await _httpClient.PostAsJsonAsync("api/MedicalDiagnosis", dto);
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    var created = JsonSerializer.Deserialize<MedicalDiagnosisDTO>(responseJson, _jsonOptions);
+                    var created = await response.Content.ReadFromJsonAsync<MedicalDiagnosisDTO>();
                     return (true, created, string.Empty);
                 }
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return (false, null, $"Error del servidor: {errorContent}");
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, null, error);
             }
             catch (Exception ex)
             {
-                return (false, null, $"Error al crear diagnóstico médico: {ex.Message}");
+                _logger.LogError(ex, "Error al crear diagnóstico médico");
+                return (false, null, ex.Message);
             }
         }
 
-        /// <summary>
-        /// Actualiza un diagnóstico médico existente
-        /// </summary>
         public async Task<(bool Success, MedicalDiagnosisDTO? Data, string Error)> UpdateAsync(MedicalDiagnosisDTO dto)
         {
             try
             {
-                var json = JsonSerializer.Serialize(dto, _jsonOptions);
-                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                var response = await _httpClient.PutAsync($"api/MedicalDiagnosis/{dto.Id}", content);
-
+                var response = await _httpClient.PutAsJsonAsync($"api/MedicalDiagnosis/{dto.Id}", dto);
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    var updated = JsonSerializer.Deserialize<MedicalDiagnosisDTO>(responseJson, _jsonOptions);
+                    var updated = await response.Content.ReadFromJsonAsync<MedicalDiagnosisDTO>();
                     return (true, updated, string.Empty);
                 }
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return (false, null, $"Error del servidor: {errorContent}");
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, null, error);
             }
             catch (Exception ex)
             {
-                return (false, null, $"Error al actualizar diagnóstico médico: {ex.Message}");
+                _logger.LogError(ex, "Error al actualizar diagnóstico médico");
+                return (false, null, ex.Message);
             }
         }
 
-        /// <summary>
-        /// Elimina un diagnóstico médico por ID
-        /// </summary>
         public async Task<(bool Success, string Error)> DeleteAsync(int id)
         {
             try
@@ -148,14 +100,30 @@ namespace SMED.FrontEnd.Services
                 {
                     return (true, string.Empty);
                 }
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return (false, $"Error del servidor: {errorContent}");
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
             }
             catch (Exception ex)
             {
-                return (false, $"Error al eliminar diagnóstico médico: {ex.Message}");
+                _logger.LogError(ex, "Error al eliminar diagnóstico médico");
+                return (false, ex.Message);
             }
         }
+
+        // ✅ Método para obtener diagnósticos por MedicalCareId
+        public async Task<List<MedicalDiagnosisDTO>?> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                var allDiagnoses = await GetAllAsync();
+                return allDiagnoses?.Where(d => d.MedicalCareId == medicalCareId).ToList() ?? new List<MedicalDiagnosisDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener diagnósticos por MedicalCareId: {MedicalCareId}", medicalCareId);
+                return new List<MedicalDiagnosisDTO>();
+            }
+        }
+
     }
 }

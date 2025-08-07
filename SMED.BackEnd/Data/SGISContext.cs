@@ -761,15 +761,11 @@ namespace SGIS.Models
                 .HasForeignKey(pt => pt.MedicineId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<MedicalDiagnosis>()
-                .HasMany(d => d.Treatments)
-                .WithMany(t => t.Diagnoses);
-
             modelBuilder.Entity<PharmacologicalTreatment>()
                       .HasOne(pt => pt.Medicine)
                       .WithMany(m => m.PharmacologicalTreatments)
                       .HasForeignKey(pt => pt.MedicineId)
-                      .OnDelete(DeleteBehavior.Restrict) // No eliminar Medicine si tiene tratamientos
+                      .OnDelete(DeleteBehavior.Restrict)
                       .HasConstraintName("FK_PharmacologicalTreatment_Medicine");
 
 

@@ -16,9 +16,7 @@ namespace SMED.Shared.Entity
         public int LocationId { get; set; }
         public int PatientId { get; set; }
         public int HealthProfessionalId { get; set; }
-
         public string Area { get; set; }
-        
         public DateTime CareDate { get; set; }
 
         [ForeignKey("LocationId")]
@@ -27,6 +25,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("MedicalCare")]
         public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<Treatment> Treatments { get; set; } = new List<Treatment>();
 
         [InverseProperty("MedicalCare")]
         public virtual VitalSigns? VitalSigns { get; set; }
@@ -68,6 +69,5 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("MedicalCare")]
         public virtual AdditionalData? AdditionalData { get; set; }
-
     }
 }

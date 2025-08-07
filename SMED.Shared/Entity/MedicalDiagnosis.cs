@@ -41,6 +41,5 @@ namespace SMED.Shared.Entity
         [InverseProperty("Diagnoses")]
         public virtual DiagnosticType DiagnosticTypeNavigation { get; set; } = null!;
 
-        public virtual ICollection<Treatment> Treatments { get; set; } = new List<Treatment>();
     }
 }

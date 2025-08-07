@@ -16,7 +16,8 @@ namespace SMED.Shared.DTOs
         public int HealthProfessionalId { get; set; }
         public string? NameHealthProfessional { get; set; }
         public string? Area { get; set; }
-
         public DateTime CareDate { get; set; }
+        public List<int> TreatmentIds { get; set; } = new List<int>();
+
     }
 }

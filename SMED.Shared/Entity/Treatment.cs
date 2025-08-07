@@ -13,12 +13,16 @@ namespace SMED.Shared.Entity
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
         public string Recommendations { get; set; } = null!;
+        public int MedicalCareId { get; set; }
+        public string? Description { get; set; } = null!;
+
+        [ForeignKey("MedicalCareId")]
+        [InverseProperty("Treatments")]
+        public virtual MedicalCare MedicalCare { get; set; } = null!;
 
         [InverseProperty("Treatment")]
         public virtual ICollection<Indications> Indications { get; set; } = new List<Indications>();
 
-        public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();
     }
 }

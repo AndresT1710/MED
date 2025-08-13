@@ -13,7 +13,6 @@ namespace SMED.Shared.Entity
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
         public string Cie10 { get; set; } = null!;
         public string Denomination { get; set; } = null!;
         public int DiagnosticTypeId { get; set; }
@@ -26,7 +25,6 @@ namespace SMED.Shared.Entity
         public virtual MedicalCare MedicalCare { get; set; } = null!;
 
         public int? DiseaseId { get; set; }
-
         [ForeignKey("DiseaseId")]
         [InverseProperty("Diagnosis")]
         public virtual Disease? DiseaseNavigation { get; set; }
@@ -41,5 +39,7 @@ namespace SMED.Shared.Entity
         [InverseProperty("Diagnoses")]
         public virtual DiagnosticType DiagnosticTypeNavigation { get; set; } = null!;
 
+        [InverseProperty("MedicalDiagnosis")]
+        public virtual ICollection<Treatment> Treatments { get; set; } = new List<Treatment>();
     }
 }

@@ -89,11 +89,5 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-        [HttpPost("{medicalCareId}/assign-treatments")]
-        public async Task<IActionResult> AssignTreatments(int medicalCareId, [FromBody] List<int> treatmentIds)
-        {
-            var result = await _medicalCareRepository.AssignTreatmentsAsync(medicalCareId, treatmentIds);
-            return result ? Ok(new { Message = "Tratamientos asignados exitosamente" }) : NotFound();
-        }
     }
 }

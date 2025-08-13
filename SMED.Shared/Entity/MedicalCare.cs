@@ -27,9 +27,6 @@ namespace SMED.Shared.Entity
         public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();
 
         [InverseProperty("MedicalCare")]
-        public virtual ICollection<Treatment> Treatments { get; set; } = new List<Treatment>();
-
-        [InverseProperty("MedicalCare")]
         public virtual VitalSigns? VitalSigns { get; set; }
 
         [InverseProperty("MedicalCare")]

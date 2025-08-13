@@ -29,10 +29,10 @@ namespace SMED.BackEnd.Controllers
             return dto != null ? Ok(dto) : NotFound();
         }
 
-        [HttpGet("by-medical-care/{medicalCareId}")]
-        public async Task<ActionResult<List<TreatmentDTO>>> GetByMedicalCareId(int medicalCareId)
+        [HttpGet("by-medical-diagnosis/{medicalDiagnosisId}")]
+        public async Task<ActionResult<List<TreatmentDTO>>> GetByMedicalDiagnosisId(int medicalDiagnosisId)
         {
-            var treatments = await _treatmentRepository.GetByMedicalCareIdAsync(medicalCareId);
+            var treatments = await _treatmentRepository.GetByMedicalDiagnosisIdAsync(medicalDiagnosisId);
             return Ok(treatments);
         }
 
@@ -57,6 +57,5 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
-
     }
 }

@@ -171,24 +171,5 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        // ✅ Nuevo método para asignar tratamientos a una atención médica
-        public async Task<(bool Success, string Error)> AssignTreatmentsAsync(int medicalCareId, List<int> treatmentIds)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync($"api/MedicalCare/{medicalCareId}/assign-treatments", treatmentIds);
-                if (response.IsSuccessStatusCode)
-                {
-                    return (true, string.Empty);
-                }
-                var error = await response.Content.ReadAsStringAsync();
-                return (false, error);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al asignar tratamientos a la atención médica: {MedicalCareId}", medicalCareId);
-                return (false, ex.Message);
-            }
-        }
     }
 }

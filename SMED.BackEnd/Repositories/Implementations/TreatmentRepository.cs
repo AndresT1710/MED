@@ -36,7 +36,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = new Treatment
             {
                 Recommendations = dto.Recommendations,
-                MedicalCareId = dto.MedicalCareId,
+                MedicalDiagnosisId = dto.MedicalDiagnosisId,
                 Description = dto.Description
             };
 
@@ -55,7 +55,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.Recommendations = dto.Recommendations;
-            entity.MedicalCareId = dto.MedicalCareId;
+            entity.MedicalDiagnosisId = dto.MedicalDiagnosisId;
             entity.Description = dto.Description;
 
             await _context.SaveChangesAsync();
@@ -74,11 +74,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // ✅ Método para obtener tratamientos por MedicalCareId
-        public async Task<List<TreatmentDTO>> GetByMedicalCareIdAsync(int medicalCareId)
+        //  Obtener tratamientos por MedicalDiagnosisId
+        public async Task<List<TreatmentDTO>> GetByMedicalDiagnosisIdAsync(int medicalDiagnosisId)
         {
             var treatments = await _context.Treatments
-                .Where(t => t.MedicalCareId == medicalCareId)
+                .Where(t => t.MedicalDiagnosisId == medicalDiagnosisId)
                 .ToListAsync();
 
             return treatments.Select(MapToDto).ToList();
@@ -88,7 +88,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             Id = treatment.Id,
             Recommendations = treatment.Recommendations,
-            MedicalCareId = treatment.MedicalCareId,
+            MedicalDiagnosisId = treatment.MedicalDiagnosisId,
             Description = treatment.Description
         };
     }

@@ -20,7 +20,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Include(m => m.Treatments)
                 .OrderByDescending(m => m.CareDate)
                 .ToListAsync();
 
@@ -48,8 +47,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,
-                CareDate = m.CareDate,
-                TreatmentIds = m.Treatments.Select(t => t.Id).ToList()
+                CareDate = m.CareDate
             }).ToList();
         }
 
@@ -61,7 +59,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Include(m => m.Treatments)
                 .Where(m => m.Area.ToLower() == "enfermería" || m.Area.ToLower() == "enfermeria")
                 .OrderByDescending(m => m.CareDate)
                 .ToListAsync();
@@ -90,8 +87,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,
-                CareDate = m.CareDate,
-                TreatmentIds = m.Treatments.Select(t => t.Id).ToList()
+                CareDate = m.CareDate
             }).ToList();
         }
 
@@ -103,7 +99,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Include(m => m.Treatments)
                 .Where(m => m.Area.ToLower() == area.ToLower());
 
             if (date.HasValue)
@@ -139,8 +134,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,
-                CareDate = m.CareDate,
-                TreatmentIds = m.Treatments.Select(t => t.Id).ToList()
+                CareDate = m.CareDate
             }).ToList();
         }
 
@@ -152,7 +146,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Include(m => m.Treatments)
                 .FirstOrDefaultAsync(m => m.CareId == id);
 
             return entity == null ? null : new MedicalCareDTO
@@ -179,8 +172,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = entity.Area,
-                CareDate = entity.CareDate,
-                TreatmentIds = entity.Treatments.Select(t => t.Id).ToList() 
+                CareDate = entity.CareDate
             };
         }
 
@@ -195,15 +187,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 CareDate = dto.CareDate == default ? DateTime.Now : dto.CareDate
             };
 
-            // ✅ Asignar tratamientos si se proporcionan
-            if (dto.TreatmentIds.Any())
-            {
-                var treatments = await _context.Treatments
-                    .Where(t => dto.TreatmentIds.Contains(t.Id))
-                    .ToListAsync();
-                entity.Treatments = treatments;
-            }
-
             _context.MedicalCares.Add(entity);
             await _context.SaveChangesAsync();
 
@@ -213,10 +196,7 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<MedicalCareDTO?> UpdateAsync(MedicalCareDTO dto)
         {
-            var entity = await _context.MedicalCares
-                .Include(m => m.Treatments)
-                .FirstOrDefaultAsync(m => m.CareId == dto.CareId);
-
+            var entity = await _context.MedicalCares.FindAsync(dto.CareId);
             if (entity == null) return null;
 
             entity.LocationId = dto.LocationId;
@@ -225,34 +205,157 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.Area = dto.Area ?? string.Empty;
             entity.CareDate = dto.CareDate;
 
-            // ✅ Actualizar tratamientos
-            entity.Treatments.Clear();
-            if (dto.TreatmentIds.Any())
-            {
-                var treatments = await _context.Treatments
-                    .Where(t => dto.TreatmentIds.Contains(t.Id))
-                    .ToListAsync();
-                foreach (var treatment in treatments)
-                {
-                    entity.Treatments.Add(treatment);
-                }
-            }
-
             await _context.SaveChangesAsync();
             return dto;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var entity = await _context.MedicalCares
-                .Include(m => m.Treatments)
-                .FirstOrDefaultAsync(m => m.CareId == id);
+            // ✅ Usar una transacción para asegurar consistencia
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (entity == null) return false;
+            try
+            {
+                var entity = await _context.MedicalCares
+                    .Include(m => m.Diagnoses)
+                        .ThenInclude(d => d.Treatments)
+                            .ThenInclude(t => t.Indications)
+                    .Include(m => m.Diagnoses)
+                        .ThenInclude(d => d.OrderDiagnosis)
+                    .Include(m => m.Diagnoses)
+                        .ThenInclude(d => d.Interconsultations)
+                    .Include(m => m.VitalSigns)
+                    .Include(m => m.Evolutions)
+                    .Include(m => m.ReasonsForConsultation)
+                    .Include(m => m.ExamResults)
+                    .Include(m => m.IdentifiedDiseases)
+                    .Include(m => m.PhysicalExams)
+                    .Include(m => m.ReviewSystemDevices) // ✅ Incluir ReviewSystemDevices
+                    .Include(m => m.MedicalReferral)
+                    .Include(m => m.MedicalServices)
+                    .Include(m => m.MedicalProcedures)
+                    .Include(m => m.AdditionalData)
+                    .FirstOrDefaultAsync(m => m.CareId == id);
 
-            _context.MedicalCares.Remove(entity);
-            await _context.SaveChangesAsync();
-            return true;
+                if (entity == null)
+                {
+                    await transaction.RollbackAsync();
+                    return false;
+                }
+
+                // ✅ Eliminar en el orden correcto para evitar violaciones de FK
+
+                // 1. Eliminar Indications (relacionadas con Treatments)
+                foreach (var diagnosis in entity.Diagnoses)
+                {
+                    foreach (var treatment in diagnosis.Treatments)
+                    {
+                        if (treatment.Indications.Any())
+                        {
+                            _context.Indications.RemoveRange(treatment.Indications);
+                        }
+                    }
+                }
+
+                // 2. Eliminar Treatments (relacionados con Diagnoses)
+                foreach (var diagnosis in entity.Diagnoses)
+                {
+                    if (diagnosis.Treatments.Any())
+                    {
+                        _context.Treatments.RemoveRange(diagnosis.Treatments);
+                    }
+                }
+
+                // 3. Eliminar OrderDiagnosis e Interconsultations (relacionados con Diagnoses)
+                foreach (var diagnosis in entity.Diagnoses)
+                {
+                    if (diagnosis.OrderDiagnosis.Any())
+                    {
+                        _context.OrderDiagnosis.RemoveRange(diagnosis.OrderDiagnosis);
+                    }
+                    if (diagnosis.Interconsultations.Any())
+                    {
+                        _context.Interconsultations.RemoveRange(diagnosis.Interconsultations);
+                    }
+                }
+
+                // 4. Eliminar Diagnoses
+                if (entity.Diagnoses.Any())
+                {
+                    _context.Diagnosis.RemoveRange(entity.Diagnoses);
+                }
+
+                // 5. Eliminar otros registros relacionados directamente con MedicalCare
+                if (entity.VitalSigns != null)
+                {
+                    _context.VitalSigns.Remove(entity.VitalSigns);
+                }
+
+                if (entity.Evolutions.Any())
+                {
+                    _context.Evolutions.RemoveRange(entity.Evolutions);
+                }
+
+                if (entity.ReasonsForConsultation.Any())
+                {
+                    _context.ReasonForConsultations.RemoveRange(entity.ReasonsForConsultation);
+                }
+
+                if (entity.ExamResults.Any())
+                {
+                    _context.ExamResults.RemoveRange(entity.ExamResults);
+                }
+
+                if (entity.IdentifiedDiseases.Any())
+                {
+                    _context.IdentifiedDiseases.RemoveRange(entity.IdentifiedDiseases);
+                }
+
+                if (entity.PhysicalExams.Any())
+                {
+                    _context.PhysicalExams.RemoveRange(entity.PhysicalExams);
+                }
+
+                // ✅ Eliminar ReviewSystemDevices (esta era la causa del error)
+                if (entity.ReviewSystemDevices.Any())
+                {
+                    _context.ReviewSystemDevices.RemoveRange(entity.ReviewSystemDevices);
+                }
+
+                if (entity.MedicalReferral != null)
+                {
+                    _context.MedicalReferrals.Remove(entity.MedicalReferral);
+                }
+
+                if (entity.MedicalServices.Any())
+                {
+                    _context.MedicalServices.RemoveRange(entity.MedicalServices);
+                }
+
+                if (entity.MedicalProcedures.Any())
+                {
+                    _context.MedicalProcedures.RemoveRange(entity.MedicalProcedures);
+                }
+
+                if (entity.AdditionalData != null)
+                {
+                    _context.AdditionalData.Remove(entity.AdditionalData);
+                }
+
+                // 6. Finalmente, eliminar la MedicalCare
+                _context.MedicalCares.Remove(entity);
+
+                // ✅ Guardar todos los cambios
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw; // Re-lanzar la excepción para que sea manejada por el controlador
+            }
         }
 
         public async Task<List<MedicalCareDTO>> GetByPatientDocumentAsync(string documentNumber)
@@ -264,7 +367,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                         .ThenInclude(pn => pn.PersonDocument)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Include(m => m.Treatments)
                 .Where(m => m.Patient.PersonNavigation.PersonDocument.DocumentNumber == documentNumber)
                 .OrderByDescending(m => m.CareDate)
                 .ToListAsync();
@@ -293,33 +395,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 Area = m.Area,
-                CareDate = m.CareDate,
-                TreatmentIds = m.Treatments.Select(t => t.Id).ToList()
+                CareDate = m.CareDate
             }).ToList();
         }
 
-        // ✅ Método adicional para asignar tratamientos a una atención médica
-        public async Task<bool> AssignTreatmentsAsync(int medicalCareId, List<int> treatmentIds)
-        {
-            var medicalCare = await _context.MedicalCares
-                .Include(m => m.Treatments)
-                .FirstOrDefaultAsync(m => m.CareId == medicalCareId);
-
-            if (medicalCare == null) return false;
-
-            var treatments = await _context.Treatments
-                .Where(t => treatmentIds.Contains(t.Id))
-                .ToListAsync();
-
-            // Limpiar tratamientos existentes y agregar los nuevos
-            medicalCare.Treatments.Clear();
-            foreach (var treatment in treatments)
-            {
-                medicalCare.Treatments.Add(treatment);
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
     }
 }

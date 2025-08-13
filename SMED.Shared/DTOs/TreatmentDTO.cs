@@ -11,7 +11,7 @@ namespace SMED.Shared.DTOs
         public int Id { get; set; }
         public string? Recommendations { get; set; }
         public string? Description { get; set; } = null!;
-        public int MedicalCareId { get; set; }
+        public int MedicalDiagnosisId { get; set; }
 
     }
 }

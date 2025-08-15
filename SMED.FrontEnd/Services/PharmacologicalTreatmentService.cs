@@ -51,6 +51,26 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // ✅ Método corregido para obtener por diagnóstico
+        public async Task<List<PharmacologicalTreatmentDTO>?> GetByMedicalDiagnosisIdAsync(int medicalDiagnosisId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/PharmacologicalTreatment/by-medical-diagnosis/{medicalDiagnosisId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<PharmacologicalTreatmentDTO>>();
+                }
+                _logger.LogWarning("Error al obtener tratamientos farmacológicos por diagnóstico: {StatusCode}", response.StatusCode);
+                return new List<PharmacologicalTreatmentDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener tratamientos farmacológicos por MedicalDiagnosisId: {MedicalDiagnosisId}", medicalDiagnosisId);
+                return new List<PharmacologicalTreatmentDTO>();
+            }
+        }
+
         public async Task<(bool Success, PharmacologicalTreatmentDTO? Data, string Error)> CreateAsync(PharmacologicalTreatmentDTO dto)
         {
             try
@@ -107,20 +127,6 @@ namespace SMED.FrontEnd.Services
             {
                 _logger.LogError(ex, "Error al eliminar tratamiento farmacológico");
                 return (false, ex.Message);
-            }
-        }
-
-        public async Task<List<PharmacologicalTreatmentDTO>?> GetByTreatmentIdAsync(int treatmentId)
-        {
-            try
-            {
-                var allTreatments = await GetAllAsync();
-                return allTreatments?.Where(pt => pt.Id == treatmentId).ToList() ?? new List<PharmacologicalTreatmentDTO>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener tratamientos farmacológicos por TreatmentId: {TreatmentId}", treatmentId);
-                return new List<PharmacologicalTreatmentDTO>();
             }
         }
     }

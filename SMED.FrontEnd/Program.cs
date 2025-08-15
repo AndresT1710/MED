@@ -77,18 +77,16 @@ builder.Services.AddScoped<RegionService>();
 builder.Services.AddScoped<PathologicalEvidenceService>();
 builder.Services.AddScoped<EvolutionService>();
 builder.Services.AddScoped<AdditionalDataService>();
-builder.Services.AddScoped<MedicalDiagnosisService>();
 builder.Services.AddScoped<DiagnosticTypeService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<HealthProfessionalService>();
 builder.Services.AddScoped<IndicationsService>();
-builder.Services.AddScoped<MedicineService>();
 builder.Services.AddScoped<NonPharmacologicalTreatmentService>();
-builder.Services.AddScoped<PharmacologicalTreatmentService>();
 builder.Services.AddScoped<TreatmentService>();
-
-
+builder.Services.AddScoped<PharmacologicalTreatmentService>();
+builder.Services.AddScoped<MedicineService>();
+builder.Services.AddScoped<MedicalDiagnosisService>();
 
 
 builder.Services.AddLogging();

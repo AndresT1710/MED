@@ -29,6 +29,13 @@ namespace SMED.BackEnd.Controllers
             return dto != null ? Ok(dto) : NotFound();
         }
 
+        [HttpGet("by-medical-care/{medicalCareId}")]
+        public async Task<ActionResult<List<MedicalDiagnosisDTO>>> GetByMedicalCareId(int medicalCareId)
+        {
+            var diagnoses = await _diagnosisRepository.GetByMedicalCareIdAsync(medicalCareId);
+            return Ok(diagnoses);
+        }
+
         [HttpPost]
         public async Task<ActionResult<MedicalDiagnosisDTO>> Create(MedicalDiagnosisDTO dto)
         {
@@ -51,7 +58,7 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-        // ✅ Endpoint para asignar tratamientos a un diagnóstico
+        // ✅ Endpoint adicional para asignar tratamientos
         [HttpPost("{diagnosisId}/assign-treatments")]
         public async Task<IActionResult> AssignTreatments(int diagnosisId, [FromBody] List<int> treatmentIds)
         {

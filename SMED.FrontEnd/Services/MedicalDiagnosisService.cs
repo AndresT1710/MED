@@ -110,12 +110,18 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // ✅ Método para obtener diagnósticos por MedicalCareId
         public async Task<List<MedicalDiagnosisDTO>?> GetByMedicalCareIdAsync(int medicalCareId)
         {
             try
             {
-                var allDiagnoses = await GetAllAsync();
-                return allDiagnoses?.Where(d => d.MedicalCareId == medicalCareId).ToList() ?? new List<MedicalDiagnosisDTO>();
+                var response = await _httpClient.GetAsync($"api/MedicalDiagnosis/by-medical-care/{medicalCareId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalDiagnosisDTO>>();
+                }
+                _logger.LogWarning("Error al obtener diagnósticos por MedicalCareId: {StatusCode}", response.StatusCode);
+                return new List<MedicalDiagnosisDTO>();
             }
             catch (Exception ex)
             {
@@ -124,6 +130,7 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // ✅ Nuevo método para asignar tratamientos a un diagnóstico
         public async Task<(bool Success, string Error)> AssignTreatmentsAsync(int diagnosisId, List<int> treatmentIds)
         {
             try

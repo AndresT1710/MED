@@ -1215,12 +1215,14 @@
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Tratamiento No Farmacológico"
                                                Width="full"
-                                               @bind-Content="nonPharmacologicalContent" />
+                                               @bind-Content="nonPharmacologicalContent"
+                                               @bind-Content:after="SaveNonPharmacologicalTreatment" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Indicaciones"
                                                Width="full"
-                                               @bind-Content="indicationsContent" />
+                                               @bind-Content="indicationsContent"
+                                               @bind-Content:after="SaveIndications" />
                             </div>
                         </div>
                     }
@@ -1368,8 +1370,11 @@
     private string pharmacologicalFormError = "";
 
     // Variables para Tratamiento No Farmacológico e Indicaciones
-    private string nonPharmacologicalContent = "";
+    private List<NonPharmacologicalTreatmentDTO> nonPharmacologicalList = new();
+    private NonPharmacologicalTreatmentDTO currentNonPharmacological = new();
+    private IndicationsDTO? currentIndication = null;
     private string indicationsContent = "";
+    private string nonPharmacologicalContent = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -2785,33 +2790,12 @@
     {
         try
         {
-            // Buscar o crear tratamiento para este diagnóstico
-            var treatments = await TreatmentService.GetByMedicalDiagnosisIdAsync(diagnosisId);
-            var treatment = treatments?.FirstOrDefault();
+            currentTreatmentId = 0; // Reset
 
-            if (treatment == null)
-            {
-                var newTreatment = new TreatmentDTO
-                {
-                    MedicalDiagnosisId = diagnosisId,
-                    Description = "Tratamiento inicial"
-                };
-
-                var result = await TreatmentService.CreateAsync(newTreatment);
-                if (result.Success && result.Data != null)
-                {
-                    currentTreatmentId = result.Data.Id;
-                }
-            }
-            else
-            {
-                currentTreatmentId = treatment.Id;
-            }
-
-            // Cargar datos existentes
-            await LoadPharmacologicalTreatments();
-            await LoadNonPharmacologicalTreatment();
-            await LoadIndications();
+            // Cargar datos existentes directamente por diagnóstico
+            await LoadPharmacologicalTreatments(diagnosisId);
+            await LoadNonPharmacologicalTreatment(diagnosisId);
+            await LoadIndications(diagnosisId);
         }
         catch (Exception ex)
         {
@@ -2819,11 +2803,11 @@
         }
     }
 
-    private async Task LoadPharmacologicalTreatments()
+    private async Task LoadPharmacologicalTreatments(int diagnosisId)
     {
         try
         {
-            pharmacologicalList = await PharmacologicalTreatmentService.GetByTreatmentIdAsync(currentTreatmentId) ?? new List<PharmacologicalTreatmentDTO>();
+            pharmacologicalList = await PharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosisId) ?? new List<PharmacologicalTreatmentDTO>();
             UpdatePharmacologicalRows();
         }
         catch (Exception ex)
@@ -2832,12 +2816,15 @@
         }
     }
 
-    private async Task LoadNonPharmacologicalTreatment()
+    private async Task LoadNonPharmacologicalTreatment(int diagnosisId)
     {
         try
         {
-            var nonPharmacological = await NonPharmacologicalTreatmentService.GetByTreatmentIdAsync(currentTreatmentId);
-            nonPharmacologicalContent = nonPharmacological?.FirstOrDefault()?.Description ?? "";
+            nonPharmacologicalList = await NonPharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosisId) ?? new List<NonPharmacologicalTreatmentDTO>();
+
+            // Cargar el contenido del primer tratamiento no farmacológico si existe
+            var firstNonPharmacological = nonPharmacologicalList.FirstOrDefault();
+            nonPharmacologicalContent = firstNonPharmacological?.Description ?? "";
         }
         catch (Exception ex)
         {
@@ -2845,16 +2832,115 @@
         }
     }
 
-    private async Task LoadIndications()
+    private async Task SaveNonPharmacologicalTreatment()
     {
         try
         {
-            var indications = await IndicationsService.GetByTreatmentIdAsync(currentTreatmentId);
-            indicationsContent = indications?.FirstOrDefault()?.Description ?? "";
+            if (selectedDiagnosisForTreatment == null || selectedDiagnosisForTreatment.Id <= 0)
+                return;
+
+            if (string.IsNullOrWhiteSpace(nonPharmacologicalContent))
+            {
+                // Si el contenido está vacío y existe un registro, eliminarlo
+                var existingTreatment = nonPharmacologicalList.FirstOrDefault();
+                if (existingTreatment != null && existingTreatment.Id > 0)
+                {
+                    await NonPharmacologicalTreatmentService.DeleteAsync(existingTreatment.Id);
+                    nonPharmacologicalList.Clear();
+                }
+                return;
+            }
+
+            var existingNonPharmacological = nonPharmacologicalList.FirstOrDefault();
+
+            if (existingNonPharmacological != null && existingNonPharmacological.Id > 0)
+            {
+                // Actualizar existente
+                existingNonPharmacological.Description = nonPharmacologicalContent;
+                var updateResult = await NonPharmacologicalTreatmentService.UpdateAsync(existingNonPharmacological);
+                if (updateResult.Success && updateResult.Data != null)
+                {
+                    var index = nonPharmacologicalList.FindIndex(n => n.Id == existingNonPharmacological.Id);
+                    if (index >= 0)
+                    {
+                        nonPharmacologicalList[index] = updateResult.Data;
+                    }
+                }
+            }
+            else
+            {
+                // Crear nuevo
+                var newNonPharmacological = new NonPharmacologicalTreatmentDTO
+                    {
+                        Id = 0,
+                        MedicalDiagnosisId = selectedDiagnosisForTreatment.Id,
+                        Description = nonPharmacologicalContent,
+                    };
+
+                var createResult = await NonPharmacologicalTreatmentService.CreateAsync(newNonPharmacological);
+                if (createResult.Success && createResult.Data != null)
+                {
+                    nonPharmacologicalList.Add(createResult.Data);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar tratamiento no farmacológico: {ex.Message}");
+        }
+    }
+
+    private async Task LoadIndications(int diagnosisId)
+    {
+        try
+        {
+            // Obtener la indicación existente para este diagnóstico
+            currentIndication = await IndicationsService.GetByMedicalDiagnosisIdAsync(diagnosisId);
+            indicationsContent = currentIndication?.Description ?? "";
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading indications: {ex.Message}");
+            indicationsContent = "";
+        }
+    }
+
+    private async Task SaveIndications()
+    {
+        try
+        {
+            if (selectedDiagnosisForTreatment == null || selectedDiagnosisForTreatment.Id <= 0)
+                return;
+
+            if (string.IsNullOrWhiteSpace(indicationsContent))
+            {
+                // Si el contenido está vacío, eliminar las indicaciones existentes
+                if (currentIndication != null && currentIndication.Id > 0)
+                {
+                    var deleteResult = await IndicationsService.DeleteByMedicalDiagnosisIdAsync(selectedDiagnosisForTreatment.Id);
+                    if (deleteResult.Success)
+                    {
+                        currentIndication = null;
+                    }
+                }
+                return;
+            }
+
+            // Crear o actualizar la indicación para este diagnóstico
+            var result = await IndicationsService.CreateOrUpdateForDiagnosisAsync(selectedDiagnosisForTreatment.Id, indicationsContent);
+
+            if (result.Success && result.Data != null)
+            {
+                currentIndication = result.Data;
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error al guardar indicaciones: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error al guardar indicaciones: {ex.Message}");
         }
     }
 
@@ -2893,9 +2979,15 @@
     private void OnAddPharmacologicalRequested()
     {
         currentPharmacological = new PharmacologicalTreatmentDTO
-        {
-            MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0
-        };
+            {
+                Id = 0,
+                MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0,
+                Dose = 1,
+                Frequency = "",
+                Duration = "",
+                ViaAdmission = "",
+                MedicineId = 0
+            };
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
     }
@@ -2906,15 +2998,16 @@
         if (pharma != null)
         {
             currentPharmacological = new PharmacologicalTreatmentDTO
-            {
-                Id = pharma.Id,
-                MedicalDiagnosisId = pharma.MedicalDiagnosisId,
-                Dose = pharma.Dose,
-                Frequency = pharma.Frequency,
-                Duration = pharma.Duration,
-                ViaAdmission = pharma.ViaAdmission,
-                MedicineId = pharma.MedicineId
-            };
+                {
+                    Id = pharma.Id,
+                    MedicalDiagnosisId = pharma.MedicalDiagnosisId, 
+                    Description = pharma.Description,
+                    Dose = pharma.Dose,
+                    Frequency = pharma.Frequency,
+                    Duration = pharma.Duration,
+                    ViaAdmission = pharma.ViaAdmission,
+                    MedicineId = pharma.MedicineId
+                };
         }
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
@@ -2949,6 +3042,18 @@
             if (!ValidatePharmacologicalForm())
                 return;
 
+            // ✅ Asegurar que tenemos el MedicalDiagnosisId correcto
+            if (currentPharmacological.MedicalDiagnosisId <= 0)
+            {
+                currentPharmacological.MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0;
+            }
+
+            if (currentPharmacological.MedicalDiagnosisId <= 0)
+            {
+                pharmacologicalFormError = "Error: No se pudo identificar el diagnóstico médico.";
+                return;
+            }
+
             if (currentPharmacological.Id == 0)
             {
                 var result = await PharmacologicalTreatmentService.CreateAsync(currentPharmacological);
@@ -2960,6 +3065,7 @@
                 else
                 {
                     pharmacologicalFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al agregar medicamento: {result.Error}");
                     return;
                 }
             }
@@ -2978,16 +3084,20 @@
                 else
                 {
                     pharmacologicalFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar medicamento: {result.Error}");
                     return;
                 }
             }
 
             UpdatePharmacologicalRows();
             currentPharmacological = new PharmacologicalTreatmentDTO();
+            pharmacologicalErrors.Clear();
+            pharmacologicalFormError = "";
         }
         catch (Exception ex)
         {
             pharmacologicalFormError = ex.Message;
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
         }
     }
 
@@ -2995,6 +3105,9 @@
     {
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
+
+        if (currentPharmacological.MedicalDiagnosisId <= 0)
+            pharmacologicalErrors["MedicalDiagnosisId"] = "El diagnóstico médico es requerido";
 
         if (currentPharmacological.MedicineId <= 0)
             pharmacologicalErrors["MedicineId"] = "Debe seleccionar un medicamento";

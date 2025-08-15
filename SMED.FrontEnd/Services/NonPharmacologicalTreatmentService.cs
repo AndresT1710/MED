@@ -51,6 +51,25 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<NonPharmacologicalTreatmentDTO>?> GetByMedicalDiagnosisIdAsync(int medicalDiagnosisId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/NonPharmacologicalTreatment/by-medical-diagnosis/{medicalDiagnosisId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<NonPharmacologicalTreatmentDTO>>();
+                }
+                _logger.LogWarning("Error al obtener tratamientos no farmacológicos por diagnóstico: {StatusCode}", response.StatusCode);
+                return new List<NonPharmacologicalTreatmentDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener tratamientos no farmacológicos por MedicalDiagnosisId: {MedicalDiagnosisId}", medicalDiagnosisId);
+                return new List<NonPharmacologicalTreatmentDTO>();
+            }
+        }
+
         public async Task<(bool Success, NonPharmacologicalTreatmentDTO? Data, string Error)> CreateAsync(NonPharmacologicalTreatmentDTO dto)
         {
             try
@@ -107,20 +126,6 @@ namespace SMED.FrontEnd.Services
             {
                 _logger.LogError(ex, "Error al eliminar tratamiento no farmacológico");
                 return (false, ex.Message);
-            }
-        }
-
-        public async Task<List<NonPharmacologicalTreatmentDTO>?> GetByTreatmentIdAsync(int treatmentId)
-        {
-            try
-            {
-                var allTreatments = await GetAllAsync();
-                return allTreatments?.Where(npt => npt.Id == treatmentId).ToList() ?? new List<NonPharmacologicalTreatmentDTO>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener tratamientos no farmacológicos por TreatmentId: {TreatmentId}", treatmentId);
-                return new List<NonPharmacologicalTreatmentDTO>();
             }
         }
     }

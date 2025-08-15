@@ -96,7 +96,10 @@ builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, Pathologic
 builder.Services.AddScoped<IRepository<AdditionalDataDTO, int>, AdditionalDataRepository>();
 builder.Services.AddScoped<IRepository<DiagnosticTypeDTO, int>, DiagnosticTypeRepository>();
 builder.Services.AddScoped<MedicalDiagnosisRepository>();
-
+builder.Services.AddScoped<PharmacologicalTreatmentRepository>();
+builder.Services.AddScoped<NonPharmacologicalTreatmentRepository>();
+builder.Services.AddScoped<IndicationsRepository>();
+builder.Services.AddScoped<MedicineRepository>();
 
 
 // 4. Authentication

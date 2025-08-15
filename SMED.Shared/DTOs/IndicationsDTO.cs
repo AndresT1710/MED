@@ -12,5 +12,4 @@ namespace SMED.Shared.DTOs
         public string? Description { get; set; }
         public int TreatmentId { get; set; }
     }
-
 }

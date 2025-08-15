@@ -25,6 +25,7 @@ namespace SMED.Shared.Entity
         public virtual MedicalCare MedicalCare { get; set; } = null!;
 
         public int? DiseaseId { get; set; }
+
         [ForeignKey("DiseaseId")]
         [InverseProperty("Diagnosis")]
         public virtual Disease? DiseaseNavigation { get; set; }

@@ -18,7 +18,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<MedicalDiagnosisDTO>> GetAllAsync()
         {
             var diagnoses = await _context.Diagnosis
-                .Include(d => d.Treatments)
+                .Include(d => d.Treatments) // ✅ Incluir tratamientos
                 .ToListAsync();
 
             return diagnoses.Select(MapToDto).ToList();
@@ -27,7 +27,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<MedicalDiagnosisDTO?> GetByIdAsync(int id)
         {
             var diagnosis = await _context.Diagnosis
-                .Include(d => d.Treatments)
+                .Include(d => d.Treatments) // ✅ Incluir tratamientos
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             return diagnosis == null ? null : MapToDto(diagnosis);
@@ -45,15 +45,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 MedicalCareId = dto.MedicalCareId,
                 DiseaseId = dto.DiseaseId
             };
-
-            // Asignar tratamientos si se proporcionan
-            if (dto.TreatmentIds.Any())
-            {
-                var treatments = await _context.Treatments
-                    .Where(t => dto.TreatmentIds.Contains(t.Id))
-                    .ToListAsync();
-                entity.Treatments = treatments;
-            }
 
             _context.Diagnosis.Add(entity);
             await _context.SaveChangesAsync();
@@ -78,19 +69,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.MedicalCareId = dto.MedicalCareId;
             entity.DiseaseId = dto.DiseaseId;
 
-            // Actualizar tratamientos
-            entity.Treatments.Clear();
-            if (dto.TreatmentIds.Any())
-            {
-                var treatments = await _context.Treatments
-                    .Where(t => dto.TreatmentIds.Contains(t.Id))
-                    .ToListAsync();
-                foreach (var treatment in treatments)
-                {
-                    entity.Treatments.Add(treatment);
-                }
-            }
-
             await _context.SaveChangesAsync();
             return dto;
         }
@@ -99,16 +77,46 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = await _context.Diagnosis
                 .Include(d => d.Treatments)
+                    .ThenInclude(t => t.Indications)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (entity == null) return false;
 
+            // Eliminar tratamientos y sus indicaciones
+            foreach (var treatment in entity.Treatments)
+            {
+                _context.Indications.RemoveRange(treatment.Indications);
+                
+                // Eliminar tratamientos farmacológicos y no farmacológicos
+                var pharmacological = await _context.PharmacologicalTreatments
+                    .Where(pt => pt.Id == treatment.Id)
+                    .ToListAsync();
+                _context.PharmacologicalTreatments.RemoveRange(pharmacological);
+                
+                var nonPharmacological = await _context.NonPharmacologicalTreatments
+                    .Where(npt => npt.Id == treatment.Id)
+                    .ToListAsync();
+                _context.NonPharmacologicalTreatments.RemoveRange(nonPharmacological);
+            }
+            
+            _context.Treatments.RemoveRange(entity.Treatments);
             _context.Diagnosis.Remove(entity);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        //Método adicional para asignar tratamientos
+        // ✅ Método para obtener diagnósticos por MedicalCareId
+        public async Task<List<MedicalDiagnosisDTO>> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            var diagnoses = await _context.Diagnosis
+                .Include(d => d.Treatments)
+                .Where(d => d.MedicalCareId == medicalCareId)
+                .ToListAsync();
+
+            return diagnoses.Select(MapToDto).ToList();
+        }
+
+        // ✅ Método adicional para asignar tratamientos
         public async Task<bool> AssignTreatmentsAsync(int diagnosisId, List<int> treatmentIds)
         {
             var diagnosis = await _context.Diagnosis
@@ -132,6 +140,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        // ✅ Mapeo con tratamientos
         private static MedicalDiagnosisDTO MapToDto(MedicalDiagnosis diagnosis) => new MedicalDiagnosisDTO
         {
             Id = diagnosis.Id,

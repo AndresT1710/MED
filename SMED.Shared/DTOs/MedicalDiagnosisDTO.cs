@@ -19,7 +19,6 @@ namespace SMED.Shared.DTOs
         public string? DiseaseName { get; set; }
         public List<int>? OrderIds { get; set; }
         public List<int>? InterconsultationIds { get; set; }
-
         public List<int> TreatmentIds { get; set; } = new List<int>();
     }
 }

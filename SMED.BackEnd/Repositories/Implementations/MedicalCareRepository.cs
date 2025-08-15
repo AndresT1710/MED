@@ -211,9 +211,7 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<bool> DeleteAsync(int id)
         {
-            //Usar una transacción para asegurar consistencia
             using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 var entity = await _context.MedicalCares
@@ -237,121 +235,67 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .Include(m => m.AdditionalData)
                     .FirstOrDefaultAsync(m => m.CareId == id);
 
-                if (entity == null)
-                {
-                    await transaction.RollbackAsync();
-                    return false;
-                }
+                if (entity == null) return false;
 
-                //Eliminar en el orden correcto para evitar violaciones de FK
-
-                // 1. Eliminar Indications (relacionadas con Treatments)
+                // Eliminar en orden correcto para evitar conflictos de FK
                 foreach (var diagnosis in entity.Diagnoses)
                 {
                     foreach (var treatment in diagnosis.Treatments)
                     {
-                        if (treatment.Indications.Any())
-                        {
-                            _context.Indications.RemoveRange(treatment.Indications);
-                        }
+                        // Eliminar indicaciones del tratamiento
+                        _context.Indications.RemoveRange(treatment.Indications);
+
+                        // Eliminar tratamientos farmacológicos y no farmacológicos
+                        var pharmacological = await _context.PharmacologicalTreatments
+                            .Where(pt => pt.Id == treatment.Id)
+                            .ToListAsync();
+                        _context.PharmacologicalTreatments.RemoveRange(pharmacological);
+
+                        var nonPharmacological = await _context.NonPharmacologicalTreatments
+                            .Where(npt => npt.Id == treatment.Id)
+                            .ToListAsync();
+                        _context.NonPharmacologicalTreatments.RemoveRange(nonPharmacological);
                     }
+
+                    // Eliminar tratamientos
+                    _context.Treatments.RemoveRange(diagnosis.Treatments);
+
+                    // Eliminar órdenes de diagnóstico e interconsultas
+                    _context.OrderDiagnosis.RemoveRange(diagnosis.OrderDiagnosis);
+                    _context.Interconsultations.RemoveRange(diagnosis.Interconsultations);
                 }
 
-                // 2. Eliminar Treatments (relacionados con Diagnoses)
-                foreach (var diagnosis in entity.Diagnoses)
-                {
-                    if (diagnosis.Treatments.Any())
-                    {
-                        _context.Treatments.RemoveRange(diagnosis.Treatments);
-                    }
-                }
+                // Eliminar diagnósticos
+                _context.Diagnosis.RemoveRange(entity.Diagnoses);
 
-                // 3. Eliminar OrderDiagnosis e Interconsultations (relacionados con Diagnoses)
-                foreach (var diagnosis in entity.Diagnoses)
-                {
-                    if (diagnosis.OrderDiagnosis.Any())
-                    {
-                        _context.OrderDiagnosis.RemoveRange(diagnosis.OrderDiagnosis);
-                    }
-                    if (diagnosis.Interconsultations.Any())
-                    {
-                        _context.Interconsultations.RemoveRange(diagnosis.Interconsultations);
-                    }
-                }
-
-                // 4. Eliminar Diagnoses
-                if (entity.Diagnoses.Any())
-                {
-                    _context.Diagnosis.RemoveRange(entity.Diagnoses);
-                }
-
-                // 5. Eliminar otros registros relacionados directamente con MedicalCare
+                // Eliminar otros registros relacionados
                 if (entity.VitalSigns != null)
-                {
                     _context.VitalSigns.Remove(entity.VitalSigns);
-                }
 
-                if (entity.Evolutions.Any())
-                {
-                    _context.Evolutions.RemoveRange(entity.Evolutions);
-                }
-
-                if (entity.ReasonsForConsultation.Any())
-                {
-                    _context.ReasonForConsultations.RemoveRange(entity.ReasonsForConsultation);
-                }
-
-                if (entity.ExamResults.Any())
-                {
-                    _context.ExamResults.RemoveRange(entity.ExamResults);
-                }
-
-                if (entity.IdentifiedDiseases.Any())
-                {
-                    _context.IdentifiedDiseases.RemoveRange(entity.IdentifiedDiseases);
-                }
-
-                if (entity.PhysicalExams.Any())
-                {
-                    _context.PhysicalExams.RemoveRange(entity.PhysicalExams);
-                }
-
-                // ✅ Eliminar ReviewSystemDevices (esta era la causa del error)
-                if (entity.ReviewSystemDevices.Any())
-                {
-                    _context.ReviewSystemDevices.RemoveRange(entity.ReviewSystemDevices);
-                }
+                _context.Evolutions.RemoveRange(entity.Evolutions);
+                _context.ReasonForConsultations.RemoveRange(entity.ReasonsForConsultation);
+                _context.ExamResults.RemoveRange(entity.ExamResults);
+                _context.IdentifiedDiseases.RemoveRange(entity.IdentifiedDiseases);
+                _context.PhysicalExams.RemoveRange(entity.PhysicalExams);
+                _context.ReviewSystemDevices.RemoveRange(entity.ReviewSystemDevices);
 
                 if (entity.MedicalReferral != null)
-                {
                     _context.MedicalReferrals.Remove(entity.MedicalReferral);
-                }
 
-                if (entity.MedicalServices.Any())
-                {
-                    _context.MedicalServices.RemoveRange(entity.MedicalServices);
-                }
-
-                if (entity.MedicalProcedures.Any())
-                {
-                    _context.MedicalProcedures.RemoveRange(entity.MedicalProcedures);
-                }
+                _context.MedicalServices.RemoveRange(entity.MedicalServices);
+                _context.MedicalProcedures.RemoveRange(entity.MedicalProcedures);
 
                 if (entity.AdditionalData != null)
-                {
                     _context.AdditionalData.Remove(entity.AdditionalData);
-                }
 
-                // 6. Finalmente, eliminar la MedicalCare
+                // Finalmente eliminar la atención médica
                 _context.MedicalCares.Remove(entity);
 
-                // Guardar todos los cambios
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
                 return true;
             }
-            catch (Exception)
+            catch
             {
                 await transaction.RollbackAsync();
                 throw;
@@ -398,6 +342,5 @@ namespace SMED.BackEnd.Repositories.Implementations
                 CareDate = m.CareDate
             }).ToList();
         }
-
     }
 }

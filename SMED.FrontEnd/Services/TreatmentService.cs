@@ -51,26 +51,6 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        // Obtener tratamientos por MedicalDiagnosisId
-        public async Task<List<TreatmentDTO>?> GetByMedicalDiagnosisIdAsync(int medicalDiagnosisId)
-        {
-            try
-            {
-                var response = await _httpClient.GetAsync($"api/Treatment/by-medical-diagnosis/{medicalDiagnosisId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<List<TreatmentDTO>>();
-                }
-                _logger.LogWarning("Error al obtener tratamientos por MedicalDiagnosisId: {StatusCode}", response.StatusCode);
-                return new List<TreatmentDTO>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener tratamientos por MedicalDiagnosisId: {MedicalDiagnosisId}", medicalDiagnosisId);
-                return new List<TreatmentDTO>();
-            }
-        }
-
         public async Task<(bool Success, TreatmentDTO? Data, string Error)> CreateAsync(TreatmentDTO dto)
         {
             try
@@ -127,6 +107,25 @@ namespace SMED.FrontEnd.Services
             {
                 _logger.LogError(ex, "Error al eliminar tratamiento");
                 return (false, ex.Message);
+            }
+        }
+
+        public async Task<List<TreatmentDTO>?> GetByMedicalDiagnosisIdAsync(int medicalDiagnosisId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/Treatment/by-medical-diagnosis/{medicalDiagnosisId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<TreatmentDTO>>();
+                }
+                _logger.LogWarning("Error al obtener tratamientos por diagnóstico: {StatusCode}", response.StatusCode);
+                return new List<TreatmentDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener tratamientos por MedicalDiagnosisId: {MedicalDiagnosisId}", medicalDiagnosisId);
+                return new List<TreatmentDTO>();
             }
         }
     }

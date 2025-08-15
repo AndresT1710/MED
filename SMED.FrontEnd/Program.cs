@@ -82,6 +82,12 @@ builder.Services.AddScoped<DiagnosticTypeService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<HealthProfessionalService>();
+builder.Services.AddScoped<IndicationsService>();
+builder.Services.AddScoped<MedicineService>();
+builder.Services.AddScoped<NonPharmacologicalTreatmentService>();
+builder.Services.AddScoped<PharmacologicalTreatmentService>();
+builder.Services.AddScoped<TreatmentService>();
+
 
 
 

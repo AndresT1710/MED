@@ -82,6 +82,7 @@ builder.Services.AddScoped<IRepository<ExamTypeDTO, int>, ExamTypeRepository>();
 builder.Services.AddScoped<IRepository<EvolutionDTO, int>, EvolutionRepository>();
 builder.Services.AddScoped<IRepository<MedicineDTO, int>, MedicineRepository>();
 builder.Services.AddScoped<IRepository<TreatmentDTO, int>, TreatmentRepository>();
+builder.Services.AddScoped<TreatmentRepository>();
 builder.Services.AddScoped<IRepository<NonPharmacologicalTreatmentDTO, int>, NonPharmacologicalTreatmentRepository>();
 builder.Services.AddScoped<IRepository<PharmacologicalTreatmentDTO, int>, PharmacologicalTreatmentRepository>();
 builder.Services.AddScoped<IRepository<OrderDiagnosisDTO, int>, OrderDiagnosisRepository>();
@@ -95,6 +96,7 @@ builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, Pathologic
 builder.Services.AddScoped<IRepository<AdditionalDataDTO, int>, AdditionalDataRepository>();
 builder.Services.AddScoped<IRepository<DiagnosticTypeDTO, int>, DiagnosticTypeRepository>();
 builder.Services.AddScoped<MedicalDiagnosisRepository>();
+
 
 
 // 4. Authentication

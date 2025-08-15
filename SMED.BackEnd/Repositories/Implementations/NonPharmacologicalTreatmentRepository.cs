@@ -31,7 +31,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new Non_PharmacologicalTreatment
             {
-                Recommendations = dto.Recommendations,
                 Description = dto.Description
             };
 
@@ -46,7 +45,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.NonPharmacologicalTreatments.FindAsync(dto.Id);
             if (entity == null) return null;
 
-            entity.Recommendations = dto.Recommendations;
             entity.Description = dto.Description;
             await _context.SaveChangesAsync();
 
@@ -67,7 +65,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         private static NonPharmacologicalTreatmentDTO MapToDto(Non_PharmacologicalTreatment treatment) => new NonPharmacologicalTreatmentDTO
         {
             Id = treatment.Id,
-            Recommendations = treatment.Recommendations,
             Description = treatment.Description
         };
     }

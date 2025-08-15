@@ -211,7 +211,7 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<bool> DeleteAsync(int id)
         {
-            // ✅ Usar una transacción para asegurar consistencia
+            //Usar una transacción para asegurar consistencia
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
@@ -230,7 +230,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .Include(m => m.ExamResults)
                     .Include(m => m.IdentifiedDiseases)
                     .Include(m => m.PhysicalExams)
-                    .Include(m => m.ReviewSystemDevices) // ✅ Incluir ReviewSystemDevices
+                    .Include(m => m.ReviewSystemDevices)
                     .Include(m => m.MedicalReferral)
                     .Include(m => m.MedicalServices)
                     .Include(m => m.MedicalProcedures)
@@ -243,7 +243,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     return false;
                 }
 
-                // ✅ Eliminar en el orden correcto para evitar violaciones de FK
+                //Eliminar en el orden correcto para evitar violaciones de FK
 
                 // 1. Eliminar Indications (relacionadas con Treatments)
                 foreach (var diagnosis in entity.Diagnoses)
@@ -345,7 +345,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 // 6. Finalmente, eliminar la MedicalCare
                 _context.MedicalCares.Remove(entity);
 
-                // ✅ Guardar todos los cambios
+                // Guardar todos los cambios
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -354,7 +354,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             catch (Exception)
             {
                 await transaction.RollbackAsync();
-                throw; // Re-lanzar la excepción para que sea manejada por el controlador
+                throw;
             }
         }
 

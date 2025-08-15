@@ -9,7 +9,6 @@ namespace SMED.Shared.DTOs
     public class TreatmentDTO
     {
         public int Id { get; set; }
-        public string? Recommendations { get; set; }
         public string? Description { get; set; } = null!;
         public int MedicalDiagnosisId { get; set; }
 

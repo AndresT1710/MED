@@ -31,7 +31,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new PharmacologicalTreatment
             {
-                Recommendations = dto.Recommendations,
                 Dose = dto.Dose,
                 Frequency = dto.Frequency,
                 Duration = dto.Duration,
@@ -50,7 +49,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PharmacologicalTreatments.FindAsync(dto.Id);
             if (entity == null) return null;
 
-            entity.Recommendations = dto.Recommendations;
             entity.Dose = dto.Dose;
             entity.Frequency = dto.Frequency;
             entity.Duration = dto.Duration;
@@ -75,7 +73,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         private static PharmacologicalTreatmentDTO MapToDto(PharmacologicalTreatment treatment) => new PharmacologicalTreatmentDTO
         {
             Id = treatment.Id,
-            Recommendations = treatment.Recommendations,
             Dose = treatment.Dose,
             Frequency = treatment.Frequency,
             Duration = treatment.Duration,

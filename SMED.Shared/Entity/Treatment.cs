@@ -13,7 +13,6 @@ namespace SMED.Shared.Entity
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public string Recommendations { get; set; } = null!;
         public string? Description { get; set; } = null!;
         public int MedicalDiagnosisId { get; set; }
 

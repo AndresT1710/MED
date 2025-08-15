@@ -35,7 +35,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             var entity = new Treatment
             {
-                Recommendations = dto.Recommendations,
                 MedicalDiagnosisId = dto.MedicalDiagnosisId,
                 Description = dto.Description
             };
@@ -54,7 +53,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             if (entity == null) return null;
 
-            entity.Recommendations = dto.Recommendations;
             entity.MedicalDiagnosisId = dto.MedicalDiagnosisId;
             entity.Description = dto.Description;
 
@@ -87,7 +85,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         private static TreatmentDTO MapToDto(Treatment treatment) => new TreatmentDTO
         {
             Id = treatment.Id,
-            Recommendations = treatment.Recommendations,
             MedicalDiagnosisId = treatment.MedicalDiagnosisId,
             Description = treatment.Description
         };

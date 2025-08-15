@@ -94,6 +94,8 @@ builder.Services.AddScoped<IRepository<RegionDTO, int>, RegionRepository>();
 builder.Services.AddScoped<IRepository<PathologicalEvidenceDTO, int>, PathologicalEvidenceRepository>();
 builder.Services.AddScoped<IRepository<AdditionalDataDTO, int>, AdditionalDataRepository>();
 builder.Services.AddScoped<IRepository<DiagnosticTypeDTO, int>, DiagnosticTypeRepository>();
+builder.Services.AddScoped<MedicalDiagnosisRepository>();
+
 
 // 4. Authentication
 builder.Services.AddAuthentication(options =>

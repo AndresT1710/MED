@@ -705,7 +705,8 @@
                                                class="form-control @(diagnosisErrors.ContainsKey("Cie10") ? "is-invalid" : "")"
                                                @bind="currentDiagnosis.Cie10"
                                                maxlength="20"
-                                               placeholder="Ingrese el código CIE10" />
+                                               placeholder="Ingrese el código CIE10"
+                                               disabled="@isUnidentifiedCie10" />
                                         @if (diagnosisErrors.ContainsKey("Cie10"))
                                         {
                                             <div class="invalid-feedback">@diagnosisErrors["Cie10"]</div>
@@ -713,6 +714,17 @@
                                         <small class="form-text text-muted">
                                             Máximo 20 caracteres. Restantes: @(20 - (currentDiagnosis.Cie10?.Length ?? 0))
                                         </small>
+
+                                        @* Checkbox modificado - Eliminado el @onchange ya que @bind lo maneja *@
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   id="unidentifiedCie10Check"
+                                                   @bind="isUnidentifiedCie10" />
+                                            <label class="form-check-label" for="unidentifiedCie10Check">
+                                                No Identificado
+                                            </label>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Tipo de Diagnóstico <span class="text-danger">*</span></label>
@@ -1133,6 +1145,24 @@
     private List<int> diagnosisIds = new();
     private Dictionary<string, string> diagnosisErrors = new();
     private string diagnosisFormError = "";
+    private bool _isUnidentifiedCie10 = false;
+    private bool isUnidentifiedCie10
+    {
+        get => _isUnidentifiedCie10;
+        set
+        {
+            _isUnidentifiedCie10 = value;
+            if (_isUnidentifiedCie10)
+            {
+                currentDiagnosis.Cie10 = "No Identificado";
+            }
+            else
+            {
+                currentDiagnosis.Cie10 = "";
+            }
+            StateHasChanged(); // Opcional: solo si necesitas forzar actualización
+        }
+    }
 
     // Variables para controlar datos sin guardar
     private bool hasUnsavedSystemsData = false;
@@ -2125,6 +2155,7 @@
 
         diagnosisErrors.Clear();
         diagnosisFormError = "";
+        isUnidentifiedCie10 = false;
     }
 
     private async Task OnEditDiagnosisRequested(int id)
@@ -2143,11 +2174,14 @@
                 DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
                 DiseaseId = existing.DiseaseId
             };
+            
+            isUnidentifiedCie10 = existing.Cie10 == "No Identificado";
         }
 
         diagnosisErrors.Clear();
         diagnosisFormError = "";
     }
+
 
     private async Task OnDeleteDiagnosisRequested(int id)
     {

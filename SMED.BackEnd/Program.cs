@@ -100,6 +100,9 @@ builder.Services.AddScoped<PharmacologicalTreatmentRepository>();
 builder.Services.AddScoped<NonPharmacologicalTreatmentRepository>();
 builder.Services.AddScoped<IndicationsRepository>();
 builder.Services.AddScoped<MedicineRepository>();
+builder.Services.AddScoped<LocationRepository>();
+builder.Services.AddScoped<IRepository<LocationDTO, int>, LocationRepository>();
+
 
 
 // 4. Authentication

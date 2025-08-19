@@ -87,7 +87,8 @@ builder.Services.AddScoped<TreatmentService>();
 builder.Services.AddScoped<PharmacologicalTreatmentService>();
 builder.Services.AddScoped<MedicineService>();
 builder.Services.AddScoped<MedicalDiagnosisService>();
-
+builder.Services.AddScoped<LocationService>();
+builder.Services.AddScoped<AuthorizationService>();
 
 builder.Services.AddLogging();
 

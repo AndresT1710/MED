@@ -49,6 +49,20 @@ namespace SMED.BackEnd.Controllers
             }
         }
 
+        [HttpGet("by-place-and-date")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetByPlaceOfAttentionAndDate([FromQuery] int? placeOfAttentionId = null, [FromQuery] DateTime? date = null)
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetByPlaceOfAttentionAndDateAsync(placeOfAttentionId, date);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al obtener atenciones por lugar de atención y fecha: {ex.Message}");
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<MedicalCareDTO>> GetById(int id) =>
             await _repository.GetByIdAsync(id) is { } dto ? Ok(dto) : NotFound();

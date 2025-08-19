@@ -32,6 +32,9 @@ namespace SMED.Shared.Entity
         // Médico tratante
         public int? TreatingPhysicianId { get; set; }
 
+        // Departamento donde se realiza el procedimiento
+        public int? LocationId { get; set; }
+
         // Observaciones adicionales
         public string? Observations { get; set; }
 
@@ -57,5 +60,9 @@ namespace SMED.Shared.Entity
         [ForeignKey("TreatingPhysicianId")]
         [InverseProperty("MedicalProceduresAsTreatingPhysician")]
         public virtual HealthProfessional? TreatingPhysician { get; set; }
+
+        [ForeignKey("LocationId")]
+        [InverseProperty("MedicalProcedures")]
+        public virtual Location? LocationNavigation { get; set; }
     }
 }

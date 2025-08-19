@@ -119,7 +119,7 @@ namespace SMED.BackEnd.Services.Implementations
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.PersonId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim(ClaimTypes.Name, user.Name ?? ""),
                 new Claim("PersonId", user.PersonId?.ToString() ?? ""),

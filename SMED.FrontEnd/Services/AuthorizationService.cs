@@ -98,7 +98,7 @@ namespace SMED.FrontEnd.Services
 
                 var userSession = new UserSessionInfo
                 {
-                    UserId = userId,
+                    UserId = personId,
                     Name = nameClaim ?? "Usuario",
                     Email = emailClaim ?? "",
                     PersonId = personId == 0 ? (int?)null : personId,

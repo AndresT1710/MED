@@ -1,0 +1,374 @@
+﻿@using SMED.Shared.Entity
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject MedicalProcedureService MedicalProcedureService
+@inject AuthorizationService AuthorizationService
+@inject IJSRuntime JS
+
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-procedures me-2"></i>Procedimientos de Enfermería
+            </h5>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="statusFilter" id="todos"
+                       @onchange="@(() => FilterByStatus("todos"))"
+                       checked="@(selectedStatus == "todos")">
+                <label class="btn btn-outline-primary" for="todos">Todos (@allProcedures.Count)</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="pendientes"
+                       @onchange="@(() => FilterByStatus("pendiente"))"
+                       checked="@(selectedStatus == "pendiente")">
+                <label class="btn btn-outline-warning" for="pendientes">Pendientes (@pendingCount)</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="realizados"
+                       @onchange="@(() => FilterByStatus("realizado"))"
+                       checked="@(selectedStatus == "realizado")">
+                <label class="btn btn-outline-success" for="realizados">Realizados (@completedCount)</label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (isLoading)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando procedimientos...</p>
+            </div>
+        }
+        else if (!filteredProcedures.Any())
+        {
+            <div class="text-center py-4">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">No hay procedimientos @GetStatusText()</h6>
+                <p class="text-muted">Los procedimientos creados para enfermería aparecerán aquí.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-calendar me-1"></i>Fecha</th>
+                            <th><i class="fas fa-user me-1"></i>Paciente</th>
+                            <th><i class="fas fa-procedures me-1"></i>Procedimiento</th>
+                            <th><i class="fas fa-user-md me-1"></i>Médico Tratante</th>
+                            <th><i class="fas fa-info-circle me-1"></i>Estado</th>
+                            <th><i class="fas fa-sticky-note me-1"></i>Observaciones</th>
+                            <th><i class="fas fa-cogs me-1"></i>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var procedure in filteredProcedures)
+                        {
+                            <tr class="@GetRowClass(procedure.Status)">
+                                <td>
+                                    <small class="text-muted">@procedure.ProcedureDate.ToString("dd/MM/yyyy")</small><br>
+                                    <small class="text-muted">@procedure.ProcedureDate.ToString("HH:mm")</small>
+                                </td>
+                                <td>
+                                    <strong>@(procedure.PatientName ?? $"Paciente {procedure.PatientId}")</strong><br>
+                                    <small class="text-muted">ID: @procedure.PatientId</small>
+                                </td>
+                                <td>
+                                    <span class="fw-bold">@procedure.SpecificProcedureName</span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(procedure.TreatingPhysicianName))
+                                    {
+                                        <span class="text-success">
+                                            <i class="fas fa-user-md me-1"></i>@procedure.TreatingPhysicianName
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>Sin asignar
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (procedure.Status == "Pendiente")
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>Pendiente
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Realizado
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(procedure.Observations))
+                                    {
+                                        <span class="text-truncate d-inline-block" style="max-width: 150px;" title="@procedure.Observations">
+                                            @procedure.Observations
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin observaciones</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        @if (procedure.Status == "Pendiente")
+                                        {
+                                            <button class="btn btn-success"
+                                                    @onclick="() => MarkAsCompleted(procedure)"
+                                                    title="Marcar como realizado">
+                                                <i class="fas fa-check me-1"></i>Realizar
+                                            </button>
+                                        }
+                                        <button class="btn btn-info"
+                                                @onclick="() => ViewDetails(procedure)"
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>Detalles
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal de detalles -->
+@if (showDetailsModal && selectedProcedure != null)
+{
+    <div class="modal fade show d-flex align-items-center justify-content-center"
+         tabindex="-1"
+         style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
+         role="dialog">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle me-2"></i>Detalles del Procedimiento
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailsModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user me-2"></i>Información del Paciente</h6>
+                            <p><strong>Nombre:</strong> @(selectedProcedure.PatientName ?? $"Paciente {selectedProcedure.PatientId}")</p>
+                            <p><strong>ID Paciente:</strong> @selectedProcedure.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar me-2"></i>Información del Procedimiento</h6>
+                            <p><strong>Fecha:</strong> @selectedProcedure.ProcedureDate.ToString("dd/MM/yyyy HH:mm")</p>
+                            <p>
+                                <strong>Estado:</strong>
+                                @if (selectedProcedure.Status == "Pendiente")
+                                {
+                                    <span class="badge bg-warning">Pendiente</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Realizado</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6><i class="fas fa-procedures me-2"></i>Detalles del Procedimiento</h6>
+                            <p><strong>Procedimiento:</strong> @selectedProcedure.SpecificProcedureName</p>
+                            <p><strong>Departamento:</strong> Enfermería</p>
+                            @if (!string.IsNullOrEmpty(selectedProcedure.TreatingPhysicianName))
+                            {
+                                <p><strong>Realizado por:</strong> @selectedProcedure.TreatingPhysicianName</p>
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(selectedProcedure.Observations))
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6><i class="fas fa-sticky-note me-2"></i>Observaciones</h6>
+                                <p class="border p-3 bg-light rounded">@selectedProcedure.Observations</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (selectedProcedure.Status == "Pendiente")
+                    {
+                        <button type="button" class="btn btn-success" @onclick="() => MarkAsCompleted(selectedProcedure)">
+                            <i class="fas fa-check me-1"></i>Marcar como Realizado
+                        </button>
+                    }
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDetailsModal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<MedicalProcedureDTO> allProcedures = new();
+    private List<MedicalProcedureDTO> filteredProcedures = new();
+    private MedicalProcedureDTO selectedProcedure;
+    private bool showDetailsModal = false;
+    private bool isLoading = true;
+    private string selectedStatus = "todos";
+    private int pendingCount = 0;
+    private int completedCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNursingProcedures();
+    }
+
+    private async Task LoadNursingProcedures()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Trae todos los procedimientos de "Enfermería"
+            var result = await MedicalProcedureService.GetByLocationAsync(1);
+            allProcedures = result ?? new List<MedicalProcedureDTO>();
+
+            await JS.InvokeVoidAsync("console.log", "[v0] Loaded procedures:", allProcedures.Count);
+            if (allProcedures.Any())
+            {
+                var firstProcedure = allProcedures.First();
+                await JS.InvokeVoidAsync("console.log", "[v0] First procedure PatientName:", firstProcedure.PatientName ?? "NULL");
+                await JS.InvokeVoidAsync("console.log", "[v0] First procedure PatientId:", firstProcedure.PatientId);
+            }
+
+            UpdateCounts();
+            FilterByStatus(selectedStatus);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading nursing procedures: {ex.Message}");
+            allProcedures = new List<MedicalProcedureDTO>();
+            filteredProcedures = new List<MedicalProcedureDTO>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateCounts()
+    {
+        // Usar ToLower para que coincida con los estados del backend
+        pendingCount = allProcedures.Count(p => p.Status?.Trim().ToLower() == "pendiente");
+        completedCount = allProcedures.Count(p => p.Status?.Trim().ToLower() == "realizado");
+
+    }
+
+    private async Task FilterByStatus(string status)
+    {
+        selectedStatus = status.ToLower();
+
+        filteredProcedures = status.ToLower() switch
+        {
+            "pendiente" => allProcedures.Where(p => p.Status?.Trim().ToLower() == "pendiente").ToList(),
+            "realizado" => allProcedures.Where(p => p.Status?.Trim().ToLower() == "realizado").ToList(),
+            _ => allProcedures.ToList()
+        };
+
+        await JS.InvokeVoidAsync("console.log", $"[v0] Filtering by status: {status}, found: {filteredProcedures.Count} procedures");
+
+        StateHasChanged();
+    }
+
+    private async Task MarkAsCompleted(MedicalProcedureDTO procedure)
+    {
+        try
+        {
+            var currentUser = await AuthorizationService.GetCurrentUserAsync();
+            if (currentUser == null)
+            {
+                await JS.InvokeVoidAsync("alert", "Error: No se pudo obtener la información del usuario actual");
+                return;
+            }
+
+            // 🔹 Mostrar toda la info en el console
+            await JS.InvokeVoidAsync("console.log", new
+            {
+                ProcedureId = procedure.ProcedureId,
+                ProcedureName = procedure.SpecificProcedureName,
+                PatientId = procedure.PatientId,
+                PatientName = procedure.PatientName,
+                Status = procedure.Status,
+                CurrentUserId = currentUser.UserId,
+                CurrentUserName = currentUser.Name
+            });
+
+            bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                $"¿Confirma que desea marcar como realizado el procedimiento '{procedure.SpecificProcedureName}' para el paciente {procedure.PatientName ?? $"Paciente {procedure.PatientId}"}?");
+
+            if (!confirmed) return;
+
+            var result = await MedicalProcedureService.MarkAsCompletedAsync(procedure.ProcedureId, currentUser.UserId);
+
+            if (result.Success)
+            {
+                await JS.InvokeVoidAsync("alert", "Procedimiento marcado como realizado exitosamente");
+                await LoadNursingProcedures(); // Recargar la lista
+
+                if (showDetailsModal)
+                {
+                    CloseDetailsModal();
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al marcar como realizado: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error marking procedure as completed: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Error inesperado al marcar el procedimiento como realizado");
+        }
+    }
+
+
+    private void ViewDetails(MedicalProcedureDTO procedure)
+    {
+        selectedProcedure = procedure;
+        showDetailsModal = true;
+    }
+
+    private void CloseDetailsModal()
+    {
+        showDetailsModal = false;
+        selectedProcedure = null;
+    }
+
+    private string GetRowClass(string status)
+    {
+        return status?.ToLower() == "pendiente" ? "table-warning" : "table-success";
+    }
+
+    private string GetStatusText()
+    {
+        return selectedStatus switch
+        {
+            "pendiente" => "Pendientes",
+            "realizado" => "Realizados",
+            _ => "Todos"
+        };
+    }
+}

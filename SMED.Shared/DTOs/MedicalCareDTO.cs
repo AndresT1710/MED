@@ -10,6 +10,7 @@ namespace SMED.Shared.DTOs
     {
         public int CareId { get; set; }
         public int LocationId { get; set; }
+        public int PlaceOfAttentionId { get; set; }
         public string? NameLocation { get; set; }
         public int PatientId { get; set; }
         public string? NamePatient { get; set; }

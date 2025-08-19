@@ -5,29 +5,13 @@
 @inject HealthProfessionalService HealthProfessionalService
 @inject LocationService LocationService
 @inject AuthorizationService AuthorizationService
+@inject MedicalProcedureService MedicalProcedureService
 @inject IJSRuntime JS
 
 <div class="procedure-form">
     <div class="row g-3">
         <!-- Agregando selección de departamento -->
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Departamento *</label>
-            <select class="form-select @(showValidationErrors && !selectedLocationId.HasValue ? "is-invalid" : "")"
-                    @bind:get="selectedLocationId"
-                    @bind:set="OnDepartmentChangedAsync">
-                <option value="">Seleccione un departamento</option>
-                @foreach (var location in locations)
-                {
-                    <option value="@location.Id">@location.Name</option>
-                }
-            </select>
-            @if (showValidationErrors && !selectedLocationId.HasValue)
-            {
-                <div class="invalid-feedback">
-                    Debe seleccionar un departamento
-                </div>
-            }
-        </div>
+        <!-- Removed department selection section -->
 
         <div class="col-md-6">
             <label class="form-label fw-bold">Fecha del Procedimiento *</label>
@@ -81,29 +65,17 @@
         </div>
 
         <!-- Médico tratante condicional según departamento -->
-        @if (selectedLocationId.HasValue && IsGeneralMedicineLocation())
-        {
-            <div class="col-md-12">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Medicina General:</strong> Se asignará automáticamente como médico tratante al profesional logueado.
-                </div>
+        <!-- Updated alert message for nursing department -->
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Enfermería:</strong> Este procedimiento será registrado automáticamente en el departamento de enfermería y asignado al profesional logueado.
             </div>
-        }
-        else if (selectedLocationId.HasValue && IsNursingLocation())
-        {
-            <div class="col-md-12">
-                <div class="alert alert-warning">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Enfermería:</strong> Este procedimiento será asignado al departamento de enfermería y deberá ser completado por el enfermero disponible.
-                </div>
-            </div>
-        }
+        </div>
 
         <div class="col-md-12">
             <label class="form-label fw-bold">Observaciones</label>
-            <textarea
-                class="form-control"
+            <textarea class="form-control"
                       @bind="Procedure.Observations"
                       rows="3"
                       placeholder="Observaciones adicionales sobre el procedimiento..."></textarea>
@@ -128,8 +100,6 @@
     [Parameter] public MedicalProcedureDTO Procedure { get; set; } = new();
     [Parameter] public EventCallback<MedicalProcedureDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
-    [Parameter] public int PatientId { get; set; }
-    [Parameter] public int CareId { get; set; }
 
     private List<TypeOfProceduresDTO> typesOfProcedures = new();
     private List<ProceduresDTO> procedures = new();
@@ -154,13 +124,15 @@
         }
         else
         {
-            Procedure.ProcedureDate = DateTime.Now;
-            Procedure.PatientId = PatientId;
-            if (CareId > 0)
+            var nursingLocation = locations.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
+            if (nursingLocation != null)
             {
-                Procedure.CareId = CareId;
+                selectedLocationId = nursingLocation.Id;
+                Procedure.LocationId = nursingLocation.Id;
             }
-            Procedure.Status = "Pendiente";
+
+            Procedure.ProcedureDate = DateTime.Now;
+            Procedure.Status = "Realizado"; // Set status to "Realizado" by default
         }
     }
 
@@ -228,21 +200,55 @@
     {
         showValidationErrors = true;
 
+        await JS.InvokeVoidAsync("console.log", "[v0] Validation check:", new
+        {
+            ProcedureDate = Procedure.ProcedureDate,
+            ProcedureDateValid = Procedure.ProcedureDate != default,
+            SelectedTypeOfProcedureId = selectedTypeOfProcedureId,
+            TypeValid = selectedTypeOfProcedureId > 0,
+            SpecificProcedureId = Procedure.SpecificProcedureId,
+            SpecificProcedureValid = Procedure.SpecificProcedureId > 0,
+            PatientId = Procedure.PatientId,
+            PatientIdValid = Procedure.PatientId > 0
+        });
+
         if (!IsValid())
         {
             await JS.InvokeVoidAsync("console.error", "[v0] Validation failed");
+
+            var errorMessages = new List<string>();
+            if (Procedure.ProcedureDate == default)
+                errorMessages.Add("- Debe seleccionar una fecha para el procedimiento");
+            if (selectedTypeOfProcedureId <= 0)
+                errorMessages.Add("- Debe seleccionar un tipo de procedimiento");
+            if (Procedure.SpecificProcedureId <= 0)
+                errorMessages.Add("- Debe seleccionar un procedimiento específico");
+            if (Procedure.PatientId <= 0)
+                errorMessages.Add("- ID de paciente inválido");
+
+            await JS.InvokeVoidAsync("alert", "Por favor complete los siguientes campos:\n" + string.Join("\n", errorMessages));
+            return;
+        }
+
+        if (Procedure.PatientId <= 0)
+        {
+            await JS.InvokeVoidAsync("console.error", "[v0] Invalid PatientId:", Procedure.PatientId);
+            await JS.InvokeVoidAsync("alert", "Error: ID de paciente inválido. Por favor, seleccione un paciente válido.");
             return;
         }
 
         isSaving = true;
         try
         {
-            Procedure.LocationId = selectedLocationId;
-            Procedure.PatientId = PatientId;
-            if (CareId > 0)
+            var nursingLocation = locations.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
+            if (nursingLocation != null)
             {
-                Procedure.CareId = CareId;
+                Procedure.LocationId = nursingLocation.Id;
+                selectedLocationId = nursingLocation.Id;
             }
+
+            await JS.InvokeVoidAsync("console.log", "[v0] PatientId from Procedure:", Procedure.PatientId);
+            await JS.InvokeVoidAsync("console.log", "[v0] CareId from Procedure:", Procedure.CareId);
 
             var currentUser = await AuthorizationService.GetCurrentUserAsync();
             await JS.InvokeVoidAsync("console.log", "[v0] Current user:", currentUser?.Name);
@@ -261,39 +267,16 @@
                 if (currentProfessional != null)
                 {
                     Procedure.HealthProfessionalId = currentProfessional.HealthProfessionalId;
-
-                    if (IsGeneralMedicineLocation())
-                    {
-                        Procedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
-                        Procedure.Status = "Realizado";
-                        await JS.InvokeVoidAsync("console.log", "[v0] Assigned to General Medicine - Status: Realizado");
-                    }
-                    else if (IsNursingLocation())
-                    {
-                        Procedure.TreatingPhysicianId = null;
-                        Procedure.Status = "Pendiente";
-                        await JS.InvokeVoidAsync("console.log", "[v0] Assigned to Nursing - Status: Pendiente");
-                    }
-                    else
-                    {
-                        Procedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
-                        Procedure.Status = "Realizado";
-                        await JS.InvokeVoidAsync("console.log", "[v0] Assigned to Other Department - Status: Realizado");
-                    }
+                    Procedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
+                    Procedure.Status = "Realizado";
+                    await JS.InvokeVoidAsync("console.log", "[v0] Nursing procedure - TreatingPhysician assigned, Status: Realizado");
                 }
                 else
                 {
                     await JS.InvokeVoidAsync("console.error", "[v0] No se encontró el profesional actual en la lista");
-                    if (!IsNursingLocation())
-                    {
-                        Procedure.HealthProfessionalId = currentUser.PersonId ?? 0;
-                    }
-
-                    if (IsNursingLocation())
-                    {
-                        Procedure.TreatingPhysicianId = null;
-                        Procedure.Status = "Pendiente";
-                    }
+                    Procedure.HealthProfessionalId = currentUser.PersonId ?? 0;
+                    Procedure.TreatingPhysicianId = currentUser.PersonId;
+                    Procedure.Status = "Realizado";
                 }
             }
             else
@@ -317,7 +300,8 @@
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("console.error", "[v0] Error saving procedure:", ex.Message);
+            await JS.InvokeVoidAsync("console.error", "[v0] Error preparing procedure:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al preparar el procedimiento: {ex.Message}");
         }
         finally
         {
@@ -327,9 +311,9 @@
 
     private bool IsValid()
     {
-        return selectedLocationId.HasValue &&
-               Procedure.ProcedureDate != default &&
+        return Procedure.ProcedureDate != default &&
                selectedTypeOfProcedureId > 0 &&
-               Procedure.SpecificProcedureId > 0;
+               Procedure.SpecificProcedureId > 0 &&
+               Procedure.PatientId > 0;
     }
 }

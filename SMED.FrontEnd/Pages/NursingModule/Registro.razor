@@ -5,128 +5,192 @@
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
 @inject MedicalCareService MedicalCareService
+@inject MedicalProcedureService MedicalProcedureService
+@inject PlaceOfAttentionService PlaceOfAttentionService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
     <h3 class="mb-4">Gestión de Atenciones Médicas - Enfermería</h3>
-    
-    <!-- Filtros de búsqueda mejorados -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Filtro por fecha -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Filtrar por fecha</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-calendar"></i>
-                        </span>
-                        <input type="date" 
-                               class="form-control" 
-                               @bind="selectedDate"/>
-                        <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
-                            <i class="fas fa-times"></i> Limpiar
-                        </button>
+
+    <!-- Agregar pestañas para separar atenciones y procedimientos -->
+    <ul class="nav nav-tabs mb-4" id="nursingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "atenciones" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("atenciones"))"
+                    type="button">
+                <i class="fas fa-hospital me-2"></i>Atenciones Médicas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "procedimientos" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("procedimientos"))"
+                    type="button">
+                <i class="fas fa-procedures me-2"></i>Procedimientos
+                @if (pendingProceduresCount > 0)
+                {
+                    <span class="badge bg-warning ms-1">@pendingProceduresCount</span>
+                }
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content">
+        <!-- Pestaña de Atenciones Médicas -->
+        <div class="tab-pane @(activeTab == "atenciones" ? "show active" : "")" role="tabpanel">
+            <!-- Filtros de búsqueda mejorados -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Filtro por fecha y lugar de atención -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Filtrar por fecha</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                                <input type="date"
+                                       class="form-control"
+                                       @bind="selectedDate" />
+                                <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
+                                    <i class="fas fa-times"></i> Limpiar
+                                </button>
+                            </div>
+                            <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Filtrar por sector</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </span>
+                                <select class="form-select" @bind="selectedPlaceOfAttentionId">
+                                    <option value="">Todos los sectores</option>
+                                    @foreach (var place in placeOfAttentionList)
+                                    {
+                                        <option value="@place.Id">@place.Name</option>
+                                    }
+                                </select>
+                                <button class="btn btn-outline-secondary" @onclick="ClearPlaceFilter">
+                                    <i class="fas fa-times"></i> Limpiar
+                                </button>
+                            </div>
+                            <small class="text-muted">Seleccione un sector para filtrar las atenciones</small>
+                        </div>
                     </div>
-                    <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+
+                    <!-- Búsqueda por paciente usando PersonSearchComponent -->
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Buscar por paciente</label>
+                            <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                                   OnPersonSelected="HandlePersonSelected"
+                                                   OnPersonCleared="HandlePersonCleared" />
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            @if (hasActiveFilters)
+                            {
+                                <span class="badge bg-info me-2">
+                                    <i class="fas fa-filter me-1"></i>Filtros activos
+                                </span>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
+                                    <i class="fas fa-times me-1"></i>Limpiar todos los filtros
+                                </button>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Búsqueda por paciente usando PersonSearchComponent -->
-            <div class="row">
+
+            @if (showNoMedicalCareAlert)
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@searchMessage</strong>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
+                                <i class="fas fa-plus"></i> Crear Nueva Atención
+                            </button>
+                            <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Información de filtros activos y tabla de atenciones médicas -->
+            <div class="row mb-3">
                 <div class="col-12">
-                    <label class="form-label fw-bold">Buscar por paciente</label>
-                    <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
-                                           OnPersonSelected="HandlePersonSelected"
-                                           OnPersonCleared="HandlePersonCleared" />
-                </div>
-            </div>
-            
-            <!-- Botones de acción -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div>
-                    @if (hasActiveFilters)
-                    {
-                        <span class="badge bg-info me-2">
-                            <i class="fas fa-filter me-1"></i>Filtros activos
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success">
+                            <i class="fas fa-hospital me-1"></i>Sector: Enfermería
                         </span>
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
-                            <i class="fas fa-times me-1"></i>Limpiar todos los filtros
-                        </button>
-                    }
+                        @if (selectedDate.HasValue)
+                        {
+                            <span class="badge bg-primary">
+                                <i class="fas fa-calendar me-1"></i>Fecha: @selectedDate.Value.ToString("dd/MM/yyyy")
+                            </span>
+                        }
+                        @if (selectedPlaceOfAttentionId.HasValue)
+                        {
+                            var selectedPlace = placeOfAttentionList.FirstOrDefault(p => p.Id == selectedPlaceOfAttentionId.Value);
+                            if (selectedPlace != null)
+                            {
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Sector: @selectedPlace.Name
+                                </span>
+                            }
+                        }
+                        @if (selectedPerson != null)
+                        {
+                            <span class="badge bg-info">
+                                <i class="fas fa-user me-1"></i>Paciente: @selectedPerson.FirstName @selectedPerson.LastName
+                            </span>
+                        }
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-list me-1"></i>Total: @filteredMedicalCareList.Count registros
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de atenciones médicas -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas - Enfermería
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ManagementTableR TableTitle=""
+                                      Columns="MedicalCareColumns"
+                                      DocumentTypes="documentTypeList"
+                                      RenderActions="RenderMedicalCareActions"
+                                      AddCallback="AddMedicalCare"
+                                      @ref="table" />
                 </div>
             </div>
         </div>
-    </div>
 
-    @if (showNoMedicalCareAlert)
-    {
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>@searchMessage</strong>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
-                        <i class="fas fa-plus"></i> Crear Nueva Atención
-                    </button>
-                    <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Información de filtros activos -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-success">
-                    <i class="fas fa-hospital me-1"></i>Área: Enfermería
-                </span>
-                @if (selectedDate.HasValue)
-                {
-                    <span class="badge bg-primary">
-                        <i class="fas fa-calendar me-1"></i>Fecha: @selectedDate.Value.ToString("dd/MM/yyyy")
-                    </span>
-                }
-                @if (selectedPerson != null)
-                {
-                    <span class="badge bg-info">
-                        <i class="fas fa-user me-1"></i>Paciente: @selectedPerson.FirstName @selectedPerson.LastName
-                    </span>
-                }
-                <span class="badge bg-secondary">
-                    <i class="fas fa-list me-1"></i>Total: @filteredMedicalCareList.Count registros
-                </span>
-            </div>
+        <!-- Nueva pestaña de Procedimientos -->
+        <div class="tab-pane @(activeTab == "procedimientos" ? "show active" : "")" role="tabpanel">
+            <NursingProceduresManagement />
         </div>
     </div>
 
-    <!-- Tabla de atenciones médicas -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Lista de Atenciones Médicas - Enfermería
-            </h5>
-        </div>
-        <div class="card-body">
-            <ManagementTableR TableTitle=""
-                              Columns="MedicalCareColumns"
-                              DocumentTypes="documentTypeList"
-                              RenderActions="RenderMedicalCareActions"
-                              AddCallback="AddMedicalCare"
-                              @ref="table" />
-        </div>
-    </div>
-
-    <!-- Modal de detalle -->
+    <!-- Modales existentes -->
     @if (showDetail && selectedMedicalCare != null)
     {
         <div class="modal fade show d-flex align-items-center justify-content-center"
@@ -150,7 +214,6 @@
         </div>
     }
 
-    <!-- Modal de formulario -->
     @if (showForm)
     {
         <div class="modal-backdrop fade show"></div>
@@ -185,9 +248,14 @@
     private List<MedicalCareDTO> allMedicalCareList = new();
     private List<MedicalCareDTO> filteredMedicalCareList = new();
     private List<List<string>> MedicalCareData = new();
+    private List<PlaceOfAttentionDTO> placeOfAttentionList = new();
+
+    private string activeTab = "atenciones";
+    private int pendingProceduresCount = 0;
 
     // Filtros
     private DateTime? _selectedDate;
+    private int? _selectedPlaceOfAttentionId;
     private string quickSearchTerm = string.Empty;
     private string searchMessage = string.Empty;
     private bool showNoMedicalCareAlert = false;
@@ -204,27 +272,62 @@
         }
     }
 
-    // Columnas de la tabla (sin ID)
+    private int? selectedPlaceOfAttentionId
+    {
+        get => _selectedPlaceOfAttentionId;
+        set
+        {
+            _selectedPlaceOfAttentionId = value;
+            HandlePlaceFilter();
+        }
+    }
+
     private List<string> MedicalCareColumns = new()
     {
-        "Fecha", "Paciente", "Área", "Profesional", "Acciones"
+        "Fecha", "Paciente", "Sector", "Profesional", "Acciones"
     };
 
     protected override async Task OnInitializedAsync()
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
+        placeOfAttentionList = await PlaceOfAttentionService.GetAllPlacesAsync();
         await LoadNursingMedicalCareData();
+        await LoadPendingProceduresCount();
     }
 
-    // Método modificado para cargar solo datos de enfermería
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task LoadPendingProceduresCount()
+    {
+        try
+        {
+            pendingProceduresCount = await MedicalProcedureService.GetPendingCountByLocationAsync("Enfermería");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading pending procedures count: {ex.Message}");
+        }
+    }
+
     private async Task LoadNursingMedicalCareData()
     {
         try
         {
             var result = await MedicalCareService.GetNursingCareAsync();
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
+
+            if (selectedPlaceOfAttentionId.HasValue || selectedDate.HasValue)
+            {
+                var filteredResult = await MedicalCareService.GetByPlaceOfAttentionAndDateAsync(selectedPlaceOfAttentionId, selectedDate);
+                allMedicalCareList = filteredResult ?? new List<MedicalCareDTO>();
+            }
+
             totalMedicalCareCount = allMedicalCareList.Count;
-            
             ApplyFilters();
         }
         catch (Exception ex)
@@ -241,16 +344,8 @@
         hasActiveFilters = false;
         showNoMedicalCareAlert = false;
 
-        // Filtro por fecha
-        if (selectedDate.HasValue)
-        {
-            filteredMedicalCareList = filteredMedicalCareList
-                .Where(mc => mc.CareDate.Date == selectedDate.Value.Date)
-                .ToList();
-            hasActiveFilters = true;
-        }
+        hasActiveFilters = selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue || selectedPerson != null;
 
-        // Filtro por paciente seleccionado
         if (selectedPerson != null)
         {
             filteredMedicalCareList = filteredMedicalCareList
@@ -258,10 +353,8 @@
                              mc.NamePatient.Contains(selectedPerson.FirstName, StringComparison.OrdinalIgnoreCase) &&
                              mc.NamePatient.Contains(selectedPerson.LastName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-            hasActiveFilters = true;
         }
 
-        // Filtro por búsqueda rápida de ID
         if (!string.IsNullOrWhiteSpace(quickSearchTerm) && int.TryParse(quickSearchTerm, out int careId))
         {
             filteredMedicalCareList = filteredMedicalCareList
@@ -270,7 +363,6 @@
             hasActiveFilters = true;
         }
 
-        // Verificar si no hay resultados
         if (hasActiveFilters && !filteredMedicalCareList.Any())
         {
             SetNoResultsMessage();
@@ -282,13 +374,20 @@
     private void SetNoResultsMessage()
     {
         var filters = new List<string>();
-        
+
         if (selectedDate.HasValue)
             filters.Add($"fecha {selectedDate.Value:dd/MM/yyyy}");
-        
+
+        if (selectedPlaceOfAttentionId.HasValue)
+        {
+            var selectedPlace = placeOfAttentionList.FirstOrDefault(p => p.Id == selectedPlaceOfAttentionId.Value);
+            if (selectedPlace != null)
+                filters.Add($"sector {selectedPlace.Name}");
+        }
+
         if (selectedPerson != null)
             filters.Add($"paciente {selectedPerson.FirstName} {selectedPerson.LastName}");
-        
+
         if (!string.IsNullOrWhiteSpace(quickSearchTerm))
             filters.Add($"ID {quickSearchTerm}");
 
@@ -302,10 +401,17 @@
         {
             mc.CareDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
             mc.NamePatient ?? "N/A",
-            mc.Area ?? "N/A",
+            mc.NameLocation ?? "N/A", // This should show PlaceOfAttention name
             mc.NameHealthProfessional ?? "N/A",
-            mc.CareId.ToString() // Para las acciones, pero no se muestra en la tabla
+            mc.CareId.ToString()
         }).ToList();
+
+        // Debug logging to see what data we're getting
+        foreach (var mc in filteredMedicalCareList.Take(3)) // Log first 3 records
+        {
+            InvokeAsync(async () => await JS.InvokeVoidAsync("console.log",
+                $"[v0] MedicalCare Debug - ID: {mc.CareId}, NameLocation: '{mc.NameLocation}', PlaceOfAttentionId: {mc.PlaceOfAttentionId}"));
+        }
 
         if (table != null)
         {
@@ -314,64 +420,11 @@
         StateHasChanged();
     }
 
-    private async Task HandleDateFilter()
-    {
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task HandlePersonSelected(PersonDTO person)
-    {
-        selectedPerson = person;
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task HandlePersonCleared()
-    {
-        selectedPerson = null;
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task ClearDateFilter()
-    {
-        selectedDate = null;
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task ClearAllFilters()
-    {
-        selectedDate = null;
-        selectedPerson = null;
-        quickSearchTerm = string.Empty;
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private void CreateNewMedicalCare()
-    {
-        selectedMedicalCare = new MedicalCareDTO
-        {
-            CareId = 0,
-            Area = "Enfermería" // Establecer área por defecto
-        };
-        showForm = true;
-        showNoMedicalCareAlert = false;
-    }
-
-    private Task AddMedicalCare()
-    {
-        CreateNewMedicalCare();
-        return Task.CompletedTask;
-    }
-
     RenderFragment<List<string>> RenderMedicalCareActions => row => builder =>
     {
         int seq = 0;
         var id = row[4];
-        
+
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
         builder.AddAttribute(seq++, "title", "Ver");
@@ -482,12 +535,78 @@
     {
         showForm = false;
         await LoadNursingMedicalCareData();
-        
+
         var message = savedMedicalCare.CareId == 0
             ? "Atención médica creada exitosamente"
             : "Atención médica actualizada exitosamente";
-            
+
         await JS.InvokeVoidAsync("alert", message);
+    }
+
+    private void CreateNewMedicalCare()
+    {
+        selectedMedicalCare = new MedicalCareDTO
+            {
+                CareId = 0
+            };
+        showForm = true;
+        showNoMedicalCareAlert = false;
+    }
+
+    private async Task HandleDateFilter()
+    {
+        await LoadNursingMedicalCareData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandlePlaceFilter()
+    {
+        await LoadNursingMedicalCareData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandlePersonSelected(PersonDTO person)
+    {
+        selectedPerson = person;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandlePersonCleared()
+    {
+        selectedPerson = null;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearDateFilter()
+    {
+        selectedDate = null;
+        await LoadNursingMedicalCareData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearPlaceFilter()
+    {
+        selectedPlaceOfAttentionId = null;
+        await LoadNursingMedicalCareData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        selectedDate = null;
+        selectedPlaceOfAttentionId = null;
+        selectedPerson = null;
+        quickSearchTerm = string.Empty;
+        await LoadNursingMedicalCareData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task AddMedicalCare()
+    {
+        CreateNewMedicalCare();
+        return Task.CompletedTask;
     }
 
     void GuardarDatos()

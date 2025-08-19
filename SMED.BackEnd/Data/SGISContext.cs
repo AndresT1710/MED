@@ -119,6 +119,7 @@ namespace SGIS.Models
         public DbSet<MedicalDiagnosis> Diagnosis { get; set; }
         public DbSet<MedicalService> MedicalServices { get; set; }
         public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
+        public DbSet<Location> Locations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,5 +1,6 @@
 ﻿using SMED.Shared.DTOs;
 using System.Net.Http.Json;
+using System.Linq;
 
 namespace SMED.FrontEnd.Services
 {
@@ -31,6 +32,58 @@ namespace SMED.FrontEnd.Services
             {
                 _logger.LogError(ex, "Error al obtener todos los procedimientos médicos");
                 return new List<MedicalProcedureDTO>();
+            }
+        }
+
+        public async Task<List<MedicalProcedureDTO>> GetByLocationAsync(int locationId)
+        {
+            try
+            {
+                _logger.LogInformation("Requesting procedures for location: {LocationId}", locationId);
+
+                var response = await _httpClient.GetAsync($"api/MedicalProcedure/by-location/{locationId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var procedures = await response.Content.ReadFromJsonAsync<List<MedicalProcedureDTO>>() ?? new List<MedicalProcedureDTO>();
+
+                    _logger.LogInformation("Retrieved {Count} procedures", procedures.Count);
+                    if (procedures.Any())
+                    {
+                        var firstProc = procedures.First();
+                        _logger.LogInformation("First procedure - PatientId: {PatientId}, PatientName: {PatientName}",
+                            firstProc.PatientId, firstProc.PatientName ?? "NULL");
+                    }
+
+                    return procedures;
+                }
+
+                _logger.LogWarning("Error al obtener procedimientos por ubicación: {StatusCode}", response.StatusCode);
+                return new List<MedicalProcedureDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener procedimientos por ubicación: {LocationId}", locationId);
+                return new List<MedicalProcedureDTO>();
+            }
+        }
+
+        public async Task<int> GetPendingCountByLocationAsync(string locationName)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/MedicalProcedure/pending-count/{locationName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var countString = await response.Content.ReadAsStringAsync();
+                    return int.TryParse(countString, out int count) ? count : 0;
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener conteo de procedimientos pendientes: {LocationName}", locationName);
+                return 0;
             }
         }
 
@@ -108,6 +161,47 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<(bool Success, string Error)> MarkAsCompletedAsync(int procedureId, int treatingPhysicianId)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync($"api/MedicalProcedure/{procedureId}/mark-completed", treatingPhysicianId);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al marcar procedimiento como realizado");
+                return (false, ex.Message);
+            }
+        }
+
+        public async Task<(bool Success, string Error)> MarkAsCompletedAsync(int procedureId, string physicianName)
+        {
+            try
+            {
+                var requestData = new { PhysicianName = physicianName };
+                var response = await _httpClient.PutAsJsonAsync($"api/MedicalProcedure/{procedureId}/mark-completed-by-name", requestData);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al marcar procedimiento como realizado por nombre");
+                return (false, ex.Message);
+            }
+        }
+
         public async Task<(bool Success, string Error)> DeleteAsync(int id)
         {
             try
@@ -127,6 +221,27 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
-    }
 
+        public async Task<List<MedicalProcedureDTO>> GetPendingByLocationAsync(int locationId)
+        {
+            try
+            {
+                // Llama al endpoint de pendientes por LocationId
+                var response = await _httpClient.GetAsync($"api/MedicalProcedure/pending/by-location/{locationId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var pendingProcedures = await response.Content.ReadFromJsonAsync<List<MedicalProcedureDTO>>();
+                    return pendingProcedures ?? new List<MedicalProcedureDTO>();
+                }
+
+                _logger.LogWarning("Error al obtener procedimientos pendientes por ubicación: {StatusCode}", response.StatusCode);
+                return new List<MedicalProcedureDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener procedimientos pendientes por ubicación: {LocationId}", locationId);
+                return new List<MedicalProcedureDTO>();
+            }
+        }
+    }
 }

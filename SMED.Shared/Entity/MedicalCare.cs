@@ -14,6 +14,7 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int CareId { get; set; }
         public int LocationId { get; set; }
+        public int PlaceOfAttentionId { get; set; }
         public int PatientId { get; set; }
         public int HealthProfessionalId { get; set; }
         public string Area { get; set; }
@@ -21,7 +22,12 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("LocationId")]
         [InverseProperty("MedicalCares")]
+        public virtual Location LocationNavigation { get; set; } = null!;
+
+        [ForeignKey("PlaceOfAttentionId")]
+        [InverseProperty("MedicalCares")]
         public virtual PlaceOfAttention PlaceOfAttentionNavigation { get; set; } = null!;
+
 
         [InverseProperty("MedicalCare")]
         public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();

@@ -25,6 +25,7 @@
 @inject NonPharmacologicalTreatmentService NonPharmacologicalTreatmentService
 @inject MedicineService MedicineService
 @inject IndicationsService IndicationsService
+@inject LocationService LocationService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -1246,7 +1247,7 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private string areaSeleccionada = "Medicina General";
+    private int medicinaGeneralLocationId = 0; // Added to store dynamic LocationId
     private string profesionalSeleccionado = "";
     private string motivoConsulta = "";
     private bool isEditMode = false;
@@ -1376,10 +1377,31 @@
     private string indicationsContent = "";
     private string nonPharmacologicalContent = "";
 
+    private async Task LoadMedicinaGeneralLocationId()
+    {
+        try
+        {
+            var locationId = await LocationService.GetLocationIdByNameAsync("Medicina General");
+            if (locationId.HasValue)
+            {
+                medicinaGeneralLocationId = locationId.Value;
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error: No se encontró la ubicación 'Medicina General' en la base de datos.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al cargar la ubicación de Medicina General: {ex.Message}");
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadMedicinaGeneralLocationId();
+
         await LoadTypeOfServices();
-        areaSeleccionada = "Medicina General";
         await LoadHealthProfessionals();
         await LoadTypeOfProcedures();
         await LoadProcedures();
@@ -1567,9 +1589,8 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        areaSeleccionada = "Medicina General";
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
-        lugarSeleccionada = MedicalCare.LocationId.ToString() ?? "";
+        lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
 
         var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
@@ -1637,7 +1658,7 @@
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
-        selectedPatientId = paciente.PersonId;
+        selectedPatientId = paciente.ClinicalHistoryId; // Changed from paciente.PersonId
         selectedHistoryNumber = paciente.MedicalRecordNumber;
 
         if (selectedPatientId > 0)
@@ -1666,9 +1687,9 @@
             if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
                 // Actualizar atención médica existente
-                MedicalCare.Area = areaSeleccionada;
+                MedicalCare.LocationId = medicinaGeneralLocationId;
                 MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
-                MedicalCare.LocationId = int.Parse(lugarSeleccionada);
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
 
                 var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
                 if (!updateResult.Success)
@@ -1684,13 +1705,13 @@
             {
                 // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                    LocationId = int.Parse(lugarSeleccionada),
-                    Area = areaSeleccionada,
-                    CareDate = DateTime.Now
-                };
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = medicinaGeneralLocationId,
+                        CareDate = DateTime.Now
+                    };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -1711,11 +1732,11 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                {
-                    Id = existingReasonForConsultation?.Id ?? 0,
-                    Description = motivoConsulta.Trim(),
-                    MedicalCareId = currentMedicalCareId
-                };
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
+                    };
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
@@ -1723,26 +1744,40 @@
                 }
                 else
                 {
-                    var reasonResult = await ReasonForConsultationService.CreateAsync(reasonDto);
-                    if (reasonResult.Success)
-                    {
-                        existingReasonForConsultation = reasonResult.Data;
-                    }
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
                 }
             }
 
-            await JS.InvokeVoidAsync("alert", "Datos básicos guardados exitosamente. Ahora puede continuar con las demás secciones.");
-            StateHasChanged();
+            foreach (var procedimiento in procedimientosList.Where(p => p.ProcedureId == 0))
+            {
+                procedimiento.CareId = currentMedicalCareId;
+                procedimiento.PatientId = selectedPatientId; // Asegurar PatientId correcto
+                var result = await MedicalProcedureService.CreateAsync(procedimiento);
+                if (result.Success)
+                {
+                    await JS.InvokeVoidAsync("console.log", "[v0] Saved pending procedure successfully");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("console.error", "[v0] Error saving pending procedure:", result.Error);
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente.");
+
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", "[v0] Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
         }
         finally
         {
             isSaving = false;
         }
     }
+
+
 
     private async Task FinalizarAtencionMedica()
     {
@@ -1751,7 +1786,7 @@
         {
             if (currentMedicalCareId == 0)
             {
-                await JS.InvokeVoidAsync("alert", "No hay una atención médica válida para finalizar.");
+                await JS.InvokeVoidAsync("alert", "No hay una atención m��dica válida para finalizar.");
                 return;
             }
 
@@ -1802,11 +1837,11 @@
             {
                 // Crear nuevo
                 var newAdditionalData = new AdditionalDataDTO
-                {
-                    AdditionalDataId = 0,
-                    Observacion = additionalDataContent,
-                    MedicalCareId = currentMedicalCareId
-                };
+                    {
+                        AdditionalDataId = 0,
+                        Observacion = additionalDataContent,
+                        MedicalCareId = currentMedicalCareId
+                    };
 
                 var createResult = await AdditionalDataService.CreateAsync(newAdditionalData);
                 if (createResult.Success && createResult.Data != null)
@@ -1831,13 +1866,13 @@
         }
 
         currentProcedure = new MedicalProcedureDTO
-        {
-            ProcedureId = 0,
-            PatientId = selectedPatientId,
-            CareId = currentMedicalCareId,
-            ProcedureDate = DateTime.Now,
-            HealthProfessionalId = int.Parse(profesionalSeleccionado)
-        };
+            {
+                ProcedureId = 0,
+                PatientId = selectedPatientId,
+                CareId = currentMedicalCareId,
+                ProcedureDate = DateTime.Now,
+                HealthProfessionalId = int.Parse(profesionalSeleccionado)
+            };
 
         showProcedureModal = true;
         StateHasChanged();
@@ -1846,19 +1881,19 @@
     private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
     {
         currentProcedure = new MedicalProcedureDTO
-        {
-            ProcedureId = procedimiento.ProcedureId,
-            PatientId = procedimiento.PatientId,
-            HealthProfessionalId = procedimiento.HealthProfessionalId,
-            CareId = procedimiento.CareId,
-            ProcedureDate = procedimiento.ProcedureDate,
-            SpecificProcedureId = procedimiento.SpecificProcedureId,
-            TypeOfProcedureId = procedimiento.TypeOfProcedureId,
-            TreatingPhysicianId = procedimiento.TreatingPhysicianId,
-            Observations = procedimiento.Observations,
-            TypeOfProcedureName = procedimiento.TypeOfProcedureName,
-            SpecificProcedureName = procedimiento.SpecificProcedureName
-        };
+            {
+                ProcedureId = procedimiento.ProcedureId,
+                PatientId = procedimiento.PatientId,
+                HealthProfessionalId = procedimiento.HealthProfessionalId,
+                CareId = procedimiento.CareId,
+                ProcedureDate = procedimiento.ProcedureDate,
+                SpecificProcedureId = procedimiento.SpecificProcedureId,
+                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
+                TreatingPhysicianId = procedimiento.TreatingPhysicianId,
+                Observations = procedimiento.Observations,
+                TypeOfProcedureName = procedimiento.TypeOfProcedureName,
+                SpecificProcedureName = procedimiento.SpecificProcedureName
+            };
 
         showProcedureModal = true;
         StateHasChanged();
@@ -1876,21 +1911,70 @@
         }
     }
 
-    private void OnProcedureSaved(MedicalProcedureDTO procedimiento)
+    private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
     {
-        var existing = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedimiento.ProcedureId);
-        if (existing != null)
+        try
         {
-            var index = procedimientosList.IndexOf(existing);
-            procedimientosList[index] = procedimiento;
-        }
-        else
-        {
-            procedimientosList.Add(procedimiento);
-        }
+            await JS.InvokeVoidAsync("console.log", "[v0] Saving procedure to database:", procedimiento);
 
-        CerrarModalProcedimiento();
-        StateHasChanged();
+            if (currentMedicalCareId > 0)
+            {
+                procedimiento.CareId = currentMedicalCareId;
+            }
+
+            // Asegurar que tenga el PatientId correcto
+            if (selectedPatientId > 0)
+            {
+                procedimiento.PatientId = selectedPatientId;
+            }
+            else if (MedicalCare != null && MedicalCare.PatientId > 0)
+            {
+                procedimiento.PatientId = MedicalCare.PatientId;
+            }
+
+            await JS.InvokeVoidAsync("console.log", "[v0] Procedure data before save - CareId:", procedimiento.CareId, "PatientId:", procedimiento.PatientId);
+
+            if (procedimiento.ProcedureId > 0)
+            {
+                // Actualizar procedimiento existente
+                var updateResult = await MedicalProcedureService.UpdateAsync(procedimiento);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar el procedimiento: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                // Crear nuevo procedimiento
+                var createResult = await MedicalProcedureService.CreateAsync(procedimiento);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al guardar el procedimiento: {createResult.Error}");
+                    return;
+                }
+            }
+
+            var existing = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedimiento.ProcedureId);
+            if (existing != null)
+            {
+                var index = procedimientosList.IndexOf(existing);
+                procedimientosList[index] = procedimiento;
+            }
+            else
+            {
+                procedimientosList.Add(procedimiento);
+            }
+
+            await JS.InvokeVoidAsync("console.log", "[v0] Procedure saved successfully:", procedimiento.ProcedureId);
+            CerrarModalProcedimiento();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "[v0] Error saving procedure:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar el procedimiento: {ex.Message}");
+        }
     }
 
     private void CerrarModalProcedimiento()
@@ -1933,13 +2017,13 @@
     private async Task OnAddSystemRequested()
     {
         currentSystem = new ReviewSystemDevicesDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            SystemsDevicesId = 0,
-            State = "",
-            Observations = ""
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                SystemsDevicesId = 0,
+                State = "",
+                Observations = ""
+            };
 
         systemErrors.Clear();
         systemFormError = "";
@@ -1951,13 +2035,13 @@
         if (existing != null)
         {
             currentSystem = new ReviewSystemDevicesDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                SystemsDevicesId = existing.SystemsDevicesId,
-                State = existing.State ?? "",
-                Observations = existing.Observations ?? ""
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    SystemsDevicesId = existing.SystemsDevicesId,
+                    State = existing.State ?? "",
+                    Observations = existing.Observations ?? ""
+                };
         }
 
         systemErrors.Clear();
@@ -2139,13 +2223,13 @@
     private async Task OnAddPhysicalExamRequested()
     {
         currentPhysicalExam = new PhysicalExamDTO
-        {
-            PhysicalExamId = 0,
-            MedicalCareId = currentMedicalCareId,
-            RegionId = 0,
-            PathologicalEvidenceId = 0,
-            Observation = ""
-        };
+            {
+                PhysicalExamId = 0,
+                MedicalCareId = currentMedicalCareId,
+                RegionId = 0,
+                PathologicalEvidenceId = 0,
+                Observation = ""
+            };
 
         physicalExamErrors.Clear();
         physicalExamFormError = "";
@@ -2157,13 +2241,13 @@
         if (existing != null)
         {
             currentPhysicalExam = new PhysicalExamDTO
-            {
-                PhysicalExamId = existing.PhysicalExamId,
-                MedicalCareId = existing.MedicalCareId,
-                RegionId = existing.RegionId,
-                PathologicalEvidenceId = existing.PathologicalEvidenceId,
-                Observation = existing.Observation ?? ""
-            };
+                {
+                    PhysicalExamId = existing.PhysicalExamId,
+                    MedicalCareId = existing.MedicalCareId,
+                    RegionId = existing.RegionId,
+                    PathologicalEvidenceId = existing.PathologicalEvidenceId,
+                    Observation = existing.Observation ?? ""
+                };
         }
 
         physicalExamErrors.Clear();
@@ -2350,15 +2434,15 @@
     private async Task OnAddDiagnosisRequested()
     {
         currentDiagnosis = new MedicalDiagnosisDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            Cie10 = "",
-            Denomination = "",
-            DiagnosticTypeId = 0,
-            Recurrence = "",
-            DiagnosisMotivation = ""
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                Cie10 = "",
+                Denomination = "",
+                DiagnosticTypeId = 0,
+                Recurrence = "",
+                DiagnosisMotivation = ""
+            };
 
         diagnosisErrors.Clear();
         diagnosisFormError = "";
@@ -2371,16 +2455,16 @@
         if (existing != null)
         {
             currentDiagnosis = new MedicalDiagnosisDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                Cie10 = existing.Cie10 ?? "",
-                Denomination = existing.Denomination ?? "",
-                DiagnosticTypeId = existing.DiagnosticTypeId,
-                Recurrence = existing.Recurrence ?? "",
-                DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
-                DiseaseId = existing.DiseaseId
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    Cie10 = existing.Cie10 ?? "",
+                    Denomination = existing.Denomination ?? "",
+                    DiagnosticTypeId = existing.DiagnosticTypeId,
+                    Recurrence = existing.Recurrence ?? "",
+                    DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
+                    DiseaseId = existing.DiseaseId
+                };
 
             isUnidentifiedCie10 = existing.Cie10 == "No Identificado";
         }
@@ -2566,7 +2650,7 @@
     }
 
     // ============================================================================
-    // MÉTODOS PARA EVOLUCIÓN - PERMITE MÚLTIPLES REGISTROS
+    // MÉTODOS PARA EVOLUCI��N - PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
     private async Task RefreshEvolutionsTable()
     {
@@ -2590,12 +2674,12 @@
     private async Task OnAddEvolutionRequested()
     {
         currentEvolution = new EvolutionDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            Description = "",
-            Percentage = 0
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                Description = "",
+                Percentage = 0
+            };
 
         evolutionErrors.Clear();
         evolutionFormError = "";
@@ -2607,12 +2691,12 @@
         if (existing != null)
         {
             currentEvolution = new EvolutionDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                Description = existing.Description ?? "",
-                Percentage = existing.Percentage
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    Description = existing.Description ?? "",
+                    Percentage = existing.Percentage
+                };
         }
 
         evolutionErrors.Clear();
@@ -3000,7 +3084,7 @@
             currentPharmacological = new PharmacologicalTreatmentDTO
                 {
                     Id = pharma.Id,
-                    MedicalDiagnosisId = pharma.MedicalDiagnosisId, 
+                    MedicalDiagnosisId = pharma.MedicalDiagnosisId,
                     Description = pharma.Description,
                     Dose = pharma.Dose,
                     Frequency = pharma.Frequency,

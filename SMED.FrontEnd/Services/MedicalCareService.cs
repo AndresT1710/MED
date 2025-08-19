@@ -171,5 +171,39 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<MedicalCareDTO>?> GetByPlaceOfAttentionAndDateAsync(int? placeOfAttentionId = null, DateTime? date = null)
+        {
+            try
+            {
+                var url = "api/MedicalCare/by-place-and-date?";
+                var queryParams = new List<string>();
+
+                if (placeOfAttentionId.HasValue)
+                {
+                    queryParams.Add($"placeOfAttentionId={placeOfAttentionId.Value}");
+                }
+
+                if (date.HasValue)
+                {
+                    queryParams.Add($"date={date.Value:yyyy-MM-dd}");
+                }
+
+                url += string.Join("&", queryParams);
+
+                var response = await _httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones por lugar de atención y fecha: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones por lugar de atención y fecha");
+                return new List<MedicalCareDTO>();
+            }
+        }
+
     }
 }

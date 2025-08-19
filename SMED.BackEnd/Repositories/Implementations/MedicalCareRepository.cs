@@ -27,6 +27,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 CareId = m.CareId,
                 LocationId = m.LocationId,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
                 NameLocation = m.PlaceOfAttentionNavigation?.Name,
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
@@ -46,20 +47,21 @@ namespace SMED.BackEnd.Repositories.Implementations
                         m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
-                Area = m.Area,
-                CareDate = m.CareDate
+                    CareDate = m.CareDate
             }).ToList();
         }
 
         public async Task<List<MedicalCareDTO>> GetNursingCareAsync()
         {
             var medicalCares = await _context.MedicalCares
+                .Include(m => m.LocationNavigation)
                 .Include(m => m.PlaceOfAttentionNavigation)
                 .Include(m => m.Patient)
                     .ThenInclude(p => p.PersonNavigation)
                 .Include(m => m.HealthProfessional)
                     .ThenInclude(h => h.PersonNavigation)
-                .Where(m => m.Area.ToLower() == "enfermería" || m.Area.ToLower() == "enfermeria")
+                .Where(m => m.LocationNavigation != null &&
+                            (m.LocationNavigation.Name.ToLower() == "enfermería" || m.LocationNavigation.Name.ToLower() == "enfermeria"))
                 .OrderByDescending(m => m.CareDate)
                 .ToListAsync();
 
@@ -67,29 +69,31 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 CareId = m.CareId,
                 LocationId = m.LocationId,
-                NameLocation = m.PlaceOfAttentionNavigation?.Name,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
+                NameLocation = m.LocationNavigation?.Name, // ahora sacamos el nombre de Location
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                        m.Patient.PersonNavigation.FirstName,
-                        m.Patient.PersonNavigation.MiddleName,
-                        m.Patient.PersonNavigation.LastName,
-                        m.Patient.PersonNavigation.SecondLastName
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
                 PatientId = m.PatientId,
                 HealthProfessionalId = m.HealthProfessionalId,
                 NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
                     ? string.Join(" ", new[] {
-                        m.HealthProfessional.PersonNavigation.FirstName,
-                        m.HealthProfessional.PersonNavigation.MiddleName,
-                        m.HealthProfessional.PersonNavigation.LastName,
-                        m.HealthProfessional.PersonNavigation.SecondLastName
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
-                Area = m.Area,
+                Area = m.LocationNavigation?.Name ?? "N/A", // cambiamos el área por el nombre del Location
                 CareDate = m.CareDate
             }).ToList();
         }
+
 
         public async Task<List<MedicalCareDTO>> GetByAreaAndDateAsync(string area, DateTime? date = null)
         {
@@ -114,6 +118,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 CareId = m.CareId,
                 LocationId = m.LocationId,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
                 NameLocation = m.PlaceOfAttentionNavigation?.Name,
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
@@ -133,7 +138,60 @@ namespace SMED.BackEnd.Repositories.Implementations
                         m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
-                Area = m.Area,
+                Area = m.PlaceOfAttentionNavigation?.Name ?? "N/A",
+                CareDate = m.CareDate
+            }).ToList();
+        }
+
+        public async Task<List<MedicalCareDTO>> GetByPlaceOfAttentionAndDateAsync(int? placeOfAttentionId = null, DateTime? date = null)
+        {
+            var query = _context.MedicalCares
+                .Include(m => m.PlaceOfAttentionNavigation)
+                .Include(m => m.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .Include(m => m.HealthProfessional)
+                    .ThenInclude(h => h.PersonNavigation)
+                .Where(m => m.Area.ToLower() == "enfermería" || m.Area.ToLower() == "enfermeria");
+
+            if (placeOfAttentionId.HasValue)
+            {
+                query = query.Where(m => m.PlaceOfAttentionId == placeOfAttentionId.Value);
+            }
+
+            if (date.HasValue)
+            {
+                query = query.Where(m => m.CareDate.Date == date.Value.Date);
+            }
+
+            var medicalCares = await query
+                .OrderByDescending(m => m.CareDate)
+                .ToListAsync();
+
+            return medicalCares.Select(m => new MedicalCareDTO
+            {
+                CareId = m.CareId,
+                LocationId = m.LocationId,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
+                NameLocation = m.PlaceOfAttentionNavigation?.Name,
+                NamePatient = m.Patient?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                        m.Patient.PersonNavigation.FirstName,
+                        m.Patient.PersonNavigation.MiddleName,
+                        m.Patient.PersonNavigation.LastName,
+                        m.Patient.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                PatientId = m.PatientId,
+                HealthProfessionalId = m.HealthProfessionalId,
+                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                        m.HealthProfessional.PersonNavigation.FirstName,
+                        m.HealthProfessional.PersonNavigation.MiddleName,
+                        m.HealthProfessional.PersonNavigation.LastName,
+                        m.HealthProfessional.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                Area = m.PlaceOfAttentionNavigation?.Name ?? "N/A",
                 CareDate = m.CareDate
             }).ToList();
         }
@@ -152,6 +210,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 CareId = entity.CareId,
                 LocationId = entity.LocationId,
+                PlaceOfAttentionId = entity.PlaceOfAttentionId,
                 NameLocation = entity.PlaceOfAttentionNavigation?.Name,
                 PatientId = entity.PatientId,
                 NamePatient = entity.Patient?.PersonNavigation != null
@@ -171,7 +230,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                         entity.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
-                Area = entity.Area,
+                Area = entity.PlaceOfAttentionNavigation?.Name ?? "N/A",
                 CareDate = entity.CareDate
             };
         }
@@ -181,6 +240,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = new MedicalCare
             {
                 LocationId = dto.LocationId,
+                PlaceOfAttentionId = dto.PlaceOfAttentionId,
                 PatientId = dto.PatientId,
                 HealthProfessionalId = dto.HealthProfessionalId,
                 Area = dto.Area ?? string.Empty,
@@ -200,6 +260,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.LocationId = dto.LocationId;
+            entity.PlaceOfAttentionId = dto.PlaceOfAttentionId;
             entity.PatientId = dto.PatientId;
             entity.HealthProfessionalId = dto.HealthProfessionalId;
             entity.Area = dto.Area ?? string.Empty;
@@ -319,6 +380,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 CareId = m.CareId,
                 LocationId = m.LocationId,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
                 NameLocation = m.PlaceOfAttentionNavigation?.Name,
                 NamePatient = m.Patient?.PersonNavigation != null
                     ? string.Join(" ", new[] {
@@ -338,7 +400,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                         m.HealthProfessional.PersonNavigation.SecondLastName
                     }.Where(n => !string.IsNullOrWhiteSpace(n)))
                     : string.Empty,
-                Area = m.Area,
+                Area = m.PlaceOfAttentionNavigation?.Name ?? "N/A",
                 CareDate = m.CareDate
             }).ToList();
         }

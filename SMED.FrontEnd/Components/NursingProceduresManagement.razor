@@ -244,12 +244,12 @@
             var result = await MedicalProcedureService.GetByLocationAsync(1);
             allProcedures = result ?? new List<MedicalProcedureDTO>();
 
-            await JS.InvokeVoidAsync("console.log", "[v0] Loaded procedures:", allProcedures.Count);
+            await JS.InvokeVoidAsync("console.log", "Loaded procedures:", allProcedures.Count);
             if (allProcedures.Any())
             {
                 var firstProcedure = allProcedures.First();
-                await JS.InvokeVoidAsync("console.log", "[v0] First procedure PatientName:", firstProcedure.PatientName ?? "NULL");
-                await JS.InvokeVoidAsync("console.log", "[v0] First procedure PatientId:", firstProcedure.PatientId);
+                await JS.InvokeVoidAsync("console.log", "First procedure PatientName:", firstProcedure.PatientName ?? "NULL");
+                await JS.InvokeVoidAsync("console.log", "First procedure PatientId:", firstProcedure.PatientId);
             }
 
             UpdateCounts();
@@ -287,7 +287,7 @@
             _ => allProcedures.ToList()
         };
 
-        await JS.InvokeVoidAsync("console.log", $"[v0] Filtering by status: {status}, found: {filteredProcedures.Count} procedures");
+        await JS.InvokeVoidAsync("console.log", $"Filtering by status: {status}, found: {filteredProcedures.Count} procedures");
 
         StateHasChanged();
     }

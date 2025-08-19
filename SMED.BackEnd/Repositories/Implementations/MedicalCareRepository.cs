@@ -94,7 +94,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             }).ToList();
         }
 
-
         public async Task<List<MedicalCareDTO>> GetByAreaAndDateAsync(string area, DateTime? date = null)
         {
             var query = _context.MedicalCares

@@ -15,11 +15,6 @@ namespace SMED.Shared.Entity
         public int Id { get; set; }
         public DateTime? DateOfReferral { get; set; }
         public string Description { get; set; } = null!;
-        public int ServiceId { get; set; }
-
-        [ForeignKey("ServiceId")]
-        [InverseProperty("MedicalReferrals")]
-        public virtual Service Service { get; set; } = null!;
 
         public int MedicalCareId { get; set; }  // FK a MedicalCare
 

@@ -33,7 +33,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 DateOfReferral = dto.DateOfReferral,
                 Description = dto.Description,
-                ServiceId = dto.ServiceId,
                 MedicalCareId = dto.MedicalCareId
             };
 
@@ -50,7 +49,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.DateOfReferral = dto.DateOfReferral;
             entity.Description = dto.Description;
-            entity.ServiceId = dto.ServiceId;
             entity.MedicalCareId = dto.MedicalCareId;
             await _context.SaveChangesAsync();
 
@@ -73,7 +71,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             Id = referral.Id,
             DateOfReferral = referral.DateOfReferral,
             Description = referral.Description,
-            ServiceId = referral.ServiceId,
             MedicalCareId = referral.MedicalCareId
         };
     }

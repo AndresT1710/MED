@@ -26,7 +26,5 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("Service")]
         public virtual ICollection<Interconsultation> Interconsultations { get; set; } = new List<Interconsultation>();
-        [InverseProperty("Service")]
-        public virtual ICollection<MedicalReferral> MedicalReferrals { get; set; } = new List<MedicalReferral>();
     }
 }

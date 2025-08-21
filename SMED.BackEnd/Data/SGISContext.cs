@@ -673,9 +673,9 @@ namespace SGIS.Models
                       .OnDelete(DeleteBehavior.Cascade);
 
 
-                entity.HasOne(m => m.MedicalReferral)
-                      .WithOne(mr => mr.MedicalCare)
-                      .HasForeignKey<MedicalReferral>(mr => mr.MedicalCareId)
+                entity.HasMany(mc => mc.MedicalReferrals)      
+                      .WithOne(mr => mr.MedicalCare)           
+                      .HasForeignKey(mr => mr.MedicalCareId)   
                       .OnDelete(DeleteBehavior.Restrict);
             });
 

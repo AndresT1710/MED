@@ -289,7 +289,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .Include(m => m.IdentifiedDiseases)
                     .Include(m => m.PhysicalExams)
                     .Include(m => m.ReviewSystemDevices)
-                    .Include(m => m.MedicalReferral)
+                    .Include(m => m.MedicalReferrals)
                     .Include(m => m.MedicalServices)
                     .Include(m => m.MedicalProcedures)
                     .Include(m => m.AdditionalData)
@@ -339,8 +339,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 _context.PhysicalExams.RemoveRange(entity.PhysicalExams);
                 _context.ReviewSystemDevices.RemoveRange(entity.ReviewSystemDevices);
 
-                if (entity.MedicalReferral != null)
-                    _context.MedicalReferrals.Remove(entity.MedicalReferral);
+                if (entity.MedicalReferrals != null && entity.MedicalReferrals.Any())
+                    _context.MedicalReferrals.RemoveRange(entity.MedicalReferrals);
 
                 _context.MedicalServices.RemoveRange(entity.MedicalServices);
                 _context.MedicalProcedures.RemoveRange(entity.MedicalProcedures);

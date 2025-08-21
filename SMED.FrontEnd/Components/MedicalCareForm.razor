@@ -26,6 +26,7 @@
 @inject MedicineService MedicineService
 @inject IndicationsService IndicationsService
 @inject LocationService LocationService
+@inject MedicalReferralService MedicalReferralService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -120,12 +121,17 @@
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
+        @* Added new referral tab *@
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "referral" ? "active" : "")"
                     @onclick="@(() => SetActiveTab("referral"))"
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-share me-2"></i>Derivación
+                @if (IsReferralTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -298,6 +304,7 @@
             </div>
         </div>
 
+        <!-- All other existing tabs remain the same until referral tab -->
         <!-- Aparatos y Sistemas Tab -->
         <div class="tab-pane @(activeTab == "systems" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -415,6 +422,7 @@
             </div>
         </div>
 
+        <!-- All other existing tabs continue here (physical-exam, additional-data, procedures, diagnosis, treatment) -->
         <!-- Examen Físico Tab -->
         <div class="tab-pane @(activeTab == "physical-exam" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -721,7 +729,6 @@
                                             Máximo 20 caracteres. Restantes: @(20 - (currentDiagnosis.Cie10?.Length ?? 0))
                                         </small>
 
-                                        @* Checkbox modificado - Eliminado el @onchange ya que @bind lo maneja *@
                                         <div class="form-check mt-2">
                                             <input class="form-check-input"
                                                    type="checkbox"
@@ -847,7 +854,6 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        @* Replaced basic implementation with complete treatment functionality *@
                         @if (!diagnosisList.Any())
                         {
                             <div class="alert alert-warning mb-4">
@@ -914,6 +920,7 @@
             </div>
         </div>
 
+        @* Added new referral tab implementation *@
         <!-- Derivación Tab -->
         <div class="tab-pane @(activeTab == "referral" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -927,23 +934,96 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info mb-4">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <div>
-                                    <strong>Derivación</strong>
-                                    <p class="mb-0">Aquí se registrarán las derivaciones a especialistas o servicios específicos.</p>
-                                </div>
-                            </div>
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples derivaciones a especialistas para esta atención médica.
                         </div>
+
+                        <EditableTable Title="Derivaciones a Especialistas"
+                                       ColumnHeaders="@referralHeaders"
+                                       Rows="@referralRows"
+                                       RowIds="@referralIds"
+                                       EmptyMessage="No se han registrado derivaciones"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddReferralRequested"
+                                       OnEditRequested="@OnEditReferralRequested"
+                                       OnDeleteRequested="@OnDeleteReferralRequested"
+                                       OnSaveRequested="@OnSaveReferralRequested"
+                                       IsValidForm="@IsReferralFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Especialidad <span class="text-danger">*</span></label>
+                                        <select class="form-select @(referralErrors.ContainsKey("Specialty") ? "is-invalid" : "")"
+                                                @bind="selectedSpecialtyId">
+                                            <option value="0">Seleccione una especialidad</option>
+                                            @foreach (var location in availableLocations)
+                                            {
+                                                <option value="@location.Id">@location.Name</option>
+                                            }
+                                        </select>
+                                        @if (referralErrors.ContainsKey("Specialty"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["Specialty"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Fecha de Derivación <span class="text-danger">*</span></label>
+                                        <input type="date"
+                                               class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
+                                               @bind="currentReferral.DateOfReferral"
+                                               @bind:format="yyyy-MM-dd" />
+                                        @if (referralErrors.ContainsKey("DateOfReferral"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["DateOfReferral"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivo de Derivación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                                  @bind="currentReferral.Description"
+                                                  rows="6"
+                                                  maxlength="1000"
+                                                  placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
+                                                  style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
+                                        @if (referralErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentReferral.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(referralFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @referralFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("treatment"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
-                                Continuar <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
+                            <div>
+                                @if (hasUnsavedReferralData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
+                                    Continuar <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -1095,7 +1175,6 @@
     </div>
 }
 
-@* Added complete treatment modal functionality *@
 @* Modal para gestión de tratamientos *@
 @if (showTreatmentModal)
 {
@@ -1247,7 +1326,7 @@
     private int clinicalHistoryId = 0;
     private int selectedPatientId = 0;
     private string selectedHistoryNumber = "";
-    private int medicinaGeneralLocationId = 0; // Added to store dynamic LocationId
+    private int medicinaGeneralLocationId = 0;
     private string profesionalSeleccionado = "";
     private string motivoConsulta = "";
     private bool isEditMode = false;
@@ -1346,7 +1425,7 @@
             {
                 currentDiagnosis.Cie10 = "";
             }
-            StateHasChanged(); // Opcional: solo si necesitas forzar actualización
+            StateHasChanged();
         }
     }
 
@@ -1376,6 +1455,19 @@
     private IndicationsDTO? currentIndication = null;
     private string indicationsContent = "";
     private string nonPharmacologicalContent = "";
+
+    @* Added variables for referral functionality *@
+    // Variables para Derivación
+    private List<LocationDTO> availableLocations = new();
+    private List<MedicalReferralDTO> referralsList = new();
+    private MedicalReferralDTO currentReferral = new();
+    private List<string> referralHeaders = new() { "Especialidad", "Fecha de Derivación", "Motivo de Derivación" };
+    private List<List<string>> referralRows = new();
+    private List<int> referralIds = new();
+    private Dictionary<string, string> referralErrors = new();
+    private string referralFormError = "";
+    private int selectedSpecialtyId = 0;
+    private bool hasUnsavedReferralData = false;
 
     private async Task LoadMedicinaGeneralLocationId()
     {
@@ -1410,6 +1502,7 @@
         await LoadPhysicalExamData();
         await LoadDiagnosisData();
         await LoadTreatmentData();
+        await LoadReferralData(); // Added referral data loading
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -1440,6 +1533,9 @@
 
                 var diagnosisData = await JS.InvokeAsync<string>("localStorage.getItem", $"diagnosis_data_{currentMedicalCareId}");
                 hasUnsavedDiagnosisData = !string.IsNullOrEmpty(diagnosisData);
+
+                var referralData = await JS.InvokeAsync<string>("localStorage.getItem", $"referral_data_{currentMedicalCareId}");
+                hasUnsavedReferralData = !string.IsNullOrEmpty(referralData);
             }
             catch
             {
@@ -1447,6 +1543,7 @@
                 hasUnsavedPhysicalExamData = false;
                 hasUnsavedEvolutionData = false;
                 hasUnsavedDiagnosisData = false;
+                hasUnsavedReferralData = false; // Added referral unsaved data reset
             }
         }
     }
@@ -1483,6 +1580,11 @@
     private bool IsDiagnosisTabComplete()
     {
         return diagnosisList.Any();
+    }
+
+    private bool IsReferralTabComplete()
+    {
+        return referralsList.Any();
     }
 
     private bool IsEvolutionTabComplete()
@@ -1563,6 +1665,23 @@
             }
         }
 
+        if (activeTab == "referral" && tab != "referral")
+        {
+            await CheckUnsavedData();
+            if (hasUnsavedReferralData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Derivación. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
+        }
+
         if (activeTab == "evolution" && tab != "evolution")
         {
             await CheckUnsavedData();
@@ -1623,12 +1742,17 @@
         diagnosisList = await MedicalDiagnosisService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshDiagnosisTable();
 
+        // Cargar derivaciones existentes
+        referralsList = await MedicalReferralService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        await RefreshReferralsTable();
+
         // Cargar evoluciones existentes
         evolutionsList = await EvolutionService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshEvolutionsTable();
 
         StateHasChanged();
     }
+
 
     private async Task LoadLugaresAtencion()
     {
@@ -1658,7 +1782,7 @@
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
-        selectedPatientId = paciente.ClinicalHistoryId; // Changed from paciente.PersonId
+        selectedPatientId = paciente.ClinicalHistoryId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
 
         if (selectedPatientId > 0)
@@ -1669,6 +1793,237 @@
         StateHasChanged();
         return Task.CompletedTask;
     }
+
+
+    @* Added referral functionality methods *@
+    // ============================================================================
+    // MÉTODOS PARA DERIVACIÓN - PERMITE MÚLTIPLES REGISTROS
+    // ============================================================================
+    private async Task LoadReferralData()
+    {
+        availableLocations = await LocationService.GetAllAsync();
+    }
+
+    private async Task RefreshReferralsTable()
+    {
+        referralRows.Clear();
+        referralIds.Clear();
+
+        foreach (var referral in referralsList)
+        {
+            var specialtyName = await GetSpecialtyNameById(referral.MedicalCareId);
+            var dateOfReferral = referral.DateOfReferral?.ToString("dd/MM/yyyy") ?? "Sin fecha";
+            var description = !string.IsNullOrEmpty(referral.Description)
+                ? (referral.Description.Length > 50 ? referral.Description.Substring(0, 50) + "..." : referral.Description)
+                : "Sin motivo especificado";
+
+            referralRows.Add(new List<string> { specialtyName, dateOfReferral, description });
+            referralIds.Add(referral.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<string> GetSpecialtyNameById(int medicalCareId)
+    {
+        try
+        {
+            // Obtener la atención médica para acceder al LocationId
+            var medicalCare = await MedicalCareService.GetByIdAsync(medicalCareId);
+            if (medicalCare != null)
+            {
+                var location = await LocationService.GetByIdAsync(medicalCare.LocationId);
+                return location?.Name ?? "Especialidad no encontrada";
+            }
+            return "Especialidad no encontrada";
+        }
+        catch
+        {
+            return "Error al obtener especialidad";
+        }
+    }
+
+    private async Task OnAddReferralRequested()
+    {
+        currentReferral = new MedicalReferralDTO
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            DateOfReferral = DateTime.Now,
+            Description = ""
+        };
+
+        selectedSpecialtyId = 0;
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnEditReferralRequested(int id)
+    {
+        var existing = referralsList.FirstOrDefault(r => r.Id == id);
+        if (existing != null)
+        {
+            currentReferral = new MedicalReferralDTO
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                DateOfReferral = existing.DateOfReferral,
+                Description = existing.Description ?? ""
+            };
+
+            // Para edición, necesitamos obtener el LocationId de la atención médica
+            var medicalCare = await MedicalCareService.GetByIdAsync(existing.MedicalCareId);
+            selectedSpecialtyId = medicalCare?.LocationId ?? 0;
+        }
+
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnDeleteReferralRequested(int id)
+    {
+        try
+        {
+            var result = await MedicalReferralService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = referralsList.FirstOrDefault(r => r.Id == id);
+                if (toRemove != null)
+                {
+                    referralsList.Remove(toRemove);
+                    await RefreshReferralsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Derivación eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveReferralRequested()
+    {
+        try
+        {
+            if (!ValidateReferralForm())
+            {
+                return;
+            }
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentReferral.MedicalCareId = currentMedicalCareId;
+
+            if (currentReferral.Id == 0)
+            {
+                // Crear nuevo
+                var result = await MedicalReferralService.CreateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    referralsList.Add(result.Data);
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación agregada exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {result.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                // Actualizar existente
+                var result = await MedicalReferralService.UpdateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    var index = referralsList.FindIndex(r => r.Id == currentReferral.Id);
+                    if (index >= 0)
+                    {
+                        referralsList[index] = result.Data;
+                        await RefreshReferralsTable();
+                    }
+                    await JS.InvokeVoidAsync("alert", "Derivación actualizada exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error;
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {result.Error}");
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentReferral = new MedicalReferralDTO();
+            selectedSpecialtyId = 0;
+            referralErrors.Clear();
+            referralFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            referralFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", referralFormError);
+        }
+    }
+
+    private bool ValidateReferralForm()
+    {
+        referralErrors.Clear();
+        referralFormError = "";
+        bool isValid = true;
+
+        if (selectedSpecialtyId <= 0)
+        {
+            referralErrors["Specialty"] = "Debe seleccionar una especialidad.";
+            isValid = false;
+        }
+
+        if (!currentReferral.DateOfReferral.HasValue)
+        {
+            referralErrors["DateOfReferral"] = "La fecha de derivación es obligatoria.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentReferral.Description))
+        {
+            referralErrors["Description"] = "El motivo de derivación es obligatorio.";
+            isValid = false;
+        }
+        else if (currentReferral.Description.Length > 1000)
+        {
+            referralErrors["Description"] = "El motivo de derivación no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            referralFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsReferralFormValid()
+    {
+        return selectedSpecialtyId > 0 &&
+               currentReferral.DateOfReferral.HasValue &&
+               !string.IsNullOrWhiteSpace(currentReferral.Description) &&
+               (currentReferral.Description?.Length ?? 0) <= 1000;
+    }
+
 
     private async Task GuardarDatosPaciente()
     {
@@ -1705,13 +2060,13 @@
             {
                 // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                        LocationId = medicinaGeneralLocationId,
-                        CareDate = DateTime.Now
-                    };
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = medicinaGeneralLocationId,
+                    CareDate = DateTime.Now
+                };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -1732,11 +2087,11 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                    {
-                        Id = existingReasonForConsultation?.Id ?? 0,
-                        Description = motivoConsulta.Trim(),
-                        MedicalCareId = currentMedicalCareId
-                    };
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
@@ -1751,7 +2106,7 @@
             foreach (var procedimiento in procedimientosList.Where(p => p.ProcedureId == 0))
             {
                 procedimiento.CareId = currentMedicalCareId;
-                procedimiento.PatientId = selectedPatientId; // Asegurar PatientId correcto
+                procedimiento.PatientId = selectedPatientId;
                 var result = await MedicalProcedureService.CreateAsync(procedimiento);
                 if (result.Success)
                 {
@@ -1777,8 +2132,6 @@
         }
     }
 
-
-
     private async Task FinalizarAtencionMedica()
     {
         isSaving = true;
@@ -1786,7 +2139,7 @@
         {
             if (currentMedicalCareId == 0)
             {
-                await JS.InvokeVoidAsync("alert", "No hay una atención m��dica válida para finalizar.");
+                await JS.InvokeVoidAsync("alert", "No hay una atención médica válida para finalizar.");
                 return;
             }
 
@@ -1802,6 +2155,7 @@
             isSaving = false;
         }
     }
+
 
     // ============================================================================
     // MÉTODOS PARA DATOS ADICIONALES - USANDO CONTAINERBOX1
@@ -1837,11 +2191,11 @@
             {
                 // Crear nuevo
                 var newAdditionalData = new AdditionalDataDTO
-                    {
-                        AdditionalDataId = 0,
-                        Observacion = additionalDataContent,
-                        MedicalCareId = currentMedicalCareId
-                    };
+                {
+                    AdditionalDataId = 0,
+                    Observacion = additionalDataContent,
+                    MedicalCareId = currentMedicalCareId
+                };
 
                 var createResult = await AdditionalDataService.CreateAsync(newAdditionalData);
                 if (createResult.Success && createResult.Data != null)
@@ -1866,13 +2220,13 @@
         }
 
         currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = 0,
-                PatientId = selectedPatientId,
-                CareId = currentMedicalCareId,
-                ProcedureDate = DateTime.Now,
-                HealthProfessionalId = int.Parse(profesionalSeleccionado)
-            };
+        {
+            ProcedureId = 0,
+            PatientId = selectedPatientId,
+            CareId = currentMedicalCareId,
+            ProcedureDate = DateTime.Now,
+            HealthProfessionalId = int.Parse(profesionalSeleccionado)
+        };
 
         showProcedureModal = true;
         StateHasChanged();
@@ -1881,19 +2235,19 @@
     private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
     {
         currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = procedimiento.ProcedureId,
-                PatientId = procedimiento.PatientId,
-                HealthProfessionalId = procedimiento.HealthProfessionalId,
-                CareId = procedimiento.CareId,
-                ProcedureDate = procedimiento.ProcedureDate,
-                SpecificProcedureId = procedimiento.SpecificProcedureId,
-                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
-                TreatingPhysicianId = procedimiento.TreatingPhysicianId,
-                Observations = procedimiento.Observations,
-                TypeOfProcedureName = procedimiento.TypeOfProcedureName,
-                SpecificProcedureName = procedimiento.SpecificProcedureName
-            };
+        {
+            ProcedureId = procedimiento.ProcedureId,
+            PatientId = procedimiento.PatientId,
+            HealthProfessionalId = procedimiento.HealthProfessionalId,
+            CareId = procedimiento.CareId,
+            ProcedureDate = procedimiento.ProcedureDate,
+            SpecificProcedureId = procedimiento.SpecificProcedureId,
+            TypeOfProcedureId = procedimiento.TypeOfProcedureId,
+            TreatingPhysicianId = procedimiento.TreatingPhysicianId,
+            Observations = procedimiento.Observations,
+            TypeOfProcedureName = procedimiento.TypeOfProcedureName,
+            SpecificProcedureName = procedimiento.SpecificProcedureName
+        };
 
         showProcedureModal = true;
         StateHasChanged();
@@ -2017,13 +2371,13 @@
     private async Task OnAddSystemRequested()
     {
         currentSystem = new ReviewSystemDevicesDTO
-            {
-                Id = 0,
-                MedicalCareId = currentMedicalCareId,
-                SystemsDevicesId = 0,
-                State = "",
-                Observations = ""
-            };
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            SystemsDevicesId = 0,
+            State = "",
+            Observations = ""
+        };
 
         systemErrors.Clear();
         systemFormError = "";
@@ -2035,13 +2389,13 @@
         if (existing != null)
         {
             currentSystem = new ReviewSystemDevicesDTO
-                {
-                    Id = existing.Id,
-                    MedicalCareId = existing.MedicalCareId,
-                    SystemsDevicesId = existing.SystemsDevicesId,
-                    State = existing.State ?? "",
-                    Observations = existing.Observations ?? ""
-                };
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                SystemsDevicesId = existing.SystemsDevicesId,
+                State = existing.State ?? "",
+                Observations = existing.Observations ?? ""
+            };
         }
 
         systemErrors.Clear();
@@ -2223,13 +2577,13 @@
     private async Task OnAddPhysicalExamRequested()
     {
         currentPhysicalExam = new PhysicalExamDTO
-            {
-                PhysicalExamId = 0,
-                MedicalCareId = currentMedicalCareId,
-                RegionId = 0,
-                PathologicalEvidenceId = 0,
-                Observation = ""
-            };
+        {
+            PhysicalExamId = 0,
+            MedicalCareId = currentMedicalCareId,
+            RegionId = 0,
+            PathologicalEvidenceId = 0,
+            Observation = ""
+        };
 
         physicalExamErrors.Clear();
         physicalExamFormError = "";
@@ -2241,13 +2595,13 @@
         if (existing != null)
         {
             currentPhysicalExam = new PhysicalExamDTO
-                {
-                    PhysicalExamId = existing.PhysicalExamId,
-                    MedicalCareId = existing.MedicalCareId,
-                    RegionId = existing.RegionId,
-                    PathologicalEvidenceId = existing.PathologicalEvidenceId,
-                    Observation = existing.Observation ?? ""
-                };
+            {
+                PhysicalExamId = existing.PhysicalExamId,
+                MedicalCareId = existing.MedicalCareId,
+                RegionId = existing.RegionId,
+                PathologicalEvidenceId = existing.PathologicalEvidenceId,
+                Observation = existing.Observation ?? ""
+            };
         }
 
         physicalExamErrors.Clear();
@@ -2434,15 +2788,15 @@
     private async Task OnAddDiagnosisRequested()
     {
         currentDiagnosis = new MedicalDiagnosisDTO
-            {
-                Id = 0,
-                MedicalCareId = currentMedicalCareId,
-                Cie10 = "",
-                Denomination = "",
-                DiagnosticTypeId = 0,
-                Recurrence = "",
-                DiagnosisMotivation = ""
-            };
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            Cie10 = "",
+            Denomination = "",
+            DiagnosticTypeId = 0,
+            Recurrence = "",
+            DiagnosisMotivation = ""
+        };
 
         diagnosisErrors.Clear();
         diagnosisFormError = "";
@@ -2455,16 +2809,16 @@
         if (existing != null)
         {
             currentDiagnosis = new MedicalDiagnosisDTO
-                {
-                    Id = existing.Id,
-                    MedicalCareId = existing.MedicalCareId,
-                    Cie10 = existing.Cie10 ?? "",
-                    Denomination = existing.Denomination ?? "",
-                    DiagnosticTypeId = existing.DiagnosticTypeId,
-                    Recurrence = existing.Recurrence ?? "",
-                    DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
-                    DiseaseId = existing.DiseaseId
-                };
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                Cie10 = existing.Cie10 ?? "",
+                Denomination = existing.Denomination ?? "",
+                DiagnosticTypeId = existing.DiagnosticTypeId,
+                Recurrence = existing.Recurrence ?? "",
+                DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
+                DiseaseId = existing.DiseaseId
+            };
 
             isUnidentifiedCie10 = existing.Cie10 == "No Identificado";
         }
@@ -2472,7 +2826,6 @@
         diagnosisErrors.Clear();
         diagnosisFormError = "";
     }
-
 
     private async Task OnDeleteDiagnosisRequested(int id)
     {
@@ -2650,7 +3003,7 @@
     }
 
     // ============================================================================
-    // MÉTODOS PARA EVOLUCI��N - PERMITE MÚLTIPLES REGISTROS
+    // MÉTODOS PARA EVOLUCIÓN - PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
     private async Task RefreshEvolutionsTable()
     {
@@ -2674,12 +3027,12 @@
     private async Task OnAddEvolutionRequested()
     {
         currentEvolution = new EvolutionDTO
-            {
-                Id = 0,
-                MedicalCareId = currentMedicalCareId,
-                Description = "",
-                Percentage = 0
-            };
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            Description = "",
+            Percentage = 0
+        };
 
         evolutionErrors.Clear();
         evolutionFormError = "";
@@ -2691,12 +3044,12 @@
         if (existing != null)
         {
             currentEvolution = new EvolutionDTO
-                {
-                    Id = existing.Id,
-                    MedicalCareId = existing.MedicalCareId,
-                    Description = existing.Description ?? "",
-                    Percentage = existing.Percentage
-                };
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                Description = existing.Description ?? "",
+                Percentage = existing.Percentage
+            };
         }
 
         evolutionErrors.Clear();
@@ -2955,11 +3308,11 @@
             {
                 // Crear nuevo
                 var newNonPharmacological = new NonPharmacologicalTreatmentDTO
-                    {
-                        Id = 0,
-                        MedicalDiagnosisId = selectedDiagnosisForTreatment.Id,
-                        Description = nonPharmacologicalContent,
-                    };
+                {
+                    Id = 0,
+                    MedicalDiagnosisId = selectedDiagnosisForTreatment.Id,
+                    Description = nonPharmacologicalContent,
+                };
 
                 var createResult = await NonPharmacologicalTreatmentService.CreateAsync(newNonPharmacological);
                 if (createResult.Success && createResult.Data != null)
@@ -3063,15 +3416,15 @@
     private void OnAddPharmacologicalRequested()
     {
         currentPharmacological = new PharmacologicalTreatmentDTO
-            {
-                Id = 0,
-                MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0,
-                Dose = 1,
-                Frequency = "",
-                Duration = "",
-                ViaAdmission = "",
-                MedicineId = 0
-            };
+        {
+            Id = 0,
+            MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0,
+            Dose = 1,
+            Frequency = "",
+            Duration = "",
+            ViaAdmission = "",
+            MedicineId = 0
+        };
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
     }
@@ -3082,16 +3435,16 @@
         if (pharma != null)
         {
             currentPharmacological = new PharmacologicalTreatmentDTO
-                {
-                    Id = pharma.Id,
-                    MedicalDiagnosisId = pharma.MedicalDiagnosisId,
-                    Description = pharma.Description,
-                    Dose = pharma.Dose,
-                    Frequency = pharma.Frequency,
-                    Duration = pharma.Duration,
-                    ViaAdmission = pharma.ViaAdmission,
-                    MedicineId = pharma.MedicineId
-                };
+            {
+                Id = pharma.Id,
+                MedicalDiagnosisId = pharma.MedicalDiagnosisId,
+                Description = pharma.Description,
+                Dose = pharma.Dose,
+                Frequency = pharma.Frequency,
+                Duration = pharma.Duration,
+                ViaAdmission = pharma.ViaAdmission,
+                MedicineId = pharma.MedicineId
+            };
         }
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";

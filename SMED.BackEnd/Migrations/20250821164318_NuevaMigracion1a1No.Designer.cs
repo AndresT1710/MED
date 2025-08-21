@@ -12,8 +12,8 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    [Migration("20250818183520_AddLocations")]
-    partial class AddLocations
+    [Migration("20250821164318_NuevaMigracion1a1No")]
+    partial class NuevaMigracion1a1No
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1138,15 +1138,9 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ServiceId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("MedicalCareId")
-                        .IsUnique();
-
-                    b.HasIndex("ServiceId");
+                    b.HasIndex("MedicalCareId");
 
                     b.ToTable("MedicalReferrals");
                 });
@@ -2906,20 +2900,12 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.MedicalReferral", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
-                        .WithOne("MedicalReferral")
-                        .HasForeignKey("SMED.Shared.Entity.MedicalReferral", "MedicalCareId")
+                        .WithMany("MedicalReferrals")
+                        .HasForeignKey("MedicalCareId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SMED.Shared.Entity.Service", "Service")
-                        .WithMany("MedicalReferrals")
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("MedicalCare");
-
-                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.MedicalService", b =>
@@ -3663,7 +3649,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("MedicalProcedures");
 
-                    b.Navigation("MedicalReferral");
+                    b.Navigation("MedicalReferrals");
 
                     b.Navigation("MedicalServices");
 
@@ -3820,8 +3806,6 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("Interconsultations");
-
-                    b.Navigation("MedicalReferrals");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SleepHabit", b =>

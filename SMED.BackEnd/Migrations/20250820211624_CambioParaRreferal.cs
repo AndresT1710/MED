@@ -5,7 +5,7 @@
 namespace SMED.BackEnd.Migrations
 {
     /// <inheritdoc />
-    public partial class CambioSegunIngeniero01 : Migration
+    public partial class CambioParaRreferal : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -5,7 +5,7 @@
 namespace SMED.BackEnd.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCorreciones : Migration
+    public partial class NuevaMigracion1a1No : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

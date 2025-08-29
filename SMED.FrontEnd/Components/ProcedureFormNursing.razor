@@ -8,93 +8,110 @@
 @inject MedicalProcedureService MedicalProcedureService
 @inject IJSRuntime JS
 
-<div class="procedure-form">
-    <div class="row g-3">
-        <!-- Agregando selección de departamento -->
-        <!-- Removed department selection section -->
+@* Added null check for Procedure to prevent BuildRenderTree errors *@
+@if (Procedure != null)
+{
+    <div class="procedure-form">
+        <div class="row g-3">
+            <!-- Agregando selección de departamento -->
+            <!-- Removed department selection section -->
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Fecha del Procedimiento *</label>
-            <input type="datetime-local"
-                   class="form-control @(showValidationErrors && Procedure.ProcedureDate == default ? "is-invalid" : "")"
-                   @bind="Procedure.ProcedureDate" />
-            @if (showValidationErrors && Procedure.ProcedureDate == default)
-            {
-                <div class="invalid-feedback">
-                    Debe seleccionar una fecha
-                </div>
-            }
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Tipo de Procedimiento *</label>
-            <select class="form-select @(showValidationErrors && selectedTypeOfProcedureId <= 0 ? "is-invalid" : "")"
-                    @bind:get="selectedTypeOfProcedureId"
-                    @bind:set="OnTypeOfProcedureChangedAsync">
-                <option value="0">Seleccione un tipo</option>
-                @foreach (var type in typesOfProcedures)
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Fecha del Procedimiento *</label>
+                <input type="datetime-local"
+                       class="form-control @(showValidationErrors && Procedure.ProcedureDate == default ? "is-invalid" : "")"
+                       @bind="Procedure.ProcedureDate" />
+                @if (showValidationErrors && Procedure.ProcedureDate == default)
                 {
-                    <option value="@type.Id">@type.Name</option>
+                    <div class="invalid-feedback">
+                        Debe seleccionar una fecha
+                    </div>
                 }
-            </select>
-            @if (showValidationErrors && selectedTypeOfProcedureId <= 0)
-            {
-                <div class="invalid-feedback">
-                    Debe seleccionar un tipo de procedimiento
-                </div>
-            }
-        </div>
+            </div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Procedimiento Específico *</label>
-            <select class="form-select @(showValidationErrors && Procedure.SpecificProcedureId <= 0 ? "is-invalid" : "")"
-                    @bind="Procedure.SpecificProcedureId"
-                    disabled="@(selectedTypeOfProcedureId <= 0)">
-                <option value="0">Seleccione un procedimiento</option>
-                @foreach (var procedure in filteredProcedures)
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Tipo de Procedimiento *</label>
+                <select class="form-select @(showValidationErrors && selectedTypeOfProcedureId <= 0 ? "is-invalid" : "")"
+                        @bind:get="selectedTypeOfProcedureId"
+                        @bind:set="OnTypeOfProcedureChangedAsync">
+                    <option value="0">Seleccione un tipo</option>
+                    @foreach (var type in typesOfProcedures)
+                    {
+                        <option value="@type.Id">@type.Name</option>
+                    }
+                </select>
+                @if (showValidationErrors && selectedTypeOfProcedureId <= 0)
                 {
-                    <option value="@procedure.Id">@procedure.Description</option>
+                    <div class="invalid-feedback">
+                        Debe seleccionar un tipo de procedimiento
+                    </div>
                 }
-            </select>
-            @if (showValidationErrors && Procedure.SpecificProcedureId <= 0)
-            {
-                <div class="invalid-feedback">
-                    Debe seleccionar un procedimiento específico
-                </div>
-            }
-        </div>
+            </div>
 
-        <!-- Médico tratante condicional según departamento -->
-        <!-- Updated alert message for nursing department -->
-        <div class="col-md-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Enfermería:</strong> Este procedimiento será registrado automáticamente en el departamento de enfermería y asignado al profesional logueado.
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Procedimiento Específico *</label>
+                <select class="form-select @(showValidationErrors && Procedure.SpecificProcedureId <= 0 ? "is-invalid" : "")"
+                        @bind="Procedure.SpecificProcedureId"
+                        disabled="@(selectedTypeOfProcedureId <= 0)">
+                    <option value="0">Seleccione un procedimiento</option>
+                    @* Added null check for filteredProcedures to prevent BuildRenderTree errors *@
+                    @if (filteredProcedures != null)
+                    {
+                        @foreach (var procedure in filteredProcedures)
+                        {
+                            <option value="@procedure.Id">@procedure.Description</option>
+                        }
+                    }
+                </select>
+                @if (showValidationErrors && Procedure.SpecificProcedureId <= 0)
+                {
+                    <div class="invalid-feedback">
+                        Debe seleccionar un procedimiento específico
+                    </div>
+                }
+            </div>
+
+            <!-- Médico tratante condicional según departamento -->
+            <!-- Updated alert message for nursing department -->
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Enfermería:</strong> Este procedimiento será registrado automáticamente en el departamento de enfermería y asignado al profesional logueado.
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label fw-bold">Observaciones</label>
+                <textarea class="form-control"
+                          @bind="Procedure.Observations"
+                          rows="3"
+                          placeholder="Observaciones adicionales sobre el procedimiento..."></textarea>
             </div>
         </div>
 
-        <div class="col-md-12">
-            <label class="form-label fw-bold">Observaciones</label>
-            <textarea class="form-control"
-                      @bind="Procedure.Observations"
-                      rows="3"
-                      placeholder="Observaciones adicionales sobre el procedimiento..."></textarea>
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-secondary" @onclick="OnCancel">
+                <i class="fas fa-times me-2"></i>Cancelar
+            </button>
+            <button type="button" class="btn btn-primary" @onclick="SaveProcedure" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                <i class="fas fa-save me-2"></i>@(Procedure.ProcedureId > 0 ? "Actualizar" : "Guardar")
+            </button>
         </div>
     </div>
-
-    <div class="d-flex justify-content-end gap-2 mt-4">
-        <button type="button" class="btn btn-secondary" @onclick="OnCancel">
-            <i class="fas fa-times me-2"></i>Cancelar
-        </button>
-        <button type="button" class="btn btn-primary" @onclick="SaveProcedure" disabled="@isSaving">
-            @if (isSaving)
-            {
-                <span class="spinner-border spinner-border-sm me-2"></span>
-            }
-            <i class="fas fa-save me-2"></i>@(Procedure.ProcedureId > 0 ? "Actualizar" : "Guardar")
-        </button>
+}
+else
+{
+    @* Added loading state when Procedure is null *@
+    <div class="d-flex justify-content-center p-4">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public MedicalProcedureDTO Procedure { get; set; } = new();
@@ -115,25 +132,22 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        await InitializeProcedureData();
+    }
 
-        if (Procedure.ProcedureId > 0)
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Procedure == null)
         {
-            selectedLocationId = Procedure.LocationId;
-            selectedTypeOfProcedureId = Procedure.TypeOfProcedureId ?? 0;
-            await OnTypeOfProcedureChangedAsync(selectedTypeOfProcedureId);
+            Procedure = new MedicalProcedureDTO();
         }
-        else
-        {
-            var nursingLocation = locations.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
-            if (nursingLocation != null)
-            {
-                selectedLocationId = nursingLocation.Id;
-                Procedure.LocationId = nursingLocation.Id;
-            }
 
-            Procedure.ProcedureDate = DateTime.Now;
-            Procedure.Status = "Realizado"; // Set status to "Realizado" by default
+        if (typesOfProcedures?.Count == 0 || procedures?.Count == 0)
+        {
+            await LoadData();
         }
+
+        await InitializeProcedureData();
     }
 
     private async Task LoadData()
@@ -166,6 +180,91 @@
         }
     }
 
+    private async Task InitializeProcedureData()
+    {
+        try
+        {
+            if (Procedure == null)
+            {
+                Procedure = new MedicalProcedureDTO();
+            }
+
+            // Initialize all properties to prevent null reference exceptions
+            Procedure.Observations ??= "";
+            Procedure.TypeOfProcedureName ??= "";
+            Procedure.SpecificProcedureName ??= "";
+            Procedure.Status ??= "Realizado";
+
+            typesOfProcedures ??= new();
+            procedures ??= new();
+            filteredProcedures ??= new();
+            healthProfessionals ??= new();
+            locations ??= new();
+
+            if (Procedure.ProcedureId > 0)
+            {
+                await JS.InvokeVoidAsync("console.log", "[v0] EDIT MODE - Initializing procedure:", new
+                {
+                    ProcedureId = Procedure.ProcedureId,
+                    TypeOfProcedureId = Procedure.TypeOfProcedureId,
+                    SpecificProcedureId = Procedure.SpecificProcedureId,
+                    TypesCount = typesOfProcedures.Count,
+                    ProceduresCount = procedures.Count
+                });
+
+                selectedLocationId = Procedure.LocationId;
+                selectedTypeOfProcedureId = Procedure.TypeOfProcedureId ?? 0;
+
+                if (selectedTypeOfProcedureId > 0)
+                {
+                    // Filter procedures for the selected type
+                    filteredProcedures = procedures?.Where(p => p.TypeOfProcedureId == selectedTypeOfProcedureId).ToList() ?? new();
+                    await JS.InvokeVoidAsync("console.log", "[v0] EDIT MODE - Filtered procedures:", filteredProcedures.Count);
+
+                    StateHasChanged();
+                }
+
+                if (string.IsNullOrEmpty(Procedure.TypeOfProcedureName) && selectedTypeOfProcedureId > 0)
+                {
+                    var selectedType = typesOfProcedures?.FirstOrDefault(t => t.Id == selectedTypeOfProcedureId);
+                    if (selectedType != null)
+                    {
+                        Procedure.TypeOfProcedureName = selectedType.Name;
+                        await JS.InvokeVoidAsync("console.log", "[v0] EDIT MODE - Set TypeOfProcedureName:", selectedType.Name);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(Procedure.SpecificProcedureName) && Procedure.SpecificProcedureId > 0)
+                {
+                    var selectedProcedure = procedures?.FirstOrDefault(p => p.Id == Procedure.SpecificProcedureId);
+                    if (selectedProcedure != null)
+                    {
+                        Procedure.SpecificProcedureName = selectedProcedure.Description;
+                        await JS.InvokeVoidAsync("console.log", "[v0] EDIT MODE - Set SpecificProcedureName:", selectedProcedure.Description);
+                    }
+                }
+            }
+            else
+            {
+                var nursingLocation = locations?.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
+                if (nursingLocation != null)
+                {
+                    selectedLocationId = nursingLocation.Id;
+                    Procedure.LocationId = nursingLocation.Id;
+                }
+
+                Procedure.ProcedureDate = DateTime.Now;
+                Procedure.Status = "Realizado";
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "[v0] Error initializing procedure data:", ex.Message);
+        }
+    }
+
     private async Task OnTypeOfProcedureChangedAsync(int value)
     {
         selectedTypeOfProcedureId = value;
@@ -185,37 +284,29 @@
 
     private bool IsGeneralMedicineLocation()
     {
-        var location = locations.FirstOrDefault(l => l.Id == selectedLocationId);
+        var location = locations?.FirstOrDefault(l => l.Id == selectedLocationId);
         return location?.Name.Contains("Medicina General", StringComparison.OrdinalIgnoreCase) == true ||
                location?.Name.Contains("Atención Médica", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private bool IsNursingLocation()
     {
-        var location = locations.FirstOrDefault(l => l.Id == selectedLocationId);
+        var location = locations?.FirstOrDefault(l => l.Id == selectedLocationId);
         return location?.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private async Task SaveProcedure()
     {
-        showValidationErrors = true;
-
-        await JS.InvokeVoidAsync("console.log", "[v0] Validation check:", new
+        if (Procedure == null)
         {
-            ProcedureDate = Procedure.ProcedureDate,
-            ProcedureDateValid = Procedure.ProcedureDate != default,
-            SelectedTypeOfProcedureId = selectedTypeOfProcedureId,
-            TypeValid = selectedTypeOfProcedureId > 0,
-            SpecificProcedureId = Procedure.SpecificProcedureId,
-            SpecificProcedureValid = Procedure.SpecificProcedureId > 0,
-            PatientId = Procedure.PatientId,
-            PatientIdValid = Procedure.PatientId > 0
-        });
+            await JS.InvokeVoidAsync("console.error", "[v0] Procedure is null in SaveProcedure");
+            return;
+        }
+
+        showValidationErrors = true;
 
         if (!IsValid())
         {
-            await JS.InvokeVoidAsync("console.error", "[v0] Validation failed");
-
             var errorMessages = new List<string>();
             if (Procedure.ProcedureDate == default)
                 errorMessages.Add("- Debe seleccionar una fecha para el procedimiento");
@@ -223,79 +314,56 @@
                 errorMessages.Add("- Debe seleccionar un tipo de procedimiento");
             if (Procedure.SpecificProcedureId <= 0)
                 errorMessages.Add("- Debe seleccionar un procedimiento específico");
-            if (Procedure.PatientId <= 0)
-                errorMessages.Add("- ID de paciente inválido");
 
             await JS.InvokeVoidAsync("alert", "Por favor complete los siguientes campos:\n" + string.Join("\n", errorMessages));
-            return;
-        }
-
-        if (Procedure.PatientId <= 0)
-        {
-            await JS.InvokeVoidAsync("console.error", "[v0] Invalid PatientId:", Procedure.PatientId);
-            await JS.InvokeVoidAsync("alert", "Error: ID de paciente inválido. Por favor, seleccione un paciente válido.");
             return;
         }
 
         isSaving = true;
         try
         {
-            var nursingLocation = locations.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
+            // Ubicación de enfermería
+            var nursingLocation = locations?.FirstOrDefault(l => l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase));
             if (nursingLocation != null)
             {
                 Procedure.LocationId = nursingLocation.Id;
                 selectedLocationId = nursingLocation.Id;
             }
 
-            await JS.InvokeVoidAsync("console.log", "[v0] PatientId from Procedure:", Procedure.PatientId);
-            await JS.InvokeVoidAsync("console.log", "[v0] CareId from Procedure:", Procedure.CareId);
+            Procedure.TypeOfProcedureId = selectedTypeOfProcedureId;
 
+            // Nombres descriptivos
+            var selectedType = typesOfProcedures?.FirstOrDefault(t => t.Id == selectedTypeOfProcedureId);
+            var selectedProcedure = procedures?.FirstOrDefault(p => p.Id == Procedure.SpecificProcedureId);
+
+            if (selectedType != null)
+                Procedure.TypeOfProcedureName = selectedType.Name;
+
+            if (selectedProcedure != null)
+                Procedure.SpecificProcedureName = selectedProcedure.Description;
+
+            // Profesional
             var currentUser = await AuthorizationService.GetCurrentUserAsync();
-            await JS.InvokeVoidAsync("console.log", "[v0] Current user:", currentUser?.Name);
-
             if (currentUser != null)
             {
-                var currentProfessional = healthProfessionals.FirstOrDefault(hp => hp.HealthProfessionalId == currentUser.PersonId);
-
-                if (currentProfessional == null && !string.IsNullOrEmpty(currentUser.RegistrationNumber))
-                {
-                    currentProfessional = healthProfessionals.FirstOrDefault(hp => hp.RegistrationNumber == currentUser.RegistrationNumber);
-                }
-
-                await JS.InvokeVoidAsync("console.log", "[v0] Current professional found:", currentProfessional?.FullName);
+                var currentProfessional = healthProfessionals?.FirstOrDefault(hp => hp.HealthProfessionalId == currentUser.PersonId)
+                                       ?? healthProfessionals?.FirstOrDefault(hp => hp.RegistrationNumber == currentUser.RegistrationNumber);
 
                 if (currentProfessional != null)
                 {
                     Procedure.HealthProfessionalId = currentProfessional.HealthProfessionalId;
                     Procedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
-                    Procedure.Status = "Realizado";
-                    await JS.InvokeVoidAsync("console.log", "[v0] Nursing procedure - TreatingPhysician assigned, Status: Realizado");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("console.error", "[v0] No se encontró el profesional actual en la lista");
                     Procedure.HealthProfessionalId = currentUser.PersonId ?? 0;
                     Procedure.TreatingPhysicianId = currentUser.PersonId;
-                    Procedure.Status = "Realizado";
                 }
             }
-            else
-            {
-                await JS.InvokeVoidAsync("console.error", "[v0] No se pudo obtener el usuario actual");
-            }
 
-            await JS.InvokeVoidAsync("console.log", "[v0] Procedure to save:", new
-            {
-                Procedure.PatientId,
-                Procedure.CareId,
-                Procedure.SpecificProcedureId,
-                Procedure.HealthProfessionalId,
-                Procedure.TreatingPhysicianId,
-                Procedure.LocationId,
-                Procedure.Status,
-                Procedure.ProcedureDate
-            });
+            Procedure.Status = "Realizado";
 
+            // Notificar al padre
             await OnSaved.InvokeAsync(Procedure);
         }
         catch (Exception ex)
@@ -309,9 +377,11 @@
         }
     }
 
+
     private bool IsValid()
     {
-        return Procedure.ProcedureDate != default &&
+        return Procedure != null &&
+               Procedure.ProcedureDate != default &&
                selectedTypeOfProcedureId > 0 &&
                Procedure.SpecificProcedureId > 0 &&
                Procedure.PatientId > 0;

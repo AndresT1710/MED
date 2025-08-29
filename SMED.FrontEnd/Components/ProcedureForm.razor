@@ -102,8 +102,7 @@
 
         <div class="col-md-12">
             <label class="form-label fw-bold">Observaciones</label>
-            <textarea
-                class="form-control"
+            <textarea class="form-control"
                       @bind="Procedure.Observations"
                       rows="3"
                       placeholder="Observaciones adicionales sobre el procedimiento..."></textarea>
@@ -155,12 +154,23 @@
         else
         {
             Procedure.ProcedureDate = DateTime.Now;
-            Procedure.PatientId = PatientId;
+            if (PatientId > 0)
+            {
+                Procedure.PatientId = PatientId;
+            }
             if (CareId > 0)
             {
                 Procedure.CareId = CareId;
             }
             Procedure.Status = "Pendiente";
+
+            await JS.InvokeVoidAsync("console.log", "[v0] Initialized procedure with:", new
+            {
+                PatientId = Procedure.PatientId,
+                CareId = Procedure.CareId,
+                ParameterPatientId = PatientId,
+                ParameterCareId = CareId
+            });
         }
     }
 
@@ -238,8 +248,12 @@
         try
         {
             Procedure.LocationId = selectedLocationId;
-            Procedure.PatientId = PatientId;
-            if (CareId > 0)
+
+            if (Procedure.PatientId <= 0 && PatientId > 0)
+            {
+                Procedure.PatientId = PatientId;
+            }
+            if (Procedure.CareId <= 0 && CareId > 0)
             {
                 Procedure.CareId = CareId;
             }
@@ -313,11 +327,19 @@
                 Procedure.ProcedureDate
             });
 
+            if (Procedure.PatientId <= 0)
+            {
+                await JS.InvokeVoidAsync("console.error", "[v0] PatientId is still 0, cannot save procedure");
+                await JS.InvokeVoidAsync("alert", "Error: No se pudo obtener el ID del paciente");
+                return;
+            }
+
             await OnSaved.InvokeAsync(Procedure);
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", "[v0] Error saving procedure:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar procedimiento: {ex.Message}");
         }
         finally
         {

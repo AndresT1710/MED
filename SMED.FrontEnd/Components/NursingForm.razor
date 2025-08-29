@@ -12,6 +12,7 @@
 @inject PlaceOfAttentionService PlaceService
 @inject ReasonForConsultationService ReasonForConsultationService
 @inject LocationService LocationService
+@inject AuthorizationService AuthorizationService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -19,8 +20,8 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("patient"))"
-            type="button" role="tab">
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -34,9 +35,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("vitals"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete())">
+                    @onclick="@(() => SetActiveTab("vitals"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-heartbeat me-2"></i>Signos Vitales
                 @if (HasVitalSignsData())
                 {
@@ -47,9 +48,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "services" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("services"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete())">
+                    @onclick="@(() => SetActiveTab("services"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-stethoscope me-2"></i>Servicios
                 @if (serviciosList.Any())
                 {
@@ -60,9 +61,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-            @onclick="@(() => SetActiveTab("procedures"))"
-            type="button" role="tab"
-            disabled="@(!IsPatientTabComplete())">
+                    @onclick="@(() => SetActiveTab("procedures"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
@@ -94,7 +95,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                            OnPatientSelected="HandlePatientSelected" />
+                                             OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -134,7 +135,7 @@
                             <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                @bind="lugarSeleccionada">
+                                        @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -154,10 +155,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                            @bind="motivoConsulta"
-                            rows="3"
-                            placeholder="Describa el motivo principal de la consulta médica..."
-                            maxlength="500"></textarea>
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta médica..."
+                                      maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -169,7 +170,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Profesional responsable *</label>
                             <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
-                            @bind="profesionalSeleccionado">
+                                    @bind="profesionalSeleccionado">
                                 <option value="">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
@@ -251,10 +252,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Peso (kg)</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("peso")"
-                                @bind="pesoInput"
-                                @oninput="@((e) => OnNumericInput(e, "peso"))"
-                                placeholder="70.5" />
+                                       class="@GetVitalSignInputClass("peso")"
+                                       @bind="pesoInput"
+                                       @oninput="@((e) => OnNumericInput(e, "peso"))"
+                                       placeholder="70.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("peso")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -268,10 +269,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Talla (cm)</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("talla")"
-                                @bind="tallaInput"
-                                @oninput="@((e) => OnNumericInput(e, "talla"))"
-                                placeholder="175" />
+                                       class="@GetVitalSignInputClass("talla")"
+                                       @bind="tallaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "talla"))"
+                                       placeholder="175" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("talla")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -285,10 +286,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">IMC</label>
                                 <input type="text"
-                                class="form-control bg-light"
-                                value="@imcCalculado"
-                                readonly
-                                placeholder="Se calcula automáticamente" />
+                                       class="form-control bg-light"
+                                       value="@imcCalculado"
+                                       readonly
+                                       placeholder="Se calcula automáticamente" />
                                 <small class="form-text text-muted">Se calcula automáticamente: Peso / (Talla/100)²</small>
                             </div>
 
@@ -296,10 +297,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Perímetro Abdominal (cm)</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("perimetroAbdominal")"
-                                @bind="perimetroAbdominalInput"
-                                @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
-                                placeholder="85" />
+                                       class="@GetVitalSignInputClass("perimetroAbdominal")"
+                                       @bind="perimetroAbdominalInput"
+                                       @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
+                                       placeholder="85" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("perimetroAbdominal")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -313,11 +314,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Presión Arterial</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("presionArterial")"
-                                @bind="presionArterialInput"
-                                @oninput="OnBloodPressureInput"
-                                placeholder="120/80"
-                                maxlength="7" />
+                                       class="@GetVitalSignInputClass("presionArterial")"
+                                       @bind="presionArterialInput"
+                                       @oninput="OnBloodPressureInput"
+                                       placeholder="120/80"
+                                       maxlength="7" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("presionArterial")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -331,10 +332,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Temperatura (°C)</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("temperatura")"
-                                @bind="temperaturaInput"
-                                @oninput="@((e) => OnNumericInput(e, "temperatura"))"
-                                placeholder="36.5" />
+                                       class="@GetVitalSignInputClass("temperatura")"
+                                       @bind="temperaturaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "temperatura"))"
+                                       placeholder="36.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("temperatura")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -348,10 +349,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Presión Arterial Media</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("pam")"
-                                @bind="pamInput"
-                                @oninput="@((e) => OnNumericInput(e, "pam"))"
-                                placeholder="90" />
+                                       class="@GetVitalSignInputClass("pam")"
+                                       @bind="pamInput"
+                                       @oninput="@((e) => OnNumericInput(e, "pam"))"
+                                       placeholder="90" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("pam")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -365,10 +366,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Frecuencia Cardíaca</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("frecuenciaCardiaca")"
-                                @bind="frecuenciaCardiacaInput"
-                                @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
-                                placeholder="72" />
+                                       class="@GetVitalSignInputClass("frecuenciaCardiaca")"
+                                       @bind="frecuenciaCardiacaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
+                                       placeholder="72" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaCardiaca")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -382,10 +383,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Saturación Oxígeno (%)</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("saturacionOxigeno")"
-                                @bind="saturacionOxigenoInput"
-                                @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
-                                placeholder="98" />
+                                       class="@GetVitalSignInputClass("saturacionOxigeno")"
+                                       @bind="saturacionOxigenoInput"
+                                       @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
+                                       placeholder="98" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("saturacionOxigeno")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -399,10 +400,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Frecuencia Respiratoria</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
-                                @bind="frecuenciaRespiratoriaInput"
-                                @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
-                                placeholder="16" />
+                                       class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
+                                       @bind="frecuenciaRespiratoriaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
+                                       placeholder="16" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaRespiratoria")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -416,10 +417,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Glucosa Capilar</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("glucosaCapilar")"
-                                @bind="glucosaCapilarInput"
-                                @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
-                                placeholder="100" />
+                                       class="@GetVitalSignInputClass("glucosaCapilar")"
+                                       @bind="glucosaCapilarInput"
+                                       @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
+                                       placeholder="100" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("glucosaCapilar")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -433,10 +434,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Hemoglobina</label>
                                 <input type="text"
-                                class="@GetVitalSignInputClass("hemoglobina")"
-                                @bind="hemoglobinaInput"
-                                @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
-                                placeholder="14.5" />
+                                       class="@GetVitalSignInputClass("hemoglobina")"
+                                       @bind="hemoglobinaInput"
+                                       @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
+                                       placeholder="14.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("hemoglobina")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -540,78 +541,158 @@
             </div>
         </div>
 
-        <!-- Procedures Tab -->
+        <!-- Procedures Tab-->
         <div class="tab-pane @(activeTab == "procedures" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
-                        <span class="badge bg-info ms-2">Opcional</span>
-                    </h5>
-                    <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
-                        <i class="fas fa-plus me-1"></i>Agregar Procedimiento
-                    </button>
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
+                            <span class="badge bg-info ms-2">Opcional</span>
+                        </h5>
+                    </div>
                 </div>
+
                 <div class="card-body">
-                    @if (selectedPatientId > 0)
+                    @if (currentMedicalCareId > 0)
                     {
-                        @if (procedimientosList.Any())
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Tipo</th>
-                                            <th>Procedimiento</th>
-                                            <th>Observaciones</th>
-                                            <th width="120">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var procedimiento in procedimientosList)
-                                        {
-                                            <tr>
-                                                <td>@procedimiento.ProcedureDate.ToString("dd/MM/yyyy")</td>
-                                                <td>@procedimiento.TypeOfProcedureName</td>
-                                                <td>@procedimiento.SpecificProcedureName</td>
-                                                <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)" title="Editar">
-                                                        <i class="fas fa-edit">Editar</i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)" title="Eliminar">
-                                                        <i class="fas fa-trash">Eliminar</i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-4">
-                                <i class="fas fa-procedures fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No hay procedimientos agregados</p>
-                                <button class="btn btn-primary" @onclick="AgregarProcedimiento">
-                                    <i class="fas fa-plus me-2"></i>Agregar Primer Procedimiento
-                                </button>
-                            </div>
-                        }
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples procedimientos médicos para esta atención médica.
+                        </div>
+
+                        <EditableTable Title="Procedimientos Médicos"
+                                       ColumnHeaders="@procedureColumnHeaders"
+                                       Rows="@procedureRows"
+                                       RowIds="@procedureRowIds"
+                                       EmptyMessage="No hay procedimientos agregados"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddProcedureRequested"
+                                       OnEditRequested="@OnEditProcedureRequested"
+                                       OnDeleteRequested="@OnDeleteProcedureRequested"
+                                       OnSaveRequested="@OnSaveProcedureRequested"
+                                       IsValidForm="@IsProcedureFormValid">
+                            <EditModalContent>
+                                @if (currentProcedure != null)
+                                {
+                                    <div class="row g-3">
+                                        <!-- Fecha del Procedimiento -->
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Fecha del Procedimiento <span class="text-danger">*</span></label>
+                                            <input type="datetime-local"
+                                                   class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
+                                                   @bind="currentProcedure.ProcedureDate" />
+                                            @if (procedureErrors.ContainsKey("ProcedureDate"))
+                                            {
+                                                <div class="invalid-feedback">@procedureErrors["ProcedureDate"]</div>
+                                            }
+                                        </div>
+
+                                        <!-- Tipo de Procedimiento -->
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Tipo de Procedimiento <span class="text-danger">*</span></label>
+                                            <select class="form-select @(procedureErrors.ContainsKey("TypeOfProcedureId") ? "is-invalid" : "")"
+                                                    @bind:get="selectedTypeOfProcedureId"
+                                                    @bind:set="OnTypeOfProcedureChangedAsync">
+                                                <option value="0">Seleccione un tipo</option>
+                                                @foreach (var type in availableTypesOfProcedures)
+                                                {
+                                                    <option value="@type.Id">@type.Name</option>
+                                                }
+                                            </select>
+                                            @if (procedureErrors.ContainsKey("TypeOfProcedureId"))
+                                            {
+                                                <div class="invalid-feedback">@procedureErrors["TypeOfProcedureId"]</div>
+                                            }
+                                        </div>
+
+                                        <!-- Procedimiento Específico -->
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Procedimiento Específico <span class="text-danger">*</span></label>
+                                            <select class="form-select @(procedureErrors.ContainsKey("SpecificProcedureId") ? "is-invalid" : "")"
+                                                    @bind="currentProcedure.SpecificProcedureId"
+                                                    disabled="@(selectedTypeOfProcedureId <= 0)">
+                                                <option value="0">Seleccione un procedimiento</option>
+                                                @foreach (var procedure in filteredProcedures)
+                                                {
+                                                    <option value="@procedure.Id">@procedure.Description</option>
+                                                }
+                                            </select>
+                                            @if (procedureErrors.ContainsKey("SpecificProcedureId"))
+                                            {
+                                                <div class="invalid-feedback">@procedureErrors["SpecificProcedureId"]</div>
+                                            }
+                                        </div>
+
+                                        <!-- Observaciones -->
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Observaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="currentProcedure.Observations"
+                                                      rows="3"
+                                                      maxlength="1000"
+                                                      placeholder="Observaciones adicionales sobre el procedimiento..."
+                                                      style="resize: vertical; max-height: 150px;"></textarea>
+                                            <small class="form-text text-muted">
+                                                Máximo 1000 caracteres. Restantes: @(1000 - (currentProcedure.Observations?.Length ?? 0))
+                                            </small>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(procedureFormError))
+                                    {
+                                        <div class="alert alert-danger mt-3">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            @procedureFormError
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="mt-2">Cargando datos del procedimiento...</p>
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("services"))">
-                                <i class="fas fa-arrow-left me-2"></i>Volver
+                                <i class="fas fa-arrow-left me-2"></i>Volver a Servicios
                             </button>
-                            <button class="btn btn-success" @onclick="GuardarAtencionMedica" disabled="@isSaving">
-                                @if (isSaving)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
-                                }
-                                <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar") Atención Médica
-                            </button>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" @onclick="OnCancel">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </button>
+                                <button class="btn btn-success" @onclick="GuardarAtencionMedica" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span>
+                                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Guardando...
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>
+                                            <i class="fas fa-save me-2"></i>Guardar Atención Médica
+                                        </span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe completar y guardar los datos básicos del paciente antes de agregar procedimientos.
                         </div>
                     }
                 </div>
@@ -619,7 +700,30 @@
         </div>
     </div>
 </div>
-
+@* ----------------------------
+           Modal para Procedimiento
+           ---------------------------- *@
+@if (showProcedureModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento</h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
+                </div>
+                <div class="modal-body">
+                    @* Usa tu componente ProcedureForm (ya existente) *@
+                    <ProcedureFormNursing Procedure="currentProcedure"
+                                          OnSaved="OnProcedureSaved"
+                                          OnCancel="CerrarModalProcedimiento"
+                                          PatientId="selectedPatientId"
+                                          CareId="currentMedicalCareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
 <!-- Modal para Servicio -->
 @if (showServiceModal)
 {
@@ -636,28 +740,6 @@
                 </div>
                 <div class="modal-body">
                     <ServiceForm Service="currentService" OnSaved="OnServiceSaved" OnCancel="CerrarModalServicio" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Modal para Procedimiento -->
-@if (showProcedureModal)
-{
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-procedures me-2"></i>
-                        @(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
-                </div>
-                <div class="modal-body">
-                    <ProcedureFormNursing Procedure="currentProcedure" OnSaved="OnProcedureSaved" OnCancel="CerrarModalProcedimiento" />
                 </div>
             </div>
         </div>
@@ -723,6 +805,18 @@
     // Listas de servicios y procedimientos
     private List<MedicalServiceDTO> serviciosList = new();
     private List<MedicalProcedureDTO> procedimientosList = new();
+    private int currentMedicalCareId = 0;
+    private List<TypeOfProceduresDTO> availableTypesOfProcedures = new();
+    private Dictionary<string, string> procedureErrors = new();
+    private int? selectedLocationId;
+    private int selectedTypeOfProcedureId = 0;
+    private List<ProceduresDTO> filteredProcedures = new();
+    private List<ProceduresDTO> availableProcedures = new();
+    private List<LocationDTO> availableLocations = new();
+    private string? procedureFormError;
+
+
+
 
     // Para edición
     private VitalSignsDTO? existingVitalSigns;
@@ -730,13 +824,17 @@
 
     // Modales
     private bool showServiceModal = false;
-    private bool showProcedureModal = false;
     private MedicalServiceDTO? currentService;
-    private MedicalProcedureDTO? currentProcedure;
+    private int? createdCareId = null;
 
+    @* Added properties for EditableTable integration *@
+    private List<string> procedureColumnHeaders = new() { "Fecha", "Tipo", "Procedimiento", "Observaciones" };
+    private List<List<string>> procedureRows = new();
+    private List<int> procedureRowIds = new();
 
     //Location
-    private async Task LoadMedicinaGeneralLocationId()
+    //Location
+    private async Task LoadEnfermeriaLocationId()
     {
         try
         {
@@ -744,6 +842,7 @@
             if (locationId.HasValue)
             {
                 enfermerialLocationId = locationId.Value;
+                selectedLocationId = locationId.Value; // ¡IMPORTANTE! Asignar también a selectedLocationId
             }
             else
             {
@@ -752,7 +851,7 @@
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error al cargar la ubicación de Enfermeria: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error al cargar la ubicación de Enfermería: {ex.Message}");
         }
     }
 
@@ -765,7 +864,11 @@
         await LoadTypeOfProcedures();
         await LoadProcedures();
         await LoadLugaresAtencion();
-        LoadMedicinaGeneralLocationId();
+        await LoadEnfermeriaLocationId();
+
+        // CARGAR DATOS DE PROCEDIMIENTOS (AÑADIR ESTO)
+        await LoadAvailableTypesOfProcedures();
+        await LoadAvailableProcedures();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -1082,8 +1185,68 @@
             await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
             return;
         }
+
+        if (activeTab == "patient" && tab != "patient" && createdCareId == null)
+        {
+            await SaveMedicalCareRecord();
+        }
+
+        if ((tab == "procedures" || tab == "services") && createdCareId.HasValue)
+        {
+            currentMedicalCareId = createdCareId.Value;
+            await JS.InvokeVoidAsync("console.log", "[v0] Set currentMedicalCareId to:", currentMedicalCareId);
+        }
+
         activeTab = tab;
         StateHasChanged();
+    }
+
+    private async Task SaveMedicalCareRecord()
+    {
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de continuar.");
+                return;
+            }
+
+            var medicalCareDto = new MedicalCareDTO
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = enfermerialLocationId,
+                    CareDate = DateTime.Now
+                };
+
+            var result = await MedicalCareService.CreateAsync(medicalCareDto);
+            if (!result.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
+                return;
+            }
+
+            createdCareId = result.Data.CareId;
+            currentMedicalCareId = createdCareId.Value;
+            await JS.InvokeVoidAsync("console.log", "[v0] Medical care record created with ID:", createdCareId);
+
+            // Save reason for consultation immediately
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                    {
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = createdCareId.Value
+                    };
+                await ReasonForConsultationService.CreateAsync(reasonDto);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "[v0] Error creating medical care record:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {ex.Message}");
+        }
     }
 
     private async Task LoadExistingData()
@@ -1094,6 +1257,8 @@
         profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
         lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
+        currentMedicalCareId = MedicalCare.CareId; // ¡IMPORTANTE! Asignar el CareId existente
+        createdCareId = MedicalCare.CareId; // ¡IMPORTANTE! Asignar también createdCareId
 
         var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
         existingReasonForConsultation = existingReasons?.FirstOrDefault();
@@ -1139,6 +1304,9 @@
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
+        // ¡IMPORTANTE! Actualizar la tabla de procedimientos
+        await UpdateProcedureTableData();
+
         StateHasChanged();
     }
 
@@ -1161,6 +1329,7 @@
     {
         tiposProcedimientos = await TypeOfProceduresService.GetAllAsync();
     }
+
 
     private async Task LoadProcedures()
     {
@@ -1253,81 +1422,471 @@
         StateHasChanged();
     }
 
-    // Métodos para procedimientos
-    private async Task AgregarProcedimiento()
+    //Procedimientos
+
+    private async Task LoadAvailableTypesOfProcedures()
     {
-        if (!IsPatientTabComplete())
+        try
         {
-            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar procedimientos.");
+            availableTypesOfProcedures = await TypeOfProceduresService.GetAllAsync() ?? new();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading types of procedures:", ex.Message);
+        }
+    }
+
+    private async Task LoadAvailableProcedures()
+    {
+        try
+        {
+            availableProcedures = await ProceduresService.GetAllAsync() ?? new();
+            await JS.InvokeVoidAsync("console.log", $"Loaded {availableProcedures.Count} available procedures");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading procedures:", ex.Message);
+        }
+    }
+
+    private bool IsNursingLocation()
+    {
+        var location = availableLocations.FirstOrDefault(l => l.Id == selectedLocationId);
+        return location?.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private bool IsProcedureFormValid()
+    {
+        return ValidateProcedureForm();
+    }
+
+    private async Task OnTypeOfProcedureChangedAsync(int value)
+    {
+        selectedTypeOfProcedureId = value;
+
+        // Actualizar filteredProcedures basado en el tipo seleccionado
+        if (selectedTypeOfProcedureId > 0)
+        {
+            filteredProcedures = availableProcedures
+                .Where(p => p.TypeOfProcedureId == selectedTypeOfProcedureId)
+                .ToList();
+        }
+        else
+        {
+            filteredProcedures = new List<ProceduresDTO>();
+        }
+
+        // Resetear el procedimiento específico solo si estamos en modo agregar
+        if (currentProcedure != null && currentProcedure.ProcedureId == 0)
+        {
+            currentProcedure.SpecificProcedureId = 0;
+        }
+
+        StateHasChanged();
+    }
+
+    private bool ValidateProcedureForm()
+    {
+        procedureErrors.Clear();
+        procedureFormError = "";
+
+        // Debug logging
+        JS.InvokeVoidAsync("console.log", "Validating procedure form:");
+        JS.InvokeVoidAsync("console.log", $"ProcedureDate: {currentProcedure?.ProcedureDate}");
+        JS.InvokeVoidAsync("console.log", $"TypeOfProcedureId: {selectedTypeOfProcedureId}");
+        JS.InvokeVoidAsync("console.log", $"SpecificProcedureId: {currentProcedure?.SpecificProcedureId}");
+        JS.InvokeVoidAsync("console.log", $"LocationId: {currentProcedure?.LocationId}"); // Para verificar
+
+        if (currentProcedure?.ProcedureDate == default)
+        {
+            procedureErrors["ProcedureDate"] = "Debe seleccionar una fecha";
+        }
+
+        if (selectedTypeOfProcedureId <= 0)
+        {
+            procedureErrors["TypeOfProcedureId"] = "Debe seleccionar un tipo de procedimiento";
+        }
+
+        if (currentProcedure?.SpecificProcedureId <= 0)
+        {
+            procedureErrors["SpecificProcedureId"] = "Debe seleccionar un procedimiento específico";
+        }
+
+        JS.InvokeVoidAsync("console.log", $"Validation errors: {procedureErrors.Count}");
+        return procedureErrors.Count == 0;
+    }
+
+    @* Updated procedure management methods to work with EditableTable *@
+
+    private async Task LoadProcedureData()
+    {
+        try
+        {
+            if (availableTypesOfProcedures.Count == 0)
+            {
+                availableTypesOfProcedures = await TypeOfProceduresService.GetAllAsync() ?? new();
+            }
+
+            if (availableProcedures.Count == 0)
+            {
+                availableProcedures = await ProceduresService.GetAllAsync() ?? new();
+            }
+
+            if (availableLocations.Count == 0)
+            {
+                availableLocations = await LocationService.GetAllAsync() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading procedure data:", ex.Message);
+        }
+    }
+
+    private void ClearProcedureForm()
+    {
+        currentProcedure = null;
+        selectedTypeOfProcedureId = 0;
+        filteredProcedures = new List<ProceduresDTO>();
+        procedureErrors.Clear();
+        procedureFormError = "";
+    }
+
+    private async Task OnAddProcedureRequested()
+    {
+        if (createdCareId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente.");
             return;
         }
+
+        ClearProcedureForm();
 
         currentProcedure = new MedicalProcedureDTO
             {
                 ProcedureId = 0,
                 PatientId = selectedPatientId,
+                CareId = createdCareId.Value,
                 ProcedureDate = DateTime.Now,
-                HealthProfessionalId = int.Parse(profesionalSeleccionado)
+                Status = "Realizado",
+                SpecificProcedureId = 0,
+                LocationId = enfermerialLocationId
             };
-        showProcedureModal = true;
+
         StateHasChanged();
     }
 
-    private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
-    {
-        await JS.InvokeVoidAsync("console.log", $"=== EDITANDO PROCEDIMIENTO ===");
-        await JS.InvokeVoidAsync("console.log", $"ID: {procedimiento.ProcedureId}");
-        currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = procedimiento.ProcedureId,
-                PatientId = procedimiento.PatientId,
-                HealthProfessionalId = procedimiento.HealthProfessionalId,
-                CareId = procedimiento.CareId,
-                ProcedureDate = procedimiento.ProcedureDate,
-                SpecificProcedureId = procedimiento.SpecificProcedureId,
-                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
-                TreatingPhysicianId = procedimiento.TreatingPhysicianId,
-                Observations = procedimiento.Observations,
-                TypeOfProcedureName = procedimiento.TypeOfProcedureName,
-                SpecificProcedureName = procedimiento.SpecificProcedureName
-            };
-        showProcedureModal = true;
-        StateHasChanged();
-    }
 
-    private async Task EliminarProcedimiento(MedicalProcedureDTO procedimiento)
+    private async Task OnEditProcedureRequested(int procedureId)
     {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
-        if (confirmed)
+        try
         {
-            procedimientosList.Remove(procedimiento);
-            StateHasChanged();
+            // Limpiar el estado actual primero
+            currentProcedure = null;
+            selectedTypeOfProcedureId = 0;
+            filteredProcedures = new List<ProceduresDTO>();
+
+            // Forzar una actualización de UI para limpiar cualquier estado previo
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(50); // Pequeño delay para asegurar que la UI se actualice
+
+            var procedure = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+            if (procedure != null)
+            {
+                await JS.InvokeVoidAsync("console.log", "Editing procedure:", procedure);
+                await JS.InvokeVoidAsync("console.log", $"TypeOfProcedureId: {procedure.TypeOfProcedureId}");
+                await JS.InvokeVoidAsync("console.log", $"SpecificProcedureId: {procedure.SpecificProcedureId}");
+
+                currentProcedure = new MedicalProcedureDTO
+                    {
+                        ProcedureId = procedure.ProcedureId,
+                        PatientId = procedure.PatientId,
+                        CareId = procedure.CareId,
+                        ProcedureDate = procedure.ProcedureDate,
+                        HealthProfessionalId = procedure.HealthProfessionalId,
+                        TypeOfProcedureId = procedure.TypeOfProcedureId,
+                        SpecificProcedureId = procedure.SpecificProcedureId,
+                        LocationId = procedure.LocationId,
+                        Observations = procedure.Observations,
+                        Status = procedure.Status
+                    };
+
+                selectedTypeOfProcedureId = procedure.TypeOfProcedureId ?? 0;
+
+                await JS.InvokeVoidAsync("console.log", $"Selected TypeOfProcedureId: {selectedTypeOfProcedureId}");
+
+                // Cargar datos si es necesario
+                if (availableProcedures.Count == 0)
+                {
+                    await LoadProcedureData();
+                }
+
+                // Actualizar filteredProcedures basado en el tipo seleccionado
+                if (selectedTypeOfProcedureId > 0)
+                {
+                    filteredProcedures = availableProcedures
+                        .Where(p => p.TypeOfProcedureId == selectedTypeOfProcedureId)
+                        .ToList();
+
+                    await JS.InvokeVoidAsync("console.log", $"Filtered procedures count: {filteredProcedures.Count}");
+                    foreach (var proc in filteredProcedures)
+                    {
+                        await JS.InvokeVoidAsync("console.log", $"Available procedure: {proc.Description} (ID: {proc.Id})");
+                    }
+                }
+                else
+                {
+                    filteredProcedures = new List<ProceduresDTO>();
+                }
+
+                // Forzar la actualización de la UI después de que todos los datos estén listos
+                await InvokeAsync(StateHasChanged);
+            }
+
+            procedureErrors.Clear();
+            procedureFormError = "";
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error in OnEditProcedureRequested:", ex.Message);
+            procedureFormError = $"Error al cargar el procedimiento: {ex.Message}";
         }
     }
 
-    private void OnProcedureSaved(MedicalProcedureDTO procedimiento)
+    private async Task OnDeleteProcedureRequested(int procedureId)
     {
-        var existing = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedimiento.ProcedureId);
-        if (existing != null)
+        var procedure = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+        if (procedure == null) return;
+
+        try
         {
-            var index = procedimientosList.IndexOf(existing);
-            procedimientosList[index] = procedimiento;
+            var deleteResult = await MedicalProcedureService.DeleteAsync(procedure.ProcedureId);
+            if (deleteResult.Success)
+            {
+                procedimientosList.Remove(procedure);
+                ActualizarTablaProcedimientos();
+                await JS.InvokeVoidAsync("alert", "Procedimiento eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar procedimiento: {ex.Message}");
+        }
+    }
+
+    private void ActualizarTablaProcedimientos()
+    {
+        procedureRows = procedimientosList
+            .Select(p => new List<string>
+                        {
+                p?.ProcedureDate.ToShortDateString() ?? "",
+                p?.TypeOfProcedureName ?? "Sin especificar",
+                p?.SpecificProcedureName ?? "Sin especificar",
+                p?.Observations ?? ""
+                        }).ToList();
+
+        procedureRowIds = procedimientosList.Select(p => p.ProcedureId).ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task OnSaveProcedureRequested()
+    {
+        if (!ValidateProcedureForm())
+        {
+            return;
+        }
+
+        try
+        {
+            // Asegurar IDs correctos
+            currentProcedure.PatientId = selectedPatientId;
+            currentProcedure.CareId = currentMedicalCareId;
+
+            // Siempre asignar el LocationId de Enfermería
+            currentProcedure.LocationId = enfermerialLocationId;
+
+            // Asignar profesional y estado según departamento
+            await AssignProfessionalAndStatus();
+
+            if (currentProcedure.ProcedureId > 0)
+            {
+                var updateResult = await MedicalProcedureService.UpdateAsync(currentProcedure);
+                if (!updateResult.Success)
+                {
+                    procedureFormError = $"Error al actualizar: {updateResult.Error}";
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalProcedureService.CreateAsync(currentProcedure);
+                if (!createResult.Success)
+                {
+                    procedureFormError = $"Error al crear: {createResult.Error}";
+                    return;
+                }
+            }
+
+            // Recargar todos los procedimientos desde la base de datos
+            await CargarProcedimientos();
+
+            await JS.InvokeVoidAsync("alert", "Procedimiento guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            procedureFormError = $"Error al guardar procedimiento: {ex.Message}";
+            await JS.InvokeVoidAsync("console.error", "Error saving procedure:", ex.Message);
+        }
+    }
+
+    private async Task AssignProfessionalAndStatus()
+    {
+        var currentUser = await AuthorizationService.GetCurrentUserAsync();
+        if (currentUser != null)
+        {
+            var currentProfessional = profesionales.FirstOrDefault(hp =>
+                hp.HealthProfessionalId == currentUser.PersonId ||
+                hp.RegistrationNumber == currentUser.RegistrationNumber);
+
+            if (currentProfessional != null)
+            {
+                // El enfermero es tanto el profesional de salud como el "médico tratante"
+                currentProcedure.HealthProfessionalId = currentProfessional.HealthProfessionalId;
+                currentProcedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
+                currentProcedure.Status = "Realizado";
+
+                // ¡IMPORTANTE! Asignar el LocationId de Enfermería
+                currentProcedure.LocationId = enfermerialLocationId;
+            }
         }
         else
         {
-            procedimientosList.Add(procedimiento);
+            // Si no hay usuario, igual asignar el LocationId de Enfermería
+            currentProcedure.LocationId = enfermerialLocationId;
+            currentProcedure.Status = "Realizado";
         }
-        CerrarModalProcedimiento();
+    }
+
+    private bool IsValidProcedureForm()
+    {
+        if (currentProcedure == null) return false;
+
+        return currentProcedure.ProcedureDate != default &&
+               currentProcedure.SpecificProcedureId > 0 &&
+               currentProcedure.PatientId > 0;
+    }
+
+    private void OnCancelProcedure()
+    {
+        currentProcedure = null;
         StateHasChanged();
+    }
+
+
+    @* Removed old methods and added new method to update table data *@
+    private async Task UpdateProcedureTableData()
+    {
+        procedureRows.Clear();
+        procedureRowIds.Clear();
+
+        // Debug logging
+        await JS.InvokeVoidAsync("console.log", "Updating procedure table data:");
+        await JS.InvokeVoidAsync("console.log", $"Number of procedures: {procedimientosList.Count}");
+
+        foreach (var procedimiento in procedimientosList)
+        {
+            var row = new List<string>
+        {
+            procedimiento.ProcedureDate.ToString("dd/MM/yyyy HH:mm"),
+            procedimiento.TypeOfProcedureName ?? "Sin especificar",
+            procedimiento.SpecificProcedureName ?? "Sin especificar",
+            procedimiento.Observations ?? ""
+        };
+
+            procedureRows.Add(row);
+            procedureRowIds.Add(procedimiento.ProcedureId);
+
+            // Debug logging for each procedure
+            await JS.InvokeVoidAsync("console.log", $"Procedure: {procedimiento.SpecificProcedureName}, Date: {procedimiento.ProcedureDate}");
+        }
+
+        await JS.InvokeVoidAsync("console.log", $"Total rows: {procedureRows.Count}, Total ids: {procedureRowIds.Count}");
+
+        StateHasChanged();
+    }
+
+    private async Task CargarProcedimientos()
+    {
+        if (createdCareId.HasValue)
+        {
+            var existingProcedures = await MedicalProcedureService.GetAllAsync();
+            procedimientosList = existingProcedures?.Where(p => p.CareId == createdCareId.Value).ToList() ?? new List<MedicalProcedureDTO>();
+            await UpdateProcedureTableData();
+        }
+    }
+
+    private MedicalProcedureDTO? currentProcedure;
+    private bool showProcedureModal = false;
+
+    private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
+    {
+        if (procedimiento == null) return;
+
+        try
+        {
+            // Aseguramos IDs correctos
+            procedimiento.PatientId = selectedPatientId;
+            procedimiento.CareId = currentMedicalCareId;
+
+            if (procedimiento.ProcedureId > 0)
+            {
+                var updateResult = await MedicalProcedureService.UpdateAsync(procedimiento);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalProcedureService.CreateAsync(procedimiento);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            // Recargar la tabla desde la base de datos
+            await CargarProcedimientos();
+
+            // Cerrar modal y limpiar
+            CerrarModalProcedimiento();
+
+            // Notificar al usuario
+            await JS.InvokeVoidAsync("alert", "Procedimiento guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error al guardar procedimiento:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar procedimiento: {ex.Message}");
+        }
     }
 
     private void CerrarModalProcedimiento()
     {
-        showProcedureModal = false;
         currentProcedure = null;
+        showProcedureModal = false;
         StateHasChanged();
     }
+
 
     private async Task GuardarAtencionMedica()
     {
@@ -1343,9 +1902,13 @@
             }
 
             MedicalCareDTO medicalCareResult;
-            bool isCreatingNew = !isEditMode || MedicalCare == null || MedicalCare.CareId == 0;
 
-            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            if (createdCareId != null)
+            {
+                // Medical care already created, just get the existing record
+                medicalCareResult = new MedicalCareDTO { CareId = createdCareId.Value };
+            }
+            else if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
                 MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
                 MedicalCare.LocationId = enfermerialLocationId;
@@ -1361,25 +1924,12 @@
             }
             else
             {
-                var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                        LocationId = enfermerialLocationId,
-                        CareDate = DateTime.Now
-                    };
-
-                var result = await MedicalCareService.CreateAsync(medicalCareDto);
-                if (!result.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención médica: {result.Error}");
-                    return;
-                }
-                medicalCareResult = result.Data;
+                // Create new medical care record
+                await SaveMedicalCareRecord();
+                medicalCareResult = new MedicalCareDTO { CareId = createdCareId.Value };
             }
 
-            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            if (!string.IsNullOrWhiteSpace(motivoConsulta) && createdCareId == null)
             {
                 var reasonDto = new ReasonForConsultationDTO
                     {
@@ -1398,6 +1948,7 @@
                 }
             }
 
+            // ... existing code for vital signs ...
             if (HasVitalSignsData())
             {
                 var vitalSignsDto = new VitalSignsDTO
@@ -1455,7 +2006,7 @@
             }
 
             await OnSaved.InvokeAsync(medicalCareResult);
-            string successMessage = isCreatingNew
+            string successMessage = createdCareId == null
                 ? "Atención médica de enfermería creada exitosamente"
                 : "Atención médica de enfermería actualizada exitosamente";
             await JS.InvokeVoidAsync("alert", successMessage);

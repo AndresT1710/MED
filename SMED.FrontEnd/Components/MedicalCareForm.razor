@@ -27,6 +27,7 @@
 @inject IndicationsService IndicationsService
 @inject LocationService LocationService
 @inject MedicalReferralService MedicalReferralService
+@inject AuthorizationService AuthorizationService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -159,6 +160,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user me-2"></i>Selección de Paciente
                         <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <!-- Badge para mostrar el área fija -->
                         <span class="badge bg-success ms-2">
                             <i class="fas fa-hospital me-1"></i>Área: Medicina General
                         </span>
@@ -170,7 +172,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                                             OnPatientSelected="HandlePatientSelected" />
+                            OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -194,6 +196,7 @@
                             Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
                         </div>
 
+                        <!-- Información del área fija -->
                         <div class="alert alert-info mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-info-circle me-2"></i>
@@ -206,10 +209,10 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                        @bind="lugarSeleccionada">
+                                @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -225,6 +228,7 @@
                             </div>
                         </div>
 
+                        <!-- Motivo de Consulta -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
@@ -242,9 +246,9 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Profesional responsable *</label>
-                            <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
-                                    @bind="profesionalSeleccionado">
-                                <option value="">Seleccione un profesional</option>
+                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                    @bind="selectedHealthProfessionalId">
+                                <option value="0">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
                                     <option value="@profesional.HealthProfessionalId">
@@ -252,7 +256,7 @@
                                     </option>
                                 }
                             </select>
-                            @if (showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado))
+                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
                             {
                                 <div class="invalid-feedback">
                                     Debe seleccionar un profesional responsable
@@ -594,69 +598,152 @@
             </div>
         </div>
 
-        <!-- Procedures Tab -->
+        <!-- Procedures Tab-->
         <div class="tab-pane @(activeTab == "procedures" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
-                        <span class="badge bg-info ms-2">Opcional</span>
-                    </h5>
-                    @if (currentMedicalCareId > 0)
-                    {
-                        <button class="btn btn-sm btn-primary" @onclick="AgregarProcedimiento">
-                            <i class="fas fa-plus me-1"></i>Agregar Procedimiento
-                        </button>
-                    }
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-procedures me-2"></i>Procedimientos Médicos
+                            <span class="badge bg-info ms-2">Opcional</span>
+                        </h5>
+                    </div>
                 </div>
+
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        @if (procedimientosList.Any())
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Tipo</th>
-                                            <th>Procedimiento</th>
-                                            <th>Observaciones</th>
-                                            <th width="120">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var procedimiento in procedimientosList)
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples procedimientos médicos para esta atención médica.
+                        </div>
+
+                        <EditableTable Title="Procedimientos Médicos"
+                                       ColumnHeaders="@procedureColumnHeaders"
+                                       Rows="@procedureRows"
+                                       RowIds="@procedureRowIds"
+                                       EmptyMessage="No hay procedimientos agregados"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddProcedureRequested"
+                                       OnEditRequested="@OnEditProcedureRequested"
+                                       OnDeleteRequested="@OnDeleteProcedureRequested"
+                                       OnSaveRequested="@OnSaveProcedureRequested"
+                                       IsValidForm="@IsProcedureFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <!-- Departamento -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Departamento <span class="text-danger">*</span></label>
+                                        <select class="form-select @(procedureErrors.ContainsKey("LocationId") ? "is-invalid" : "")"
+                                                @bind:get="selectedLocationId"
+                                                @bind:set="OnDepartmentChangedAsync">
+                                            <option value="">Seleccione un departamento</option>
+                                            @foreach (var location in availableLocations)
+                                            {
+                                                <option value="@location.Id">@location.Name</option>
+                                            }
+                                        </select>
+                                        @if (procedureErrors.ContainsKey("LocationId"))
                                         {
-                                            <tr>
-                                                <td>@procedimiento.ProcedureDate.ToString("dd/MM/yyyy")</td>
-                                                <td>@procedimiento.TypeOfProcedureName</td>
-                                                <td>@procedimiento.SpecificProcedureName</td>
-                                                <td>@(string.IsNullOrEmpty(procedimiento.Observations) ? "N/A" : (procedimiento.Observations.Length > 50 ? procedimiento.Observations.Substring(0, 50) + "..." : procedimiento.Observations))</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarProcedimiento(procedimiento)" title="Editar">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarProcedimiento(procedimiento)" title="Eliminar">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
+                                            <div class="invalid-feedback">@procedureErrors["LocationId"]</div>
                                         }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-4">
-                                <i class="fas fa-procedures fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No hay procedimientos agregados</p>
-                                <button class="btn btn-primary" @onclick="AgregarProcedimiento">
-                                    <i class="fas fa-plus me-2"></i>Agregar Primer Procedimiento
-                                </button>
-                            </div>
-                        }
+                                    </div>
+
+                                    <!-- Fecha del Procedimiento -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Fecha del Procedimiento <span class="text-danger">*</span></label>
+                                        <input type="datetime-local"
+                                               class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
+                                               @bind="currentProcedure.ProcedureDate" />
+                                        @if (procedureErrors.ContainsKey("ProcedureDate"))
+                                        {
+                                            <div class="invalid-feedback">@procedureErrors["ProcedureDate"]</div>
+                                        }
+                                    </div>
+
+                                    <!-- Tipo de Procedimiento -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Tipo de Procedimiento <span class="text-danger">*</span></label>
+                                        <select class="form-select @(procedureErrors.ContainsKey("TypeOfProcedureId") ? "is-invalid" : "")"
+                                                @bind:get="selectedTypeOfProcedureId"
+                                                @bind:set="OnTypeOfProcedureChangedAsync">
+                                            <option value="0">Seleccione un tipo</option>
+                                            @foreach (var type in availableTypesOfProcedures)
+                                            {
+                                                <option value="@type.Id">@type.Name</option>
+                                            }
+                                        </select>
+                                        @if (procedureErrors.ContainsKey("TypeOfProcedureId"))
+                                        {
+                                            <div class="invalid-feedback">@procedureErrors["TypeOfProcedureId"]</div>
+                                        }
+                                    </div>
+
+                                    <!-- Procedimiento Específico -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Procedimiento Específico <span class="text-danger">*</span></label>
+                                        <select class="form-select @(procedureErrors.ContainsKey("SpecificProcedureId") ? "is-invalid" : "")"
+                                                @bind="currentProcedure.SpecificProcedureId"
+                                                disabled="@(selectedTypeOfProcedureId <= 0)">
+                                            <option value="0">Seleccione un procedimiento</option>
+                                            @foreach (var procedure in filteredProcedures)
+                                            {
+                                                <option value="@procedure.Id">@procedure.Description</option>
+                                            }
+                                        </select>
+                                        @if (procedureErrors.ContainsKey("SpecificProcedureId"))
+                                        {
+                                            <div class="invalid-feedback">@procedureErrors["SpecificProcedureId"]</div>
+                                        }
+                                    </div>
+
+                                    <!-- Información del departamento -->
+                                    @if (selectedLocationId.HasValue && IsGeneralMedicineLocation())
+                                    {
+                                        <div class="col-md-12">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <strong>Medicina General:</strong> Se asignará automáticamente como médico tratante al profesional logueado.
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (selectedLocationId.HasValue && IsNursingLocation())
+                                    {
+                                        <div class="col-md-12">
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <strong>Enfermería:</strong> Este procedimiento será asignado al departamento de enfermería y deberá ser completado por el enfermero disponible.
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <!-- Observaciones -->
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Observaciones</label>
+                                        <textarea class="form-control"
+                                                  @bind="currentProcedure.Observations"
+                                                  rows="3"
+                                                  maxlength="1000"
+                                                  placeholder="Observaciones adicionales sobre el procedimiento..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentProcedure.Observations?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(procedureFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @procedureFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("additional-data"))">
@@ -671,12 +758,39 @@
                     {
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                            Debe completar y guardar los datos básicos del paciente antes de agregar procedimientos.
                         </div>
                     }
                 </div>
             </div>
         </div>
+
+        @* ----------------------------
+   Modal para Procedimiento
+   ---------------------------- *@
+        @if (showProcedureModal)
+        {
+            <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento</h5>
+                            <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
+                        </div>
+                        <div class="modal-body">
+                            @* Usa tu componente ProcedureForm (ya existente) *@
+                            <ProcedureForm Procedure="currentProcedure"
+                                           OnSaved="OnProcedureSaved"
+                                           OnCancel="CerrarModalProcedimiento"
+                                           PatientId="selectedPatientId"
+                                           CareId="currentMedicalCareId" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+
 
         <!-- Diagnóstico Tab -->
         <div class="tab-pane @(activeTab == "diagnosis" ? "show active" : "")" role="tabpanel">
@@ -1153,28 +1267,6 @@
     </div>
 </div>
 
-<!-- Modal para Procedimiento -->
-@if (showProcedureModal)
-{
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-procedures me-2"></i>
-                        @(currentProcedure?.ProcedureId > 0 ? "Editar" : "Agregar") Procedimiento
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CerrarModalProcedimiento"></button>
-                </div>
-                <div class="modal-body">
-                    <ProcedureForm Procedure="currentProcedure" OnSaved="OnProcedureSaved" OnCancel="CerrarModalProcedimiento" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 @* Modal para gestión de tratamientos *@
 @if (showTreatmentModal)
 {
@@ -1333,6 +1425,7 @@
     private string lugarSeleccionada = "";
     private bool showValidationErrors = false;
     private bool isSaving = false;
+    private int selectedHealthProfessionalId = 0;
 
     // ID de la atención médica actual
     private int currentMedicalCareId = 0;
@@ -1344,16 +1437,91 @@
     private List<ProceduresDTO> todosProcedimientos = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
 
-    // Listas de procedimientos
+    // Listas y datos de procedimientos
+    private MedicalProcedureDTO? currentProcedure;
     private List<MedicalProcedureDTO> procedimientosList = new();
+    private List<List<string>> procedureRows = new();
+    private List<int> procedureRowIds = new();
+    private string? procedureFormError;
+    private List<string> procedureColumnHeaders = new() { "Fecha", "Tipo", "Procedimiento", "Observaciones" };
+    private bool showProcedureModal = false;
+
+
+    //Variables para Procedures
+    private bool hasUnsavedProcedureData;
+
+    private Task HandleEdit(int procedureId)
+    {
+        currentProcedure = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleDelete(int procedureId)
+    {
+        var procedimiento = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+        if (procedimiento == null) return;
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"¿Eliminar {procedimiento.SpecificProcedureName}?");
+        if (!confirmed) return;
+
+        var deleteResult = await MedicalProcedureService.DeleteAsync(procedimiento.ProcedureId);
+        if (deleteResult.Success)
+        {
+            procedimientosList.Remove(procedimiento);
+            ActualizarTablaProcedimientos();
+            await JS.InvokeVoidAsync("alert", "Procedimiento eliminado exitosamente");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+        }
+    }
+
+    private async Task HandleSave(object item)
+    {
+        var procedimiento = item as MedicalProcedureDTO;
+        if (procedimiento == null) return;
+
+        try
+        {
+            // Forzar los IDs correctos
+            procedimiento.PatientId = selectedPatientId;
+            procedimiento.CareId = currentMedicalCareId;
+
+            if (procedimiento.ProcedureId > 0)
+            {
+                var updateResult = await MedicalProcedureService.UpdateAsync(procedimiento);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalProcedureService.CreateAsync(procedimiento);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await CargarProcedimientos();
+            await JS.InvokeVoidAsync("alert", "Procedimiento guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error al guardar procedimiento:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar procedimiento: {ex.Message}");
+        }
+    }
+
 
     // Para edición
     private VitalSignsDTO? existingVitalSigns;
     private ReasonForConsultationDTO? existingReasonForConsultation;
 
-    // Modales
-    private bool showProcedureModal = false;
-    private MedicalProcedureDTO? currentProcedure;
 
     // Variables para Aparatos y Sistemas
     private List<SystemsDevicesDTO> availableSystems = new();
@@ -1552,7 +1720,7 @@
     {
         return selectedPatientId > 0 &&
                !string.IsNullOrEmpty(lugarSeleccionada) &&
-               !string.IsNullOrEmpty(profesionalSeleccionado) &&
+               selectedHealthProfessionalId > 0 && // Cambiar esta validación
                !string.IsNullOrWhiteSpace(motivoConsulta);
     }
 
@@ -1708,7 +1876,7 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
+        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId;
         lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
 
@@ -1782,20 +1950,176 @@
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
         clinicalHistoryId = paciente.ClinicalHistoryId;
-        selectedPatientId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
         selectedHistoryNumber = paciente.MedicalRecordNumber;
-
         if (selectedPatientId > 0)
         {
             showValidationErrors = false;
         }
-
         StateHasChanged();
         return Task.CompletedTask;
     }
 
 
+
     @* Added referral functionality methods *@
+    // ============================================================================
+    // MÉTODOS PARA PROCEDIMIENTOS - PERMITE MÚLTIPLES REGISTROS
+    // ============================================================================
+    // Crear nuevo procedimiento
+    private async Task AgregarProcedimiento()
+    {
+        if (currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente.");
+            return;
+        }
+
+        // Crear nuevo procedimiento limpio
+        currentProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = 0,
+                PatientId = selectedPatientId,
+                CareId = currentMedicalCareId,
+                ProcedureDate = DateTime.Now,
+                HealthProfessionalId = int.TryParse(profesionalSeleccionado, out var id) ? id : 0
+            };
+
+        showProcedureModal = true;
+        StateHasChanged();
+    }
+
+    // Editar procedimiento existente
+    private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        if (procedimiento == null) return;
+
+        // Crear clone para no modificar la fila directamente en la tabla
+        currentProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = procedimiento.ProcedureId,
+                PatientId = procedimiento.PatientId,
+                CareId = procedimiento.CareId,
+                ProcedureDate = procedimiento.ProcedureDate,
+                HealthProfessionalId = procedimiento.HealthProfessionalId,
+                TypeOfProcedureId = procedimiento.TypeOfProcedureId,
+                SpecificProcedureId = procedimiento.SpecificProcedureId,
+                Observations = procedimiento.Observations
+            };
+
+        showProcedureModal = true;
+        StateHasChanged();
+    }
+
+    // Eliminar procedimiento
+    private async Task EliminarProcedimiento(MedicalProcedureDTO procedimiento)
+    {
+        if (procedimiento == null) return;
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
+
+        if (!confirmed) return;
+
+        try
+        {
+            var deleteResult = await MedicalProcedureService.DeleteAsync(procedimiento.ProcedureId);
+            if (deleteResult.Success)
+            {
+                procedimientosList.Remove(procedimiento);
+                ActualizarTablaProcedimientos();
+                await JS.InvokeVoidAsync("alert", "Procedimiento eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error al eliminar procedimiento:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar procedimiento: {ex.Message}");
+        }
+    }
+
+    private void ActualizarTablaProcedimientos()
+    {
+        procedureRows = procedimientosList
+            .Select(p => new List<string>
+                    {
+                p?.ProcedureDate.ToShortDateString() ?? "",
+                p?.TypeOfProcedureName ?? "Sin especificar",
+                p?.SpecificProcedureName ?? "Sin especificar",
+                p?.Observations ?? ""
+                    }).ToList();
+
+        procedureRowIds = procedimientosList.Select(p => p.ProcedureId).ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task CargarProcedimientos()
+    {
+        var existingProcedures = await MedicalProcedureService.GetAllAsync();
+        procedimientosList = existingProcedures?
+            .Where(p => p.CareId == currentMedicalCareId)
+            .ToList() ?? new();
+
+        ActualizarTablaProcedimientos();
+    }
+
+    private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
+    {
+        if (procedimiento == null) return;
+
+        try
+        {
+            // Aseguramos IDs correctos
+            procedimiento.PatientId = selectedPatientId;
+            procedimiento.CareId = currentMedicalCareId;
+
+            if (procedimiento.ProcedureId > 0)
+            {
+                var updateResult = await MedicalProcedureService.UpdateAsync(procedimiento);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalProcedureService.CreateAsync(procedimiento);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            // Recargar la tabla
+            await CargarProcedimientos();
+
+            // Cerrar modal y limpiar
+            CerrarModalProcedimiento();
+
+            // Notificar al usuario
+            await JS.InvokeVoidAsync("alert", "Procedimiento guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error al guardar procedimiento:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar procedimiento: {ex.Message}");
+        }
+    }
+
+    private void CerrarModalProcedimiento()
+    {
+        currentProcedure = null;
+        showProcedureModal = false;
+        StateHasChanged();
+    }
+
     // ============================================================================
     // MÉTODOS PARA DERIVACIÓN - PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
@@ -1846,12 +2170,12 @@
     private async Task OnAddReferralRequested()
     {
         currentReferral = new MedicalReferralDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            DateOfReferral = DateTime.Now,
-            Description = ""
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                DateOfReferral = DateTime.Now,
+                Description = ""
+            };
 
         selectedSpecialtyId = 0;
         referralErrors.Clear();
@@ -1864,12 +2188,12 @@
         if (existing != null)
         {
             currentReferral = new MedicalReferralDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                DateOfReferral = existing.DateOfReferral,
-                Description = existing.Description ?? ""
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    DateOfReferral = existing.DateOfReferral,
+                    Description = existing.Description ?? ""
+                };
 
             // Para edición, necesitamos obtener el LocationId de la atención médica
             var medicalCare = await MedicalCareService.GetByIdAsync(existing.MedicalCareId);
@@ -2037,13 +2361,20 @@
                 return;
             }
 
+            // Validar que el profesional seleccionado sea válido
+            if (selectedHealthProfessionalId <= 0 || !profesionales.Any(p => p.HealthProfessionalId == selectedHealthProfessionalId))
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un profesional válido.");
+                return;
+            }
+
             MedicalCareDTO medicalCareResult;
 
             if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
                 // Actualizar atención médica existente
                 MedicalCare.LocationId = medicinaGeneralLocationId;
-                MedicalCare.HealthProfessionalId = int.Parse(profesionalSeleccionado);
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId; // Usar el ID directamente
                 MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
 
                 var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
@@ -2060,13 +2391,13 @@
             {
                 // Crear nueva atención médica
                 var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
-                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                    LocationId = medicinaGeneralLocationId,
-                    CareDate = DateTime.Now
-                };
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = selectedHealthProfessionalId, // Usar el ID directamente
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = medicinaGeneralLocationId,
+                        CareDate = DateTime.Now
+                    };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -2077,8 +2408,6 @@
 
                 medicalCareResult = result.Data;
                 currentMedicalCareId = medicalCareResult.CareId;
-
-                // Cambiar a modo edición después de crear
                 isEditMode = true;
                 MedicalCare = medicalCareResult;
             }
@@ -2087,11 +2416,11 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                {
-                    Id = existingReasonForConsultation?.Id ?? 0,
-                    Description = motivoConsulta.Trim(),
-                    MedicalCareId = currentMedicalCareId
-                };
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
+                    };
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
@@ -2191,11 +2520,11 @@
             {
                 // Crear nuevo
                 var newAdditionalData = new AdditionalDataDTO
-                {
-                    AdditionalDataId = 0,
-                    Observacion = additionalDataContent,
-                    MedicalCareId = currentMedicalCareId
-                };
+                    {
+                        AdditionalDataId = 0,
+                        Observacion = additionalDataContent,
+                        MedicalCareId = currentMedicalCareId
+                    };
 
                 var createResult = await AdditionalDataService.CreateAsync(newAdditionalData);
                 if (createResult.Success && createResult.Data != null)
@@ -2209,135 +2538,6 @@
             await JS.InvokeVoidAsync("alert", $"Error al guardar datos adicionales: {ex.Message}");
         }
     }
-
-    // Métodos para procedimientos
-    private async Task AgregarProcedimiento()
-    {
-        if (currentMedicalCareId == 0)
-        {
-            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente.");
-            return;
-        }
-
-        currentProcedure = new MedicalProcedureDTO
-        {
-            ProcedureId = 0,
-            PatientId = selectedPatientId,
-            CareId = currentMedicalCareId,
-            ProcedureDate = DateTime.Now,
-            HealthProfessionalId = int.Parse(profesionalSeleccionado)
-        };
-
-        showProcedureModal = true;
-        StateHasChanged();
-    }
-
-    private async Task EditarProcedimiento(MedicalProcedureDTO procedimiento)
-    {
-        currentProcedure = new MedicalProcedureDTO
-        {
-            ProcedureId = procedimiento.ProcedureId,
-            PatientId = procedimiento.PatientId,
-            HealthProfessionalId = procedimiento.HealthProfessionalId,
-            CareId = procedimiento.CareId,
-            ProcedureDate = procedimiento.ProcedureDate,
-            SpecificProcedureId = procedimiento.SpecificProcedureId,
-            TypeOfProcedureId = procedimiento.TypeOfProcedureId,
-            TreatingPhysicianId = procedimiento.TreatingPhysicianId,
-            Observations = procedimiento.Observations,
-            TypeOfProcedureName = procedimiento.TypeOfProcedureName,
-            SpecificProcedureName = procedimiento.SpecificProcedureName
-        };
-
-        showProcedureModal = true;
-        StateHasChanged();
-    }
-
-    private async Task EliminarProcedimiento(MedicalProcedureDTO procedimiento)
-    {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Está seguro de eliminar el procedimiento {procedimiento.SpecificProcedureName}?");
-
-        if (confirmed)
-        {
-            procedimientosList.Remove(procedimiento);
-            StateHasChanged();
-        }
-    }
-
-    private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
-    {
-        try
-        {
-            await JS.InvokeVoidAsync("console.log", "[v0] Saving procedure to database:", procedimiento);
-
-            if (currentMedicalCareId > 0)
-            {
-                procedimiento.CareId = currentMedicalCareId;
-            }
-
-            // Asegurar que tenga el PatientId correcto
-            if (selectedPatientId > 0)
-            {
-                procedimiento.PatientId = selectedPatientId;
-            }
-            else if (MedicalCare != null && MedicalCare.PatientId > 0)
-            {
-                procedimiento.PatientId = MedicalCare.PatientId;
-            }
-
-            await JS.InvokeVoidAsync("console.log", "[v0] Procedure data before save - CareId:", procedimiento.CareId, "PatientId:", procedimiento.PatientId);
-
-            if (procedimiento.ProcedureId > 0)
-            {
-                // Actualizar procedimiento existente
-                var updateResult = await MedicalProcedureService.UpdateAsync(procedimiento);
-                if (!updateResult.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al actualizar el procedimiento: {updateResult.Error}");
-                    return;
-                }
-            }
-            else
-            {
-                // Crear nuevo procedimiento
-                var createResult = await MedicalProcedureService.CreateAsync(procedimiento);
-                if (!createResult.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al guardar el procedimiento: {createResult.Error}");
-                    return;
-                }
-            }
-
-            var existing = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedimiento.ProcedureId);
-            if (existing != null)
-            {
-                var index = procedimientosList.IndexOf(existing);
-                procedimientosList[index] = procedimiento;
-            }
-            else
-            {
-                procedimientosList.Add(procedimiento);
-            }
-
-            await JS.InvokeVoidAsync("console.log", "[v0] Procedure saved successfully:", procedimiento.ProcedureId);
-            CerrarModalProcedimiento();
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", "[v0] Error saving procedure:", ex.Message);
-            await JS.InvokeVoidAsync("alert", $"Error al guardar el procedimiento: {ex.Message}");
-        }
-    }
-
-    private void CerrarModalProcedimiento()
-    {
-        showProcedureModal = false;
-        currentProcedure = null;
-        StateHasChanged();
-    }
-
     // ============================================================================
     // MÉTODOS PARA APARATOS Y SISTEMAS - AHORA PERMITE MÚLTIPLES REGISTROS
     // ============================================================================
@@ -2371,13 +2571,13 @@
     private async Task OnAddSystemRequested()
     {
         currentSystem = new ReviewSystemDevicesDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            SystemsDevicesId = 0,
-            State = "",
-            Observations = ""
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                SystemsDevicesId = 0,
+                State = "",
+                Observations = ""
+            };
 
         systemErrors.Clear();
         systemFormError = "";
@@ -2389,13 +2589,13 @@
         if (existing != null)
         {
             currentSystem = new ReviewSystemDevicesDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                SystemsDevicesId = existing.SystemsDevicesId,
-                State = existing.State ?? "",
-                Observations = existing.Observations ?? ""
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    SystemsDevicesId = existing.SystemsDevicesId,
+                    State = existing.State ?? "",
+                    Observations = existing.Observations ?? ""
+                };
         }
 
         systemErrors.Clear();
@@ -2577,13 +2777,13 @@
     private async Task OnAddPhysicalExamRequested()
     {
         currentPhysicalExam = new PhysicalExamDTO
-        {
-            PhysicalExamId = 0,
-            MedicalCareId = currentMedicalCareId,
-            RegionId = 0,
-            PathologicalEvidenceId = 0,
-            Observation = ""
-        };
+            {
+                PhysicalExamId = 0,
+                MedicalCareId = currentMedicalCareId,
+                RegionId = 0,
+                PathologicalEvidenceId = 0,
+                Observation = ""
+            };
 
         physicalExamErrors.Clear();
         physicalExamFormError = "";
@@ -2595,13 +2795,13 @@
         if (existing != null)
         {
             currentPhysicalExam = new PhysicalExamDTO
-            {
-                PhysicalExamId = existing.PhysicalExamId,
-                MedicalCareId = existing.MedicalCareId,
-                RegionId = existing.RegionId,
-                PathologicalEvidenceId = existing.PathologicalEvidenceId,
-                Observation = existing.Observation ?? ""
-            };
+                {
+                    PhysicalExamId = existing.PhysicalExamId,
+                    MedicalCareId = existing.MedicalCareId,
+                    RegionId = existing.RegionId,
+                    PathologicalEvidenceId = existing.PathologicalEvidenceId,
+                    Observation = existing.Observation ?? ""
+                };
         }
 
         physicalExamErrors.Clear();
@@ -2788,15 +2988,15 @@
     private async Task OnAddDiagnosisRequested()
     {
         currentDiagnosis = new MedicalDiagnosisDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            Cie10 = "",
-            Denomination = "",
-            DiagnosticTypeId = 0,
-            Recurrence = "",
-            DiagnosisMotivation = ""
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                Cie10 = "",
+                Denomination = "",
+                DiagnosticTypeId = 0,
+                Recurrence = "",
+                DiagnosisMotivation = ""
+            };
 
         diagnosisErrors.Clear();
         diagnosisFormError = "";
@@ -2809,16 +3009,16 @@
         if (existing != null)
         {
             currentDiagnosis = new MedicalDiagnosisDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                Cie10 = existing.Cie10 ?? "",
-                Denomination = existing.Denomination ?? "",
-                DiagnosticTypeId = existing.DiagnosticTypeId,
-                Recurrence = existing.Recurrence ?? "",
-                DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
-                DiseaseId = existing.DiseaseId
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    Cie10 = existing.Cie10 ?? "",
+                    Denomination = existing.Denomination ?? "",
+                    DiagnosticTypeId = existing.DiagnosticTypeId,
+                    Recurrence = existing.Recurrence ?? "",
+                    DiagnosisMotivation = existing.DiagnosisMotivation ?? "",
+                    DiseaseId = existing.DiseaseId
+                };
 
             isUnidentifiedCie10 = existing.Cie10 == "No Identificado";
         }
@@ -3027,12 +3227,12 @@
     private async Task OnAddEvolutionRequested()
     {
         currentEvolution = new EvolutionDTO
-        {
-            Id = 0,
-            MedicalCareId = currentMedicalCareId,
-            Description = "",
-            Percentage = 0
-        };
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                Description = "",
+                Percentage = 0
+            };
 
         evolutionErrors.Clear();
         evolutionFormError = "";
@@ -3044,12 +3244,12 @@
         if (existing != null)
         {
             currentEvolution = new EvolutionDTO
-            {
-                Id = existing.Id,
-                MedicalCareId = existing.MedicalCareId,
-                Description = existing.Description ?? "",
-                Percentage = existing.Percentage
-            };
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    Description = existing.Description ?? "",
+                    Percentage = existing.Percentage
+                };
         }
 
         evolutionErrors.Clear();
@@ -3308,11 +3508,11 @@
             {
                 // Crear nuevo
                 var newNonPharmacological = new NonPharmacologicalTreatmentDTO
-                {
-                    Id = 0,
-                    MedicalDiagnosisId = selectedDiagnosisForTreatment.Id,
-                    Description = nonPharmacologicalContent,
-                };
+                    {
+                        Id = 0,
+                        MedicalDiagnosisId = selectedDiagnosisForTreatment.Id,
+                        Description = nonPharmacologicalContent,
+                    };
 
                 var createResult = await NonPharmacologicalTreatmentService.CreateAsync(newNonPharmacological);
                 if (createResult.Success && createResult.Data != null)
@@ -3416,15 +3616,15 @@
     private void OnAddPharmacologicalRequested()
     {
         currentPharmacological = new PharmacologicalTreatmentDTO
-        {
-            Id = 0,
-            MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0,
-            Dose = 1,
-            Frequency = "",
-            Duration = "",
-            ViaAdmission = "",
-            MedicineId = 0
-        };
+            {
+                Id = 0,
+                MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0,
+                Dose = 1,
+                Frequency = "",
+                Duration = "",
+                ViaAdmission = "",
+                MedicineId = 0
+            };
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
     }
@@ -3435,16 +3635,16 @@
         if (pharma != null)
         {
             currentPharmacological = new PharmacologicalTreatmentDTO
-            {
-                Id = pharma.Id,
-                MedicalDiagnosisId = pharma.MedicalDiagnosisId,
-                Description = pharma.Description,
-                Dose = pharma.Dose,
-                Frequency = pharma.Frequency,
-                Duration = pharma.Duration,
-                ViaAdmission = pharma.ViaAdmission,
-                MedicineId = pharma.MedicineId
-            };
+                {
+                    Id = pharma.Id,
+                    MedicalDiagnosisId = pharma.MedicalDiagnosisId,
+                    Description = pharma.Description,
+                    Dose = pharma.Dose,
+                    Frequency = pharma.Frequency,
+                    Duration = pharma.Duration,
+                    ViaAdmission = pharma.ViaAdmission,
+                    MedicineId = pharma.MedicineId
+                };
         }
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
@@ -3479,7 +3679,6 @@
             if (!ValidatePharmacologicalForm())
                 return;
 
-            // ✅ Asegurar que tenemos el MedicalDiagnosisId correcto
             if (currentPharmacological.MedicalDiagnosisId <= 0)
             {
                 currentPharmacological.MedicalDiagnosisId = selectedDiagnosisForTreatment?.Id ?? 0;
@@ -3571,5 +3770,269 @@
                !string.IsNullOrWhiteSpace(currentPharmacological.Frequency) &&
                !string.IsNullOrWhiteSpace(currentPharmacological.Duration) &&
                !string.IsNullOrWhiteSpace(currentPharmacological.ViaAdmission);
+    }
+    private Dictionary<string, string> procedureErrors = new();
+    private int? selectedLocationId;
+    private int selectedTypeOfProcedureId = 0;
+    private List<ProceduresDTO> filteredProcedures = new();
+    private List<TypeOfProceduresDTO> availableTypesOfProcedures = new();
+    private List<ProceduresDTO> availableProcedures = new();
+
+    // private bool showProcedureModal = false;
+
+    private async Task OnAddProcedureRequested()
+    {
+        currentProcedure = new MedicalProcedureDTO
+            {
+                ProcedureId = 0,
+                PatientId = selectedPatientId,
+                CareId = currentMedicalCareId,
+                ProcedureDate = DateTime.Now,
+                Status = "Pendiente"
+            };
+
+        selectedLocationId = null;
+        selectedTypeOfProcedureId = 0;
+        filteredProcedures.Clear();
+        procedureErrors.Clear();
+        procedureFormError = "";
+
+        await LoadProcedureData();
+    }
+
+    private async Task OnEditProcedureRequested(int procedureId)
+    {
+        var procedure = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+        if (procedure != null)
+        {
+            currentProcedure = new MedicalProcedureDTO
+                {
+                    ProcedureId = procedure.ProcedureId,
+                    PatientId = procedure.PatientId,
+                    CareId = procedure.CareId,
+                    ProcedureDate = procedure.ProcedureDate,
+                    HealthProfessionalId = procedure.HealthProfessionalId,
+                    TypeOfProcedureId = procedure.TypeOfProcedureId,
+                    SpecificProcedureId = procedure.SpecificProcedureId,
+                    LocationId = procedure.LocationId,
+                    Observations = procedure.Observations,
+                    Status = procedure.Status
+                };
+
+            selectedLocationId = procedure.LocationId;
+            selectedTypeOfProcedureId = procedure.TypeOfProcedureId ?? 0;
+
+            await LoadProcedureData();
+            await OnTypeOfProcedureChangedAsync(selectedTypeOfProcedureId);
+        }
+
+        procedureErrors.Clear();
+        procedureFormError = "";
+    }
+
+    private async Task OnDeleteProcedureRequested(int procedureId)
+    {
+        var procedure = procedimientosList.FirstOrDefault(p => p.ProcedureId == procedureId);
+        if (procedure == null) return;
+
+        try
+        {
+            var deleteResult = await MedicalProcedureService.DeleteAsync(procedure.ProcedureId);
+            if (deleteResult.Success)
+            {
+                procedimientosList.Remove(procedure);
+                ActualizarTablaProcedimientos();
+                await JS.InvokeVoidAsync("alert", "Procedimiento eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar procedimiento: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveProcedureRequested()
+    {
+        if (!ValidateProcedureForm())
+        {
+            return;
+        }
+
+        try
+        {
+            // Asegurar IDs correctos
+            currentProcedure.PatientId = selectedPatientId;
+            currentProcedure.CareId = currentMedicalCareId;
+            currentProcedure.LocationId = selectedLocationId;
+
+            // Asignar profesional y estado según departamento
+            await AssignProfessionalAndStatus();
+
+            if (currentProcedure.ProcedureId > 0)
+            {
+                var updateResult = await MedicalProcedureService.UpdateAsync(currentProcedure);
+                if (!updateResult.Success)
+                {
+                    procedureFormError = $"Error al actualizar: {updateResult.Error}";
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalProcedureService.CreateAsync(currentProcedure);
+                if (!createResult.Success)
+                {
+                    procedureFormError = $"Error al crear: {createResult.Error}";
+                    return;
+                }
+            }
+
+            await CargarProcedimientos();
+            await JS.InvokeVoidAsync("alert", "Procedimiento guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            procedureFormError = $"Error al guardar procedimiento: {ex.Message}";
+            await JS.InvokeVoidAsync("console.error", "Error saving procedure:", ex.Message);
+        }
+    }
+
+    private bool IsProcedureFormValid()
+    {
+        return ValidateProcedureForm();
+    }
+
+    private bool ValidateProcedureForm()
+    {
+        procedureErrors.Clear();
+        procedureFormError = "";
+
+        if (!selectedLocationId.HasValue)
+        {
+            procedureErrors["LocationId"] = "Debe seleccionar un departamento";
+        }
+
+        if (currentProcedure.ProcedureDate == default)
+        {
+            procedureErrors["ProcedureDate"] = "Debe seleccionar una fecha";
+        }
+
+        if (selectedTypeOfProcedureId <= 0)
+        {
+            procedureErrors["TypeOfProcedureId"] = "Debe seleccionar un tipo de procedimiento";
+        }
+
+        if (currentProcedure.SpecificProcedureId <= 0)
+        {
+            procedureErrors["SpecificProcedureId"] = "Debe seleccionar un procedimiento específico";
+        }
+
+        return procedureErrors.Count == 0;
+    }
+
+    private async Task LoadProcedureData()
+    {
+        try
+        {
+            if (availableTypesOfProcedures.Count == 0)
+            {
+                availableTypesOfProcedures = await TypeOfProceduresService.GetAllAsync() ?? new();
+            }
+
+            if (availableProcedures.Count == 0)
+            {
+                availableProcedures = await ProceduresService.GetAllAsync() ?? new();
+            }
+
+            if (availableLocations.Count == 0)
+            {
+                availableLocations = await LocationService.GetAllAsync() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading procedure data:", ex.Message);
+        }
+    }
+
+    private async Task OnTypeOfProcedureChangedAsync(int value)
+    {
+        selectedTypeOfProcedureId = value;
+        filteredProcedures = availableProcedures
+            .Where(p => p.TypeOfProcedureId == selectedTypeOfProcedureId)
+            .ToList();
+
+        // Solo resetear si estás en modo "agregar"
+        if (currentProcedure.ProcedureId == 0)
+        {
+            currentProcedure.SpecificProcedureId = 0;
+        }
+
+        StateHasChanged();
+    }
+
+
+    private async Task OnDepartmentChangedAsync(int? value)
+    {
+        selectedLocationId = value;
+        StateHasChanged();
+    }
+
+    private bool IsGeneralMedicineLocation()
+    {
+        var location = availableLocations.FirstOrDefault(l => l.Id == selectedLocationId);
+        return location?.Name.Contains("Medicina General", StringComparison.OrdinalIgnoreCase) == true ||
+               location?.Name.Contains("Atención Médica", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private bool IsNursingLocation()
+    {
+        var location = availableLocations.FirstOrDefault(l => l.Id == selectedLocationId);
+        return location?.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private async Task AssignProfessionalAndStatus()
+    {
+        // Si ya hay un profesional asignado (seleccionado por el usuario), no sobrescribir
+        if (currentProcedure.HealthProfessionalId > 0)
+        {
+            return;
+        }
+
+        var currentUser = await AuthorizationService.GetCurrentUserAsync();
+        if (currentUser != null)
+        {
+            var currentProfessional = profesionales.FirstOrDefault(hp => hp.HealthProfessionalId == currentUser.PersonId);
+
+            if (currentProfessional == null && !string.IsNullOrEmpty(currentUser.RegistrationNumber))
+            {
+                currentProfessional = profesionales.FirstOrDefault(hp => hp.RegistrationNumber == currentUser.RegistrationNumber);
+            }
+
+            if (currentProfessional != null)
+            {
+                currentProcedure.HealthProfessionalId = currentProfessional.HealthProfessionalId;
+
+                if (IsGeneralMedicineLocation())
+                {
+                    currentProcedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
+                    currentProcedure.Status = "Realizado";
+                }
+                else if (IsNursingLocation())
+                {
+                    currentProcedure.TreatingPhysicianId = null;
+                    currentProcedure.Status = "Pendiente";
+                }
+                else
+                {
+                    currentProcedure.TreatingPhysicianId = currentProfessional.HealthProfessionalId;
+                    currentProcedure.Status = "Realizado";
+                }
+            }
+        }
     }
 }

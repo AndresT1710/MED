@@ -58,12 +58,13 @@
                                 </span>
                                 <input type="date"
                                        class="form-control"
-                                       @bind="selectedDate" />
+                                       value="@selectedDateString"
+                                       @onchange="@OnDateChanged" />
                                 <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
                                     <i class="fas fa-times"></i> Limpiar
                                 </button>
                             </div>
-                            <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+                            <small class="text-muted">Seleccione una fecha para ver los procedimientos de ese día</small>
                         </div>
                     </div>
                     <!-- Búsqueda por paciente usando PersonSearchComponent -->
@@ -234,22 +235,30 @@
     private int pendingProceduresCount = 0;
 
     // Filtros
-    private DateTime? _selectedDate;
     private int? _selectedPlaceOfAttentionId;
     private string quickSearchTerm = string.Empty;
     private string searchMessage = string.Empty;
     private bool showNoMedicalCareAlert = false;
     private bool hasActiveFilters = false;
     private int totalMedicalCareCount = 0;
+    private DateTime? selectedDate = null;
+    private string selectedDateString = string.Empty;
 
-    private DateTime? selectedDate
+
+    private async void OnDateChanged(ChangeEventArgs e)
     {
-        get => _selectedDate;
-        set
+        selectedDateString = e.Value?.ToString() ?? string.Empty;
+
+        if (DateTime.TryParse(selectedDateString, out DateTime date))
         {
-            _selectedDate = value;
-            HandleDateFilter();
+            selectedDate = date;
         }
+        else
+        {
+            selectedDate = null;
+        }
+
+        await ApplyFilters();
     }
 
     private int? selectedPlaceOfAttentionId
@@ -298,17 +307,26 @@
     {
         try
         {
-            var result = await MedicalCareService.GetNursingCareAsync();
-            allMedicalCareList = result ?? new List<MedicalCareDTO>();
+            List<MedicalCareDTO> result;
 
-            if (selectedPlaceOfAttentionId.HasValue || selectedDate.HasValue)
+            // Si hay filtros de fecha o lugar, usar el método filtrado
+            if (selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue)
             {
-                var filteredResult = await MedicalCareService.GetByPlaceOfAttentionAndDateAsync(selectedPlaceOfAttentionId, selectedDate);
-                allMedicalCareList = filteredResult ?? new List<MedicalCareDTO>();
+                result = await MedicalCareService.GetByPlaceOfAttentionAndDateAsync(
+                    selectedPlaceOfAttentionId,
+                    selectedDate);
+            }
+            else
+            {
+                // Si no hay filtros, cargar todos los datos de enfermería
+                result = await MedicalCareService.GetNursingCareAsync();
             }
 
+            allMedicalCareList = result ?? new List<MedicalCareDTO>();
             totalMedicalCareCount = allMedicalCareList.Count;
-            ApplyFilters();
+
+            // Aplicar filtros locales después de cargar
+            await ApplyLocalFilters();
         }
         catch (Exception ex)
         {
@@ -318,14 +336,11 @@
         }
     }
 
-    private void ApplyFilters()
+    private async Task ApplyLocalFilters()
     {
         filteredMedicalCareList = allMedicalCareList.ToList();
-        hasActiveFilters = false;
-        showNoMedicalCareAlert = false;
 
-        hasActiveFilters = selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue || selectedPerson != null;
-
+        // Aplicar solo filtros locales (paciente y búsqueda rápida)
         if (selectedPerson != null)
         {
             filteredMedicalCareList = filteredMedicalCareList
@@ -340,8 +355,9 @@
             filteredMedicalCareList = filteredMedicalCareList
                 .Where(mc => mc.CareId == careId)
                 .ToList();
-            hasActiveFilters = true;
         }
+
+        hasActiveFilters = selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue || selectedPerson != null || !string.IsNullOrWhiteSpace(quickSearchTerm);
 
         if (hasActiveFilters && !filteredMedicalCareList.Any())
         {
@@ -349,6 +365,55 @@
         }
 
         UpdateTableData();
+        StateHasChanged();
+    }
+
+    private async Task ApplyFilters()
+    {
+        try
+        {
+            // Si tenemos filtros de fecha o lugar, recargar datos del servidor
+            if (selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue)
+            {
+                await LoadNursingMedicalCareData(); // Recargar datos filtrados
+            }
+
+            // Aplicar filtros locales
+            filteredMedicalCareList = allMedicalCareList.ToList();
+            hasActiveFilters = false;
+            showNoMedicalCareAlert = false;
+
+            hasActiveFilters = selectedDate.HasValue || selectedPlaceOfAttentionId.HasValue || selectedPerson != null || !string.IsNullOrWhiteSpace(quickSearchTerm);
+
+            // Filtrar por paciente (filtro local)
+            if (selectedPerson != null)
+            {
+                filteredMedicalCareList = filteredMedicalCareList
+                    .Where(mc => mc.NamePatient != null &&
+                                 mc.NamePatient.Contains(selectedPerson.FirstName, StringComparison.OrdinalIgnoreCase) &&
+                                 mc.NamePatient.Contains(selectedPerson.LastName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // Búsqueda rápida por ID (filtro local)
+            if (!string.IsNullOrWhiteSpace(quickSearchTerm) && int.TryParse(quickSearchTerm, out int careId))
+            {
+                filteredMedicalCareList = filteredMedicalCareList
+                    .Where(mc => mc.CareId == careId)
+                    .ToList();
+            }
+
+            if (hasActiveFilters && !filteredMedicalCareList.Any())
+            {
+                SetNoResultsMessage();
+            }
+
+            UpdateTableData();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error in ApplyFilters: {ex.Message}");
+        }
     }
 
     private void SetNoResultsMessage()
@@ -533,12 +598,6 @@
         showNoMedicalCareAlert = false;
     }
 
-    private async Task HandleDateFilter()
-    {
-        await LoadNursingMedicalCareData();
-        await InvokeAsync(StateHasChanged);
-    }
-
     private async Task HandlePlaceFilter()
     {
         await LoadNursingMedicalCareData();
@@ -561,24 +620,24 @@
 
     private async Task ClearDateFilter()
     {
+        selectedDateString = string.Empty;
         selectedDate = null;
         await LoadNursingMedicalCareData();
-        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        selectedDateString = string.Empty;
+        selectedDate = null;
+        selectedPlaceOfAttentionId = null;
+        selectedPerson = null;
+        quickSearchTerm = string.Empty;
+        await LoadNursingMedicalCareData();
     }
 
     private async Task ClearPlaceFilter()
     {
         selectedPlaceOfAttentionId = null;
-        await LoadNursingMedicalCareData();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task ClearAllFilters()
-    {
-        selectedDate = null;
-        selectedPlaceOfAttentionId = null;
-        selectedPerson = null;
-        quickSearchTerm = string.Empty;
         await LoadNursingMedicalCareData();
         await InvokeAsync(StateHasChanged);
     }

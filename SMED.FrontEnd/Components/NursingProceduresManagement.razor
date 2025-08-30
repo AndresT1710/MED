@@ -5,11 +5,57 @@
 @inject AuthorizationService AuthorizationService
 @inject IJSRuntime JS
 
+<!-- Filtros de búsqueda mejorados -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+        </h5>
+    </div>
+    <div class="card-body">
+        <!-- Filtro por fecha y lugar de atención -->
+        <div class="row mb-3">
+            <!-- Filtro por fecha -->
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Filtrar por fecha</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-calendar"></i>
+                    </span>
+                    <input type="date"
+                           class="form-control"
+                           value="@selectedDateString"
+                           @onchange="@OnDateChanged" />
+                    <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+                <small class="text-muted">Seleccione una fecha para ver los procedimientos de ese día</small>
+            </div>
+        </div>
+        <!-- Búsqueda por paciente usando PersonSearchComponent -->
+        <div class="row">
+            <div class="col-12">
+                <label class="form-label fw-bold">Buscar por paciente</label>
+                <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                       OnPersonSelected="HandlePersonSelected"
+                                       OnPersonCleared="HandlePersonCleared" />
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-procedures me-2"></i>Procedimientos de Enfermería
+                @if (selectedDate.HasValue || selectedPerson != null)
+                {
+                    <span class="badge bg-info ms-2">
+                        <i class="fas fa-filter me-1"></i>Filtrado
+                    </span>
+                }
             </h5>
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="statusFilter" id="todos"
@@ -44,11 +90,43 @@
             <div class="text-center py-4">
                 <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
                 <h6 class="text-muted">No hay procedimientos @GetStatusText()</h6>
-                <p class="text-muted">Los procedimientos creados para enfermería aparecerán aquí.</p>
+                <p class="text-muted">
+                    @if (selectedDate.HasValue || selectedPerson != null)
+                    {
+                        <span>Con los filtros aplicados.</span>
+                    }
+                    else
+                    {
+                        <span>Los procedimientos creados para enfermería aparecerán aquí.</span>
+                    }
+                </p>
+                @if (selectedDate.HasValue || selectedPerson != null)
+                {
+                    <button class="btn btn-outline-primary btn-sm mt-2" @onclick="ClearAllFilters">
+                        <i class="fas fa-times me-1"></i>Limpiar todos los filtros
+                    </button>
+                }
             </div>
         }
         else
         {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <small class="text-muted">
+                    Mostrando @filteredProcedures.Count procedimiento(s)
+                    @if (selectedDate.HasValue)
+                    {
+                        <span>del @selectedDate.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                    @if (selectedPerson != null)
+                    {
+                        <span>para @selectedPerson.FirstName @selectedPerson.LastName</span>
+                    }
+                </small>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
+                    <i class="fas fa-times me-1"></i>Limpiar filtros
+                </button>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
@@ -228,6 +306,35 @@
     private int pendingCount = 0;
     private int completedCount = 0;
 
+    // Nuevas variables para filtros
+    private PersonDTO selectedPerson = null;
+    private string selectedDateString = string.Empty;
+    private DateTime? selectedDate = null;
+
+    //Filtros de Fechas
+    private async void OnDateChanged(ChangeEventArgs e)
+    {
+        selectedDateString = e.Value?.ToString() ?? string.Empty;
+
+        if (DateTime.TryParse(selectedDateString, out DateTime date))
+        {
+            selectedDate = date;
+        }
+        else
+        {
+            selectedDate = null;
+        }
+
+        await ApplyFilters();
+    }
+
+    private async void ClearDateFilter()
+    {
+        selectedDateString = string.Empty;
+        selectedDate = null;
+        await ApplyFilters();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadNursingProcedures();
@@ -242,18 +349,13 @@
 
             // Trae todos los procedimientos de "Enfermería"
             var result = await MedicalProcedureService.GetByLocationAsync(1);
-            allProcedures = result ?? new List<MedicalProcedureDTO>();
+            allProcedures = result?.OrderByDescending(p => p.ProcedureDate).ToList()
+                          ?? new List<MedicalProcedureDTO>();
 
             await JS.InvokeVoidAsync("console.log", "Loaded procedures:", allProcedures.Count);
-            if (allProcedures.Any())
-            {
-                var firstProcedure = allProcedures.First();
-                await JS.InvokeVoidAsync("console.log", "First procedure PatientName:", firstProcedure.PatientName ?? "NULL");
-                await JS.InvokeVoidAsync("console.log", "First procedure PatientId:", firstProcedure.PatientId);
-            }
 
             UpdateCounts();
-            FilterByStatus(selectedStatus);
+            ApplyFilters(); // Aplicar filtros después de cargar
         }
         catch (Exception ex)
         {
@@ -270,26 +372,72 @@
 
     private void UpdateCounts()
     {
-        // Usar ToLower para que coincida con los estados del backend
         pendingCount = allProcedures.Count(p => p.Status?.Trim().ToLower() == "pendiente");
         completedCount = allProcedures.Count(p => p.Status?.Trim().ToLower() == "realizado");
+    }
 
+    private async Task ApplyFilters()
+    {
+        var filtered = allProcedures.AsEnumerable();
+
+        // Filtrar por fecha
+        if (selectedDate.HasValue)
+        {
+            filtered = filtered.Where(p => p.ProcedureDate.Date == selectedDate.Value.Date);
+            await JS.InvokeVoidAsync("console.log", $"Filtering by date: {selectedDate.Value.ToString("yyyy-MM-dd")}");
+        }
+
+        // Filtrar por paciente
+        if (selectedPerson != null)
+        {
+            filtered = filtered.Where(p => p.PatientId == selectedPerson.Id);
+            await JS.InvokeVoidAsync("console.log", $"Filtering by patient: {selectedPerson.Id}");
+        }
+
+        // Aplicar filtro de estado
+        filtered = selectedStatus.ToLower() switch
+        {
+            "pendiente" => filtered.Where(p => p.Status?.Trim().ToLower() == "pendiente"),
+            "realizado" => filtered.Where(p => p.Status?.Trim().ToLower() == "realizado"),
+            _ => filtered
+        };
+
+        // Ordenar por fecha más reciente primero
+        filteredProcedures = filtered.OrderByDescending(p => p.ProcedureDate).ToList();
+
+        StateHasChanged();
     }
 
     private async Task FilterByStatus(string status)
     {
         selectedStatus = status.ToLower();
+        await ApplyFilters();
+        await JS.InvokeVoidAsync("console.log",
+            $"Filtering by status: {status}, found: {filteredProcedures.Count} procedures");
+    }
 
-        filteredProcedures = status.ToLower() switch
-        {
-            "pendiente" => allProcedures.Where(p => p.Status?.Trim().ToLower() == "pendiente").ToList(),
-            "realizado" => allProcedures.Where(p => p.Status?.Trim().ToLower() == "realizado").ToList(),
-            _ => allProcedures.ToList()
-        };
+    private async Task HandlePersonSelected(PersonDTO person)
+    {
+        selectedPerson = person;
+        await ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        await JS.InvokeVoidAsync("console.log", $"Filtering by status: {status}, found: {filteredProcedures.Count} procedures");
+    private async Task HandlePersonCleared()
+    {
+        selectedPerson = null;
+        await ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
 
-        StateHasChanged();
+
+    private async void ClearAllFilters()
+    {
+        selectedDateString = string.Empty;
+        selectedDate = null;
+        selectedPerson = null;
+        selectedStatus = "todos";
+        await ApplyFilters();
     }
 
     private async Task MarkAsCompleted(MedicalProcedureDTO procedure)
@@ -302,18 +450,6 @@
                 await JS.InvokeVoidAsync("alert", "Error: No se pudo obtener la información del usuario actual");
                 return;
             }
-
-            // 🔹 Mostrar toda la info en el console
-            await JS.InvokeVoidAsync("console.log", new
-            {
-                ProcedureId = procedure.ProcedureId,
-                ProcedureName = procedure.SpecificProcedureName,
-                PatientId = procedure.PatientId,
-                PatientName = procedure.PatientName,
-                Status = procedure.Status,
-                CurrentUserId = currentUser.UserId,
-                CurrentUserName = currentUser.Name
-            });
 
             bool confirmed = await JS.InvokeAsync<bool>("confirm",
                 $"¿Confirma que desea marcar como realizado el procedimiento '{procedure.SpecificProcedureName}' para el paciente {procedure.PatientName ?? $"Paciente {procedure.PatientId}"}?");
@@ -344,7 +480,6 @@
         }
     }
 
-
     private void ViewDetails(MedicalProcedureDTO procedure)
     {
         selectedProcedure = procedure;
@@ -366,9 +501,9 @@
     {
         return selectedStatus switch
         {
-            "pendiente" => "Pendientes",
-            "realizado" => "Realizados",
-            _ => "Todos"
+            "pendiente" => "pendientes",
+            "realizado" => "realizados",
+            _ => ""
         };
     }
 }

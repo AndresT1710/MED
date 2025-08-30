@@ -169,9 +169,11 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Profesional responsable *</label>
-                            <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado) ? "is-invalid" : "")"
-                                    @bind="profesionalSeleccionado">
-                                <option value="">Seleccione un profesional</option>
+                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                    @bind="selectedHealthProfessionalId"
+                                    disabled>
+                                <!-- Disabled para que no se pueda cambiar -->
+                                <option value="0">Seleccione un profesional</option>
                                 @foreach (var profesional in profesionales)
                                 {
                                     <option value="@profesional.HealthProfessionalId">
@@ -179,7 +181,7 @@
                                     </option>
                                 }
                             </select>
-                            @if (showValidationErrors && string.IsNullOrEmpty(profesionalSeleccionado))
+                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
                             {
                                 <div class="invalid-feedback">
                                     Debe seleccionar un profesional responsable
@@ -760,6 +762,9 @@
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
     private int enfermerialLocationId = 0; // Added to store dynamic LocationId
+    private int selectedHealthProfessionalId = 0;
+    private HealthProfessionalDTO? currentProfessional = null;
+
 
     private bool showValidationErrors = false;
     private bool isSaving = false;
@@ -865,6 +870,8 @@
         await LoadProcedures();
         await LoadLugaresAtencion();
         await LoadEnfermeriaLocationId();
+        await AssignCurrentProfessional();
+
 
         // CARGAR DATOS DE PROCEDIMIENTOS (AÑADIR ESTO)
         await LoadAvailableTypesOfProcedures();
@@ -877,6 +884,49 @@
             await LoadExistingData();
         }
     }
+
+    //Aignación de profesional
+    private async Task AssignCurrentProfessional()
+    {
+        try
+        {
+            // Obtener el usuario actual logueado
+            var currentUser = await AuthorizationService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                // Buscar el profesional correspondiente al usuario
+                currentProfessional = profesionales.FirstOrDefault(hp =>
+                    hp.HealthProfessionalId == currentUser.PersonId)
+                    ?? profesionales.FirstOrDefault(hp =>
+                        hp.RegistrationNumber == currentUser.RegistrationNumber);
+
+                if (currentProfessional != null)
+                {
+                    // Asignar automáticamente
+                    selectedHealthProfessionalId = currentProfessional.HealthProfessionalId;
+                    StateHasChanged();
+
+                    await JS.InvokeVoidAsync("console.log",
+                        "[MedicalCare] Professional auto-assigned:",
+                        currentProfessional.FullName);
+                }
+                else
+                {
+                    // Fallback si no encuentra el profesional
+                    selectedHealthProfessionalId = currentUser.PersonId ?? 0;
+                    await JS.InvokeVoidAsync("console.warn",
+                        "[MedicalCare] Using PersonId as fallback:",
+                        selectedHealthProfessionalId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error",
+                "[MedicalCare] Error assigning professional:", ex.Message);
+        }
+    }
+
 
     // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
     private void InitializeVitalSignsErrors()
@@ -1165,10 +1215,9 @@
     private bool IsPatientTabComplete()
     {
         return selectedPatientId > 0 &&
-               !string.IsNullOrEmpty(lugarSeleccionada) &&
-               !string.IsNullOrEmpty(profesionalSeleccionado) &&
-               !string.IsNullOrWhiteSpace(motivoConsulta);
-        // Removido: !string.IsNullOrEmpty(areaSeleccionada) porque ahora es fijo
+               !string.IsNullOrWhiteSpace(lugarSeleccionada) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta) &&
+               selectedHealthProfessionalId > 0; 
     }
 
     private void ValidateAndShowErrors()
@@ -1211,13 +1260,24 @@
                 return;
             }
 
+            // Validar que tenemos un profesional asignado automáticamente
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "No se pudo identificar al profesional de salud. Por favor, contacte con soporte.");
+                return;
+            }
+
+            // Obtener el profesional seleccionado para información adicional
+            var profesional = profesionales.FirstOrDefault(p => p.HealthProfessionalId == selectedHealthProfessionalId);
+
             var medicalCareDto = new MedicalCareDTO
                 {
                     PatientId = selectedPatientId,
-                    HealthProfessionalId = int.Parse(profesionalSeleccionado),
+                    HealthProfessionalId = selectedHealthProfessionalId, // Ya asignado automáticamente
                     PlaceOfAttentionId = int.Parse(lugarSeleccionada),
                     LocationId = enfermerialLocationId,
-                    CareDate = DateTime.Now
+                    CareDate = DateTime.Now,
                 };
 
             var result = await MedicalCareService.CreateAsync(medicalCareDto);
@@ -1229,7 +1289,10 @@
 
             createdCareId = result.Data.CareId;
             currentMedicalCareId = createdCareId.Value;
+
             await JS.InvokeVoidAsync("console.log", "[v0] Medical care record created with ID:", createdCareId);
+            await JS.InvokeVoidAsync("console.log", "[v0] Assigned professional:",
+                $"{profesional?.FullName} (ID: {selectedHealthProfessionalId})");
 
             // Save reason for consultation immediately
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
@@ -1254,12 +1317,18 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        profesionalSeleccionado = MedicalCare.HealthProfessionalId.ToString();
+        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId; // ← Asignar el ID existente
         lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
-        currentMedicalCareId = MedicalCare.CareId; // ¡IMPORTANTE! Asignar el CareId existente
-        createdCareId = MedicalCare.CareId; // ¡IMPORTANTE! Asignar también createdCareId
+        currentMedicalCareId = MedicalCare.CareId;
+        createdCareId = MedicalCare.CareId;
 
+        // Si es modo edición, mantener el profesional asignado originalmente
+        // pero podrías querer mostrar quién fue el profesional original
+        await JS.InvokeVoidAsync("console.log", "[v0] Editing existing care with professional:",
+            MedicalCare.HealthProfessionalId);
+
+        // Resto del código sin cambios...
         var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
         existingReasonForConsultation = existingReasons?.FirstOrDefault();
         if (existingReasonForConsultation != null)

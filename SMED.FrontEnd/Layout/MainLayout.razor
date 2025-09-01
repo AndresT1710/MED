@@ -6,17 +6,25 @@
 
 <style>
     .dropdown-item:hover {
-        background-color: #dc3545 !important; /* rojo Bootstrap */
+        background-color: #dc3545 !important;
         color: white !important;
+    }
+
+    /* Estilos para evitar el desplazamiento horizontal */
+    html, body {
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        height: 100%;
     }
 </style>
 
-<div class="d-flex vh-100">
-    <nav class="sidebar bg-dark text-white p-3" style="width: 250px;">
+<div class="layout-container">
+    <nav class="sidebar bg-dark text-white">
         <NavMenu />
     </nav>
-    <div class="flex-grow-1 d-flex flex-column">
-        <header class="d-flex justify-content-end align-items-center px-4 py-2 border-bottom bg-light">
+    <div class="main-content">
+        <header class="main-header">
             @if (currentUser != null && !string.IsNullOrWhiteSpace(currentUser.Name))
             {
                 <div class="dropdown">
@@ -31,7 +39,7 @@
                 </div>
             }
         </header>
-        <main class="flex-grow-1 overflow-auto p-4">
+        <main class="content-area">
             @Body
         </main>
     </div>
@@ -43,9 +51,7 @@
     protected override async Task OnInitializedAsync()
     {
         currentUser = await AuthService.GetCurrentUserAsync();
-
-        // Forzar la actualización de la UI después de que currentUser se ha establecido
-        StateHasChanged(); // <--- ¡AÑADE ESTA LÍNEA!
+        StateHasChanged();
 
         if (currentUser == null)
         {

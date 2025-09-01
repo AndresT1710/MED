@@ -1,77 +1,165 @@
-.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
+/* Estilos base */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
 }
 
-main {
-    flex: 1;
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
 }
 
 .sidebar {
+    width: 250px;
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
-.top-row {
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-header {
     background-color: #f7f7f7;
     border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+    padding: 0.5rem 1.5rem;
     display: flex;
+    justify-content: flex-end;
     align-items: center;
+    height: 3.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
+.content-area {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        margin-left: 0;
     }
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+    .main-content {
+        margin-left: 0;
+        width: 100%;
     }
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .main-header {
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
     }
+}
 
 @media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
+    .layout-container {
+        flex-direction: column;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .main-header ::deep a,
+    .main-header ::deep .btn-link {
         margin-left: 0;
     }
 }
 
 @media (min-width: 641px) {
-    .page {
+    .layout-container {
         flex-direction: row;
     }
 
     .sidebar {
         width: 250px;
         height: 100vh;
-        position: sticky;
+        position: fixed;
         top: 0;
     }
 
-    .top-row {
+    .main-content {
+        margin-left: 250px;
+        width: calc(100% - 250px);
+    }
+
+    .main-header {
         position: sticky;
         top: 0;
         z-index: 1;
     }
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    .content-area {
+        padding-left: 2rem;
+        padding-right: 1.5rem;
     }
 }
+
+/* Estilos adicionales para mejor visualización */
+.dropdown-item:hover {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+/* Prevenir distorsión en dispositivos móviles */
+@media (max-width: 480px) {
+    .content-area {
+        padding: 1rem;
+    }
+
+    .main-header {
+        height: auto;
+        min-height: 3.5rem;
+        flex-wrap: wrap;
+    }
+}
+
+/* Asegurar que el contenido no se desborde */
+* {
+    box-sizing: border-box;
+}
+
+/* Mejorar el scroll */
+.content-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content-area::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+    .content-area::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }

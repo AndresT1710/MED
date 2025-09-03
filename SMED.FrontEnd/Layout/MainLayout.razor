@@ -4,27 +4,13 @@
 @inject SMED.FrontEnd.Services.IAuthorizationService AuthService
 @using SMED.Shared.DTOs
 
-<style>
-    .dropdown-item:hover {
-        background-color: #dc3545 !important;
-        color: white !important;
-    }
-
-    /* Estilos para evitar el desplazamiento horizontal */
-    html, body {
-        overflow-x: hidden;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-    }
-</style>
-
 <div class="layout-container">
-    <nav class="sidebar bg-dark text-white">
+    <nav class="sidebar text-white">
         <NavMenu />
     </nav>
+
     <div class="main-content">
-        <header class="main-header">
+        <header class="main-header d-flex justify-content-end align-items-center">
             @if (currentUser != null && !string.IsNullOrWhiteSpace(currentUser.Name))
             {
                 <div class="dropdown">
@@ -39,6 +25,7 @@
                 </div>
             }
         </header>
+
         <main class="content-area">
             @Body
         </main>
@@ -56,6 +43,57 @@
         if (currentUser == null)
         {
             Navigation.NavigateTo("/login", true);
+        }
+    }
+
+    // AQUÍ ESTÁ EL CAMBIO: Excluir modales de la página de personas
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                (function(){
+                    function ensureModalsOnBody(){
+                        // SOLO mover modales que NO sean de la página de personas
+                        document.querySelectorAll('.modal:not(.person-modal)').forEach(function(m){
+                            try {
+                                if (m.parentElement !== document.body){
+                                    document.body.appendChild(m);
+                                }
+                                m.style.position = 'fixed';
+                                m.style.top = '0';
+                                m.style.left = '0';
+                                m.style.width = '100vw';
+                                m.style.height = '100vh';
+                                m.style.zIndex = '2147483647';
+                                m.style.margin = '0';
+                                m.style.display = 'flex';
+                                m.style.alignItems = 'center';
+                                m.style.justifyContent = 'center';
+                            } catch(e){ console && console.warn(e); }
+                        });
+
+                        // SOLO forzar backdrop que NO sean de personas
+                        document.querySelectorAll('.modal-backdrop:not(.person-backdrop)').forEach(function(b){
+                            try {
+                                b.style.position = 'fixed';
+                                b.style.top = '0';
+                                b.style.left = '0';
+                                b.style.width = '100vw';
+                                b.style.height = '100vh';
+                                b.style.zIndex = '2147483646';
+                                if(!b.style.backgroundColor) b.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                            } catch(e){ console && console.warn(e); }
+                        });
+                    }
+
+                    ensureModalsOnBody();
+                    var mo = new MutationObserver(function(muts){
+                        ensureModalsOnBody();
+                    });
+                    mo.observe(document.body, { childList: true, subtree: true });
+                })();
+            ");
         }
     }
 

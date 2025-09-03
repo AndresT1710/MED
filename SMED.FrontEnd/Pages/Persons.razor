@@ -9,67 +9,110 @@
 @inject IJSRuntime JS
 @inject HttpClient Http
 
+<style>
+    /* Added embedded CSS for robust modal behavior */
+    .person-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1055;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .person-modal-content {
+        background: white;
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        max-height: 90vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1056;
+    }
+
+    .person-modal-header {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    .person-modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+
+    .person-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
 
 <h3 class="mb-4">Gestión de Personas</h3>
 
 <ManagementTable TableTitle="Personas"
-Columns="PersonColumns"
-SearchOptions="PersonColumns"
-DocumentTypes="documentTypeList"
-SearchCallback="SearchHandler"
-AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
-ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
-RenderActions="RenderPersonActions"
-@ref="table" />
+                 Columns="PersonColumns"
+                 SearchOptions="PersonColumns"
+                 DocumentTypes="documentTypeList"
+                 SearchCallback="SearchHandler"
+                 AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
+                 ClearCallback="@EventCallback.Factory.Create(this, ClearSearch)"
+                 RenderActions="RenderPersonActions"
+                 @ref="table" />
 
+@* Completely rebuilt modal structure with separate backdrop and explicit event handling *@
 @if (showCard && selectedPerson != null)
 {
-    <div class="modal fade show d-flex align-items-center justify-content-center"
-    tabindex="-1"
-    style="background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;"
-    role="dialog">
-
-        <div style="width: 90vw; height: 90vh; display: flex; justify-content: center; align-items: center;">
-            <div class="modal-content"
-            style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
-                <div class="modal-header">
-                    <h5 class="modal-title">Información de la Persona</h5>
-                    <button type="button" class="btn-close" @onclick="() => showCard = false"></button>
-                </div>
-                <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                    <PersonaCard person="selectedPerson" />
-                </div>
+    <div class="person-modal-backdrop" @onclick="CloseCard">
+        <div class="person-modal-content" style="width: 1100px; max-width: 95vw;" @onclick:stopPropagation="true">
+            <div class="person-modal-header">
+                <h5 class="modal-title mb-0">Información de la Persona</h5>
+                <button type="button" class="person-close-btn" @onclick="CloseCard">&times;</button>
+            </div>
+            <div class="person-modal-body">
+                <PersonaCard person="selectedPerson" />
             </div>
         </div>
     </div>
 }
 
-
-
-<!-- Modal flotante -->
-@if (showForm)
+@if (showForm && selectedPerson != null)
 {
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@((selectedPerson == null || selectedPerson.Id == 0) ? "Nueva Persona" : "Editar Persona")</h5>
-                    <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <PersonForm Person="selectedPerson" OnSaved="OnPersonSaved" OnCancel="HideForm" />
-                </div>
+    <div class="person-modal-backdrop" @onclick="HideForm">
+        <div class="person-modal-content" style="width: 800px; max-width: 95vw;" @onclick:stopPropagation="true">
+            <div class="person-modal-header">
+                <h5 class="modal-title mb-0">@((selectedPerson.Id == 0) ? "Nueva Persona" : "Editar Persona")</h5>
+                <button type="button" class="person-close-btn" @onclick="HideForm">&times;</button>
+            </div>
+            <div class="person-modal-body">
+                <PersonFormContent @ref="personFormRef" Person="selectedPerson" OnSaved="OnPersonSaved" OnCancel="HideForm" />
             </div>
         </div>
     </div>
 }
-
 
 @code {
     private EventCallback<string[]> SearchHandler => EventCallback.Factory.Create<string[]>(this, Search);
 
     private ManagementTable table;
+    private PersonFormContent personFormRef;
 
     private List<string> PersonColumns = new()
     {
@@ -164,7 +207,7 @@ RenderActions="RenderPersonActions"
 
     private Task AddPerson()
     {
-		selectedPerson = new PersonDTO();
+        selectedPerson = new PersonDTO();
         ShowForm();
         return Task.CompletedTask;
     }
@@ -178,37 +221,35 @@ RenderActions="RenderPersonActions"
 
     RenderFragment<List<string>> RenderPersonActions => row => builder =>
     {
-    int seq = 0;
-    var id = row[28];
+        int seq = 0;
+        var id = row[28];
 
-    // Busca la persona en la lista original para pasarla completa
-    var personToEdit = personList.FirstOrDefault(p => p.Id.ToString() == id);
+        var personToEdit = personList.FirstOrDefault(p => p.Id.ToString() == id);
 
-    builder.OpenElement(seq++, "button");
-    builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
-    builder.AddAttribute(seq++, "title", "Ver");
-    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewPerson(id)));
-    builder.AddContent(seq++, "Ver");
-    builder.CloseElement();
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");
+        builder.AddAttribute(seq++, "title", "Ver");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ViewPerson(id)));
+        builder.AddContent(seq++, "Ver");
+        builder.CloseElement();
 
-    builder.OpenElement(seq++, "button");
-    builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
-    builder.AddAttribute(seq++, "title", "Editar");
-    if (personToEdit != null)
-    {
-        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditPerson(personToEdit)));
-    }
-    builder.AddContent(seq++, "Editar");
-    builder.CloseElement();
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-warning me-1");
+        builder.AddAttribute(seq++, "title", "Editar");
+        if (personToEdit != null)
+        {
+            builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => EditPerson(personToEdit)));
+        }
+        builder.AddContent(seq++, "Editar");
+        builder.CloseElement();
 
-    builder.OpenElement(seq++, "button");
-    builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
-    builder.AddAttribute(seq++, "title", "Eliminar");
-    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeletePerson(id)));
-    builder.AddContent(seq++, "Eliminar");
-    builder.CloseElement();
+        builder.OpenElement(seq++, "button");
+        builder.AddAttribute(seq++, "class", "btn btn-sm btn-danger");
+        builder.AddAttribute(seq++, "title", "Eliminar");
+        builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => DeletePerson(id)));
+        builder.AddContent(seq++, "Eliminar");
+        builder.CloseElement();
     };
-
 
     private void ViewPerson(string id)
     {
@@ -222,12 +263,17 @@ RenderActions="RenderPersonActions"
         showCard = true;
     }
 
+    private void CloseCard()
+    {
+        showCard = false;
+        selectedPerson = null;
+    }
+
     private void EditPerson(PersonDTO personToEdit)
     {
         selectedPerson = personToEdit;
         showForm = true;
     }
-
 
     private async Task DeletePerson(string id)
     {
@@ -251,7 +297,7 @@ RenderActions="RenderPersonActions"
             if (success)
             {
                 personList.Remove(person);
-                await LoadPersonData();  // Recarga la lista desde el backend
+                await LoadPersonData();
                 await JS.InvokeVoidAsync("alert", "Persona eliminada exitosamente");
                 await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
             }
@@ -262,22 +308,25 @@ RenderActions="RenderPersonActions"
         }
     }
 
+    private void ShowForm()
+    {
+        showForm = true;
+    }
 
-	private void ShowForm()
-	{
-		showForm = true;
-	}
-	private void HideForm()
-	{
-		showForm = false;
+    private async Task HideForm()
+    {
+        if (personFormRef != null)
+        {
+            await personFormRef.ClearTemporaryData();
+        }
+        showForm = false;
         selectedPerson = null;
-	}
+    }
 
     private async Task OnPersonSaved(PersonDTO newPerson)
     {
         showForm = false;
-		await LoadPersonData();
+        await LoadPersonData();
         await table.LoadRecords(PersonData.Select(d => d.Concat(new[] { d[0] }).ToList()).ToList());
-
     }
 }

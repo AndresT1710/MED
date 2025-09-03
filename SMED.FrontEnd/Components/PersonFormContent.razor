@@ -1,0 +1,429 @@
+﻿@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Components.Person
+@using SMED.FrontEnd.Services
+@inject PersonService PersonService
+@inject IJSRuntime JS
+
+@* Removed modal wrapper and mostrarFormulario logic to make it embeddable *@
+<EditForm Model="@person" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a href="#" class="nav-link @(tabIndex == 0 ? "active" : "")"
+               @onclick:preventDefault
+               @onclick="() => CambiarTab(0)">
+                <i class="fas fa-user me-2"></i>Datos personales
+                @if (IsPersonalTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link @(tabIndex == 1 ? "active" : "")"
+               @onclick:preventDefault
+               @onclick="() => CambiarTab(1)">
+                <i class="fas fa-id-card me-2"></i>Documento
+                @if (IsDocumentTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link @(tabIndex == 2 ? "active" : "")"
+               @onclick:preventDefault
+               @onclick="() => CambiarTab(2)">
+                <i class="fas fa-address-book me-2"></i>Contacto
+                @if (IsContactTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link @(tabIndex == 3 ? "active" : "")"
+               @onclick:preventDefault
+               @onclick="() => CambiarTab(3)">
+                <i class="fas fa-plus-circle me-2"></i>Complementarios
+                @if (IsComplementsTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4">
+        @switch (tabIndex)
+        {
+            case 0:
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Datos Personales
+                            <span class="badge bg-danger ms-2">Obligatorio</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <TabPersonal Person="person" ShowValidationErrors="showValidationErrors" />
+                        @if (!IsPersonalTabComplete() && showValidationErrors)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios: Primer nombre, Apellido paterno, Género, Fecha de nacimiento y Correo.
+                            </div>
+                        }
+                    </div>
+                </div>
+                break;
+            case 1:
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-id-card me-2"></i>Documento
+                            <span class="badge bg-danger ms-2">Obligatorio</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <TabDocument Person="person" ShowValidationErrors="showValidationErrors" />
+                        @if (!IsDocumentTabComplete() && showValidationErrors)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios de documento y profesional.
+                            </div>
+                        }
+                    </div>
+                </div>
+                break;
+            case 2:
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-address-book me-2"></i>Contacto
+                            <span class="badge bg-danger ms-2">Obligatorio</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <TabContact Person="person" ShowValidationErrors="showValidationErrors" />
+                        @if (!IsContactTabComplete() && showValidationErrors)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios de contacto y dirección.
+                            </div>
+                        }
+                    </div>
+                </div>
+                break;
+            case 3:
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>Complementarios
+                            <span class="badge bg-danger ms-2">Obligatorio</span>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <TabComplements Person="person" ShowValidationErrors="showValidationErrors" />
+                        @if (!IsComplementsTabComplete() && showValidationErrors)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios complementarios.
+                            </div>
+                        }
+                    </div>
+                </div>
+                break;
+        }
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <div>
+            <button type="button" class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                <i class="fas fa-check me-2"></i>Validar Información
+            </button>
+        </div>
+        <div>
+            @if (tabIndex < 3)
+            {
+                <button type="button" class="btn btn-primary" @onclick="() => CambiarTab(tabIndex + 1)">
+                    Siguiente <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            }
+            else
+            {
+                @if (IsAllTabsComplete())
+                {
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>@(isEditMode ? "Actualizar" : "Guardar")
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-secondary" disabled>
+                        <i class="fas fa-exclamation-triangle me-2"></i>Complete todos los campos obligatorios
+                    </button>
+                }
+            }
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public EventCallback<PersonDTO> OnSaved { get; set; }
+    [Parameter] public PersonDTO Person { get; set; } = new PersonDTO();
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool isEditMode = false;
+    private int tabIndex = 0;
+    private PersonDTO person = new();
+    private bool showValidationErrors = false;
+    private bool justSaved = false;
+
+    protected override void OnParametersSet()
+    {
+        if (Person != null && Person.Id > 0)
+        {
+            isEditMode = true;
+            person = ClonePerson(Person);
+            _ = Task.Run(async () => await JS.InvokeVoidAsync("localStorageHelper.clearPerson"));
+        }
+        else
+        {
+            isEditMode = false;
+            person = new PersonDTO();
+            InicializarPersonaSiEsNecesario();
+            _ = Task.Run(async () => await JS.InvokeVoidAsync("localStorageHelper.clearPerson"));
+        }
+
+        StateHasChanged();
+    }
+
+    public async Task ClearTemporaryData()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
+            Console.WriteLine("[v0] Cleared temporary localStorage data");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[v0] Error clearing localStorage: {ex.Message}");
+        }
+    }
+
+    private PersonDTO ClonePerson(PersonDTO original)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(original);
+        return System.Text.Json.JsonSerializer.Deserialize<PersonDTO>(json);
+    }
+
+    protected override void OnInitialized()
+    {
+        InicializarPersonaSiEsNecesario();
+    }
+
+    private void InicializarPersonaSiEsNecesario()
+    {
+        person.Phone ??= new();
+        person.Document ??= new();
+        person.Address ??= new() { new() };
+        person.MaritalStatus ??= new();
+        person.Religion ??= new();
+        person.BloodGroup ??= new();
+        person.Professions ??= new();
+        person.EducationLevel ??= new();
+        person.Laterality ??= new();
+        person.MedicalInsurance ??= new();
+        person.LaborActivity ??= new();
+    }
+
+
+    private bool IsPersonalTabComplete()
+    {
+        return !string.IsNullOrWhiteSpace(person.FirstName) &&
+               !string.IsNullOrWhiteSpace(person.LastName) &&
+               person.GenderId.HasValue &&
+               person.BirthDate.HasValue &&
+               !string.IsNullOrWhiteSpace(person.Email);
+    }
+
+    private bool IsDocumentTabComplete()
+    {
+        var hasBasicDocument = person.Document?.DocumentTypeId.HasValue == true &&
+                              !string.IsNullOrWhiteSpace(person.Document?.DocumentNumber) &&
+                              person.HealthProfessional?.HealthProfessionalTypeId.HasValue == true;
+
+        if (!hasBasicDocument) return false;
+
+        if (person.HealthProfessional?.HealthProfessionalTypeId == 25)
+            return true;
+
+        return !string.IsNullOrWhiteSpace(person.HealthProfessional?.RegistrationNumber);
+    }
+
+    private bool IsContactTabComplete()
+    {
+        var hasAddress = person.Address?.Count > 0 &&
+                        !string.IsNullOrWhiteSpace(person.Address[0]?.MainStreet) &&
+                        !string.IsNullOrWhiteSpace(person.Address[0]?.SecondaryStreet1) &&
+                        !string.IsNullOrWhiteSpace(person.Address[0]?.Reference);
+
+        var hasPhone = !string.IsNullOrWhiteSpace(person.Phone?.Mobile);
+
+        var hasResidence = person.Residence?.ProvinceId.HasValue == true &&
+                          person.Residence?.CityId.HasValue == true;
+
+        return hasAddress && hasPhone && hasResidence;
+    }
+
+    private bool IsComplementsTabComplete()
+    {
+        var hasBasicInfo = person.MaritalStatus?.Id > 0 &&
+                          person.Religion?.Id > 0 &&
+                          person.BloodGroup?.Id > 0 &&
+                          person.EducationLevel?.Id > 0 &&
+                          person.Laterality?.LateralityId.HasValue == true;
+
+        var hasProfessions = person.Professions?.Count > 0;
+        var hasLaborActivities = person.LaborActivity?.Count > 0;
+        var hasMedicalInsurance = person.MedicalInsurance?.Count > 0;
+
+        return hasBasicInfo && hasProfessions && hasLaborActivities && hasMedicalInsurance;
+    }
+
+    private bool IsAllTabsComplete()
+    {
+        return IsPersonalTabComplete() && IsDocumentTabComplete() &&
+               IsContactTabComplete() && IsComplementsTabComplete();
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isEditMode && !justSaved)
+        {
+            var json = await JS.InvokeAsync<string>("localStorageHelper.loadPerson");
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    var loaded = System.Text.Json.JsonSerializer.Deserialize<PersonDTO>(json);
+                    if (loaded != null)
+                    {
+                        person = loaded;
+                        InicializarPersonaSiEsNecesario();
+                        StateHasChanged();
+                        Console.WriteLine("[v0] Loaded person data from localStorage");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[v0] Error deserializing localStorage: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    private async Task GuardarTemporalmente()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(person);
+            await JS.InvokeVoidAsync("localStorageHelper.savePerson", json);
+            Console.WriteLine("[v0] Saved person data temporarily");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[v0] Error saving to localStorage: {ex.Message}");
+        }
+    }
+
+    private async Task Guardar()
+    {
+        if (!IsAllTabsComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar todos los campos obligatorios antes de guardar.");
+
+            if (!IsPersonalTabComplete()) tabIndex = 0;
+            else if (!IsDocumentTabComplete()) tabIndex = 1;
+            else if (!IsContactTabComplete()) tabIndex = 2;
+            else if (!IsComplementsTabComplete()) tabIndex = 3;
+
+            StateHasChanged();
+            return;
+        }
+
+        Console.WriteLine(isEditMode ? "[v0] Updating person..." : "[v0] Creating person...");
+        bool resultado;
+
+        if (isEditMode)
+        {
+            resultado = await PersonService.UpdatePerson(person);
+        }
+        else
+        {
+            resultado = await PersonService.CreatePerson(person);
+        }
+
+        if (resultado)
+        {
+            justSaved = true;
+            await JS.InvokeVoidAsync("localStorageHelper.clearPerson");
+
+            person = new PersonDTO();
+            InicializarPersonaSiEsNecesario();
+            tabIndex = 0;
+            showValidationErrors = false;
+            isEditMode = false;
+
+            StateHasChanged();
+            await OnSaved.InvokeAsync(person);
+            await JS.InvokeVoidAsync("alert", isEditMode ? "Persona actualizada exitosamente." : "Persona creada exitosamente.");
+
+            _ = Task.Delay(1000).ContinueWith(_ => justSaved = false);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error al guardar la persona.");
+        }
+    }
+
+    private async Task CambiarTab(int index)
+    {
+        if (!isEditMode && !justSaved)
+        {
+            await GuardarTemporalmente();
+        }
+        tabIndex = index;
+        StateHasChanged();
+        Console.WriteLine($"[v0] Changed to tab {index}");
+    }
+}

@@ -17,7 +17,6 @@ namespace SMED.Shared.Entity
         public int PlaceOfAttentionId { get; set; }
         public int PatientId { get; set; }
         public int HealthProfessionalId { get; set; }
-        public string Area { get; set; }
         public DateTime CareDate { get; set; }
 
         [ForeignKey("LocationId")]
@@ -27,7 +26,6 @@ namespace SMED.Shared.Entity
         [ForeignKey("PlaceOfAttentionId")]
         [InverseProperty("MedicalCares")]
         public virtual PlaceOfAttention PlaceOfAttentionNavigation { get; set; } = null!;
-
 
         [InverseProperty("MedicalCare")]
         public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();

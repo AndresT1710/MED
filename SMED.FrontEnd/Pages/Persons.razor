@@ -69,7 +69,7 @@
 
 <ManagementTable TableTitle="Personas"
                  Columns="PersonColumns"
-                 SearchOptions="PersonColumns"
+                 SearchOptions="PersonSearch"
                  DocumentTypes="documentTypeList"
                  SearchCallback="SearchHandler"
                  AddCallback="@EventCallback.Factory.Create(this, AddPerson)"
@@ -117,6 +117,11 @@
     private List<string> PersonColumns = new()
     {
         "Primer Nombre", "Segundo Nombre", "Primer Apellido", "Segundo Apellido", "Cédula de Identidad", "Acciones"
+    };
+
+    private List<string> PersonSearch = new()
+    {
+        "Primer Nombre", "Segundo Nombre", "Primer Apellido", "Segundo Apellido", "Cédula de Identidad"
     };
 
     private PersonDTO selectedPerson;

@@ -436,8 +436,12 @@
         if (!string.IsNullOrWhiteSpace(quickSearchTerm))
             filters.Add($"ID {quickSearchTerm}");
 
-        searchMessage = $"No se encontraron atenciones médicas de enfermería para: {string.Join(", ", filters)}";
-        showNoMedicalCareAlert = true;
+        searchMessage = filters.Count > 0
+            ? $"No se encontraron atenciones médicas de enfermería para: {string.Join(", ", filters)}"
+            : "No se encontraron atenciones médicas de enfermería";
+
+        // MOSTRAR el mensaje de "no results" pero OCULTAR el botón de creación cuando hay fecha
+        showNoMedicalCareAlert = !selectedDate.HasValue; // Solo mostrar alerta si NO hay fecha seleccionada
     }
 
     private void UpdateTableData()

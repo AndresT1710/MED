@@ -36,7 +36,7 @@ builder.Services.AddScoped<IRepository<ObstetricHistoryDTO, int>, ObstetricHisto
 builder.Services.AddScoped<IRepository<FamilyHistoryDetailDTO, int>, FamilyHistoryDetailRepository>();
 builder.Services.AddScoped<IRepository<GynecologicalHistoryDTO, int>, GynecologicalHistoryRepository>();
 builder.Services.AddScoped<IRepository<ToxicHabitDTO, int>, ToxicHabitRepository>();
-builder.Services.AddScoped<IRepository<ToxicHabitBackgroundDTO, int>, ToxicHabitBackgroundRepository>();
+builder.Services.AddScoped<IRepository<ToxicHabitHistoryDTO, int>, ToxicHabitHistoryRepository>();
 builder.Services.AddScoped<IRepository<SurgeryDTO, int>, SurgeryRepository>();
 builder.Services.AddScoped<IRepository<SurgeryHistoryDTO, int>, SurgeryHistoryRepository>();
 builder.Services.AddScoped<IRepository<FoodDTO, int>, FoodRepository>();

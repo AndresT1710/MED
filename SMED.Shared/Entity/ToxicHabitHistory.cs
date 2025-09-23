@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public partial class ToxicHabitBackground
+    public partial class ToxicHabitHistory
     {
         [Key]
-        public int ToxicHabitBackgroundId { get; set; }
+        public int ToxicHabitHistoryId { get; set; }
 
         [StringLength(50)]
         public string HistoryNumber { get; set; } = null!;
@@ -26,11 +26,11 @@ namespace SMED.Shared.Entity
         public int ClinicalHistoryId { get; set; }
 
         [ForeignKey("ToxicHabitId")]
-        [InverseProperty("ToxicHabitBackgrounds")]
+        [InverseProperty("ToxicHabitsHistory")]
         public virtual ToxicHabit? ToxicHabit { get; set; }
 
         [ForeignKey("ClinicalHistoryId")]
-        [InverseProperty("ToxicHabitBackgrounds")]
+        [InverseProperty("ToxicHabitsHistory")]
         public virtual ClinicalHistory ClinicalHistory { get; set; } = null!;
     }
 

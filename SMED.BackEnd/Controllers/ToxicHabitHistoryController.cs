@@ -6,37 +6,37 @@ namespace SMED.BackEnd.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ToxicHabitBackgroundController : ControllerBase
+    public class ToxicHabitHistoryController : ControllerBase
     {
-        private readonly IRepository<ToxicHabitBackgroundDTO, int> _repository;
+        private readonly IRepository<ToxicHabitHistoryDTO, int> _repository;
 
-        public ToxicHabitBackgroundController(IRepository<ToxicHabitBackgroundDTO, int> repository)
+        public ToxicHabitHistoryController(IRepository<ToxicHabitHistoryDTO, int> repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<ToxicHabitBackgroundDTO>>> GetAll() =>
+        public async Task<ActionResult<List<ToxicHabitHistoryDTO>>> GetAll() =>
         Ok(await _repository.GetAllAsync());
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ToxicHabitBackgroundDTO>> GetById(int id)
+        public async Task<ActionResult<ToxicHabitHistoryDTO>> GetById(int id)
         {
             var dto = await _repository.GetByIdAsync(id);
             return dto != null ? Ok(dto) : NotFound();
         }
 
         [HttpPost]
-        public async Task<ActionResult<ToxicHabitBackgroundDTO>> Create(ToxicHabitBackgroundDTO dto)
+        public async Task<ActionResult<ToxicHabitHistoryDTO>> Create(ToxicHabitHistoryDTO dto)
         {
             var result = await _repository.AddAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.ToxicHabitBackgroundId }, result);
+            return CreatedAtAction(nameof(GetById), new { id = result.ToxicHabitHistoryId }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, ToxicHabitBackgroundDTO dto)
+        public async Task<IActionResult> Update(int id, ToxicHabitHistoryDTO dto)
         {
-            if (id != dto.ToxicHabitBackgroundId) return BadRequest();
+            if (id != dto.ToxicHabitHistoryId) return BadRequest();
             var updated = await _repository.UpdateAsync(dto);
             return updated != null ? Ok(updated) : NotFound();
         }

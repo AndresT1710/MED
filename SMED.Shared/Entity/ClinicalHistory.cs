@@ -36,7 +36,7 @@ namespace SMED.Shared.Entity
         public virtual ICollection<GynecologicalHistory> GynecologicalHistories { get; set; } = new List<GynecologicalHistory>();
 
         [InverseProperty("ClinicalHistory")]
-        public virtual ICollection<ToxicHabitBackground> ToxicHabitBackgrounds { get; set; } = new List<ToxicHabitBackground>();
+        public virtual ICollection<ToxicHabitHistory> ToxicHabitsHistory { get; set; } = new List<ToxicHabitHistory>();
 
         [InverseProperty("HistoryNavigation")]
         public virtual ICollection<FoodIntoleranceHistory> FoodIntoleranceHistories { get; set; } = new List<FoodIntoleranceHistory>();

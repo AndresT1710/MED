@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.DTOs
 {
-    public class ToxicHabitBackgroundDTO
+    public class ToxicHabitHistoryDTO
     {
-        public int ToxicHabitBackgroundId { get; set; }
+        public int ToxicHabitHistoryId { get; set; }
         public string HistoryNumber { get; set; } = null!;
         public string Description { get; set; } = null!;
         public DateTime? RecordDate { get; set; }

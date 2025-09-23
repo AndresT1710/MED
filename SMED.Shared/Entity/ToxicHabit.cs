@@ -18,7 +18,7 @@ namespace SMED.Shared.Entity
         public string Name { get; set; } = null!;
 
         [InverseProperty("ToxicHabit")]
-        public virtual ICollection<ToxicHabitBackground> ToxicHabitBackgrounds { get; set; } = new List<ToxicHabitBackground>();
+        public virtual ICollection<ToxicHabitHistory> ToxicHabitsHistory { get; set; } = new List<ToxicHabitHistory>();
     }
 
 }

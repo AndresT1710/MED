@@ -6,28 +6,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SMED.BackEnd.Repositories.Implementations
 {
-    public class ToxicHabitBackgroundRepository : IRepository<ToxicHabitBackgroundDTO, int>
+    public class ToxicHabitHistoryRepository : IRepository<ToxicHabitHistoryDTO, int>
     {
         private readonly SGISContext _context;
 
-        public ToxicHabitBackgroundRepository(SGISContext context)
+        public ToxicHabitHistoryRepository(SGISContext context)
         {
             _context = context;
         }
 
-        public async Task<List<ToxicHabitBackgroundDTO>> GetAllAsync()
+        public async Task<List<ToxicHabitHistoryDTO>> GetAllAsync()
         {
             var entities = await _context.ToxicHabitHistories.ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
 
-        public async Task<ToxicHabitBackgroundDTO?> GetByIdAsync(int id)
+        public async Task<ToxicHabitHistoryDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.ToxicHabitHistories.FindAsync(id);
             return entity != null ? MapToDto(entity) : null;
         }
 
-        public async Task<ToxicHabitBackgroundDTO> AddAsync(ToxicHabitBackgroundDTO dto)
+        public async Task<ToxicHabitHistoryDTO> AddAsync(ToxicHabitHistoryDTO dto)
         {
             var entity = MapToEntity(dto);
             _context.ToxicHabitHistories.Add(entity);
@@ -35,9 +35,9 @@ namespace SMED.BackEnd.Repositories.Implementations
             return MapToDto(entity);
         }
 
-        public async Task<ToxicHabitBackgroundDTO?> UpdateAsync(ToxicHabitBackgroundDTO dto)
+        public async Task<ToxicHabitHistoryDTO?> UpdateAsync(ToxicHabitHistoryDTO dto)
         {
-            var entity = await _context.ToxicHabitHistories.FindAsync(dto.ToxicHabitBackgroundId);
+            var entity = await _context.ToxicHabitHistories.FindAsync(dto.ToxicHabitHistoryId);
             if (entity == null) return null;
 
             entity.HistoryNumber = dto.HistoryNumber;
@@ -60,11 +60,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        private ToxicHabitBackgroundDTO MapToDto(ToxicHabitBackground entity)
+        private ToxicHabitHistoryDTO MapToDto(ToxicHabitHistory entity)
         {
-            return new ToxicHabitBackgroundDTO
+            return new ToxicHabitHistoryDTO
             {
-                ToxicHabitBackgroundId = entity.ToxicHabitBackgroundId,
+                ToxicHabitHistoryId = entity.ToxicHabitHistoryId,
                 HistoryNumber = entity.HistoryNumber,
                 Description = entity.Description,
                 RecordDate = entity.RecordDate,
@@ -73,11 +73,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             };
         }
 
-        private ToxicHabitBackground MapToEntity(ToxicHabitBackgroundDTO dto)
+        private ToxicHabitHistory MapToEntity(ToxicHabitHistoryDTO dto)
         {
-            return new ToxicHabitBackground
+            return new ToxicHabitHistory
             {
-                ToxicHabitBackgroundId = dto.ToxicHabitBackgroundId,
+                ToxicHabitHistoryId = dto.ToxicHabitHistoryId,
                 HistoryNumber = dto.HistoryNumber,
                 Description = dto.Description,
                 RecordDate = dto.RecordDate,

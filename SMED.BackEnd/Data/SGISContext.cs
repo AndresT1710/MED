@@ -62,7 +62,7 @@ namespace SGIS.Models
         public DbSet<FamilyHistoryDetail> FamilyHistoryDetails { get; set; }
         public DbSet<GynecologicalHistory> GynecologicalHistories { get; set; }
         public DbSet<ToxicHabit> ToxicHabits { get; set; }
-        public DbSet<ToxicHabitBackground> ToxicHabitHistories { get; set; }
+        public DbSet<ToxicHabitHistory> ToxicHabitHistories { get; set; }
         public DbSet<Food> Foods { get; set; }
         public DbSet<FoodIntoleranceHistory> FoodIntoleranceHistories { get; set; }
         public DbSet<ObstetricHistory> ObstetricHistories { get; set; }
@@ -356,22 +356,23 @@ namespace SGIS.Models
                 entity.Property(e => e.Name).HasMaxLength(100).IsUnicode(false);
             });
 
-            modelBuilder.Entity<ToxicHabitBackground>(entity =>
+            modelBuilder.Entity<ToxicHabitHistory>(entity =>
             {
-                entity.HasKey(e => e.ToxicHabitBackgroundId);
+                entity.ToTable("ToxicHabitHistory");
+                entity.HasKey(e => e.ToxicHabitHistoryId);
                 entity.Property(e => e.HistoryNumber).HasMaxLength(50).IsUnicode(false);
                 entity.Property(e => e.Description).IsUnicode(false);
                 entity.Property(e => e.RecordDate).HasColumnType("datetime");
 
                 entity.HasOne(d => d.ToxicHabit)
-                    .WithMany(p => p.ToxicHabitBackgrounds)
+                    .WithMany(p => p.ToxicHabitsHistory)
                     .HasForeignKey(d => d.ToxicHabitId)
-                    .HasConstraintName("FK_ToxicHabitBackground_ToxicHabit");
+                    .HasConstraintName("FK_ToxicHabitHistory_ToxicHabit");
 
                 entity.HasOne(d => d.ClinicalHistory)
-                    .WithMany(p => p.ToxicHabitBackgrounds)
+                    .WithMany(p => p.ToxicHabitsHistory)
                     .HasForeignKey(d => d.ClinicalHistoryId)
-                    .HasConstraintName("FK_ToxicHabitBackground_ClinicalHistory");
+                    .HasConstraintName("FK_ToxicHabitHistory_ClinicalHistory");
             });
 
             modelBuilder.Entity<ClinicalHistory>(entity =>

@@ -23,6 +23,7 @@ namespace SMED.Shared.Entity
 
         public int? PatientId { get; set; }
 
+        // Relaciones existentes
         [InverseProperty("HistoryNavigation")]
         public virtual ICollection<AllergyHistory> AllergyHistories { get; set; } = new List<AllergyHistory>();
 
@@ -56,7 +57,6 @@ namespace SMED.Shared.Entity
         [InverseProperty("HistoryNavigation")]
         public virtual ICollection<SportsActivitiesHistory> SportsActivitiesHistories { get; set; } = new List<SportsActivitiesHistory>();
 
-
         [InverseProperty("HistoryNavigation")]
         public virtual ICollection<LifeStyleHistory> LifeStyleHistories { get; set; } = new List<LifeStyleHistory>();
 
@@ -69,6 +69,21 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalRecordNavigation")]
         public virtual ICollection<WaterConsumptionHistory> WaterConsumptionHistories { get; set; } = new List<WaterConsumptionHistory>();
 
+        // NUEVAS RELACIONES AGREGADAS
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<MedicationHistory> MedicationHistories { get; set; } = new List<MedicationHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<PsychopsychiatricHistory> PsychopsychiatricHistories { get; set; } = new List<PsychopsychiatricHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<CurrentProblemHistory> CurrentProblemHistories { get; set; } = new List<CurrentProblemHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<WorkHistory> WorkHistories { get; set; } = new List<WorkHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<PsychosexualHistory> PsychosexualHistories { get; set; } = new List<PsychosexualHistory>();
 
         [ForeignKey("PatientId")]
         [InverseProperty("ClinicalHistory")]

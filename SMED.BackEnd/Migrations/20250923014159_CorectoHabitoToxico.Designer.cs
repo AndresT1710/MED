@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250923014159_CorectoHabitoToxico")]
+    partial class CorectoHabitoToxico
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -213,46 +216,6 @@ namespace SMED.BackEnd.Migrations
                         .IsUnique();
 
                     b.ToTable("CostOfServices");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.CurrentProblemHistory", b =>
-                {
-                    b.Property<int>("CurrentProblemHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CurrentProblemHistoryId"));
-
-                    b.Property<string>("AppearanceEvolution")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<int>("ClinicalHistoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FrequencyIntensitySymptoms")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("HistoryNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("Impact")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("TriggeringFactors")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.HasKey("CurrentProblemHistoryId");
-
-                    b.HasIndex("ClinicalHistoryId");
-
-                    b.ToTable("CurrentProblemHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DiagnosticType", b =>
@@ -1244,38 +1207,6 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("MedicalVisits");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.MedicationHistory", b =>
-                {
-                    b.Property<int>("MedicationHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicationHistoryId"));
-
-                    b.Property<int>("ClinicalHistoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ConsumptionDate")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("HistoryNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<int>("MedicineId")
-                        .HasColumnType("int");
-
-                    b.HasKey("MedicationHistoryId");
-
-                    b.HasIndex("ClinicalHistoryId");
-
-                    b.HasIndex("MedicineId");
-
-                    b.ToTable("MedicationHistories");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.Medicine", b =>
                 {
                     b.Property<int>("Id")
@@ -1888,73 +1819,6 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("Pronvince", (string)null);
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.PsychopsychiatricHistory", b =>
-                {
-                    b.Property<int>("PsychopsychiatricHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PsychopsychiatricHistoryId"));
-
-                    b.Property<string>("Actor")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<int>("ClinicalHistoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("HistoryDate")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("HistoryNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("HistoryState")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("Type")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.HasKey("PsychopsychiatricHistoryId");
-
-                    b.HasIndex("ClinicalHistoryId");
-
-                    b.ToTable("PsychopsychiatricHistories");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.PsychosexualHistory", b =>
-                {
-                    b.Property<int>("PsychosexualHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PsychosexualHistoryId"));
-
-                    b.Property<int>("ClinicalHistoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("HistoryNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("PsychosexualHistoryId");
-
-                    b.HasIndex("ClinicalHistoryId");
-
-                    b.ToTable("PsychosexualHistories");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.ReasonForConsultation", b =>
                 {
                     b.Property<int>("Id")
@@ -2539,42 +2403,6 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("WaterConsumptionHistory", (string)null);
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.WorkHistory", b =>
-                {
-                    b.Property<int>("WorkHistoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WorkHistoryId"));
-
-                    b.Property<int>("ClinicalHistoryId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Experience")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("HistoryNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("SatisfactionLevel")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("Stability")
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(max)");
-
-                    b.HasKey("WorkHistoryId");
-
-                    b.HasIndex("ClinicalHistoryId");
-
-                    b.ToTable("WorkHistories");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.ImageOrders", b =>
                 {
                     b.HasBaseType("SMED.Shared.Entity.Orders");
@@ -2698,18 +2526,6 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("Service");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.CurrentProblemHistory", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("CurrentProblemHistories")
-                        .HasForeignKey("ClinicalHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_CurrentProblemHistory_ClinicalHistory");
-
-                    b.Navigation("ClinicalHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DietaryHabitsHistory", b =>
@@ -3123,27 +2939,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.MedicationHistory", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("MedicationHistories")
-                        .HasForeignKey("ClinicalHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_MedicationHistory_ClinicalHistory");
-
-                    b.HasOne("SMED.Shared.Entity.Medicine", "Medicine")
-                        .WithMany("MedicationHistories")
-                        .HasForeignKey("MedicineId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_MedicationHistory_Medicine");
-
-                    b.Navigation("ClinicalHistory");
-
-                    b.Navigation("Medicine");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.ObstetricHistory", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.ClinicalHistory", "HistoryNavigation")
@@ -3478,30 +3273,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalVisitNavigation");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.PsychopsychiatricHistory", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("PsychopsychiatricHistories")
-                        .HasForeignKey("ClinicalHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_PsychopsychiatricHistory_ClinicalHistory");
-
-                    b.Navigation("ClinicalHistory");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.PsychosexualHistory", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("PsychosexualHistories")
-                        .HasForeignKey("ClinicalHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_PsychosexualHistory_ClinicalHistory");
-
-                    b.Navigation("ClinicalHistory");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.ReasonForConsultation", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
@@ -3680,18 +3451,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalRecordNavigation");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.WorkHistory", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("WorkHistories")
-                        .HasForeignKey("ClinicalHistoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_WorkHistory_ClinicalHistory");
-
-                    b.Navigation("ClinicalHistory");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.Non_PharmacologicalTreatment", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.Treatment", null)
@@ -3743,8 +3502,6 @@ namespace SMED.BackEnd.Migrations
                 {
                     b.Navigation("AllergyHistories");
 
-                    b.Navigation("CurrentProblemHistories");
-
                     b.Navigation("DietaryHabitHistories");
 
                     b.Navigation("FamilyHistoryDetails");
@@ -3759,15 +3516,9 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("LifeStyleHistories");
 
-                    b.Navigation("MedicationHistories");
-
                     b.Navigation("ObstetricHistories");
 
                     b.Navigation("PersonalHistories");
-
-                    b.Navigation("PsychopsychiatricHistories");
-
-                    b.Navigation("PsychosexualHistories");
 
                     b.Navigation("SleepHabitHistories");
 
@@ -3778,8 +3529,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("ToxicHabitsHistory");
 
                     b.Navigation("WaterConsumptionHistories");
-
-                    b.Navigation("WorkHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DiagnosticType", b =>
@@ -3930,8 +3679,6 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Medicine", b =>
                 {
-                    b.Navigation("MedicationHistories");
-
                     b.Navigation("PharmacologicalTreatments");
                 });
 

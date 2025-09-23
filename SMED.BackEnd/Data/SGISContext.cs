@@ -79,6 +79,15 @@ namespace SGIS.Models
         public DbSet<FoodConsumptionHistory> FoodConsumptionHistories { get; set; }
         public DbSet<WaterConsumptionHistory> WaterConsumptionHistories { get; set; }
 
+        //Psicología
+
+        public DbSet<MedicationHistory> MedicationHistories { get; set; }
+        public DbSet<PsychopsychiatricHistory> PsychopsychiatricHistories { get; set; }
+        public DbSet<CurrentProblemHistory> CurrentProblemHistories { get; set; }
+        public DbSet<WorkHistory> WorkHistories { get; set; }
+        public DbSet<PsychosexualHistory> PsychosexualHistories { get; set; }
+
+
         // Atención médica
         public DbSet<MedicalVisit> MedicalVisits { get; set; }
         public DbSet<Progress> Progresses { get; set; }
@@ -769,6 +778,113 @@ namespace SGIS.Models
                       .HasForeignKey(pt => pt.MedicineId)
                       .OnDelete(DeleteBehavior.Restrict)
                       .HasConstraintName("FK_PharmacologicalTreatment_Medicine");
+
+
+            // CONFIGURACIÓN PARA MEDICATIONHISTORY
+            modelBuilder.Entity<MedicationHistory>(entity =>
+            {
+                entity.HasKey(e => e.MedicationHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+                entity.Property(e => e.ConsumptionDate)
+                    .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Medicine)
+                    .WithMany(m => m.MedicationHistories)
+                    .HasForeignKey(d => d.MedicineId)
+                    .HasConstraintName("FK_MedicationHistory_Medicine");
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.MedicationHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_MedicationHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA PSYCHOPSYCHIATRICHISTORY
+            modelBuilder.Entity<PsychopsychiatricHistory>(entity =>
+            {
+                entity.HasKey(e => e.PsychopsychiatricHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+                entity.Property(e => e.Type)
+                    .IsUnicode(false);
+                entity.Property(e => e.Actor)
+                    .IsUnicode(false);
+                entity.Property(e => e.HistoryState)
+                    .IsUnicode(false);
+                entity.Property(e => e.HistoryDate)
+                    .HasColumnType("datetime");
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.PsychopsychiatricHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_PsychopsychiatricHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA CURRENTPROBLEMHISTORY
+            modelBuilder.Entity<CurrentProblemHistory>(entity =>
+            {
+                entity.HasKey(e => e.CurrentProblemHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+                entity.Property(e => e.AppearanceEvolution)
+                    .IsUnicode(false);
+                entity.Property(e => e.TriggeringFactors)
+                    .IsUnicode(false);
+                entity.Property(e => e.FrequencyIntensitySymptoms)
+                    .IsUnicode(false);
+                entity.Property(e => e.Impact)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.CurrentProblemHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_CurrentProblemHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA WORKHISTORY
+            modelBuilder.Entity<WorkHistory>(entity =>
+            {
+                entity.HasKey(e => e.WorkHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+                entity.Property(e => e.Experience)
+                    .IsUnicode(false);
+                entity.Property(e => e.Stability)
+                    .IsUnicode(false);
+                entity.Property(e => e.SatisfactionLevel)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.WorkHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_WorkHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA PSYCHOSEXUALHISTORY
+            modelBuilder.Entity<PsychosexualHistory>(entity =>
+            {
+                entity.HasKey(e => e.PsychosexualHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.PsychosexualHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_PsychosexualHistory_ClinicalHistory");
+            });
 
 
             base.OnModelCreating(modelBuilder);

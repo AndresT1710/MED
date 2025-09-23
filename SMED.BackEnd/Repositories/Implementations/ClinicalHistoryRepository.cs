@@ -64,6 +64,12 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FoodConsumptionHistories)
                     .ThenInclude(fd => fd.FoodNavigation)
                 .Include(ch => ch.WaterConsumptionHistories)
+                .Include(ch => ch.MedicationHistories)
+                .ThenInclude(mh => mh.Medicine)
+                .Include(ch => ch.PsychopsychiatricHistories)
+                .Include(ch => ch.CurrentProblemHistories)
+                .Include(ch => ch.WorkHistories)
+                .Include(ch => ch.PsychosexualHistories)
                 .FirstOrDefaultAsync(ch => ch.PatientId == personId && ch.IsActive == true);
 
             return history == null ? null : MapToDTO(history);
@@ -222,6 +228,12 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FoodConsumptionHistories)
                     .ThenInclude(fd => fd.FoodNavigation)
                 .Include(ch => ch.WaterConsumptionHistories)
+                .Include(ch => ch.MedicationHistories)
+                    .ThenInclude(mh => mh.Medicine)
+                .Include(ch => ch.PsychopsychiatricHistories)
+                .Include(ch => ch.CurrentProblemHistories)
+                .Include(ch => ch.WorkHistories)
+                .Include(ch => ch.PsychosexualHistories)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -463,7 +475,57 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Frequency = entity.WaterConsumptionHistories.First().Frequency,
                     Description = entity.WaterConsumptionHistories.First().Description,
                     RegistrationDate = entity.WaterConsumptionHistories.First().RegistrationDate
-                } : null
+                } : null,
+                MedicationHistories = entity.MedicationHistories.Select(mh => new MedicationHistoryDTO
+                {
+                    MedicationHistoryId = mh.MedicationHistoryId,
+                    HistoryNumber = mh.HistoryNumber,
+                    MedicineId = mh.MedicineId,
+                    ClinicalHistoryId = mh.ClinicalHistoryId,
+                    ConsumptionDate = mh.ConsumptionDate,
+                    MedicineName = mh.Medicine?.Name,
+                    MedicineWeight = mh.Medicine?.Weight
+                }).ToList(),
+
+                PsychopsychiatricHistories = entity.PsychopsychiatricHistories.Select(pp => new PsychopsychiatricHistoryDTO
+                {
+                    PsychopsychiatricHistoryId = pp.PsychopsychiatricHistoryId,
+                    HistoryNumber = pp.HistoryNumber,
+                    ClinicalHistoryId = pp.ClinicalHistoryId,
+                    Type = pp.Type,
+                    Actor = pp.Actor,
+                    HistoryDate = pp.HistoryDate,
+                    HistoryState = pp.HistoryState
+                }).ToList(),
+
+                CurrentProblemHistories = entity.CurrentProblemHistories.Select(cp => new CurrentProblemHistoryDTO
+                {
+                    CurrentProblemHistoryId = cp.CurrentProblemHistoryId,
+                    HistoryNumber = cp.HistoryNumber,
+                    ClinicalHistoryId = cp.ClinicalHistoryId,
+                    AppearanceEvolution = cp.AppearanceEvolution,
+                    TriggeringFactors = cp.TriggeringFactors,
+                    FrequencyIntensitySymptoms = cp.FrequencyIntensitySymptoms,
+                    Impact = cp.Impact
+                }).ToList(),
+
+                WorkHistories = entity.WorkHistories.Select(w => new WorkHistoryDTO
+                {
+                    WorkHistoryId = w.WorkHistoryId,
+                    HistoryNumber = w.HistoryNumber,
+                    ClinicalHistoryId = w.ClinicalHistoryId,
+                    Experience = w.Experience,
+                    Stability = w.Stability,
+                    SatisfactionLevel = w.SatisfactionLevel
+                }).ToList(),
+
+                PsychosexualHistories = entity.PsychosexualHistories.Select(ps => new PsychosexualHistoryDTO
+                {
+                    PsychosexualHistoryId = ps.PsychosexualHistoryId,
+                    HistoryNumber = ps.HistoryNumber,
+                    ClinicalHistoryId = ps.ClinicalHistoryId,
+                    Description = ps.Description
+                }).ToList()
             };
         }
 

@@ -56,6 +56,11 @@ builder.Services.AddScoped<IRepository<SleepHabitDTO, int>, SleepHabitRepository
 builder.Services.AddScoped<IRepository<SleepHabitHistoryDTO, int>, SleepHabitHistoryRepository>();
 builder.Services.AddScoped<IRepository<FoodConsumptionHistoryDTO, int>, FoodConsumptionHistoryRepository>();
 builder.Services.AddScoped<IRepository<WaterConsumptionHistoryDTO, int>, WaterConsumptionHistoryRepository>();
+builder.Services.AddScoped<IRepository<MedicationHistoryDTO, int>, MedicationHistoryRepository>();
+builder.Services.AddScoped<IRepository<PsychopsychiatricHistoryDTO, int>, PsychopsychiatricHistoryRepository>();
+builder.Services.AddScoped<IRepository<CurrentProblemHistoryDTO, int>, CurrentProblemHistoryRepository>();
+builder.Services.AddScoped<IRepository<WorkHistoryDTO, int>, WorkHistoryRepository>();
+builder.Services.AddScoped<IRepository<PsychosexualHistoryDTO, int>,PsychosexualHistoryRepository>();
 builder.Services.AddScoped<IRepository<TypeOfServiceDTO, int>, TypeOfServiceRepository>();
 builder.Services.AddScoped<IRepository<CostOfServiceDTO, int>, CostOfServiceRepository>();
 builder.Services.AddScoped<IRepository<ServiceDTO, int>, ServiceRepository>();
@@ -102,6 +107,7 @@ builder.Services.AddScoped<IndicationsRepository>();
 builder.Services.AddScoped<MedicineRepository>();
 builder.Services.AddScoped<LocationRepository>();
 builder.Services.AddScoped<IRepository<LocationDTO, int>, LocationRepository>();
+
 
 
 

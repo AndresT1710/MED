@@ -9,7 +9,7 @@ namespace SMED.Shared.DTOs
     public class WorkHistoryDTO
     {
         public int WorkHistoryId { get; set; }
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
         public int ClinicalHistoryId { get; set; }
         public string? Experience { get; set; }
         public string? Stability { get; set; }

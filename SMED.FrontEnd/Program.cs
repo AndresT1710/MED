@@ -53,6 +53,13 @@ builder.Services.AddScoped<SleepHabitHistoryService>();
 builder.Services.AddScoped<FoodService>();
 builder.Services.AddScoped<FoodConsumptionHistoryService>();
 builder.Services.AddScoped<WaterConsumptionHistoryService>();
+builder.Services.AddScoped<ToxicHabitHistoryService>();
+builder.Services.AddScoped<ToxicHabitService>();
+builder.Services.AddScoped<MedicationHistoryService>();
+builder.Services.AddScoped<PsychopsychiatricHistoryService>();
+builder.Services.AddScoped<PsychosexualHistoryService>();
+builder.Services.AddScoped<CurrentProblemHistoryService>();
+builder.Services.AddScoped<WorkHistoryService>();
 builder.Services.AddScoped<MedicalCareService>();
 builder.Services.AddScoped<TypeOfServiceService>();
 builder.Services.AddScoped<CostOfServiceService>();
@@ -90,6 +97,7 @@ builder.Services.AddScoped<MedicalDiagnosisService>();
 builder.Services.AddScoped<LocationService>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<MedicalReferralService>();
+
 
 builder.Services.AddLogging();
 

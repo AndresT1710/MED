@@ -9,7 +9,7 @@ namespace SMED.Shared.DTOs
     public class PsychopsychiatricHistoryDTO
     {
         public int PsychopsychiatricHistoryId { get; set; }
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
         public int ClinicalHistoryId { get; set; }
         public string? Type { get; set; }
         public string? Actor { get; set; }

@@ -9,7 +9,7 @@ namespace SMED.Shared.DTOs
     public class CurrentProblemHistoryDTO
     {
         public int CurrentProblemHistoryId { get; set; }
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
         public int ClinicalHistoryId { get; set; }
         public string? AppearanceEvolution { get; set; }
         public string? TriggeringFactors { get; set; }

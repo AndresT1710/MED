@@ -9,7 +9,7 @@ namespace SMED.Shared.DTOs
     public class MedicationHistoryDTO
     {
         public int MedicationHistoryId { get; set; }
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
         public int MedicineId { get; set; }
         public int ClinicalHistoryId { get; set; }
         public DateTime? ConsumptionDate { get; set; }

@@ -23,7 +23,7 @@ namespace SMED.Shared.Entity
 
         public int? PatientId { get; set; }
 
-        // Relaciones existentes
+
         [InverseProperty("HistoryNavigation")]
         public virtual ICollection<AllergyHistory> AllergyHistories { get; set; } = new List<AllergyHistory>();
 
@@ -69,7 +69,6 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalRecordNavigation")]
         public virtual ICollection<WaterConsumptionHistory> WaterConsumptionHistories { get; set; } = new List<WaterConsumptionHistory>();
 
-        // NUEVAS RELACIONES AGREGADAS
         [InverseProperty("ClinicalHistory")]
         public virtual ICollection<MedicationHistory> MedicationHistories { get; set; } = new List<MedicationHistory>();
 
@@ -84,6 +83,24 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("ClinicalHistory")]
         public virtual ICollection<PsychosexualHistory> PsychosexualHistories { get; set; } = new List<PsychosexualHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<PrenatalHistory> PrenatalHistories { get; set; } = new List<PrenatalHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<PostnatalHistory> PostnatalHistories { get; set; } = new List<PostnatalHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<PerinatalHistory> PerinatalHistories { get; set; } = new List<PerinatalHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<NeuropsychologicalHistory> NeuropsychologicalHistories { get; set; } = new List<NeuropsychologicalHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<NeurologicalExam> NeurologicalExams { get; set; } = new List<NeurologicalExam>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<DevelopmentRecord> DevelopmentRecords { get; set; } = new List<DevelopmentRecord>();
 
         [ForeignKey("PatientId")]
         [InverseProperty("ClinicalHistory")]

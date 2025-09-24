@@ -20,7 +20,6 @@ namespace SMED.Shared.DTOs
 
         public PatientDTO Patient { get; set; } = new PatientDTO();
 
-        // Colecciones existentes
         public List<PersonalHistoryDTO>? PersonalHistories { get; set; } = new();
         public List<SurgeryHistoryDTO>? SurgeryHistories { get; set; } = new();
         public List<AllergyHistoryDTO>? AllergyHistories { get; set; } = new();
@@ -34,8 +33,12 @@ namespace SMED.Shared.DTOs
         public List<CurrentProblemHistoryDTO>? CurrentProblemHistories { get; set; } = new();
         public List<WorkHistoryDTO>? WorkHistories { get; set; } = new();
         public List<PsychosexualHistoryDTO>? PsychosexualHistories { get; set; } = new();
-
-        // Propiedades individuales existentes
+        public List<PrenatalHistoryDTO>? PrenatalHistories { get; set; } = new();
+        public List<PostnatalHistoryDTO>? PostnatalHistories { get; set; } = new();
+        public List<PerinatalHistoryDTO>? PerinatalHistories { get; set; } = new();
+        public List<NeuropsychologicalHistoryDTO>? NeuropsychologicalHistories { get; set; } = new();
+        public List<NeurologicalExamDTO>? NeurologicalExams { get; set; } = new();
+        public List<DevelopmentRecordDTO>? DevelopmentRecords { get; set; } = new();
         public GynecologicalHistoryDTO? GynecologicalHistory { get; set; } = new();
         public SportsActivitiesHistoryDTO? SportsActivitiesHistory { get; set; } = new();
         public LifeStyleHistoryDTO? LifeStyleHistory { get; set; } = new();

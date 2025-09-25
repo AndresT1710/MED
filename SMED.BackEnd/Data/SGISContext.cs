@@ -976,7 +976,7 @@ namespace SGIS.Models
             {
                 entity.HasKey(e => e.NeurologicalExamId);
                 entity.Property(e => e.HistoryNumber)
-                    .IsRequired()
+                    .IsRequired(false)
                     .HasMaxLength(100)
                     .IsUnicode(false);
                 entity.Property(e => e.Name)

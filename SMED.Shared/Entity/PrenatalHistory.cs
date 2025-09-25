@@ -18,7 +18,7 @@ namespace SMED.Shared.Entity
 
         public int ClinicalHistoryId { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("PrenatalHistories")]

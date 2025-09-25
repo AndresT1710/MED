@@ -47,7 +47,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.HistoryNumber = dto.HistoryNumber;
-            entity.ClinicalHistoryId = dto.ClinicalHistoryId;
+            entity.ClinicalHistoryId = dto.ClinicalHistoryId; // ← YA PUEDE SER NULL
             entity.Name = dto.Name;
             entity.LinkPdf = dto.LinkPdf;
             entity.ExamDate = dto.ExamDate;
@@ -73,7 +73,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 NeurologicalExamId = entity.NeurologicalExamId,
                 HistoryNumber = entity.HistoryNumber,
-                ClinicalHistoryId = entity.ClinicalHistoryId,
+                ClinicalHistoryId = entity.ClinicalHistoryId, // ← YA PUEDE SER NULL
                 Name = entity.Name,
                 LinkPdf = entity.LinkPdf,
                 ExamDate = entity.ExamDate,
@@ -89,7 +89,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 NeurologicalExamId = dto.NeurologicalExamId,
                 HistoryNumber = dto.HistoryNumber,
-                ClinicalHistoryId = dto.ClinicalHistoryId,
+                ClinicalHistoryId = dto.ClinicalHistoryId, // ← YA PUEDE SER NULL
                 Name = dto.Name,
                 LinkPdf = dto.LinkPdf,
                 ExamDate = dto.ExamDate,

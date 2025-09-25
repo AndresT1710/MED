@@ -13,7 +13,7 @@ namespace SMED.Shared.Entity
         [Key]
         public int NeurologicalExamTypeId { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [InverseProperty("NeurologicalExamType")]
         public virtual ICollection<NeurologicalExam> NeurologicalExams { get; set; } = new List<NeurologicalExam>();

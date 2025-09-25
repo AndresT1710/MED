@@ -14,11 +14,11 @@ namespace SMED.Shared.Entity
         public int NeuropsychologicalHistoryId { get; set; }
 
         [StringLength(100)]
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
 
         public int ClinicalHistoryId { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("NeuropsychologicalHistories")]

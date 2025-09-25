@@ -1,5 +1,998 @@
-﻿<h3>EarlyStimulation</h3>
+﻿@page "/medical-history/earlystimulation"
+@using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Frontend.Services
+@using SMED.Shared.DTOs
+
+@inject PrenatalHistoryService PrenatalHistoryService
+@inject PostnatalHistoryService PostnatalHistoryService
+@inject PerinatalHistoryService PerinatalHistoryService
+@inject NeuropsychologicalHistoryService NeuropsychologicalHistoryService
+@inject NeurologicalExamTypeService NeurologicalExamTypeService
+@inject NeurologicalExamService NeurologicalExamService
+@inject DevelopmentRecordService DevelopmentRecordService
+@inject ILogger<EarlyStimulation> Logger
+
+<TabContainer>
+    <h4>Historia Clínica - Estimulación Temprana</h4>
+
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
+    {
+        <!-- SECCIÓN: ANTECEDENTES PRENATALES, PERINATALES, POSTNATALES Y NEUROPSICOLÓGICOS -->
+        <div class="container-section mt-4">
+            <h5>Antecedentes del Desarrollo</h5>
+            <div class="containerbox1-grid">
+                <div class="row">
+                    <!-- Antecedentes Prenatales -->
+                    <div class="col-md-6 mb-3">
+                        <ContainerBox1 Title="Antecedentes Prenatales"
+                                       Width="half"
+                                       @bind-Content="prenatalContent" />
+                    </div>
+                    
+                    <!-- Antecedentes Perinatales -->
+                    <div class="col-md-6 mb-3">
+                        <ContainerBox1 Title="Antecedentes Perinatales"
+                                       Width="half"
+                                       @bind-Content="perinatalContent" />
+                    </div>
+                </div>
+                <div class="row">
+                    <!-- Antecedentes Postnatales -->
+                    <div class="col-md-6 mb-3">
+                        <ContainerBox1 Title="Antecedentes Postnatales"
+                                       Width="half"
+                                       @bind-Content="postnatalContent" />
+                    </div>
+                    
+                    <!-- Antecedentes Neuropsicológicos -->
+                    <div class="col-md-6 mb-3">
+                        <ContainerBox1 Title="Antecedentes Neuropsicológicos"
+                                       Width="half"
+                                       @bind-Content="neuropsychologicalContent" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: EXÁMENES NEUROLÓGICOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Exámenes Neurológicos"
+                           ColumnHeaders="@headersNeurologicalExams"
+                           Rows="@neurologicalExamData.Select(d => d.Values).ToList()"
+                           RowIds="@neurologicalExamData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddNeurologicalExam"
+                           OnEditRequested="PrepareForEditNeurologicalExam"
+                           OnDeleteRequested="HandleNeurologicalExamRowDeleted"
+                           OnSaveRequested="SaveNeurologicalExamChanges"
+                           IsValidForm="() => !string.IsNullOrWhiteSpace(selectedExamType) && !string.IsNullOrWhiteSpace(selectedExamName)"
+                           EmptyMessage="@(isLoadingNeurologicalExams ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingNeurologicalExamId()" disabled />
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label>Tipo de Examen</label>
+                        <select class="form-select" @bind="selectedExamType">
+                            <option value="">Seleccione un tipo de examen</option>
+                            @foreach (var examType in availableExamTypes)
+                            {
+                                <option value="@examType">@examType</option>
+                            }
+                        </select>
+                        @if (isLoadingExamTypes)
+                        {
+                            <div class="text-muted mt-1">Cargando tipos de examen...</div>
+                        }
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Examen</label>
+                        <select class="form-select" @bind="selectedExamName">
+                            <option value="">Seleccione un examen</option>
+                            @foreach (var exam in filteredExams)
+                            {
+                                <option value="@exam">@exam</option>
+                            }
+                        </select>
+                        @if (string.IsNullOrEmpty(selectedExamType))
+                        {
+                            <div class="text-muted mt-1">Primero seleccione un tipo de examen</div>
+                        }
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Fecha del Examen</label>
+                        <input type="date" class="form-control" @bind="neurologicalExamDate" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="neurologicalExamDescription" rows="4"
+                                  placeholder="Ingrese la descripción del examen" 
+                                  style="resize: vertical; max-height: 200px;"></textarea>
+                    </div>
+
+
+
+                    <div class="form-group mb-3">
+                        <label>Enlace PDF (Opcional)</label>
+                        <input type="text" class="form-control" @bind="neurologicalExamLinkPdf" 
+                               placeholder="Ingrese el enlace al PDF del examen" />
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: REGISTRO DE DESARROLLO -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Registro de Desarrollo"
+                           ColumnHeaders="@headersDevelopmentRecords"
+                           Rows="@developmentRecordData.Select(d => d.Values).ToList()"
+                           RowIds="@developmentRecordData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddDevelopmentRecord"
+                           OnEditRequested="PrepareForEditDevelopmentRecord"
+                           OnDeleteRequested="HandleDevelopmentRecordRowDeleted"
+                           OnSaveRequested="SaveDevelopmentRecordChanges"
+                           IsValidForm="() => !string.IsNullOrWhiteSpace(developmentMilestone) && !string.IsNullOrWhiteSpace(developmentAgeRange)"
+                           EmptyMessage="@(isLoadingDevelopmentRecords ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingDevelopmentRecordId()" disabled />
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label>Hito de Desarrollo</label>
+                        <textarea class="form-control" @bind="developmentMilestone" rows="3"
+                                  placeholder="Ingrese el hito de desarrollo" 
+                                  style="resize: vertical; max-height: 150px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(developmentMilestone))
+                        {
+                            <div class="text-muted mt-1">El hito de desarrollo es obligatorio</div>
+                        }
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Rango de Edad</label>
+                        <textarea class="form-control" @bind="developmentAgeRange" rows="2"
+                                  placeholder="Ingrese el rango de edad" 
+                                  style="resize: vertical; max-height: 100px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(developmentAgeRange))
+                        {
+                            <div class="text-muted mt-1">El rango de edad es obligatorio</div>
+                        }
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Observaciones</label>
+                        <textarea class="form-control" @bind="developmentObservations" rows="4"
+                                  placeholder="Ingrese las observaciones" 
+                                  style="resize: vertical; max-height: 200px;"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- BOTÓN DE GUARDADO GENERAL -->
+        <div class="d-flex justify-content-center mt-4 mb-3">
+            <button class="btn btn-primary btn-lg px-5"
+                    @onclick="GuardarDatosContainerBox"
+                    disabled="@(isLoading || clinicalHistoryId <= 0)">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Guardando...</span>
+                }
+                else
+                {
+                    <i class="fas fa-save me-2"></i>
+                    <span>Guardar Datos de Estimulación Temprana</span>
+                }
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success mt-3">
+                @successMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los datos de estimulación temprana.</p>
+    }
+</TabContainer>
 
 @code {
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
 
+    // ==========================================
+    // SECCIÓN: CONTAINERBOX1 - ANTECEDENTES
+    // ==========================================
+    private string prenatalContent = "";
+    private string perinatalContent = "";
+    private string postnatalContent = "";
+    private string neuropsychologicalContent = "";
+
+    private PrenatalHistoryDTO prenatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
+    private PerinatalHistoryDTO perinatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
+    private PostnatalHistoryDTO postnatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
+    private NeuropsychologicalHistoryDTO neuropsychologicalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
+
+    // ==========================================
+    // SECCIÓN: EXÁMENES NEUROLÓGICOS
+    // ==========================================
+    private readonly List<string> headersNeurologicalExams = new() { "Tipo de Examen", "Examen", "Fecha", "Descripción" };
+    private List<NeurologicalExamRow> neurologicalExamData = new();
+    private List<NeurologicalExamDTO> currentNeurologicalExams = new();
+    private List<NeurologicalExamTypeDTO> examTypes = new();
+    private List<NeurologicalExamDTO> allExams = new();
+    private List<string> availableExamTypes = new();
+    private List<string> filteredExams = new();
+
+    private string _selectedExamType = ""; 
+    private string selectedExamName = "";
+    private string neurologicalExamDescription = "";
+    private DateTime neurologicalExamDate = DateTime.Now;
+    private string neurologicalExamLinkPdf = "";
+    private int editingNeurologicalExamId = -1;
+    private bool isLoadingNeurologicalExams = false;
+    private bool isLoadingExamTypes = false;
+
+
+    // AGREGA ESTA PROPERTY CON SETTER PERSONALIZADO:
+    private string selectedExamType
+    {
+        get => _selectedExamType;
+        set
+        {
+            if (_selectedExamType != value)
+            {
+                _selectedExamType = value;
+                // Ejecutar después de que el renderizado se complete
+                Task.Run(async () => await HandleExamTypeChangedAsync());
+            }
+        }
+    }
+
+    private async Task HandleExamTypeChangedAsync()
+    {
+        if (string.IsNullOrEmpty(_selectedExamType))
+        {
+            filteredExams = new();
+            selectedExamName = "";
+            return;
+        }
+
+        var examType = examTypes.FirstOrDefault(et => et.Name == _selectedExamType);
+        if (examType != null)
+        {
+            filteredExams = allExams
+                .Where(e => e.NeurologicalExamTypeId == examType.NeurologicalExamTypeId)
+                .Select(e => e.Name ?? "Sin nombre")
+                .Where(name => !string.IsNullOrEmpty(name))
+                .ToList();
+        }
+        else
+        {
+            filteredExams = new();
+        }
+
+        selectedExamName = "";
+
+        // Forzar actualización de la UI
+        StateHasChanged();
+    }
+
+
+    private class NeurologicalExamRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: REGISTRO DE DESARROLLO
+    // ==========================================
+    private readonly List<string> headersDevelopmentRecords = new() { "Hito de Desarrollo", "Rango de Edad", "Observaciones" };
+    private List<DevelopmentRecordRow> developmentRecordData = new();
+    private List<DevelopmentRecordDTO> currentDevelopmentRecords = new();
+
+    private string developmentMilestone = "";
+    private string developmentAgeRange = "";
+    private string developmentObservations = "";
+    private int editingDevelopmentRecordId = -1;
+    private bool isLoadingDevelopmentRecords = false;
+
+    private class DevelopmentRecordRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Cargar tipos de examen neurológico
+            await LoadExamTypes();
+
+            // Cargar todos los exámenes neurológicos (sin filtrar por clinicalHistoryId)
+            allExams = await NeurologicalExamService.GetAllAsync() ?? new();
+
+            // Cargar exámenes existentes (si hay clinicalHistoryId se filtrarán, sino se cargan todos)
+            await LoadNeurologicalExams();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar datos iniciales");
+            errorMessage = "Error al cargar los datos iniciales.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadExamTypes()
+    {
+        isLoadingExamTypes = true;
+        try
+        {
+            examTypes = await NeurologicalExamTypeService.GetAllAsync() ?? new();
+            availableExamTypes = examTypes.Select(et => et.Name).Where(name => !string.IsNullOrEmpty(name)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar tipos de examen");
+            errorMessage = "Error al cargar los tipos de examen.";
+        }
+        finally
+        {
+            isLoadingExamTypes = false;
+        }
+    }
+
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        // Siempre cargar exámenes, incluso si clinicalHistoryId es 0
+        await LoadNeurologicalExams();
+
+        // Cargar los demás datos solo si hay clinicalHistoryId
+        if (clinicalHistoryId > 0)
+        {
+            await LoadPrenatalHistory();
+            await LoadPerinatalHistory();
+            await LoadPostnatalHistory();
+            await LoadNeuropsychologicalHistory();
+            await LoadDevelopmentRecords();
+        }
+    }
+
+
+
+    // ==========================================
+    // MÉTODOS: CARGA DE DATOS CONTAINERBOX1
+    // ==========================================
+    private async Task LoadPrenatalHistory()
+    {
+        try
+        {
+            var result = await PrenatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            prenatalHistory = result?.FirstOrDefault() ?? new PrenatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+            prenatalContent = prenatalHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes prenatales");
+        }
+    }
+
+    private async Task LoadPerinatalHistory()
+    {
+        try
+        {
+            var result = await PerinatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            perinatalHistory = result?.FirstOrDefault() ?? new PerinatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+            perinatalContent = perinatalHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes perinatales");
+        }
+    }
+
+    private async Task LoadPostnatalHistory()
+    {
+        try
+        {
+            var result = await PostnatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            postnatalHistory = result?.FirstOrDefault() ?? new PostnatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+            postnatalContent = postnatalHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes postnatales");
+        }
+    }
+
+    private async Task LoadNeuropsychologicalHistory()
+    {
+        try
+        {
+            var result = await NeuropsychologicalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            neuropsychologicalHistory = result?.FirstOrDefault() ?? new NeuropsychologicalHistoryDTO { HistoryNumber = medicalRecordNumber };
+            neuropsychologicalContent = neuropsychologicalHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes neuropsicológicos");
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS: EXÁMENES NEUROLÓGICOS
+    // ==========================================
+    private async Task LoadNeurologicalExams()
+    {
+        errorMessage = string.Empty;
+        isLoadingNeurologicalExams = true;
+
+        try
+        {
+            // CAMBIA ESTA LÍNEA - Si clinicalHistoryId es 0, carga todos los exámenes
+            List<NeurologicalExamDTO> result;
+            if (clinicalHistoryId > 0)
+            {
+                result = await NeurologicalExamService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            }
+            else
+            {
+                result = await NeurologicalExamService.GetAllAsync() ?? new();
+            }
+
+            currentNeurologicalExams = result ?? new();
+            neurologicalExamData = new();
+
+            foreach (var exam in currentNeurologicalExams)
+            {
+                neurologicalExamData.Add(new NeurologicalExamRow
+                {
+                    Id = exam.NeurologicalExamId,
+                    Values = new()
+                {
+                    GetExamTypeName(exam.NeurologicalExamTypeId),
+                    exam.Name ?? "Sin nombre",
+                    exam.ExamDate?.ToShortDateString() ?? "Sin fecha",
+                    exam.Description ?? "Sin observaciones"
+                }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar exámenes neurológicos");
+            errorMessage = "Error al cargar los exámenes neurológicos.";
+        }
+        finally
+        {
+            isLoadingNeurologicalExams = false;
+        }
+    }
+
+    private string GetExamTypeName(int? examTypeId)
+    {
+        if (examTypeId == null || examTypeId == 0) return "Sin especificar";
+        return examTypes.FirstOrDefault(et => et.NeurologicalExamTypeId == examTypeId)?.Name ?? "Desconocido";
+    }
+
+    private string GetExamName(int? examId)
+    {
+        if (examId == null || examId == 0) return "Sin especificar";
+        return allExams.FirstOrDefault(e => e.NeurologicalExamId == examId)?.Name ?? "Desconocido";
+    }
+
+    private void HandleExamTypeChanged()
+    {
+        if (string.IsNullOrEmpty(selectedExamType))
+        {
+            filteredExams = new();
+            selectedExamName = "";
+            return;
+        }
+
+        var examType = examTypes.FirstOrDefault(et => et.Name == selectedExamType);
+        if (examType != null)
+        {
+            filteredExams = allExams
+                .Where(e => e.NeurologicalExamTypeId == examType.NeurologicalExamTypeId)
+                .Select(e => e.Name ?? "Sin nombre")
+                .Where(name => !string.IsNullOrEmpty(name))
+                .ToList();
+        }
+        else
+        {
+            filteredExams = new();
+        }
+
+        selectedExamName = "";
+    }
+
+    private void PrepareForEditNeurologicalExam(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentNeurologicalExams.FirstOrDefault(e => e.NeurologicalExamId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el examen neurológico con ID {id}";
+                return;
+            }
+
+            editingNeurologicalExamId = id;
+            _selectedExamType = GetExamTypeName(dto.NeurologicalExamTypeId); // Usa el campo directo
+            Task.Run(async () => await HandleExamTypeChangedAsync()); // Llama al método
+            selectedExamName = dto.Name ?? "";
+            neurologicalExamDescription = dto.Description ?? "";
+            neurologicalExamDate = dto.ExamDate ?? DateTime.Now;
+            neurologicalExamLinkPdf = dto.LinkPdf ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de examen neurológico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleNeurologicalExamRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await NeurologicalExamService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el examen neurológico.";
+                return;
+            }
+
+            await LoadNeurologicalExams();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar examen neurológico");
+            errorMessage = "Error al eliminar el examen neurológico.";
+        }
+    }
+
+    private async Task SaveNeurologicalExamChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedExamType))
+            {
+                errorMessage = "Debe seleccionar un tipo de examen.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedExamName))
+            {
+                errorMessage = "Debe seleccionar un examen.";
+                return;
+            }
+
+            var examType = examTypes.FirstOrDefault(et => et.Name == selectedExamType);
+            if (examType == null)
+            {
+                errorMessage = "Tipo de examen no encontrado.";
+                return;
+            }
+
+            var exam = allExams.FirstOrDefault(e => e.Name == selectedExamName && e.NeurologicalExamTypeId == examType.NeurologicalExamTypeId);
+            if (exam == null)
+            {
+                errorMessage = "Examen no encontrado.";
+                return;
+            }
+
+            if (editingNeurologicalExamId == -1)
+            {
+                var nuevo = new NeurologicalExamDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null, // ← PERMITE NULL
+                    NeurologicalExamTypeId = examType.NeurologicalExamTypeId,
+                    Name = selectedExamName.Trim(),
+                    Description = string.IsNullOrWhiteSpace(neurologicalExamDescription) ? null : neurologicalExamDescription.Trim(),
+                    ExamDate = neurologicalExamDate,
+                    LinkPdf = string.IsNullOrWhiteSpace(neurologicalExamLinkPdf) ? null : neurologicalExamLinkPdf.Trim(),
+                    HistoryNumber = string.IsNullOrWhiteSpace(medicalRecordNumber) ? null : medicalRecordNumber
+                };
+
+                var created = await NeurologicalExamService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el examen neurológico.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentNeurologicalExams.FirstOrDefault(e => e.NeurologicalExamId == editingNeurologicalExamId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.NeurologicalExamTypeId = examType.NeurologicalExamTypeId;
+                dto.Name = selectedExamName.Trim();
+                dto.Description = string.IsNullOrWhiteSpace(neurologicalExamDescription) ? null : neurologicalExamDescription.Trim();
+                dto.ExamDate = neurologicalExamDate;
+                dto.LinkPdf = string.IsNullOrWhiteSpace(neurologicalExamLinkPdf) ? null : neurologicalExamLinkPdf.Trim();
+                dto.HistoryNumber = string.IsNullOrWhiteSpace(medicalRecordNumber) ? null : medicalRecordNumber;
+                dto.ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null; // ← PERMITE NULL
+
+                var updated = await NeurologicalExamService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el examen neurológico.";
+                    return;
+                }
+            }
+
+            await LoadNeurologicalExams();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de examen neurológico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddNeurologicalExam()
+    {
+        editingNeurologicalExamId = -1;
+        _selectedExamType = ""; // Usa el campo directo
+        selectedExamName = "";
+        neurologicalExamDescription = "";
+        neurologicalExamDate = DateTime.Now;
+        neurologicalExamLinkPdf = "";
+        filteredExams = new();
+        errorMessage = string.Empty;
+
+        // Limpiar también la property
+        StateHasChanged();
+    }
+
+    private string GetCurrentEditingNeurologicalExamId() => editingNeurologicalExamId == -1 ? "Nuevo" : editingNeurologicalExamId.ToString();
+
+    // ==========================================
+    // MÉTODOS: REGISTRO DE DESARROLLO
+    // ==========================================
+    private async Task LoadDevelopmentRecords()
+    {
+        errorMessage = string.Empty;
+        isLoadingDevelopmentRecords = true;
+
+        try
+        {
+            var result = await DevelopmentRecordService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentDevelopmentRecords = result ?? new();
+            developmentRecordData = new();
+
+            foreach (var record in currentDevelopmentRecords)
+            {
+                developmentRecordData.Add(new DevelopmentRecordRow
+                {
+                    Id = record.DevelopmentRecordId,
+                    Values = new() 
+                    {
+                        record.DevelopmentMilestone ?? "Sin hito",
+                        record.AgeRange ?? "Sin rango",
+                        record.Observations ?? "Sin observaciones"
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar registros de desarrollo");
+            errorMessage = "Error al cargar los registros de desarrollo.";
+        }
+        finally
+        {
+            isLoadingDevelopmentRecords = false;
+        }
+    }
+
+    private void PrepareForEditDevelopmentRecord(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentDevelopmentRecords.FirstOrDefault(r => r.DevelopmentRecordId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el registro de desarrollo con ID {id}";
+                return;
+            }
+
+            editingDevelopmentRecordId = id;
+            developmentMilestone = dto.DevelopmentMilestone ?? "";
+            developmentAgeRange = dto.AgeRange ?? "";
+            developmentObservations = dto.Observations ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de registro de desarrollo");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleDevelopmentRecordRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await DevelopmentRecordService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el registro de desarrollo.";
+                return;
+            }
+
+            await LoadDevelopmentRecords();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar registro de desarrollo");
+            errorMessage = "Error al eliminar el registro de desarrollo.";
+        }
+    }
+
+    private async Task SaveDevelopmentRecordChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(developmentMilestone))
+            {
+                errorMessage = "El hito de desarrollo es obligatorio.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(developmentAgeRange))
+            {
+                errorMessage = "El rango de edad es obligatorio.";
+                return;
+            }
+
+            if (editingDevelopmentRecordId == -1)
+            {
+                var nuevo = new DevelopmentRecordDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    DevelopmentMilestone = developmentMilestone.Trim(),
+                    AgeRange = developmentAgeRange.Trim(),
+                    Observations = string.IsNullOrWhiteSpace(developmentObservations) ? null : developmentObservations.Trim(),
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var created = await DevelopmentRecordService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el registro de desarrollo.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentDevelopmentRecords.FirstOrDefault(r => r.DevelopmentRecordId == editingDevelopmentRecordId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.DevelopmentMilestone = developmentMilestone.Trim();
+                dto.AgeRange = developmentAgeRange.Trim();
+                dto.Observations = string.IsNullOrWhiteSpace(developmentObservations) ? null : developmentObservations.Trim();
+
+                var updated = await DevelopmentRecordService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el registro de desarrollo.";
+                    return;
+                }
+            }
+
+            await LoadDevelopmentRecords();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de registro de desarrollo");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddDevelopmentRecord()
+    {
+        editingDevelopmentRecordId = -1;
+        developmentMilestone = "";
+        developmentAgeRange = "";
+        developmentObservations = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingDevelopmentRecordId() => editingDevelopmentRecordId == -1 ? "Nuevo" : editingDevelopmentRecordId.ToString();
+
+    // ==========================================
+    // MÉTODO: GUARDADO GENERAL
+    // ==========================================
+    private async Task GuardarDatosContainerBox()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        isLoading = true;
+
+        try
+        {
+            if (clinicalHistoryId <= 0)
+            {
+                errorMessage = "Debe seleccionar un paciente válido.";
+                return;
+            }
+
+            // Guardar datos de ContainerBox1
+            await SavePrenatalHistory();
+            await SavePerinatalHistory();
+            await SavePostnatalHistory();
+            await SaveNeuropsychologicalHistory();
+
+            successMessage = "Datos de estimulación temprana guardados correctamente.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar datos de estimulación temprana");
+            errorMessage = "Error inesperado al guardar los datos.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SavePrenatalHistory()
+    {
+        prenatalHistory.ClinicalHistoryId = clinicalHistoryId;
+        prenatalHistory.HistoryNumber = medicalRecordNumber;
+        prenatalHistory.Description = string.IsNullOrWhiteSpace(prenatalContent) ? null : prenatalContent;
+
+        if (prenatalHistory.PrenatalHistoryId == 0)
+        {
+            var created = await PrenatalHistoryService.CreateAsync(prenatalHistory);
+            if (created == null)
+            {
+                throw new Exception("Error al crear antecedentes prenatales");
+            }
+        }
+        else
+        {
+            var updated = await PrenatalHistoryService.UpdateAsync(prenatalHistory);
+            if (updated == null)
+            {
+                throw new Exception("Error al actualizar antecedentes prenatales");
+            }
+        }
+    }
+
+    private async Task SavePerinatalHistory()
+    {
+        perinatalHistory.ClinicalHistoryId = clinicalHistoryId;
+        perinatalHistory.HistoryNumber = medicalRecordNumber;
+        perinatalHistory.Description = string.IsNullOrWhiteSpace(perinatalContent) ? null : perinatalContent;
+
+        if (perinatalHistory.PerinatalHistoryId == 0)
+        {
+            var created = await PerinatalHistoryService.CreateAsync(perinatalHistory);
+            if (created == null)
+            {
+                throw new Exception("Error al crear antecedentes perinatales");
+            }
+        }
+        else
+        {
+            var updated = await PerinatalHistoryService.UpdateAsync(perinatalHistory);
+            if (updated == null)
+            {
+                throw new Exception("Error al actualizar antecedentes perinatales");
+            }
+        }
+    }
+
+    private async Task SavePostnatalHistory()
+    {
+        postnatalHistory.ClinicalHistoryId = clinicalHistoryId;
+        postnatalHistory.HistoryNumber = medicalRecordNumber;
+        postnatalHistory.Description = string.IsNullOrWhiteSpace(postnatalContent) ? null : postnatalContent;
+
+        if (postnatalHistory.PostNatalId == 0)
+        {
+            var created = await PostnatalHistoryService.CreateAsync(postnatalHistory);
+            if (created == null)
+            {
+                throw new Exception("Error al crear antecedentes postnatales");
+            }
+        }
+        else
+        {
+            var updated = await PostnatalHistoryService.UpdateAsync(postnatalHistory);
+            if (updated == null)
+            {
+                throw new Exception("Error al actualizar antecedentes postnatales");
+            }
+        }
+    }
+
+    private async Task SaveNeuropsychologicalHistory()
+    {
+        neuropsychologicalHistory.ClinicalHistoryId = clinicalHistoryId;
+        neuropsychologicalHistory.HistoryNumber = medicalRecordNumber;
+        neuropsychologicalHistory.Description = string.IsNullOrWhiteSpace(neuropsychologicalContent) ? null : neuropsychologicalContent;
+
+        if (neuropsychologicalHistory.NeuropsychologicalHistoryId == 0)
+        {
+            var created = await NeuropsychologicalHistoryService.CreateAsync(neuropsychologicalHistory);
+            if (created == null)
+            {
+                throw new Exception("Error al crear antecedentes neuropsicológicos");
+            }
+        }
+        else
+        {
+            var updated = await NeuropsychologicalHistoryService.UpdateAsync(neuropsychologicalHistory);
+            if (updated == null)
+            {
+                throw new Exception("Error al actualizar antecedentes neuropsicológicos");
+            }
+        }
+    }
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
+    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

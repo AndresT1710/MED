@@ -42,6 +42,12 @@ namespace SMED.Frontend.Services
             return response.IsSuccessStatusCode;
         }
 
+        
+        public async Task<List<NeurologicalExamDTO>> GetAllExamsAsync()
+        {
+            return await _httpClient.GetFromJsonAsync<List<NeurologicalExamDTO>>("api/neurologicalexam");
+        }
+
         public async Task<List<NeurologicalExamDTO>> GetByClinicalHistoryIdAsync(int clinicalHistoryId)
         {
             var all = await GetAllAsync();

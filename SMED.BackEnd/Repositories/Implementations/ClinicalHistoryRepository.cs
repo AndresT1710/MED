@@ -15,7 +15,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             _context = context;
         }
 
-        // CORREGIR: PatientHasClinicalHistoryAsync
+
         public async Task<bool> PatientHasClinicalHistoryAsync(int personId)
         {
             // Verificar si existe un Patient con ese PersonId
@@ -31,7 +31,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .AnyAsync(ch => ch.PatientId == personId && ch.IsActive == true);
         }
 
-        // CORREGIR: GetByPatientIdAsync
+
         public async Task<ClinicalHistoryDTO?> GetByPatientIdAsync(int personId)
         {
             var history = await _context.ClinicalHistories
@@ -70,12 +70,19 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.CurrentProblemHistories)
                 .Include(ch => ch.WorkHistories)
                 .Include(ch => ch.PsychosexualHistories)
+                .Include(ch => ch.PrenatalHistories)
+                .Include(ch => ch.PostnatalHistories)
+                .Include(ch => ch.PerinatalHistories)
+                .Include(ch => ch.NeuropsychologicalHistories)
+                .Include(ch => ch.NeurologicalExams)
+                    .ThenInclude(ne => ne.NeurologicalExamType)
+                .Include(ch => ch.DevelopmentRecords)
                 .FirstOrDefaultAsync(ch => ch.PatientId == personId && ch.IsActive == true);
 
             return history == null ? null : MapToDTO(history);
         }
 
-        // CORREGIR: AddAsync
+
         public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryCreateDTO createDto)
         {
             if (createDto.Patient == null || createDto.Patient.PersonId == 0)
@@ -119,7 +126,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             };
         }
 
-        // Método original - CORREGIR también
+
         public async Task<ClinicalHistoryDTO> AddAsync(ClinicalHistoryDTO dto)
         {
             // Verificar que existe el paciente
@@ -191,6 +198,19 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.FoodConsumptionHistories)
                     .ThenInclude(fd => fd.FoodNavigation)
                 .Include(ch => ch.WaterConsumptionHistories)
+                .Include(ch => ch.MedicationHistories)
+                    .ThenInclude(mh => mh.Medicine)
+                .Include(ch => ch.PsychopsychiatricHistories)
+                .Include(ch => ch.CurrentProblemHistories)
+                .Include(ch => ch.WorkHistories)
+                .Include(ch => ch.PsychosexualHistories)
+                .Include(ch => ch.PrenatalHistories)
+                .Include(ch => ch.PostnatalHistories)
+                .Include(ch => ch.PerinatalHistories)
+                .Include(ch => ch.NeuropsychologicalHistories)
+                .Include(ch => ch.NeurologicalExams)
+                    .ThenInclude(ne => ne.NeurologicalExamType)
+                .Include(ch => ch.DevelopmentRecords)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -234,6 +254,13 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.CurrentProblemHistories)
                 .Include(ch => ch.WorkHistories)
                 .Include(ch => ch.PsychosexualHistories)
+                .Include(ch => ch.PrenatalHistories)
+                .Include(ch => ch.PostnatalHistories)
+                .Include(ch => ch.PerinatalHistories)
+                .Include(ch => ch.NeuropsychologicalHistories)
+                .Include(ch => ch.NeurologicalExams)
+                    .ThenInclude(ne => ne.NeurologicalExamType)
+                .Include(ch => ch.DevelopmentRecords)
                 .FirstOrDefaultAsync(ch => ch.ClinicalHistoryId == id);
 
             return history == null ? null : MapToDTO(history);
@@ -525,6 +552,63 @@ namespace SMED.BackEnd.Repositories.Implementations
                     HistoryNumber = ps.HistoryNumber,
                     ClinicalHistoryId = ps.ClinicalHistoryId,
                     Description = ps.Description
+                }).ToList(),
+
+                // Agregar esto en el método MapToDTO del ClinicalHistoryRepository, después de las colecciones existentes:
+
+                PrenatalHistories = entity.PrenatalHistories.Select(ph => new PrenatalHistoryDTO
+                {
+                    PrenatalHistoryId = ph.PrenatalHistoryId,
+                    HistoryNumber = ph.HistoryNumber,
+                    ClinicalHistoryId = ph.ClinicalHistoryId,
+                    Description = ph.Description
+                }).ToList(),
+
+                PostnatalHistories = entity.PostnatalHistories.Select(ph => new PostnatalHistoryDTO
+                {
+                    PostNatalId = ph.PostNatalId,
+                    HistoryNumber = ph.HistoryNumber,
+                    ClinicalHistoryId = ph.ClinicalHistoryId,
+                    Description = ph.Description
+                }).ToList(),
+
+                PerinatalHistories = entity.PerinatalHistories.Select(ph => new PerinatalHistoryDTO
+                {
+                    PerinatalHistoryId = ph.PerinatalHistoryId,
+                    HistoryNumber = ph.HistoryNumber,
+                    ClinicalHistoryId = ph.ClinicalHistoryId,
+                    Description = ph.Description
+                }).ToList(),
+
+                NeuropsychologicalHistories = entity.NeuropsychologicalHistories.Select(nh => new NeuropsychologicalHistoryDTO
+                {
+                    NeuropsychologicalHistoryId = nh.NeuropsychologicalHistoryId,
+                    HistoryNumber = nh.HistoryNumber,
+                    ClinicalHistoryId = nh.ClinicalHistoryId,
+                    Description = nh.Description
+                }).ToList(),
+
+                NeurologicalExams = entity.NeurologicalExams.Select(ne => new NeurologicalExamDTO
+                {
+                    NeurologicalExamId = ne.NeurologicalExamId,
+                    HistoryNumber = ne.HistoryNumber,
+                    ClinicalHistoryId = ne.ClinicalHistoryId,
+                    Name = ne.Name,
+                    LinkPdf = ne.LinkPdf,
+                    ExamDate = ne.ExamDate,
+                    Description = ne.Description,
+                    NeurologicalExamTypeId = ne.NeurologicalExamTypeId,
+                    NeurologicalExamTypeName = ne.NeurologicalExamType?.Name
+                }).ToList(),
+
+                DevelopmentRecords = entity.DevelopmentRecords.Select(dr => new DevelopmentRecordDTO
+                {
+                    DevelopmentRecordId = dr.DevelopmentRecordId,
+                    HistoryNumber = dr.HistoryNumber,
+                    ClinicalHistoryId = dr.ClinicalHistoryId,
+                    DevelopmentMilestone = dr.DevelopmentMilestone,
+                    AgeRange = dr.AgeRange,
+                    Observations = dr.Observations
                 }).ToList()
             };
         }

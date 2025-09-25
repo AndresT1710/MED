@@ -87,6 +87,15 @@ namespace SGIS.Models
         public DbSet<WorkHistory> WorkHistories { get; set; }
         public DbSet<PsychosexualHistory> PsychosexualHistories { get; set; }
 
+        //Estimulación Temprana
+        public DbSet<PrenatalHistory> PrenatalHistories { get; set; }
+        public DbSet<PostnatalHistory> PostnatalHistories { get; set; }
+        public DbSet<PerinatalHistory> PerinatalHistories { get; set; }
+        public DbSet<NeuropsychologicalHistory> NeuropsychologicalHistories { get; set; }
+        public DbSet<NeurologicalExamType> NeurologicalExamTypes { get; set; }
+        public DbSet<NeurologicalExam> NeurologicalExams { get; set; }
+        public DbSet<DevelopmentRecord> DevelopmentRecords { get; set; }
+
 
         // Atención médica
         public DbSet<MedicalVisit> MedicalVisits { get; set; }
@@ -884,6 +893,131 @@ namespace SGIS.Models
                     .WithMany(ch => ch.PsychosexualHistories)
                     .HasForeignKey(d => d.ClinicalHistoryId)
                     .HasConstraintName("FK_PsychosexualHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA PRENATALHISTORY
+            modelBuilder.Entity<PrenatalHistory>(entity =>
+            {
+                entity.HasKey(e => e.PrenatalHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.PrenatalHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_PrenatalHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA POSTNATALHISTORY
+            modelBuilder.Entity<PostnatalHistory>(entity =>
+            {
+                entity.HasKey(e => e.PostNatalId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.PostnatalHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_PostnatalHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA PERINATALHISTORY
+            modelBuilder.Entity<PerinatalHistory>(entity =>
+            {
+                entity.HasKey(e => e.PerinatalHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.PerinatalHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_PerinatalHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA NEUROPSYCHOLOGICALHISTORY
+            modelBuilder.Entity<NeuropsychologicalHistory>(entity =>
+            {
+                entity.HasKey(e => e.NeuropsychologicalHistoryId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.NeuropsychologicalHistories)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_NeuropsychologicalHistory_ClinicalHistory");
+            });
+
+            // CONFIGURACIÓN PARA NEUROLOGICALEXAMTYPE
+            modelBuilder.Entity<NeurologicalExamType>(entity =>
+            {
+                entity.HasKey(e => e.NeurologicalExamTypeId);
+                entity.Property(e => e.Name)
+                    .IsUnicode(false);
+            });
+
+            // CONFIGURACIÓN PARA NEUROLOGICALEXAM
+            modelBuilder.Entity<NeurologicalExam>(entity =>
+            {
+                entity.HasKey(e => e.NeurologicalExamId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.Name)
+                    .IsUnicode(false);
+                entity.Property(e => e.LinkPdf)
+                    .IsUnicode(false);
+                entity.Property(e => e.Description)
+                    .IsUnicode(false);
+                entity.Property(e => e.ExamDate)
+                    .HasColumnType("date");
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.NeurologicalExams)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_NeurologicalExam_ClinicalHistory");
+
+                entity.HasOne(d => d.NeurologicalExamType)
+                    .WithMany(nt => nt.NeurologicalExams)
+                    .HasForeignKey(d => d.NeurologicalExamTypeId)
+                    .HasConstraintName("FK_NeurologicalExam_NeurologicalExamType");
+            });
+
+            // CONFIGURACIÓN PARA DEVELOPMENTRECORD
+            modelBuilder.Entity<DevelopmentRecord>(entity =>
+            {
+                entity.HasKey(e => e.DevelopmentRecordId);
+                entity.Property(e => e.HistoryNumber)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+                entity.Property(e => e.DevelopmentMilestone)
+                    .IsUnicode(false);
+                entity.Property(e => e.AgeRange)
+                    .IsUnicode(false);
+                entity.Property(e => e.Observations)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.ClinicalHistory)
+                    .WithMany(ch => ch.DevelopmentRecords)
+                    .HasForeignKey(d => d.ClinicalHistoryId)
+                    .HasConstraintName("FK_DevelopmentRecord_ClinicalHistory");
             });
 
 

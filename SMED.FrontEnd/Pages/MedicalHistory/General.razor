@@ -32,7 +32,7 @@
                            OnEditRequested="PrepareForEdit"
                            OnDeleteRequested="HandleRowDeleted"
                            OnSaveRequested="SaveChanges"
-                           IsValidForm="() => !string.IsNullOrEmpty(selectedDisease)"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedDisease) && !string.IsNullOrEmpty(personalDescription)"
                            EmptyMessage="@(isLoading ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
@@ -66,6 +66,18 @@
                             <div class="text-muted mt-1">Cargando enfermedades...</div>
                         }
                     </div>
+
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="personalDescription" rows="4"
+                                  placeholder="Describa los detalles del antecedente personal..."
+                                  style="resize: vertical; min-height: 100px; max-height: 200px; overflow-y: auto"></textarea>
+                        @if (string.IsNullOrEmpty(personalDescription))
+                        {
+                            <div class="text-muted mt-1">Este campo es obligatorio</div>
+                        }
+                    </div>
+
                 </EditModalContent>
             </EditableTable>
         </div>
@@ -196,7 +208,7 @@
                            OnEditRequested="PrepareForEditFamily"
                            OnDeleteRequested="HandleFamilyRowDeleted"
                            OnSaveRequested="SaveFamilyChanges"
-                           IsValidForm="() => selectedRelationshipId > 0 && selectedFamilyDiseaseType > 0 && !string.IsNullOrEmpty(selectedFamilyDisease) && familyAppearanceAge > 0"
+                           IsValidForm="() => selectedRelationshipId > 0 && selectedFamilyDiseaseType > 0 && !string.IsNullOrEmpty(selectedFamilyDisease) && familyAppearanceAge > 0 && !string.IsNullOrEmpty(familyDescription)"
                            EmptyMessage="@(isLoadingFamily ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
@@ -244,6 +256,18 @@
                             <div class="text-muted mt-1">Cargando enfermedades...</div>
                         }
                     </div>
+
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="familyDescription" rows="4"
+                                  placeholder="Describa los detalles del antecedente familiar..."
+                                  style="resize: vertical; min-height: 100px; max-height: 200px; overflow-y: auto"></textarea>
+                        @if (string.IsNullOrEmpty(familyDescription))
+                        {
+                            <div class="text-muted mt-1">Este campo es obligatorio</div>
+                        }
+                    </div>
+
                     <div class="form-group mb-3">
                         <label>Edad de Aparición</label>
                         <input type="number" class="form-control" @bind="familyAppearanceAge" min="0" max="120" placeholder="Ingrese la edad" />
@@ -252,6 +276,9 @@
                             <div class="text-muted mt-1">Debe ingresar una edad válida (mayor a 0)</div>
                         }
                     </div>
+
+
+
                 </EditModalContent>
             </EditableTable>
         </div>
@@ -279,7 +306,7 @@
     // ==========================================
     // SECCIÓN: ANTECEDENTES PERSONALES
     // ==========================================
-    private readonly List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad" };
+    private readonly List<string> headersPersonales = new() { "Tipo de Enfermedad", "Enfermedad", "Descripción" };
     private List<PersonalRow> personalesData = new();
     private List<PersonalHistoryDTO> currentPersonalHistories = new();
     private List<DiseaseTypeDTO> diseaseTypes = new();
@@ -288,6 +315,7 @@
     private int selectedDiseaseType = 0;
     private string selectedDisease = "";
     private int editingId = -1;
+    private string personalDescription = "";
     private bool isLoadingDiseases = false;
     private bool canSelectDisease => selectedDiseaseType > 0 && !isLoadingDiseases;
 
@@ -359,7 +387,7 @@
     // ==========================================
     // SECCIÓN: ANTECEDENTES FAMILIARES
     // ==========================================
-    private readonly List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Edad de Aparición" };
+    private readonly List<string> headersFamiliares = new() { "Parentesco", "Tipo de Enfermedad", "Enfermedad", "Descripción", "Edad de Aparición" };
     private List<FamilyRow> familiaresData = new();
     private List<FamilyHistoryDetailDTO> currentFamilyHistories = new();
     private List<RelationshipDTO> relationships = new();
@@ -371,6 +399,7 @@
     private string selectedFamilyDisease = "";
     private int familyAppearanceAge = 0;
     private int editingFamilyId = -1;
+    private string familyDescription = "";
     private bool isLoadingFamily = false;
     private bool isLoadingRelationships = false;
     private bool isLoadingFamilyDiseases = false;
@@ -433,14 +462,15 @@
             foreach (var ph in currentPersonalHistories)
             {
                 personalesData.Add(new PersonalRow
-                    {
-                        Id = ph.PersonalHistoryId,
-                        Values = new()
-                    {
-                        ph.DiseaseTypeName ?? "Desconocido",
-                        ph.DiseaseName ?? "No especificada"
-                    }
-                    });
+                {
+                    Id = ph.PersonalHistoryId,
+                    Values = new()
+        {
+            ph.DiseaseTypeName ?? "Desconocido",
+            ph.DiseaseName ?? "No especificada",
+            ph.Description ?? "Sin descripción" 
+        }
+                });
             }
         }
         catch (Exception ex)
@@ -469,6 +499,7 @@
 
             editingId = id;
             selectedDisease = dto.DiseaseName ?? "";
+            personalDescription = dto.Description ?? "";
             selectedDiseaseType = 0;
             availableDiseases = new();
 
@@ -551,7 +582,7 @@
                     {
                         ClinicalHistoryId = clinicalHistoryId,
                         DiseaseId = enfermedad.DiseaseId,
-                        Description = $"{selectedDiseaseType} - {selectedDisease}",
+                        Description = personalDescription,
                         RegistrationDate = DateTime.Now,
                         MedicalRecordNumber = medicalRecordNumber
                     };
@@ -573,7 +604,7 @@
                 }
 
                 dto.DiseaseId = enfermedad.DiseaseId;
-                dto.Description = $"{selectedDiseaseType} - {selectedDisease}";
+                dto.Description = personalDescription;
 
                 var (success, error) = await PersonalHistoryService.UpdateAsync(dto);
                 if (!success)
@@ -609,6 +640,7 @@
         editingId = -1;
         selectedDiseaseType = 0;
         selectedDisease = "";
+        personalDescription = ""; 
         availableDiseases = new();
         errorMessage = string.Empty;
     }
@@ -1128,20 +1160,20 @@
             var result = await FamilyHistoryDetailService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             currentFamilyHistories = result ?? new();
             familiaresData = new();
-
             foreach (var fh in currentFamilyHistories)
             {
                 familiaresData.Add(new FamilyRow
-                    {
-                        Id = fh.FamilyHistoryDetailId,
-                        Values = new()
-                    {
-                        GetRelationshipName(fh.RelationshipId),
-                        await GetDiseaseTypeName(fh.DiseaseId ?? 0),
-                        await GetDiseaseName(fh.DiseaseId ?? 0),
-                        fh.appearanceAge?.ToString() ?? "No especificada"
-                    }
-                    });
+                {
+                    Id = fh.FamilyHistoryDetailId,
+                    Values = new()
+        {
+            GetRelationshipName(fh.RelationshipId),
+            await GetDiseaseTypeName(fh.DiseaseId ?? 0),
+            await GetDiseaseName(fh.DiseaseId ?? 0),
+            fh.Description ?? "Sin descripción", // NUEVO CAMPO
+            fh.appearanceAge?.ToString() ?? "No especificada"
+        }
+                });
             }
         }
         catch (Exception ex)
@@ -1213,6 +1245,7 @@
             editingFamilyId = id;
             selectedRelationshipId = dto.RelationshipId;
             familyAppearanceAge = dto.appearanceAge ?? 0;
+            familyDescription = dto.Description ?? "";
             selectedFamilyDiseaseType = 0;
             selectedFamilyDisease = "";
             availableFamilyDiseases = new();
@@ -1315,15 +1348,15 @@
             if (editingFamilyId == -1)
             {
                 var nuevo = new FamilyHistoryDetailDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        RelationshipId = selectedRelationshipId,
-                        DiseaseId = enfermedad.DiseaseId,
-                        appearanceAge = familyAppearanceAge,
-                        Description = $"{relationshipName} - {diseaseTypeName} - {selectedFamilyDisease} (Edad: {familyAppearanceAge})",
-                        RegistrationDate = DateTime.Now,
-                        MedicalRecordNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    RelationshipId = selectedRelationshipId,
+                    DiseaseId = enfermedad.DiseaseId,
+                    appearanceAge = familyAppearanceAge,
+                    Description = familyDescription, 
+                    RegistrationDate = DateTime.Now,
+                    MedicalRecordNumber = medicalRecordNumber
+                };
 
                 var (success, _, error) = await FamilyHistoryDetailService.CreateAsync(nuevo);
                 if (!success)
@@ -1344,7 +1377,7 @@
                 dto.RelationshipId = selectedRelationshipId;
                 dto.DiseaseId = enfermedad.DiseaseId;
                 dto.appearanceAge = familyAppearanceAge;
-                dto.Description = $"{relationshipName} - {diseaseTypeName} - {selectedFamilyDisease} (Edad: {familyAppearanceAge})";
+                dto.Description = familyDescription;
 
                 var (success, error) = await FamilyHistoryDetailService.UpdateAsync(dto);
                 if (!success)
@@ -1382,6 +1415,7 @@
         selectedFamilyDiseaseType = 0;
         selectedFamilyDisease = "";
         familyAppearanceAge = 0;
+        familyDescription = "";
         availableFamilyDiseases = new();
         errorMessage = string.Empty;
     }

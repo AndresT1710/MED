@@ -1,16 +1,1113 @@
 ﻿@page "/medical-history/psychological"
 @using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
+@inject MedicationHistoryService MedicationHistoryService
+@inject MedicineService MedicineService
+@inject PsychopsychiatricHistoryService PsychopsychiatricHistoryService
+@inject CurrentProblemHistoryService CurrentProblemHistoryService
+@inject ToxicHabitHistoryService ToxicHabitHistoryService
+@inject ToxicHabitService ToxicHabitService
+@inject PsychosexualHistoryService PsychosexualHistoryService
+@inject WorkHistoryService WorkHistoryService
+@inject ILogger<Psychological> Logger
 
-<TabContainer OnSave="GuardarDatos">
+<TabContainer>
     <h4>Historia Clínica - Psicología</h4>
-    <PatientSelector />
 
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
+    {
+        <!-- SECCIÓN: ANTECEDENTE DE MEDICAMENTOS -->
+        <div class="editable-table-wrapper">
+            <EditableTable Title="Antecedente de Medicamentos"
+                           ColumnHeaders="@headersMedication"
+                           Rows="@medicationData.Select(d => d.Values).ToList()"
+                           RowIds="@medicationData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddMedication"
+                           OnEditRequested="PrepareForEditMedication"
+                           OnDeleteRequested="HandleMedicationRowDeleted"
+                           OnSaveRequested="SaveMedicationChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedMedicine)"
+                           EmptyMessage="@(isLoadingMedication ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingMedicationId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Medicamento</label>
+                        <select class="form-select" @bind="selectedMedicine">
+                            <option value="">Seleccione un medicamento</option>
+                            @foreach (var medicine in availableMedicines)
+                            {
+                                <option value="@medicine">@medicine</option>
+                            }
+                        </select>
+                        @if (isLoadingMedication)
+                        {
+                            <div class="text-muted mt-1">Cargando medicamentos...</div>
+                        }
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTE PSICOPSIQUIÁTRICO -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedente Psicopsiquiátrico"
+                           ColumnHeaders="@headersPsychopsychiatric"
+                           Rows="@psychopsychiatricData.Select(d => d.Values).ToList()"
+                           RowIds="@psychopsychiatricData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddPsychopsychiatric"
+                           OnEditRequested="PrepareForEditPsychopsychiatric"
+                           OnDeleteRequested="HandlePsychopsychiatricRowDeleted"
+                           OnSaveRequested="SavePsychopsychiatricChanges"
+                           IsValidForm="() => !string.IsNullOrWhiteSpace(psychopsychiatricType) && !string.IsNullOrWhiteSpace(psychopsychiatricActor)"
+                           EmptyMessage="@(isLoadingPsychopsychiatric ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingPsychopsychiatricId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Tipo</label>
+                        <textarea class="form-control" @bind="psychopsychiatricType" rows="2"
+                                  placeholder="Ingrese el tipo de antecedente" style="resize: vertical; max-height: 100px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(psychopsychiatricType))
+                        {
+                            <div class="text-muted mt-1">El tipo es obligatorio</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Actor</label>
+                        <textarea class="form-control" @bind="psychopsychiatricActor" rows="2"
+                                  placeholder="Ingrese el actor involucrado" style="resize: vertical; max-height: 100px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(psychopsychiatricActor))
+                        {
+                            <div class="text-muted mt-1">El actor es obligatorio</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha</label>
+                        <input type="date" class="form-control" @bind="psychopsychiatricDate" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Estado</label>
+                        <textarea class="form-control" @bind="psychopsychiatricStatus" rows="2"
+                                  placeholder="Ingrese el estado actual" style="resize: vertical; max-height: 100px;"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL DE PROBLEMA ACTUAL -->
+        <div class="container-section mt-4">
+            <h5>Historial de Problema Actual</h5>
+            <div class="containerbox1-grid">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Aparición y Evolución"
+                                       Width="full"
+                                       @bind-Content="problemAppearanceContent"
+                                       @bind-Content:after="OnProblemAppearanceContentChanged" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Factores Desencadenantes"
+                                       Width="full"
+                                       @bind-Content="problemFactorsContent"
+                                       @bind-Content:after="OnProblemFactorsContentChanged" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Frecuencia e Intensidad de Síntomas"
+                                       Width="full"
+                                       @bind-Content="problemSymptomsContent"
+                                       @bind-Content:after="OnProblemSymptomsContentChanged" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Impacto"
+                                       Width="full"
+                                       @bind-Content="problemImpactContent"
+                                       @bind-Content:after="OnProblemImpactContentChanged" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HÁBITOS TÓXICOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Hábitos Tóxicos"
+                           ColumnHeaders="@headersToxicHabits"
+                           Rows="@toxicHabitsData.Select(d => d.Values).ToList()"
+                           RowIds="@toxicHabitsData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddToxicHabit"
+                           OnEditRequested="PrepareForEditToxicHabit"
+                           OnDeleteRequested="HandleToxicHabitRowDeleted"
+                           OnSaveRequested="SaveToxicHabitChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(selectedToxicHabit)"
+                           EmptyMessage="@(isLoadingToxicHabits ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingToxicHabitId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Hábito Tóxico</label>
+                        <select class="form-select" @bind="selectedToxicHabit">
+                            <option value="">Seleccione un hábito tóxico</option>
+                            @foreach (var habit in availableToxicHabits)
+                            {
+                                <option value="@habit">@habit</option>
+                            }
+                        </select>
+                        @if (isLoadingToxicHabits)
+                        {
+                            <div class="text-muted mt-1">Cargando hábitos tóxicos...</div>
+                        }
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTE PSICOSEXUAL -->
+        <div class="container-section mt-4">
+            <h5>Antecedente Psicosexual</h5>
+            <div class="containerbox1-grid">
+                <!-- Added @bind-Content:after for auto-save -->
+                <ContainerBox1 Title="Historial Psicosexual"
+                               Width="full"
+                               @bind-Content="psychosexualContent"
+                               @bind-Content:after="OnPsychosexualContentChanged" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HISTORIAL LABORAL -->
+        <div class="container-section mt-4">
+            <h5>Historial Laboral</h5>
+            <div class="containerbox1-grid">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Experiencia"
+                                       Width="full"
+                                       @bind-Content="workExperienceContent"
+                                       @bind-Content:after="OnWorkExperienceContentChanged" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Estabilidad"
+                                       Width="full"
+                                       @bind-Content="workStabilityContent"
+                                       @bind-Content:after="OnWorkStabilityContentChanged" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
+                        <ContainerBox1 Title="Nivel de Satisfacción"
+                                       Width="full"
+                                       @bind-Content="workSatisfactionContent"
+                                       @bind-Content:after="OnWorkSatisfactionContentChanged" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Removed the general save button section -->
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los antecedentes psicológicos.</p>
+    }
 </TabContainer>
 
 @code {
-    private async Task GuardarDatos()
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTE DE MEDICAMENTOS
+    // ==========================================
+    private readonly List<string> headersMedication = new() { "Medicamento" };
+    private List<MedicationRow> medicationData = new();
+    private List<MedicationHistoryDTO> currentMedicationHistories = new();
+    private List<MedicineDTO> medicines = new();
+    private List<string> availableMedicines = new();
+
+    private string selectedMedicine = "";
+    private int editingMedicationId = -1;
+    private bool isLoadingMedication = false;
+
+    private class MedicationRow
     {
-        Console.WriteLine("Guardando datos del historial psicológico...");
-        // Lógica real de guardado aquí
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
     }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTE PSICOPSIQUIÁTRICO
+    // ==========================================
+    private readonly List<string> headersPsychopsychiatric = new() { "Tipo", "Actor", "Fecha", "Estado" };
+    private List<PsychopsychiatricRow> psychopsychiatricData = new();
+    private List<PsychopsychiatricHistoryDTO> currentPsychopsychiatricHistories = new();
+
+    private string psychopsychiatricType = "";
+    private string psychopsychiatricActor = "";
+    private DateTime psychopsychiatricDate = DateTime.Now;
+    private string psychopsychiatricStatus = "";
+    private int editingPsychopsychiatricId = -1;
+    private bool isLoadingPsychopsychiatric = false;
+
+    private class PsychopsychiatricRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: HISTORIAL DE PROBLEMA ACTUAL (ContainerBox1)
+    // ==========================================
+    private string problemAppearanceContent = "";
+    private string problemFactorsContent = "";
+    private string problemSymptomsContent = "";
+    private string problemImpactContent = "";
+    private CurrentProblemHistoryDTO currentProblem = new()
+    {
+        HistoryNumber = string.Empty,
+        AppearanceEvolution = string.Empty,
+        TriggeringFactors = string.Empty,
+        FrequencyIntensitySymptoms = string.Empty,
+        Impact = string.Empty
+    };
+
+    private async Task OnProblemAppearanceContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemFactorsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemSymptomsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemImpactContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    // ==========================================
+    // SECCIÓN: HÁBITOS TÓXICOS
+    // ==========================================
+    private readonly List<string> headersToxicHabits = new() { "Hábito Tóxico" };
+    private List<ToxicHabitRow> toxicHabitsData = new();
+    private List<ToxicHabitHistoryDTO> currentToxicHabitHistories = new();
+    private List<ToxicHabitDTO> toxicHabits = new();
+    private List<string> availableToxicHabits = new();
+
+    private string selectedToxicHabit = "";
+    private int editingToxicHabitId = -1;
+    private bool isLoadingToxicHabits = false;
+
+    private class ToxicHabitRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTE PSICOSEXUAL (ContainerBox1)
+    // ==========================================
+    private string psychosexualContent = "";
+    private PsychosexualHistoryDTO psychosexualHistory = new()
+    {
+        HistoryNumber = string.Empty,
+        Description = string.Empty
+    };
+
+    private async Task OnPsychosexualContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePsychosexualHistoryAsync();
+        }
+    }
+
+    // ==========================================
+    // SECCIÓN: HISTORIAL LABORAL (ContainerBox1)
+    // ==========================================
+    private string workExperienceContent = "";
+    private string workStabilityContent = "";
+    private string workSatisfactionContent = "";
+    private WorkHistoryDTO workHistory = new()
+    {
+        HistoryNumber = string.Empty,
+        Experience = string.Empty,
+        Stability = string.Empty,
+        SatisfactionLevel = string.Empty
+    };
+
+    private async Task OnWorkExperienceContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
+
+    private async Task OnWorkStabilityContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
+
+    private async Task OnWorkSatisfactionContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+
+            // Cargar medicamentos disponibles
+            medicines = await MedicineService.GetAllAsync() ?? new();
+            availableMedicines = medicines.Select(m => m.Name ?? "Sin nombre").Where(name => !string.IsNullOrEmpty(name)).ToList();
+
+            // Cargar hábitos tóxicos disponibles
+            toxicHabits = await ToxicHabitService.GetAllAsync() ?? new();
+            availableToxicHabits = toxicHabits.Select(t => t.Name).Where(name => !string.IsNullOrEmpty(name)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar datos iniciales");
+            errorMessage = "Error al cargar los datos iniciales.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadMedicationHistories();
+            await LoadPsychopsychiatricHistories();
+            await LoadCurrentProblemHistory();
+            await LoadToxicHabitHistories();
+            await LoadPsychosexualHistory();
+            await LoadWorkHistory();
+        }
+    }
+
+
+    // ==========================================
+    // MÉTODOS: CARGA DE DATOS CONTAINERBOX
+    // ==========================================
+    private async Task LoadCurrentProblemHistory()
+    {
+        try
+        {
+            var result = await CurrentProblemHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentProblem = result?.FirstOrDefault() ?? new CurrentProblemHistoryDTO { HistoryNumber = medicalRecordNumber };
+
+            problemAppearanceContent = currentProblem.AppearanceEvolution ?? "";
+            problemFactorsContent = currentProblem.TriggeringFactors ?? "";
+            problemSymptomsContent = currentProblem.FrequencyIntensitySymptoms ?? "";
+            problemImpactContent = currentProblem.Impact ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial de problema actual");
+        }
+    }
+
+    private async Task LoadPsychosexualHistory()
+    {
+        try
+        {
+            var result = await PsychosexualHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            psychosexualHistory = result?.FirstOrDefault() ?? new PsychosexualHistoryDTO { HistoryNumber = medicalRecordNumber };
+            psychosexualContent = psychosexualHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial psicosexual");
+        }
+    }
+
+    private async Task LoadWorkHistory()
+    {
+        try
+        {
+            var result = await WorkHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            workHistory = result?.FirstOrDefault() ?? new WorkHistoryDTO { HistoryNumber = medicalRecordNumber };
+
+            workExperienceContent = workHistory.Experience ?? "";
+            workStabilityContent = workHistory.Stability ?? "";
+            workSatisfactionContent = workHistory.SatisfactionLevel ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial laboral");
+        }
+    }
+
+    private async Task SaveCurrentProblemHistoryAsync()
+    {
+        try
+        {
+            // Si todos los contenidos están vacíos y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(problemAppearanceContent) &&
+                string.IsNullOrWhiteSpace(problemFactorsContent) &&
+                string.IsNullOrWhiteSpace(problemSymptomsContent) &&
+                string.IsNullOrWhiteSpace(problemImpactContent))
+            {
+                if (currentProblem.CurrentProblemHistoryId > 0)
+                {
+                    await CurrentProblemHistoryService.DeleteAsync(currentProblem.CurrentProblemHistoryId);
+                    currentProblem = new CurrentProblemHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            currentProblem.ClinicalHistoryId = clinicalHistoryId;
+            currentProblem.HistoryNumber = medicalRecordNumber;
+            currentProblem.AppearanceEvolution = string.IsNullOrWhiteSpace(problemAppearanceContent) ? null : problemAppearanceContent.Trim();
+            currentProblem.TriggeringFactors = string.IsNullOrWhiteSpace(problemFactorsContent) ? null : problemFactorsContent.Trim();
+            currentProblem.FrequencyIntensitySymptoms = string.IsNullOrWhiteSpace(problemSymptomsContent) ? null : problemSymptomsContent.Trim();
+            currentProblem.Impact = string.IsNullOrWhiteSpace(problemImpactContent) ? null : problemImpactContent.Trim();
+
+            if (currentProblem.CurrentProblemHistoryId == 0)
+            {
+                var (success, created, error) = await CurrentProblemHistoryService.CreateAsync(currentProblem);
+                if (success && created != null)
+                {
+                    currentProblem = created;
+                }
+            }
+            else
+            {
+                await CurrentProblemHistoryService.UpdateAsync(currentProblem);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial de problema actual");
+        }
+    }
+
+    private async Task SavePsychosexualHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(psychosexualContent))
+            {
+                if (psychosexualHistory.PsychosexualHistoryId > 0)
+                {
+                    await PsychosexualHistoryService.DeleteAsync(psychosexualHistory.PsychosexualHistoryId);
+                    psychosexualHistory = new PsychosexualHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            psychosexualHistory.ClinicalHistoryId = clinicalHistoryId;
+            psychosexualHistory.HistoryNumber = medicalRecordNumber;
+            psychosexualHistory.Description = psychosexualContent.Trim();
+
+            if (psychosexualHistory.PsychosexualHistoryId == 0)
+            {
+                var (success, created, error) = await PsychosexualHistoryService.CreateAsync(psychosexualHistory);
+                if (success && created != null)
+                {
+                    psychosexualHistory = created;
+                }
+            }
+            else
+            {
+                await PsychosexualHistoryService.UpdateAsync(psychosexualHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial psicosexual");
+        }
+    }
+
+    private async Task SaveWorkHistoryAsync()
+    {
+        try
+        {
+            // Si todos los contenidos están vacíos y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(workExperienceContent) &&
+                string.IsNullOrWhiteSpace(workStabilityContent) &&
+                string.IsNullOrWhiteSpace(workSatisfactionContent))
+            {
+                if (workHistory.WorkHistoryId > 0)
+                {
+                    await WorkHistoryService.DeleteAsync(workHistory.WorkHistoryId);
+                    workHistory = new WorkHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            workHistory.ClinicalHistoryId = clinicalHistoryId;
+            workHistory.HistoryNumber = medicalRecordNumber;
+            workHistory.Experience = string.IsNullOrWhiteSpace(workExperienceContent) ? null : workExperienceContent.Trim();
+            workHistory.Stability = string.IsNullOrWhiteSpace(workStabilityContent) ? null : workStabilityContent.Trim();
+            workHistory.SatisfactionLevel = string.IsNullOrWhiteSpace(workSatisfactionContent) ? null : workSatisfactionContent.Trim();
+
+            if (workHistory.WorkHistoryId == 0)
+            {
+                var (success, created, error) = await WorkHistoryService.CreateAsync(workHistory);
+                if (success && created != null)
+                {
+                    workHistory = created;
+                }
+            }
+            else
+            {
+                await WorkHistoryService.UpdateAsync(workHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial laboral");
+        }
+    }
+
+
+    private async Task LoadMedicationHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingMedication = true;
+
+        try
+        {
+            var result = await MedicationHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentMedicationHistories = result ?? new();
+            medicationData = new();
+
+            foreach (var mh in currentMedicationHistories)
+            {
+                medicationData.Add(new MedicationRow
+                {
+                    Id = mh.MedicationHistoryId,
+                    Values = new() { GetMedicineName(mh.MedicineId) }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historiales de medicación");
+            errorMessage = "Error al cargar los antecedentes de medicación.";
+        }
+        finally
+        {
+            isLoadingMedication = false;
+        }
+    }
+
+    private string GetMedicineName(int? medicineId)
+    {
+        if (medicineId == null || medicineId == 0) return "Sin especificar";
+        return medicines.FirstOrDefault(m => m.Id == medicineId)?.Name ?? "Desconocido";
+    }
+
+    private void PrepareForEditMedication(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentMedicationHistories.FirstOrDefault(m => m.MedicationHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de medicamento con ID {id}";
+                return;
+            }
+
+            editingMedicationId = id;
+            selectedMedicine = GetMedicineName(dto.MedicineId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de medicamento");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleMedicationRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await MedicationHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadMedicationHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de medicamento");
+            errorMessage = "Error al eliminar el antecedente de medicamento.";
+        }
+    }
+
+    private async Task SaveMedicationChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedMedicine))
+            {
+                errorMessage = "Debe seleccionar un medicamento.";
+                return;
+            }
+
+            var medicine = medicines.FirstOrDefault(m => m.Name == selectedMedicine);
+            if (medicine == null)
+            {
+                errorMessage = "Medicamento no encontrado.";
+                return;
+            }
+
+            if (editingMedicationId == -1)
+            {
+                var nuevo = new MedicationHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    MedicineId = medicine.Id,
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var (success, _, error) = await MedicationHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de medicamento: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentMedicationHistories.FirstOrDefault(m => m.MedicationHistoryId == editingMedicationId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.MedicineId = medicine.Id;
+
+                var (success, error) = await MedicationHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de medicamento: {error}";
+                    return;
+                }
+            }
+
+            await LoadMedicationHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de medicamento");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddMedication()
+    {
+        editingMedicationId = -1;
+        selectedMedicine = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingMedicationId() => editingMedicationId == -1 ? "Nuevo" : editingMedicationId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTE PSICOPSIQUIÁTRICO
+    // ==========================================
+    private async Task LoadPsychopsychiatricHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingPsychopsychiatric = true;
+
+        try
+        {
+            var result = await PsychopsychiatricHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentPsychopsychiatricHistories = result ?? new();
+            psychopsychiatricData = new();
+
+            foreach (var ph in currentPsychopsychiatricHistories)
+            {
+                psychopsychiatricData.Add(new PsychopsychiatricRow
+                {
+                    Id = ph.PsychopsychiatricHistoryId,
+                    Values = new()
+                    {
+                        ph.Type ?? "Sin tipo",
+                        ph.Actor ?? "Sin actor",
+                        ph.HistoryDate?.ToShortDateString() ?? "Sin fecha",
+                        ph.HistoryState ?? "Sin estado"
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historiales psicopsiquiátricos");
+            errorMessage = "Error al cargar los antecedentes psicopsiquiátricos.";
+        }
+        finally
+        {
+            isLoadingPsychopsychiatric = false;
+        }
+    }
+
+    private void PrepareForEditPsychopsychiatric(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentPsychopsychiatricHistories.FirstOrDefault(p => p.PsychopsychiatricHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente psicopsiquiátrico con ID {id}";
+                return;
+            }
+
+            editingPsychopsychiatricId = id;
+            psychopsychiatricType = dto.Type ?? "";
+            psychopsychiatricActor = dto.Actor ?? "";
+            psychopsychiatricDate = dto.HistoryDate ?? DateTime.Now;
+            psychopsychiatricStatus = dto.HistoryState ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente psicopsiquiátrico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandlePsychopsychiatricRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await PsychopsychiatricHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadPsychopsychiatricHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente psicopsiquiátrico");
+            errorMessage = "Error al eliminar el antecedente psicopsiquiátrico.";
+        }
+    }
+
+    private async Task SavePsychopsychiatricChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(psychopsychiatricType))
+            {
+                errorMessage = "El tipo es obligatorio.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(psychopsychiatricActor))
+            {
+                errorMessage = "El actor es obligatorio.";
+                return;
+            }
+
+            if (editingPsychopsychiatricId == -1)
+            {
+                var nuevo = new PsychopsychiatricHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    Type = psychopsychiatricType.Trim(),
+                    Actor = psychopsychiatricActor.Trim(),
+                    HistoryDate = psychopsychiatricDate,
+                    HistoryState = string.IsNullOrWhiteSpace(psychopsychiatricStatus) ? null : psychopsychiatricStatus.Trim(),
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var (success, _, error) = await PsychopsychiatricHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente psicopsiquiátrico: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentPsychopsychiatricHistories.FirstOrDefault(p => p.PsychopsychiatricHistoryId == editingPsychopsychiatricId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.Type = psychopsychiatricType.Trim();
+                dto.Actor = psychopsychiatricActor.Trim();
+                dto.HistoryDate = psychopsychiatricDate;
+                dto.HistoryState = string.IsNullOrWhiteSpace(psychopsychiatricStatus) ? null : psychopsychiatricStatus.Trim();
+
+                var (success, error) = await PsychopsychiatricHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente psicopsiquiátrico: {error}";
+                    return;
+                }
+            }
+
+            await LoadPsychopsychiatricHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente psicopsiquiátrico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddPsychopsychiatric()
+    {
+        editingPsychopsychiatricId = -1;
+        psychopsychiatricType = "";
+        psychopsychiatricActor = "";
+        psychopsychiatricDate = DateTime.Now;
+        psychopsychiatricStatus = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingPsychopsychiatricId() => editingPsychopsychiatricId == -1 ? "Nuevo" : editingPsychopsychiatricId.ToString();
+
+    // ==========================================
+    // MÉTODOS: HÁBITOS TÓXICOS
+    // ==========================================
+    private async Task LoadToxicHabitHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingToxicHabits = true;
+
+        try
+        {
+            var result = await ToxicHabitHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentToxicHabitHistories = result ?? new();
+            toxicHabitsData = new();
+
+            foreach (var th in currentToxicHabitHistories)
+            {
+                toxicHabitsData.Add(new ToxicHabitRow
+                {
+                    Id = th.ToxicHabitHistoryId,
+                    Values = new() { GetToxicHabitName(th.ToxicHabitId) }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historiales de hábitos tóxicos");
+            errorMessage = "Error al cargar los antecedentes de hábitos tóxicos.";
+        }
+        finally
+        {
+            isLoadingToxicHabits = false;
+        }
+    }
+
+    private string GetToxicHabitName(int? toxicHabitId)
+    {
+        if (toxicHabitId == null || toxicHabitId == 0) return "Sin especificar";
+        return toxicHabits.FirstOrDefault(t => t.ToxicHabitId == toxicHabitId)?.Name ?? "Desconocido";
+    }
+
+    private void PrepareForEditToxicHabit(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentToxicHabitHistories.FirstOrDefault(t => t.ToxicHabitHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente de hábito tóxico con ID {id}";
+                return;
+            }
+
+            editingToxicHabitId = id;
+            selectedToxicHabit = GetToxicHabitName(dto.ToxicHabitId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente de hábito tóxico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleToxicHabitRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var (success, error) = await ToxicHabitHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = $"Error al eliminar: {error}";
+                return;
+            }
+
+            await LoadToxicHabitHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente de hábito tóxico");
+            errorMessage = "Error al eliminar el antecedente de hábito tóxico.";
+        }
+    }
+
+    private async Task SaveToxicHabitChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedToxicHabit))
+            {
+                errorMessage = "Debe seleccionar un hábito tóxico.";
+                return;
+            }
+
+            var toxicHabit = toxicHabits.FirstOrDefault(t => t.Name == selectedToxicHabit);
+            if (toxicHabit == null)
+            {
+                errorMessage = "Hábito tóxico no encontrado.";
+                return;
+            }
+
+            if (editingToxicHabitId == -1)
+            {
+                var nuevo = new ToxicHabitHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    ToxicHabitId = toxicHabit.ToxicHabitId,
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var (success, _, error) = await ToxicHabitHistoryService.CreateAsync(nuevo);
+                if (!success)
+                {
+                    errorMessage = $"Error al crear antecedente de hábito tóxico: {error}";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentToxicHabitHistories.FirstOrDefault(t => t.ToxicHabitHistoryId == editingToxicHabitId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.ToxicHabitId = toxicHabit.ToxicHabitId;
+
+                var (success, error) = await ToxicHabitHistoryService.UpdateAsync(dto);
+                if (!success)
+                {
+                    errorMessage = $"Error al actualizar antecedente de hábito tóxico: {error}";
+                    return;
+                }
+            }
+
+            await LoadToxicHabitHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente de hábito tóxico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddToxicHabit()
+    {
+        editingToxicHabitId = -1;
+        selectedToxicHabit = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingToxicHabitId() => editingToxicHabitId == -1 ? "Nuevo" : editingToxicHabitId.ToString();
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
 }

@@ -4,6 +4,7 @@ using SMED.FrontEnd;
 using SMED.FrontEnd.Services;
 using Blazored.LocalStorage;
 using System.Net.Http;
+using SMED.Frontend.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -53,6 +54,20 @@ builder.Services.AddScoped<SleepHabitHistoryService>();
 builder.Services.AddScoped<FoodService>();
 builder.Services.AddScoped<FoodConsumptionHistoryService>();
 builder.Services.AddScoped<WaterConsumptionHistoryService>();
+builder.Services.AddScoped<ToxicHabitHistoryService>();
+builder.Services.AddScoped<ToxicHabitService>();
+builder.Services.AddScoped<MedicationHistoryService>();
+builder.Services.AddScoped<PsychopsychiatricHistoryService>();
+builder.Services.AddScoped<PsychosexualHistoryService>();
+builder.Services.AddScoped<CurrentProblemHistoryService>();
+builder.Services.AddScoped<WorkHistoryService>();
+builder.Services.AddScoped<PrenatalHistoryService>();
+builder.Services.AddScoped<PostnatalHistoryService>();
+builder.Services.AddScoped<PerinatalHistoryService>();
+builder.Services.AddScoped<NeuropsychologicalHistoryService>();
+builder.Services.AddScoped<NeurologicalExamTypeService>();
+builder.Services.AddScoped<NeurologicalExamService>();
+builder.Services.AddScoped<DevelopmentRecordService>();
 builder.Services.AddScoped<MedicalCareService>();
 builder.Services.AddScoped<TypeOfServiceService>();
 builder.Services.AddScoped<CostOfServiceService>();
@@ -90,6 +105,7 @@ builder.Services.AddScoped<MedicalDiagnosisService>();
 builder.Services.AddScoped<LocationService>();
 builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<MedicalReferralService>();
+
 
 builder.Services.AddLogging();
 

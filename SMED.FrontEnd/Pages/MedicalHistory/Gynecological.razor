@@ -17,70 +17,44 @@
         <div class="containerbox1-grid">
             <ContainerBox1 Title="Desarrollo Ginecológico"
                            Width="full"
-                           @bind-Content="gynecologicalDevelopmentContent" />
+                           @bind-Content="gynecologicalDevelopmentContent"
+                           @bind-Content:after="OnGynecologicalDevelopmentChanged" />
         </div>
 
         <div class="containerbox2-grid">
             <ContainerBox2 Title="Menarquia"
                            Width="half"
-                           @bind-SelectedDate="menarcheDate" />
+                           @bind-SelectedDate="menarcheDate"
+                           @bind-SelectedDate:after="OnMenarcheDateChanged" />
 
             <ContainerBox2 Title="Pubarquia"
                            Width="half"
-                           @bind-SelectedDate="pubarcheDate" />
+                           @bind-SelectedDate="pubarcheDate"
+                           @bind-SelectedDate:after="OnPubarcheDateChanged" />
         </div>
 
         <div class="containerbox1-grid">
             <ContainerBox1 Title="Ciclos Menstruales"
                            Width="full"
-                           @bind-Content="menstrualCyclesContent" />
+                           @bind-Content="menstrualCyclesContent"
+                           @bind-Content:after="OnMenstrualCyclesChanged" />
         </div>
 
         <div class="containerbox2-grid">
             <ContainerBox2 Title="Última Menstruación"
                            Width="half"
-                           @bind-SelectedDate="lastMenstruationDate" />
+                           @bind-SelectedDate="lastMenstruationDate"
+                           @bind-SelectedDate:after="OnLastMenstruationDateChanged" />
         </div>
 
         <div class="containerbox1-grid">
             <ContainerBox1 Title="Métodos Anticonceptivos"
                            Width="full"
-                           @bind-Content="contraceptiveMethodsContent" />
+                           @bind-Content="contraceptiveMethodsContent"
+                           @bind-Content:after="OnContraceptiveMethodsChanged" />
         </div>
 
-        <!-- ✅ BOTÓN DE GUARDADO DIRECTO EN LA PÁGINA -->
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatos"
-                    disabled="@(isLoading || clinicalHistoryId <= 0)">
-                @if (isLoading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    <span>Guardando...</span>
-                }
-                else
-                {
-                    <i class="fas fa-save me-2"></i>
-                    <span>Guardar Datos Ginecológicos</span>
-                }
-            </button>
-        </div>
-
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger mt-3">
-                @errorMessage
-                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(successMessage))
-        {
-            <div class="alert alert-success mt-3">
-                @successMessage
-                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
-            </div>
-        }
+        <!-- Removed central save button and related UI elements -->
     }
     else
     {
@@ -92,8 +66,6 @@
     private int clinicalHistoryId = 0;
     private string medicalRecordNumber = string.Empty;
     private GynecologicalHistoryDTO gynecological = new();
-    private string errorMessage = string.Empty;
-    private string successMessage = string.Empty;
     private bool isLoading = false;
 
     // Variables para ContainerBox1
@@ -119,7 +91,6 @@
 
     private async Task LoadGynecologicalHistory()
     {
-        errorMessage = string.Empty;
         isLoading = true;
 
         try
@@ -143,10 +114,10 @@
             {
                 // Crear nuevo registro si no existe
                 gynecological = new GynecologicalHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        MedicalRecordNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    MedicalRecordNumber = medicalRecordNumber
+                };
 
                 // Limpiar ContainerBox
                 gynecologicalDevelopmentContent = "";
@@ -160,7 +131,6 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error al cargar historia ginecológica");
-            errorMessage = "Error al cargar los datos ginecológicos.";
         }
         finally
         {
@@ -168,73 +138,70 @@
         }
     }
 
-    private async Task GuardarDatos()
+    private async Task OnGynecologicalDevelopmentChanged()
     {
-        errorMessage = string.Empty;
-        successMessage = string.Empty;
-        isLoading = true;
+        gynecological.GynecologicalDevelopment = string.IsNullOrWhiteSpace(gynecologicalDevelopmentContent) ? null : gynecologicalDevelopmentContent;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task OnMenstrualCyclesChanged()
+    {
+        gynecological.MenstrualCycles = string.IsNullOrWhiteSpace(menstrualCyclesContent) ? null : menstrualCyclesContent;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task OnContraceptiveMethodsChanged()
+    {
+        gynecological.ContraceptiveMethods = string.IsNullOrWhiteSpace(contraceptiveMethodsContent) ? null : contraceptiveMethodsContent;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task OnMenarcheDateChanged()
+    {
+        gynecological.Menarche = menarcheDate.HasValue ? DateOnly.FromDateTime(menarcheDate.Value) : null;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task OnPubarcheDateChanged()
+    {
+        gynecological.Pubarche = pubarcheDate.HasValue ? DateOnly.FromDateTime(pubarcheDate.Value) : null;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task OnLastMenstruationDateChanged()
+    {
+        gynecological.LastMenstruation = lastMenstruationDate.HasValue ? DateOnly.FromDateTime(lastMenstruationDate.Value) : null;
+        await SaveGynecologicalHistory();
+    }
+
+    private async Task SaveGynecologicalHistory()
+    {
+        if (isLoading || clinicalHistoryId <= 0) return;
 
         try
         {
-            if (clinicalHistoryId <= 0)
-            {
-                errorMessage = "Debe seleccionar un paciente válido.";
-                return;
-            }
-
-            // Actualizar DTO con datos de ContainerBox
-            gynecological.GynecologicalDevelopment = string.IsNullOrWhiteSpace(gynecologicalDevelopmentContent) ? null : gynecologicalDevelopmentContent;
-            gynecological.MenstrualCycles = string.IsNullOrWhiteSpace(menstrualCyclesContent) ? null : menstrualCyclesContent;
-            gynecological.ContraceptiveMethods = string.IsNullOrWhiteSpace(contraceptiveMethodsContent) ? null : contraceptiveMethodsContent;
-
-            // Convertir DateTime a DateOnly para las fechas
-            gynecological.Menarche = menarcheDate.HasValue ? DateOnly.FromDateTime(menarcheDate.Value) : null;
-            gynecological.Pubarche = pubarcheDate.HasValue ? DateOnly.FromDateTime(pubarcheDate.Value) : null;
-            gynecological.LastMenstruation = lastMenstruationDate.HasValue ? DateOnly.FromDateTime(lastMenstruationDate.Value) : null;
-
             // Asegurar que los datos básicos estén establecidos
             gynecological.ClinicalHistoryId = clinicalHistoryId;
             gynecological.MedicalRecordNumber = medicalRecordNumber;
 
-            bool success;
-            string error;
-
             if (gynecological.GynecologicalHistoryId == 0)
             {
                 // Crear nuevo registro
-                var (createSuccess, _, createError) = await GynecologicalHistoryService.CreateAsync(gynecological);
-                success = createSuccess;
-                error = createError;
+                var (createSuccess, createdRecord, createError) = await GynecologicalHistoryService.CreateAsync(gynecological);
+                if (createSuccess && createdRecord != null)
+                {
+                    gynecological = createdRecord;
+                }
             }
             else
             {
                 // Actualizar registro existente
-                var (updateSuccess, updateError) = await GynecologicalHistoryService.UpdateAsync(gynecological);
-                success = updateSuccess;
-                error = updateError;
-            }
-
-            if (success)
-            {
-                successMessage = "Datos ginecológicos guardados correctamente.";
-                await LoadGynecologicalHistory(); // Recargar para obtener el ID actualizado
-            }
-            else
-            {
-                errorMessage = $"Error al guardar: {error}";
+                await GynecologicalHistoryService.UpdateAsync(gynecological);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al guardar datos ginecológicos");
-            errorMessage = "Error inesperado al guardar los datos.";
-        }
-        finally
-        {
-            isLoading = false;
+            Logger.LogError(ex, "Error al guardar datos ginecológicos automáticamente");
         }
     }
-
-    private void ClearErrorMessage() => errorMessage = string.Empty;
-    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

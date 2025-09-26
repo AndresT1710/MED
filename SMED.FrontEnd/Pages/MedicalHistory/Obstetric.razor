@@ -35,60 +35,43 @@
         </div>
 
         <div class="containerbox1-grid">
+            
             <ContainerBox1 Title="Nacidos Vivos"
                            Width="half"
-                           @bind-Content="liveBirthsContent" />
+                           @bind-Content="liveBirthsContent"
+                           @bind-Content:after="OnLiveBirthsContentChanged" />
 
             <ContainerBox1 Title="Nacidos Muertos"
                            Width="half"
-                           @bind-Content="stillbirthsContent" />
+                           @bind-Content="stillbirthsContent"
+                           @bind-Content:after="OnStillbirthsContentChanged" />
 
             <ContainerBox1 Title="Hijos Vivos"
                            Width="half"
-                           @bind-Content="livingChildrenContent" />
+                           @bind-Content="livingChildrenContent"
+                           @bind-Content:after="OnLivingChildrenContentChanged" />
 
             <ContainerBox1 Title="Edad Gestacional"
                            Width="half"
-                           @bind-Content="gestationalAgeContent" />
+                           @bind-Content="gestationalAgeContent"
+                           @bind-Content:after="OnGestationalAgeContentChanged" />
         </div>
 
         <div class="containerbox2-grid">
+            
             <ContainerBox2 Title="Fecha probable de parto"
                            Width="half"
-                           @bind-SelectedDate="expectedDeliveryDate" />
+                           @bind-SelectedDate="expectedDeliveryDate"
+                           @bind-SelectedDate:after="OnExpectedDeliveryDateChanged" />
         </div>
 
-        <!-- ✅ BOTÓN DE GUARDADO DIRECTO EN LA PÁGINA -->
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatos"
-                    disabled="@(isLoading || clinicalHistoryId <= 0)">
-                @if (isLoading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    <span>Guardando...</span>
-                }
-                else
-                {
-                    <i class="fas fa-save me-2"></i>
-                    <span>Guardar Datos</span>
-                }
-            </button>
-        </div>
+       
 
-        @if (!string.IsNullOrEmpty(errorMessage))
+        @if(!string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger mt-3">
                 @errorMessage
                 <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(successMessage))
-        {
-            <div class="alert alert-success mt-3">
-                @successMessage
-                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
             </div>
         }
     }
@@ -103,7 +86,6 @@
     private string medicalRecordNumber = string.Empty;
     private ObstetricHistoryDTO obstetric = new();
     private string errorMessage = string.Empty;
-    private string successMessage = string.Empty;
     private bool isLoading = false;
 
     // Variables para ContainerBox1
@@ -114,6 +96,46 @@
 
     // Variables para ContainerBox2
     private DateTime? expectedDeliveryDate = null;
+
+    private async Task OnLiveBirthsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveObstetricDataAsync();
+        }
+    }
+
+    private async Task OnStillbirthsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveObstetricDataAsync();
+        }
+    }
+
+    private async Task OnLivingChildrenContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveObstetricDataAsync();
+        }
+    }
+
+    private async Task OnGestationalAgeContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveObstetricDataAsync();
+        }
+    }
+
+    private async Task OnExpectedDeliveryDateChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveObstetricDataAsync();
+        }
+    }
 
     private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
     {
@@ -149,10 +171,10 @@
             {
                 // Crear nuevo registro si no existe
                 obstetric = new ObstetricHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        HistoryNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    HistoryNumber = medicalRecordNumber
+                };
 
                 // Limpiar ContainerBox
                 liveBirthsContent = "";
@@ -173,18 +195,13 @@
         }
     }
 
-    private async Task GuardarDatos()
+    private async Task SaveObstetricDataAsync()
     {
-        errorMessage = string.Empty;
-        successMessage = string.Empty;
-        isLoading = true;
-
         try
         {
             if (clinicalHistoryId <= 0)
             {
-                errorMessage = "Debe seleccionar un paciente válido.";
-                return;
+                return; // No hacer nada si no hay paciente seleccionado
             }
 
             // Actualizar DTO con datos de ContainerBox
@@ -230,25 +247,21 @@
 
             if (success)
             {
-                successMessage = "Datos obstétricos guardados correctamente.";
                 await LoadObstetricHistory(); // Recargar para obtener el ID actualizado
+                errorMessage = string.Empty; // Limpiar errores previos
             }
             else
             {
-                errorMessage = $"Error al guardar: {error}";
+                Logger.LogError("Error al guardar datos obstétricos: {Error}", error);
+                // No mostrar error al usuario para auto-save, solo registrar en logs
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al guardar datos obstétricos");
-            errorMessage = "Error inesperado al guardar los datos.";
-        }
-        finally
-        {
-            isLoading = false;
+            Logger.LogError(ex, "Error técnico al guardar datos obstétricos");
+            // No mostrar error al usuario para auto-save, solo registrar en logs
         }
     }
 
     private void ClearErrorMessage() => errorMessage = string.Empty;
-    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

@@ -111,26 +111,34 @@
             <div class="containerbox1-grid">
                 <div class="row">
                     <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Aparición y Evolución"
                                        Width="full"
-                                       @bind-Content="problemAppearanceContent" />
+                                       @bind-Content="problemAppearanceContent"
+                                       @bind-Content:after="OnProblemAppearanceContentChanged" />
                     </div>
                     <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Factores Desencadenantes"
                                        Width="full"
-                                       @bind-Content="problemFactorsContent" />
+                                       @bind-Content="problemFactorsContent"
+                                       @bind-Content:after="OnProblemFactorsContentChanged" />
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Frecuencia e Intensidad de Síntomas"
                                        Width="full"
-                                       @bind-Content="problemSymptomsContent" />
+                                       @bind-Content="problemSymptomsContent"
+                                       @bind-Content:after="OnProblemSymptomsContentChanged" />
                     </div>
                     <div class="col-md-6 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Impacto"
                                        Width="full"
-                                       @bind-Content="problemImpactContent" />
+                                       @bind-Content="problemImpactContent"
+                                       @bind-Content:after="OnProblemImpactContentChanged" />
                     </div>
                 </div>
             </div>
@@ -176,9 +184,11 @@
         <div class="container-section mt-4">
             <h5>Antecedente Psicosexual</h5>
             <div class="containerbox1-grid">
+                <!-- Added @bind-Content:after for auto-save -->
                 <ContainerBox1 Title="Historial Psicosexual"
                                Width="full"
-                               @bind-Content="psychosexualContent" />
+                               @bind-Content="psychosexualContent"
+                               @bind-Content:after="OnPsychosexualContentChanged" />
             </div>
         </div>
 
@@ -188,55 +198,36 @@
             <div class="containerbox1-grid">
                 <div class="row">
                     <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Experiencia"
                                        Width="full"
-                                       @bind-Content="workExperienceContent" />
+                                       @bind-Content="workExperienceContent"
+                                       @bind-Content:after="OnWorkExperienceContentChanged" />
                     </div>
                     <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Estabilidad"
                                        Width="full"
-                                       @bind-Content="workStabilityContent" />
+                                       @bind-Content="workStabilityContent"
+                                       @bind-Content:after="OnWorkStabilityContentChanged" />
                     </div>
                     <div class="col-md-4 mb-3">
+                        <!-- Added @bind-Content:after for auto-save -->
                         <ContainerBox1 Title="Nivel de Satisfacción"
                                        Width="full"
-                                       @bind-Content="workSatisfactionContent" />
+                                       @bind-Content="workSatisfactionContent"
+                                       @bind-Content:after="OnWorkSatisfactionContentChanged" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- BOTÓN DE GUARDADO GENERAL -->
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatosContainerBox"
-                    disabled="@(isLoading || clinicalHistoryId <= 0)">
-                @if (isLoading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    <span>Guardando...</span>
-                }
-                else
-                {
-                    <i class="fas fa-save me-2"></i>
-                    <span>Guardar Datos Psicológicos</span>
-                }
-            </button>
-        </div>
-
+        <!-- Removed the general save button section -->
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger mt-3">
                 @errorMessage
                 <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(successMessage))
-        {
-            <div class="alert alert-success mt-3">
-                @successMessage
-                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
             </div>
         }
     }
@@ -250,7 +241,6 @@
     private int clinicalHistoryId = 0;
     private string medicalRecordNumber = string.Empty;
     private string errorMessage = string.Empty;
-    private string successMessage = string.Empty;
     private bool isLoading = false;
 
     // ==========================================
@@ -308,6 +298,38 @@
         Impact = string.Empty
     };
 
+    private async Task OnProblemAppearanceContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemFactorsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemSymptomsContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
+    private async Task OnProblemImpactContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveCurrentProblemHistoryAsync();
+        }
+    }
+
     // ==========================================
     // SECCIÓN: HÁBITOS TÓXICOS
     // ==========================================
@@ -337,6 +359,14 @@
         Description = string.Empty
     };
 
+    private async Task OnPsychosexualContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePsychosexualHistoryAsync();
+        }
+    }
+
     // ==========================================
     // SECCIÓN: HISTORIAL LABORAL (ContainerBox1)
     // ==========================================
@@ -350,6 +380,30 @@
         Stability = string.Empty,
         SatisfactionLevel = string.Empty
     };
+
+    private async Task OnWorkExperienceContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
+
+    private async Task OnWorkStabilityContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
+
+    private async Task OnWorkSatisfactionContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveWorkHistoryAsync();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -392,9 +446,190 @@
         }
     }
 
+
     // ==========================================
-    // MÉTODOS: ANTECEDENTE DE MEDICAMENTOS
+    // MÉTODOS: CARGA DE DATOS CONTAINERBOX
     // ==========================================
+    private async Task LoadCurrentProblemHistory()
+    {
+        try
+        {
+            var result = await CurrentProblemHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentProblem = result?.FirstOrDefault() ?? new CurrentProblemHistoryDTO { HistoryNumber = medicalRecordNumber };
+
+            problemAppearanceContent = currentProblem.AppearanceEvolution ?? "";
+            problemFactorsContent = currentProblem.TriggeringFactors ?? "";
+            problemSymptomsContent = currentProblem.FrequencyIntensitySymptoms ?? "";
+            problemImpactContent = currentProblem.Impact ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial de problema actual");
+        }
+    }
+
+    private async Task LoadPsychosexualHistory()
+    {
+        try
+        {
+            var result = await PsychosexualHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            psychosexualHistory = result?.FirstOrDefault() ?? new PsychosexualHistoryDTO { HistoryNumber = medicalRecordNumber };
+            psychosexualContent = psychosexualHistory.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial psicosexual");
+        }
+    }
+
+    private async Task LoadWorkHistory()
+    {
+        try
+        {
+            var result = await WorkHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            workHistory = result?.FirstOrDefault() ?? new WorkHistoryDTO { HistoryNumber = medicalRecordNumber };
+
+            workExperienceContent = workHistory.Experience ?? "";
+            workStabilityContent = workHistory.Stability ?? "";
+            workSatisfactionContent = workHistory.SatisfactionLevel ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial laboral");
+        }
+    }
+
+    private async Task SaveCurrentProblemHistoryAsync()
+    {
+        try
+        {
+            // Si todos los contenidos están vacíos y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(problemAppearanceContent) &&
+                string.IsNullOrWhiteSpace(problemFactorsContent) &&
+                string.IsNullOrWhiteSpace(problemSymptomsContent) &&
+                string.IsNullOrWhiteSpace(problemImpactContent))
+            {
+                if (currentProblem.CurrentProblemHistoryId > 0)
+                {
+                    await CurrentProblemHistoryService.DeleteAsync(currentProblem.CurrentProblemHistoryId);
+                    currentProblem = new CurrentProblemHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            currentProblem.ClinicalHistoryId = clinicalHistoryId;
+            currentProblem.HistoryNumber = medicalRecordNumber;
+            currentProblem.AppearanceEvolution = string.IsNullOrWhiteSpace(problemAppearanceContent) ? null : problemAppearanceContent.Trim();
+            currentProblem.TriggeringFactors = string.IsNullOrWhiteSpace(problemFactorsContent) ? null : problemFactorsContent.Trim();
+            currentProblem.FrequencyIntensitySymptoms = string.IsNullOrWhiteSpace(problemSymptomsContent) ? null : problemSymptomsContent.Trim();
+            currentProblem.Impact = string.IsNullOrWhiteSpace(problemImpactContent) ? null : problemImpactContent.Trim();
+
+            if (currentProblem.CurrentProblemHistoryId == 0)
+            {
+                var (success, created, error) = await CurrentProblemHistoryService.CreateAsync(currentProblem);
+                if (success && created != null)
+                {
+                    currentProblem = created;
+                }
+            }
+            else
+            {
+                await CurrentProblemHistoryService.UpdateAsync(currentProblem);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial de problema actual");
+        }
+    }
+
+    private async Task SavePsychosexualHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(psychosexualContent))
+            {
+                if (psychosexualHistory.PsychosexualHistoryId > 0)
+                {
+                    await PsychosexualHistoryService.DeleteAsync(psychosexualHistory.PsychosexualHistoryId);
+                    psychosexualHistory = new PsychosexualHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            psychosexualHistory.ClinicalHistoryId = clinicalHistoryId;
+            psychosexualHistory.HistoryNumber = medicalRecordNumber;
+            psychosexualHistory.Description = psychosexualContent.Trim();
+
+            if (psychosexualHistory.PsychosexualHistoryId == 0)
+            {
+                var (success, created, error) = await PsychosexualHistoryService.CreateAsync(psychosexualHistory);
+                if (success && created != null)
+                {
+                    psychosexualHistory = created;
+                }
+            }
+            else
+            {
+                await PsychosexualHistoryService.UpdateAsync(psychosexualHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial psicosexual");
+        }
+    }
+
+    private async Task SaveWorkHistoryAsync()
+    {
+        try
+        {
+            // Si todos los contenidos están vacíos y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(workExperienceContent) &&
+                string.IsNullOrWhiteSpace(workStabilityContent) &&
+                string.IsNullOrWhiteSpace(workSatisfactionContent))
+            {
+                if (workHistory.WorkHistoryId > 0)
+                {
+                    await WorkHistoryService.DeleteAsync(workHistory.WorkHistoryId);
+                    workHistory = new WorkHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return;
+            }
+
+            workHistory.ClinicalHistoryId = clinicalHistoryId;
+            workHistory.HistoryNumber = medicalRecordNumber;
+            workHistory.Experience = string.IsNullOrWhiteSpace(workExperienceContent) ? null : workExperienceContent.Trim();
+            workHistory.Stability = string.IsNullOrWhiteSpace(workStabilityContent) ? null : workStabilityContent.Trim();
+            workHistory.SatisfactionLevel = string.IsNullOrWhiteSpace(workSatisfactionContent) ? null : workSatisfactionContent.Trim();
+
+            if (workHistory.WorkHistoryId == 0)
+            {
+                var (success, created, error) = await WorkHistoryService.CreateAsync(workHistory);
+                if (success && created != null)
+                {
+                    workHistory = created;
+                }
+            }
+            else
+            {
+                await WorkHistoryService.UpdateAsync(workHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar historial laboral");
+        }
+    }
+
+
     private async Task LoadMedicationHistories()
     {
         errorMessage = string.Empty;
@@ -426,9 +661,9 @@
         }
     }
 
-    private string GetMedicineName(int? medicineId)  // ← Cambia int por int?
+    private string GetMedicineName(int? medicineId)
     {
-        if (medicineId == null || medicineId == 0) return "Sin especificar";  // ← Agrega verificación null
+        if (medicineId == null || medicineId == 0) return "Sin especificar";
         return medicines.FirstOrDefault(m => m.Id == medicineId)?.Name ?? "Desconocido";
     }
 
@@ -751,9 +986,9 @@
         }
     }
 
-    private string GetToxicHabitName(int? toxicHabitId)  // ← Cambia int por int?
+    private string GetToxicHabitName(int? toxicHabitId)
     {
-        if (toxicHabitId == null || toxicHabitId == 0) return "Sin especificar";  // ← Agrega verificación null
+        if (toxicHabitId == null || toxicHabitId == 0) return "Sin especificar";
         return toxicHabits.FirstOrDefault(t => t.ToxicHabitId == toxicHabitId)?.Name ?? "Desconocido";
     }
 
@@ -874,174 +1109,5 @@
 
     private string GetCurrentEditingToxicHabitId() => editingToxicHabitId == -1 ? "Nuevo" : editingToxicHabitId.ToString();
 
-    // ==========================================
-    // MÉTODOS: CONTAINERBOX (Carga de datos)
-    // ==========================================
-    private async Task LoadCurrentProblemHistory()
-    {
-        try
-        {
-            var result = await CurrentProblemHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
-            currentProblem = result?.FirstOrDefault() ?? new CurrentProblemHistoryDTO { HistoryNumber = medicalRecordNumber };
-
-            problemAppearanceContent = currentProblem.AppearanceEvolution ?? "";
-            problemFactorsContent = currentProblem.TriggeringFactors ?? "";
-            problemSymptomsContent = currentProblem.FrequencyIntensitySymptoms ?? "";
-            problemImpactContent = currentProblem.Impact ?? "";
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al cargar historial de problema actual");
-        }
-    }
-
-    private async Task LoadPsychosexualHistory()
-    {
-        try
-        {
-            var result = await PsychosexualHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
-            psychosexualHistory = result?.FirstOrDefault() ?? new PsychosexualHistoryDTO { HistoryNumber = medicalRecordNumber };
-            psychosexualContent = psychosexualHistory.Description ?? "";
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al cargar historial psicosexual");
-        }
-    }
-
-    private async Task LoadWorkHistory()
-    {
-        try
-        {
-            var result = await WorkHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
-            workHistory = result?.FirstOrDefault() ?? new WorkHistoryDTO { HistoryNumber = medicalRecordNumber };
-
-            workExperienceContent = workHistory.Experience ?? "";
-            workStabilityContent = workHistory.Stability ?? "";
-            workSatisfactionContent = workHistory.SatisfactionLevel ?? "";
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al cargar historial laboral");
-        }
-    }
-
-    // ==========================================
-    // MÉTODO: GUARDADO DE CONTAINERBOX
-    // ==========================================
-    private async Task GuardarDatosContainerBox()
-    {
-        errorMessage = string.Empty;
-        successMessage = string.Empty;
-        isLoading = true;
-
-        try
-        {
-            if (clinicalHistoryId <= 0)
-            {
-                errorMessage = "Debe seleccionar un paciente válido.";
-                return;
-            }
-
-            // Guardar CurrentProblemHistory
-            await SaveCurrentProblemHistory();
-
-            // Guardar PsychosexualHistory
-            await SavePsychosexualHistory();
-
-            // Guardar WorkHistory
-            await SaveWorkHistory();
-
-            successMessage = "Datos psicológicos guardados correctamente.";
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al guardar datos psicológicos");
-            errorMessage = "Error inesperado al guardar los datos.";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private async Task SaveCurrentProblemHistory()
-    {
-        currentProblem.ClinicalHistoryId = clinicalHistoryId;
-        currentProblem.HistoryNumber = medicalRecordNumber;
-        currentProblem.AppearanceEvolution = string.IsNullOrWhiteSpace(problemAppearanceContent) ? null : problemAppearanceContent;
-        currentProblem.TriggeringFactors = string.IsNullOrWhiteSpace(problemFactorsContent) ? null : problemFactorsContent;
-        currentProblem.FrequencyIntensitySymptoms = string.IsNullOrWhiteSpace(problemSymptomsContent) ? null : problemSymptomsContent;
-        currentProblem.Impact = string.IsNullOrWhiteSpace(problemImpactContent) ? null : problemImpactContent;
-
-        if (currentProblem.CurrentProblemHistoryId == 0)
-        {
-            var (success, _, error) = await CurrentProblemHistoryService.CreateAsync(currentProblem);
-            if (!success)
-            {
-                throw new Exception($"Error al crear historial de problema actual: {error}");
-            }
-        }
-        else
-        {
-            var (success, error) = await CurrentProblemHistoryService.UpdateAsync(currentProblem);
-            if (!success)
-            {
-                throw new Exception($"Error al actualizar historial de problema actual: {error}");
-            }
-        }
-    }
-
-    private async Task SavePsychosexualHistory()
-    {
-        psychosexualHistory.ClinicalHistoryId = clinicalHistoryId;
-        psychosexualHistory.HistoryNumber = medicalRecordNumber;
-        psychosexualHistory.Description = string.IsNullOrWhiteSpace(psychosexualContent) ? null : psychosexualContent;
-
-        if (psychosexualHistory.PsychosexualHistoryId == 0)
-        {
-            var (success, _, error) = await PsychosexualHistoryService.CreateAsync(psychosexualHistory);
-            if (!success)
-            {
-                throw new Exception($"Error al crear historial psicosexual: {error}");
-            }
-        }
-        else
-        {
-            var (success, error) = await PsychosexualHistoryService.UpdateAsync(psychosexualHistory);
-            if (!success)
-            {
-                throw new Exception($"Error al actualizar historial psicosexual: {error}");
-            }
-        }
-    }
-
-    private async Task SaveWorkHistory()
-    {
-        workHistory.ClinicalHistoryId = clinicalHistoryId;
-        workHistory.HistoryNumber = medicalRecordNumber;
-        workHistory.Experience = string.IsNullOrWhiteSpace(workExperienceContent) ? null : workExperienceContent;
-        workHistory.Stability = string.IsNullOrWhiteSpace(workStabilityContent) ? null : workStabilityContent;
-        workHistory.SatisfactionLevel = string.IsNullOrWhiteSpace(workSatisfactionContent) ? null : workSatisfactionContent;
-
-        if (workHistory.WorkHistoryId == 0)
-        {
-            var (success, _, error) = await WorkHistoryService.CreateAsync(workHistory);
-            if (!success)
-            {
-                throw new Exception($"Error al crear historial laboral: {error}");
-            }
-        }
-        else
-        {
-            var (success, error) = await WorkHistoryService.UpdateAsync(workHistory);
-            if (!success)
-            {
-                throw new Exception($"Error al actualizar historial laboral: {error}");
-            }
-        }
-    }
-
     private void ClearErrorMessage() => errorMessage = string.Empty;
-    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

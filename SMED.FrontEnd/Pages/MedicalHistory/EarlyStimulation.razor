@@ -30,14 +30,16 @@
                     <div class="col-md-6 mb-3">
                         <ContainerBox1 Title="Antecedentes Prenatales"
                                        Width="half"
-                                       @bind-Content="prenatalContent" />
+                                       @bind-Content="prenatalContent"
+                                       @bind-Content:after="OnPrenatalContentChanged" />
                     </div>
-                    
+
                     <!-- Antecedentes Perinatales -->
                     <div class="col-md-6 mb-3">
                         <ContainerBox1 Title="Antecedentes Perinatales"
                                        Width="half"
-                                       @bind-Content="perinatalContent" />
+                                       @bind-Content="perinatalContent"
+                                       @bind-Content:after="OnPerinatalContentChanged" />
                     </div>
                 </div>
                 <div class="row">
@@ -45,14 +47,16 @@
                     <div class="col-md-6 mb-3">
                         <ContainerBox1 Title="Antecedentes Postnatales"
                                        Width="half"
-                                       @bind-Content="postnatalContent" />
+                                       @bind-Content="postnatalContent"
+                                       @bind-Content:after="OnPostnatalContentChanged" />
                     </div>
-                    
+
                     <!-- Antecedentes Neuropsicológicos -->
                     <div class="col-md-6 mb-3">
                         <ContainerBox1 Title="Antecedentes Neuropsicológicos"
                                        Width="half"
-                                       @bind-Content="neuropsychologicalContent" />
+                                       @bind-Content="neuropsychologicalContent"
+                                       @bind-Content:after="OnNeuropsychologicalContentChanged" />
                     </div>
                 </div>
             </div>
@@ -76,7 +80,7 @@
                         <label>ID del Registro</label>
                         <input class="form-control" value="@GetCurrentEditingNeurologicalExamId()" disabled />
                     </div>
-                    
+
                     <div class="form-group mb-3">
                         <label>Tipo de Examen</label>
                         <select class="form-select" @bind="selectedExamType">
@@ -115,15 +119,13 @@
                     <div class="form-group mb-3">
                         <label>Descripción</label>
                         <textarea class="form-control" @bind="neurologicalExamDescription" rows="4"
-                                  placeholder="Ingrese la descripción del examen" 
+                                  placeholder="Ingrese la descripción del examen"
                                   style="resize: vertical; max-height: 200px;"></textarea>
                     </div>
 
-
-
                     <div class="form-group mb-3">
                         <label>Enlace PDF (Opcional)</label>
-                        <input type="text" class="form-control" @bind="neurologicalExamLinkPdf" 
+                        <input type="text" class="form-control" @bind="neurologicalExamLinkPdf"
                                placeholder="Ingrese el enlace al PDF del examen" />
                     </div>
                 </EditModalContent>
@@ -148,11 +150,11 @@
                         <label>ID del Registro</label>
                         <input class="form-control" value="@GetCurrentEditingDevelopmentRecordId()" disabled />
                     </div>
-                    
+
                     <div class="form-group mb-3">
                         <label>Hito de Desarrollo</label>
                         <textarea class="form-control" @bind="developmentMilestone" rows="3"
-                                  placeholder="Ingrese el hito de desarrollo" 
+                                  placeholder="Ingrese el hito de desarrollo"
                                   style="resize: vertical; max-height: 150px;"></textarea>
                         @if (string.IsNullOrWhiteSpace(developmentMilestone))
                         {
@@ -163,7 +165,7 @@
                     <div class="form-group mb-3">
                         <label>Rango de Edad</label>
                         <textarea class="form-control" @bind="developmentAgeRange" rows="2"
-                                  placeholder="Ingrese el rango de edad" 
+                                  placeholder="Ingrese el rango de edad"
                                   style="resize: vertical; max-height: 100px;"></textarea>
                         @if (string.IsNullOrWhiteSpace(developmentAgeRange))
                         {
@@ -174,29 +176,11 @@
                     <div class="form-group mb-3">
                         <label>Observaciones</label>
                         <textarea class="form-control" @bind="developmentObservations" rows="4"
-                                  placeholder="Ingrese las observaciones" 
+                                  placeholder="Ingrese las observaciones"
                                   style="resize: vertical; max-height: 200px;"></textarea>
                     </div>
                 </EditModalContent>
             </EditableTable>
-        </div>
-
-        <!-- BOTÓN DE GUARDADO GENERAL -->
-        <div class="d-flex justify-content-center mt-4 mb-3">
-            <button class="btn btn-primary btn-lg px-5"
-                    @onclick="GuardarDatosContainerBox"
-                    disabled="@(isLoading || clinicalHistoryId <= 0)">
-                @if (isLoading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                    <span>Guardando...</span>
-                }
-                else
-                {
-                    <i class="fas fa-save me-2"></i>
-                    <span>Guardar Datos de Estimulación Temprana</span>
-                }
-            </button>
         </div>
 
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -204,14 +188,6 @@
             <div class="alert alert-danger mt-3">
                 @errorMessage
                 <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(successMessage))
-        {
-            <div class="alert alert-success mt-3">
-                @successMessage
-                <button type="button" class="btn-close float-end" @onclick="ClearSuccessMessage"></button>
             </div>
         }
     }
@@ -225,7 +201,6 @@
     private int clinicalHistoryId = 0;
     private string medicalRecordNumber = string.Empty;
     private string errorMessage = string.Empty;
-    private string successMessage = string.Empty;
     private bool isLoading = false;
 
     // ==========================================
@@ -241,6 +216,38 @@
     private PostnatalHistoryDTO postnatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
     private NeuropsychologicalHistoryDTO neuropsychologicalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
 
+    private async Task OnPrenatalContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePrenatalHistoryAsync();
+        }
+    }
+
+    private async Task OnPerinatalContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePerinatalHistoryAsync();
+        }
+    }
+
+    private async Task OnPostnatalContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePostnatalHistoryAsync();
+        }
+    }
+
+    private async Task OnNeuropsychologicalContentChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveNeuropsychologicalHistoryAsync();
+        }
+    }
+
     // ==========================================
     // SECCIÓN: EXÁMENES NEUROLÓGICOS
     // ==========================================
@@ -252,7 +259,7 @@
     private List<string> availableExamTypes = new();
     private List<string> filteredExams = new();
 
-    private string _selectedExamType = ""; 
+    private string _selectedExamType = "";
     private string selectedExamName = "";
     private string neurologicalExamDescription = "";
     private DateTime neurologicalExamDate = DateTime.Now;
@@ -260,7 +267,6 @@
     private int editingNeurologicalExamId = -1;
     private bool isLoadingNeurologicalExams = false;
     private bool isLoadingExamTypes = false;
-
 
     // AGREGA ESTA PROPERTY CON SETTER PERSONALIZADO:
     private string selectedExamType
@@ -305,7 +311,6 @@
         // Forzar actualización de la UI
         StateHasChanged();
     }
-
 
     private class NeurologicalExamRow
     {
@@ -396,8 +401,6 @@
         }
     }
 
-
-
     // ==========================================
     // MÉTODOS: CARGA DE DATOS CONTAINERBOX1
     // ==========================================
@@ -454,6 +457,171 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error al cargar antecedentes neuropsicológicos");
+        }
+    }
+
+    private async Task SavePrenatalHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(prenatalContent))
+            {
+                if (prenatalHistory.PrenatalHistoryId > 0)
+                {
+                    await PrenatalHistoryService.DeleteAsync(prenatalHistory.PrenatalHistoryId);
+                    prenatalHistory = new PrenatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return; // No hacer nada más si el contenido está vacío
+            }
+
+            prenatalHistory.ClinicalHistoryId = clinicalHistoryId;
+            prenatalHistory.HistoryNumber = medicalRecordNumber;
+            prenatalHistory.Description = prenatalContent.Trim();
+
+            if (prenatalHistory.PrenatalHistoryId == 0)
+            {
+                var created = await PrenatalHistoryService.CreateAsync(prenatalHistory);
+                if (created != null)
+                {
+                    prenatalHistory = created;
+                }
+            }
+            else
+            {
+                await PrenatalHistoryService.UpdateAsync(prenatalHistory);
+            }
+
+            // Limpiar mensaje de error si la operación fue exitosa
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar antecedentes prenatales");
+            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
+        }
+    }
+
+    private async Task SavePerinatalHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(perinatalContent))
+            {
+                if (perinatalHistory.PerinatalHistoryId > 0)
+                {
+                    await PerinatalHistoryService.DeleteAsync(perinatalHistory.PerinatalHistoryId);
+                    perinatalHistory = new PerinatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return; // No hacer nada más si el contenido está vacío
+            }
+
+            perinatalHistory.ClinicalHistoryId = clinicalHistoryId;
+            perinatalHistory.HistoryNumber = medicalRecordNumber;
+            perinatalHistory.Description = perinatalContent.Trim();
+
+            if (perinatalHistory.PerinatalHistoryId == 0)
+            {
+                var created = await PerinatalHistoryService.CreateAsync(perinatalHistory);
+                if (created != null)
+                {
+                    perinatalHistory = created;
+                }
+            }
+            else
+            {
+                await PerinatalHistoryService.UpdateAsync(perinatalHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar antecedentes perinatales");
+            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
+        }
+    }
+
+    private async Task SavePostnatalHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(postnatalContent))
+            {
+                if (postnatalHistory.PostNatalId > 0)
+                {
+                    await PostnatalHistoryService.DeleteAsync(postnatalHistory.PostNatalId);
+                    postnatalHistory = new PostnatalHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return; // No hacer nada más si el contenido está vacío
+            }
+
+            postnatalHistory.ClinicalHistoryId = clinicalHistoryId;
+            postnatalHistory.HistoryNumber = medicalRecordNumber;
+            postnatalHistory.Description = postnatalContent.Trim();
+
+            if (postnatalHistory.PostNatalId == 0)
+            {
+                var created = await PostnatalHistoryService.CreateAsync(postnatalHistory);
+                if (created != null)
+                {
+                    postnatalHistory = created;
+                }
+            }
+            else
+            {
+                await PostnatalHistoryService.UpdateAsync(postnatalHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar antecedentes postnatales");
+            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
+        }
+    }
+
+    private async Task SaveNeuropsychologicalHistoryAsync()
+    {
+        try
+        {
+            // Si el contenido está vacío y ya existe un registro, eliminarlo
+            if (string.IsNullOrWhiteSpace(neuropsychologicalContent))
+            {
+                if (neuropsychologicalHistory.NeuropsychologicalHistoryId > 0)
+                {
+                    await NeuropsychologicalHistoryService.DeleteAsync(neuropsychologicalHistory.NeuropsychologicalHistoryId);
+                    neuropsychologicalHistory = new NeuropsychologicalHistoryDTO { HistoryNumber = medicalRecordNumber };
+                }
+                return; // No hacer nada más si el contenido está vacío
+            }
+
+            neuropsychologicalHistory.ClinicalHistoryId = clinicalHistoryId;
+            neuropsychologicalHistory.HistoryNumber = medicalRecordNumber;
+            neuropsychologicalHistory.Description = neuropsychologicalContent.Trim();
+
+            if (neuropsychologicalHistory.NeuropsychologicalHistoryId == 0)
+            {
+                var created = await NeuropsychologicalHistoryService.CreateAsync(neuropsychologicalHistory);
+                if (created != null)
+                {
+                    neuropsychologicalHistory = created;
+                }
+            }
+            else
+            {
+                await NeuropsychologicalHistoryService.UpdateAsync(neuropsychologicalHistory);
+            }
+
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error técnico al guardar antecedentes neuropsicológicos");
+            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
         }
     }
 
@@ -717,7 +885,7 @@
                 developmentRecordData.Add(new DevelopmentRecordRow
                 {
                     Id = record.DevelopmentRecordId,
-                    Values = new() 
+                    Values = new()
                     {
                         record.DevelopmentMilestone ?? "Sin hito",
                         record.AgeRange ?? "Sin rango",
@@ -861,138 +1029,5 @@
 
     private string GetCurrentEditingDevelopmentRecordId() => editingDevelopmentRecordId == -1 ? "Nuevo" : editingDevelopmentRecordId.ToString();
 
-    // ==========================================
-    // MÉTODO: GUARDADO GENERAL
-    // ==========================================
-    private async Task GuardarDatosContainerBox()
-    {
-        errorMessage = string.Empty;
-        successMessage = string.Empty;
-        isLoading = true;
-
-        try
-        {
-            if (clinicalHistoryId <= 0)
-            {
-                errorMessage = "Debe seleccionar un paciente válido.";
-                return;
-            }
-
-            // Guardar datos de ContainerBox1
-            await SavePrenatalHistory();
-            await SavePerinatalHistory();
-            await SavePostnatalHistory();
-            await SaveNeuropsychologicalHistory();
-
-            successMessage = "Datos de estimulación temprana guardados correctamente.";
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error al guardar datos de estimulación temprana");
-            errorMessage = "Error inesperado al guardar los datos.";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private async Task SavePrenatalHistory()
-    {
-        prenatalHistory.ClinicalHistoryId = clinicalHistoryId;
-        prenatalHistory.HistoryNumber = medicalRecordNumber;
-        prenatalHistory.Description = string.IsNullOrWhiteSpace(prenatalContent) ? null : prenatalContent;
-
-        if (prenatalHistory.PrenatalHistoryId == 0)
-        {
-            var created = await PrenatalHistoryService.CreateAsync(prenatalHistory);
-            if (created == null)
-            {
-                throw new Exception("Error al crear antecedentes prenatales");
-            }
-        }
-        else
-        {
-            var updated = await PrenatalHistoryService.UpdateAsync(prenatalHistory);
-            if (updated == null)
-            {
-                throw new Exception("Error al actualizar antecedentes prenatales");
-            }
-        }
-    }
-
-    private async Task SavePerinatalHistory()
-    {
-        perinatalHistory.ClinicalHistoryId = clinicalHistoryId;
-        perinatalHistory.HistoryNumber = medicalRecordNumber;
-        perinatalHistory.Description = string.IsNullOrWhiteSpace(perinatalContent) ? null : perinatalContent;
-
-        if (perinatalHistory.PerinatalHistoryId == 0)
-        {
-            var created = await PerinatalHistoryService.CreateAsync(perinatalHistory);
-            if (created == null)
-            {
-                throw new Exception("Error al crear antecedentes perinatales");
-            }
-        }
-        else
-        {
-            var updated = await PerinatalHistoryService.UpdateAsync(perinatalHistory);
-            if (updated == null)
-            {
-                throw new Exception("Error al actualizar antecedentes perinatales");
-            }
-        }
-    }
-
-    private async Task SavePostnatalHistory()
-    {
-        postnatalHistory.ClinicalHistoryId = clinicalHistoryId;
-        postnatalHistory.HistoryNumber = medicalRecordNumber;
-        postnatalHistory.Description = string.IsNullOrWhiteSpace(postnatalContent) ? null : postnatalContent;
-
-        if (postnatalHistory.PostNatalId == 0)
-        {
-            var created = await PostnatalHistoryService.CreateAsync(postnatalHistory);
-            if (created == null)
-            {
-                throw new Exception("Error al crear antecedentes postnatales");
-            }
-        }
-        else
-        {
-            var updated = await PostnatalHistoryService.UpdateAsync(postnatalHistory);
-            if (updated == null)
-            {
-                throw new Exception("Error al actualizar antecedentes postnatales");
-            }
-        }
-    }
-
-    private async Task SaveNeuropsychologicalHistory()
-    {
-        neuropsychologicalHistory.ClinicalHistoryId = clinicalHistoryId;
-        neuropsychologicalHistory.HistoryNumber = medicalRecordNumber;
-        neuropsychologicalHistory.Description = string.IsNullOrWhiteSpace(neuropsychologicalContent) ? null : neuropsychologicalContent;
-
-        if (neuropsychologicalHistory.NeuropsychologicalHistoryId == 0)
-        {
-            var created = await NeuropsychologicalHistoryService.CreateAsync(neuropsychologicalHistory);
-            if (created == null)
-            {
-                throw new Exception("Error al crear antecedentes neuropsicológicos");
-            }
-        }
-        else
-        {
-            var updated = await NeuropsychologicalHistoryService.UpdateAsync(neuropsychologicalHistory);
-            if (updated == null)
-            {
-                throw new Exception("Error al actualizar antecedentes neuropsicológicos");
-            }
-        }
-    }
-
     private void ClearErrorMessage() => errorMessage = string.Empty;
-    private void ClearSuccessMessage() => successMessage = string.Empty;
 }

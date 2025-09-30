@@ -14,31 +14,31 @@ namespace SMED.Frontend.Services
 
         public async Task<List<TraumaticHistoryDTO>> GetAllAsync()
         {
-            return await _httpClient.GetFromJsonAsync<List<TraumaticHistoryDTO>>("api/traumichistory") ?? new List<TraumaticHistoryDTO>();
+            return await _httpClient.GetFromJsonAsync<List<TraumaticHistoryDTO>>("api/traumatichistory") ?? new List<TraumaticHistoryDTO>();
         }
 
         public async Task<TraumaticHistoryDTO?> GetByIdAsync(int id)
         {
-            return await _httpClient.GetFromJsonAsync<TraumaticHistoryDTO>($"api/traumichistory/{id}");
+            return await _httpClient.GetFromJsonAsync<TraumaticHistoryDTO>($"api/traumatichistory/{id}");
         }
 
         public async Task<TraumaticHistoryDTO> CreateAsync(TraumaticHistoryDTO dto)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/traumichistory", dto);
+            var response = await _httpClient.PostAsJsonAsync("api/traumatichistory", dto);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<TraumaticHistoryDTO>() ?? throw new Exception("Error creating traumatic history");
         }
 
         public async Task<TraumaticHistoryDTO> UpdateAsync(TraumaticHistoryDTO dto)
         {
-            var response = await _httpClient.PutAsJsonAsync($"api/traumichistory/{dto.TraumaticHistoryId}", dto);
+            var response = await _httpClient.PutAsJsonAsync($"api/traumatichistory/{dto.TraumaticHistoryId}", dto);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<TraumaticHistoryDTO>() ?? throw new Exception("Error updating traumatic history");
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var response = await _httpClient.DeleteAsync($"api/traumichistory/{id}");
+            var response = await _httpClient.DeleteAsync($"api/traumatichistory/{id}");
             return response.IsSuccessStatusCode;
         }
 

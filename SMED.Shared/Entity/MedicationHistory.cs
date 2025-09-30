@@ -13,7 +13,7 @@ namespace SMED.Shared.Entity
         [Key]
         public int MedicationHistoryId { get; set; }
 
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
 
         public int MedicineId { get; set; }
         public int ClinicalHistoryId { get; set; }

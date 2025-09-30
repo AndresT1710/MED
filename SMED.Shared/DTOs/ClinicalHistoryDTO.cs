@@ -39,6 +39,9 @@ namespace SMED.Shared.DTOs
         public List<NeuropsychologicalHistoryDTO>? NeuropsychologicalHistories { get; set; } = new();
         public List<NeurologicalExamDTO>? NeurologicalExams { get; set; } = new();
         public List<DevelopmentRecordDTO>? DevelopmentRecords { get; set; } = new();
+        public List<TraumaticHistoryDTO>? TraumaticHistories { get; set; } = new();
+        public List<HospitalizationsHistoryDTO>? HospitalizationsHistories { get; set; } = new();
+        public List<TransfusionsHistoryDTO>? TransfusionsHistories { get; set; } = new();
         public GynecologicalHistoryDTO? GynecologicalHistory { get; set; } = new();
         public SportsActivitiesHistoryDTO? SportsActivitiesHistory { get; set; } = new();
         public LifeStyleHistoryDTO? LifeStyleHistory { get; set; } = new();

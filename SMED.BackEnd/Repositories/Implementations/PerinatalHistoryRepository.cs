@@ -18,7 +18,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<PerinatalHistoryDTO>> GetAllAsync()
         {
             var entities = await _context.PerinatalHistories
-                .Include(ph => ph.ClinicalHistory)
+                .Include(p => p.ClinicalHistory)
                 .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
@@ -26,8 +26,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<PerinatalHistoryDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.PerinatalHistories
-                .Include(ph => ph.ClinicalHistory)
-                .FirstOrDefaultAsync(ph => ph.PerinatalHistoryId == id);
+                .Include(p => p.ClinicalHistory)
+                .FirstOrDefaultAsync(p => p.PerinatalHistoryId == id);
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -47,6 +47,15 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.HistoryNumber = dto.HistoryNumber;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.Description = dto.Description;
+            entity.TypeOfBirth = dto.TypeOfBirth;
+            entity.Apgar = dto.Apgar;
+            entity.AuditoryScreen = dto.AuditoryScreen;
+            entity.ResuscitationManeuvers = dto.ResuscitationManeuvers;
+            entity.PlaceOfCare = dto.PlaceOfCare;
+            entity.NumberOfWeeks = dto.NumberOfWeeks;
+            entity.BirthCry = dto.BirthCry;
+            entity.MetabolicScreen = dto.MetabolicScreen;
+            entity.ComplicationsDuringChildbirth = dto.ComplicationsDuringChildbirth;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -68,7 +77,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PerinatalHistoryId = entity.PerinatalHistoryId,
                 HistoryNumber = entity.HistoryNumber,
                 ClinicalHistoryId = entity.ClinicalHistoryId,
-                Description = entity.Description
+                Description = entity.Description,
+                TypeOfBirth = entity.TypeOfBirth,
+                Apgar = entity.Apgar,
+                AuditoryScreen = entity.AuditoryScreen,
+                ResuscitationManeuvers = entity.ResuscitationManeuvers,
+                PlaceOfCare = entity.PlaceOfCare,
+                NumberOfWeeks = entity.NumberOfWeeks,
+                BirthCry = entity.BirthCry,
+                MetabolicScreen = entity.MetabolicScreen,
+                ComplicationsDuringChildbirth = entity.ComplicationsDuringChildbirth
             };
         }
 
@@ -79,7 +97,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PerinatalHistoryId = dto.PerinatalHistoryId,
                 HistoryNumber = dto.HistoryNumber,
                 ClinicalHistoryId = dto.ClinicalHistoryId,
-                Description = dto.Description
+                Description = dto.Description,
+                TypeOfBirth = dto.TypeOfBirth,
+                Apgar = dto.Apgar,
+                AuditoryScreen = dto.AuditoryScreen,
+                ResuscitationManeuvers = dto.ResuscitationManeuvers,
+                PlaceOfCare = dto.PlaceOfCare,
+                NumberOfWeeks = dto.NumberOfWeeks,
+                BirthCry = dto.BirthCry,
+                MetabolicScreen = dto.MetabolicScreen,
+                ComplicationsDuringChildbirth = dto.ComplicationsDuringChildbirth
             };
         }
     }

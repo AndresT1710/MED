@@ -14,11 +14,27 @@ namespace SMED.Shared.Entity
         public int PrenatalHistoryId { get; set; }
 
         [StringLength(100)]
-        public string HistoryNumber { get; set; }
+        public string? HistoryNumber { get; set; }
 
         public int ClinicalHistoryId { get; set; }
 
         public string? Description { get; set; }
+
+        public bool? PlannedPregnancy { get; set; }
+
+        public string? MedicationsOrVitamins { get; set; }
+
+        public bool? RadiationExposure { get; set; }
+
+        public int? NumberOfControls { get; set; }
+
+        public int? NumberOfUltrasounds { get; set; }
+
+        public bool? FetalSuffering { get; set; }
+
+        public string? ComplicationsDuringPregnancy { get; set; }
+
+
 
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("PrenatalHistories")]

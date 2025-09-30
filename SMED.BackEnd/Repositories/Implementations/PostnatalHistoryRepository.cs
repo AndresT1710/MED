@@ -18,7 +18,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<PostnatalHistoryDTO>> GetAllAsync()
         {
             var entities = await _context.PostnatalHistories
-                .Include(ph => ph.ClinicalHistory)
+                .Include(p => p.ClinicalHistory)
                 .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
@@ -26,8 +26,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<PostnatalHistoryDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.PostnatalHistories
-                .Include(ph => ph.ClinicalHistory)
-                .FirstOrDefaultAsync(ph => ph.PostNatalId == id);
+                .Include(p => p.ClinicalHistory)
+                .FirstOrDefaultAsync(p => p.PostNatalId == id);
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -47,6 +47,16 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.HistoryNumber = dto.HistoryNumber;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.Description = dto.Description;
+            entity.Bcg = dto.Bcg;
+            entity.Rotavirus = dto.Rotavirus;
+            entity.Pentavalente = dto.Pentavalente;
+            entity.Influenza = dto.Influenza;
+            entity.Varicela = dto.Varicela;
+            entity.HepatitisB = dto.HepatitisB;
+            entity.TripleViral = dto.TripleViral;
+            entity.PolioVirus = dto.PolioVirus;
+            entity.Neumococo = dto.Neumococo;
+            entity.Observations = dto.Observations;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -68,7 +78,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PostNatalId = entity.PostNatalId,
                 HistoryNumber = entity.HistoryNumber,
                 ClinicalHistoryId = entity.ClinicalHistoryId,
-                Description = entity.Description
+                Description = entity.Description,
+                Bcg = entity.Bcg,
+                Rotavirus = entity.Rotavirus,
+                Pentavalente = entity.Pentavalente,
+                Influenza = entity.Influenza,
+                Varicela = entity.Varicela,
+                HepatitisB = entity.HepatitisB,
+                TripleViral = entity.TripleViral,
+                PolioVirus = entity.PolioVirus,
+                Neumococo = entity.Neumococo,
+                Observations = entity.Observations
             };
         }
 
@@ -79,7 +99,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PostNatalId = dto.PostNatalId,
                 HistoryNumber = dto.HistoryNumber,
                 ClinicalHistoryId = dto.ClinicalHistoryId,
-                Description = dto.Description
+                Description = dto.Description,
+                Bcg = dto.Bcg,
+                Rotavirus = dto.Rotavirus,
+                Pentavalente = dto.Pentavalente,
+                Influenza = dto.Influenza,
+                Varicela = dto.Varicela,
+                HepatitisB = dto.HepatitisB,
+                TripleViral = dto.TripleViral,
+                PolioVirus = dto.PolioVirus,
+                Neumococo = dto.Neumococo,
+                Observations = dto.Observations
             };
         }
     }

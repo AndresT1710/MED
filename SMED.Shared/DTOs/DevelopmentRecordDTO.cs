@@ -11,8 +11,8 @@ namespace SMED.Shared.DTOs
         public int DevelopmentRecordId { get; set; }
         public string HistoryNumber { get; set; }
         public int ClinicalHistoryId { get; set; }
-        public string DevelopmentMilestone { get; set; }
-        public string AgeRange { get; set; }
-        public string Observations { get; set; }
+        public string? DevelopmentMilestone { get; set; }
+        public string? AgeRange { get; set; }
+        public string? Observations { get; set; }
     }
 }

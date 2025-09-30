@@ -10,7 +10,7 @@ namespace SMED.Shared.DTOs
     {
         public int NeurologicalExamId { get; set; }
         public string? HistoryNumber { get; set; }
-        public int? ClinicalHistoryId { get; set; } // ← CAMBIA A NULLABLE
+        public int? ClinicalHistoryId { get; set; } 
         public string? Name { get; set; }
         public string? LinkPdf { get; set; }
         public DateTime? ExamDate { get; set; }

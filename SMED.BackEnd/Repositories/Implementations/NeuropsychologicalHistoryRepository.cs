@@ -18,7 +18,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<NeuropsychologicalHistoryDTO>> GetAllAsync()
         {
             var entities = await _context.NeuropsychologicalHistories
-                .Include(nh => nh.ClinicalHistory)
+                .Include(n => n.ClinicalHistory)
                 .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
@@ -26,8 +26,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<NeuropsychologicalHistoryDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.NeuropsychologicalHistories
-                .Include(nh => nh.ClinicalHistory)
-                .FirstOrDefaultAsync(nh => nh.NeuropsychologicalHistoryId == id);
+                .Include(n => n.ClinicalHistory)
+                .FirstOrDefaultAsync(n => n.NeuropsychologicalHistoryId == id);
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -47,6 +47,16 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.HistoryNumber = dto.HistoryNumber;
             entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.Description = dto.Description;
+            entity.HomeConduct = dto.HomeConduct;
+            entity.SchoolConduct = dto.SchoolConduct;
+            entity.Leverage = dto.Leverage;
+            entity.HearingObservation = dto.HearingObservation;
+            entity.SightObservation = dto.SightObservation;
+            entity.SpeechObservation = dto.SpeechObservation;
+            entity.DreamObservation = dto.DreamObservation;
+            entity.Faintings = dto.Faintings;
+            entity.ObservationDifferentAbility = dto.ObservationDifferentAbility;
+            entity.Observation = dto.Observation;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -68,7 +78,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NeuropsychologicalHistoryId = entity.NeuropsychologicalHistoryId,
                 HistoryNumber = entity.HistoryNumber,
                 ClinicalHistoryId = entity.ClinicalHistoryId,
-                Description = entity.Description
+                Description = entity.Description,
+                HomeConduct = entity.HomeConduct,
+                SchoolConduct = entity.SchoolConduct,
+                Leverage = entity.Leverage,
+                HearingObservation = entity.HearingObservation,
+                SightObservation = entity.SightObservation,
+                SpeechObservation = entity.SpeechObservation,
+                DreamObservation = entity.DreamObservation,
+                Faintings = entity.Faintings,
+                ObservationDifferentAbility = entity.ObservationDifferentAbility,
+                Observation = entity.Observation
             };
         }
 
@@ -79,7 +99,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NeuropsychologicalHistoryId = dto.NeuropsychologicalHistoryId,
                 HistoryNumber = dto.HistoryNumber,
                 ClinicalHistoryId = dto.ClinicalHistoryId,
-                Description = dto.Description
+                Description = dto.Description,
+                HomeConduct = dto.HomeConduct,
+                SchoolConduct = dto.SchoolConduct,
+                Leverage = dto.Leverage,
+                HearingObservation = dto.HearingObservation,
+                SightObservation = dto.SightObservation,
+                SpeechObservation = dto.SpeechObservation,
+                DreamObservation = dto.DreamObservation,
+                Faintings = dto.Faintings,
+                ObservationDifferentAbility = dto.ObservationDifferentAbility,
+                Observation = dto.Observation
             };
         }
     }

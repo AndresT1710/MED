@@ -18,18 +18,18 @@ namespace SMED.BackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PrenatalHistoryDTO>>> GetAll()
         {
-            var histories = await _prenatalHistoryRepository.GetAllAsync();
-            return Ok(histories);
+            var records = await _prenatalHistoryRepository.GetAllAsync();
+            return Ok(records);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<PrenatalHistoryDTO>> GetById(int id)
         {
-            var history = await _prenatalHistoryRepository.GetByIdAsync(id);
-            if (history == null)
+            var record = await _prenatalHistoryRepository.GetByIdAsync(id);
+            if (record == null)
                 return NotFound();
 
-            return Ok(history);
+            return Ok(record);
         }
 
         [HttpPost]

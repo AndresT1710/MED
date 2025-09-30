@@ -54,6 +54,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.NumberOfUltrasounds = dto.NumberOfUltrasounds;
             entity.FetalSuffering = dto.FetalSuffering;
             entity.ComplicationsDuringPregnancy = dto.ComplicationsDuringPregnancy;
+            entity.NumberOfDeeds = dto.NumberOfDeeds;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -82,7 +83,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NumberOfControls = entity.NumberOfControls,
                 NumberOfUltrasounds = entity.NumberOfUltrasounds,
                 FetalSuffering = entity.FetalSuffering,
-                ComplicationsDuringPregnancy = entity.ComplicationsDuringPregnancy
+                ComplicationsDuringPregnancy = entity.ComplicationsDuringPregnancy,
+                NumberOfDeeds = entity.NumberOfDeeds
             };
         }
 
@@ -100,7 +102,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 NumberOfControls = dto.NumberOfControls,
                 NumberOfUltrasounds = dto.NumberOfUltrasounds,
                 FetalSuffering = dto.FetalSuffering,
-                ComplicationsDuringPregnancy = dto.ComplicationsDuringPregnancy
+                ComplicationsDuringPregnancy = dto.ComplicationsDuringPregnancy,
+                NumberOfDeeds = dto.NumberOfDeeds
+
             };
         }
     }

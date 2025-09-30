@@ -18,18 +18,18 @@ namespace SMED.BackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NeuropsychologicalHistoryDTO>>> GetAll()
         {
-            var histories = await _neuropsychologicalHistoryRepository.GetAllAsync();
-            return Ok(histories);
+            var records = await _neuropsychologicalHistoryRepository.GetAllAsync();
+            return Ok(records);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<NeuropsychologicalHistoryDTO>> GetById(int id)
         {
-            var history = await _neuropsychologicalHistoryRepository.GetByIdAsync(id);
-            if (history == null)
+            var record = await _neuropsychologicalHistoryRepository.GetByIdAsync(id);
+            if (record == null)
                 return NotFound();
 
-            return Ok(history);
+            return Ok(record);
         }
 
         [HttpPost]

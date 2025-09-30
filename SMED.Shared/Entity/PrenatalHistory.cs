@@ -34,6 +34,8 @@ namespace SMED.Shared.Entity
 
         public string? ComplicationsDuringPregnancy { get; set; }
 
+        public int? NumberOfDeeds { get; set; }
+
 
 
         [ForeignKey("ClinicalHistoryId")]

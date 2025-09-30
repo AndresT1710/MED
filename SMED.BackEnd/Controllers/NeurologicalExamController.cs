@@ -18,18 +18,18 @@ namespace SMED.BackEnd.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NeurologicalExamDTO>>> GetAll()
         {
-            var exams = await _neurologicalExamRepository.GetAllAsync();
-            return Ok(exams);
+            var records = await _neurologicalExamRepository.GetAllAsync();
+            return Ok(records);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<NeurologicalExamDTO>> GetById(int id)
         {
-            var exam = await _neurologicalExamRepository.GetByIdAsync(id);
-            if (exam == null)
+            var record = await _neurologicalExamRepository.GetByIdAsync(id);
+            if (record == null)
                 return NotFound();
 
-            return Ok(exam);
+            return Ok(record);
         }
 
         [HttpPost]

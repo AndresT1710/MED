@@ -6,26 +6,26 @@ namespace SMED.BackEnd.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PerinatalHistoryController : ControllerBase
+    public class TraumaticHistoryController : ControllerBase
     {
-        private readonly IRepository<PerinatalHistoryDTO, int> _perinatalHistoryRepository;
+        private readonly IRepository<TraumaticHistoryDTO, int> _traumaticHistoryRepository;
 
-        public PerinatalHistoryController(IRepository<PerinatalHistoryDTO, int> perinatalHistoryRepository)
+        public TraumaticHistoryController(IRepository<TraumaticHistoryDTO, int> traumaticHistoryRepository)
         {
-            _perinatalHistoryRepository = perinatalHistoryRepository;
+            _traumaticHistoryRepository = traumaticHistoryRepository;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PerinatalHistoryDTO>>> GetAll()
+        public async Task<ActionResult<IEnumerable<TraumaticHistoryDTO>>> GetAll()
         {
-            var records = await _perinatalHistoryRepository.GetAllAsync();
+            var records = await _traumaticHistoryRepository.GetAllAsync();
             return Ok(records);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<PerinatalHistoryDTO>> GetById(int id)
+        public async Task<ActionResult<TraumaticHistoryDTO>> GetById(int id)
         {
-            var record = await _perinatalHistoryRepository.GetByIdAsync(id);
+            var record = await _traumaticHistoryRepository.GetByIdAsync(id);
             if (record == null)
                 return NotFound();
 
@@ -33,12 +33,12 @@ namespace SMED.BackEnd.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<PerinatalHistoryDTO>> Add(PerinatalHistoryDTO dto)
+        public async Task<ActionResult<TraumaticHistoryDTO>> Add(TraumaticHistoryDTO dto)
         {
             try
             {
-                var created = await _perinatalHistoryRepository.AddAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = created.PerinatalHistoryId }, created);
+                var created = await _traumaticHistoryRepository.AddAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.TraumaticHistoryId }, created);
             }
             catch (Exception ex)
             {
@@ -47,14 +47,14 @@ namespace SMED.BackEnd.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<PerinatalHistoryDTO>> Update(int id, PerinatalHistoryDTO dto)
+        public async Task<ActionResult<TraumaticHistoryDTO>> Update(int id, TraumaticHistoryDTO dto)
         {
-            if (id != dto.PerinatalHistoryId)
+            if (id != dto.TraumaticHistoryId)
                 return BadRequest("ID mismatch.");
 
             try
             {
-                var updated = await _perinatalHistoryRepository.UpdateAsync(dto);
+                var updated = await _traumaticHistoryRepository.UpdateAsync(dto);
                 if (updated == null)
                     return NotFound();
 
@@ -69,7 +69,7 @@ namespace SMED.BackEnd.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _perinatalHistoryRepository.DeleteAsync(id);
+            var success = await _traumaticHistoryRepository.DeleteAsync(id);
             if (!success)
                 return NotFound();
 

@@ -5,8 +5,8 @@
 @using SMED.Shared.DTOs
 
 @inject PrenatalHistoryService PrenatalHistoryService
-@inject PostnatalHistoryService PostnatalHistoryService
 @inject PerinatalHistoryService PerinatalHistoryService
+@inject PostnatalHistoryService PostnatalHistoryService
 @inject NeuropsychologicalHistoryService NeuropsychologicalHistoryService
 @inject NeurologicalExamTypeService NeurologicalExamTypeService
 @inject NeurologicalExamService NeurologicalExamService
@@ -21,166 +21,433 @@
 
     @if (clinicalHistoryId > 0)
     {
-        <!-- SECCIÓN: ANTECEDENTES PRENATALES, PERINATALES, POSTNATALES Y NEUROPSICOLÓGICOS -->
+        <!-- SECCIÓN: ANTECEDENTES PRENATALES -->
         <div class="container-section mt-4">
-            <h5>Antecedentes del Desarrollo</h5>
-            <div class="containerbox1-grid">
-                <div class="row">
-                    <!-- Antecedentes Prenatales -->
-                    <div class="col-md-6 mb-3">
-                        <ContainerBox1 Title="Antecedentes Prenatales"
-                                       Width="half"
-                                       @bind-Content="prenatalContent"
-                                       @bind-Content:after="OnPrenatalContentChanged" />
-                    </div>
+            <h5 class="section-title">Antecedentes Prenatales</h5>
 
-                    <!-- Antecedentes Perinatales -->
-                    <div class="col-md-6 mb-3">
-                        <ContainerBox1 Title="Antecedentes Perinatales"
-                                       Width="half"
-                                       @bind-Content="perinatalContent"
-                                       @bind-Content:after="OnPerinatalContentChanged" />
+            <!-- Fila 0: Producto de Número de Gestas -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Producto de Número de Gestas"
+                               Width="full"
+                               @bind-Content="prenatalDeedsContent"
+                               @bind-Content:after="OnPrenatalDataChanged" />
+            </div>
+
+            <!-- Fila 1: Checks para booleanos -->
+            <div class="d-flex flex-wrap mb-3">
+                <Check Title="Embarazo Planificado"
+                       @bind-Value="prenatalHistory.PlannedPregnancy"
+                       @bind-Value:after="OnPrenatalDataChanged" />
+
+                <Check Title="Exposición a la Radiación"
+                       @bind-Value="prenatalHistory.RadiationExposure"
+                       @bind-Value:after="OnPrenatalDataChanged" />
+
+                <Check Title="Sufrimiento Fetal"
+                       @bind-Value="prenatalHistory.FetalSuffering"
+                       @bind-Value:after="OnPrenatalDataChanged" />
+            </div>
+
+            <!-- Fila 2: Medicamentos o Vitaminas -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Medicamentos o Vitaminas"
+                               Width="full"
+                               @bind-Content="prenatalMedicationsContent"
+                               @bind-Content:after="OnPrenatalDataChanged" />
+            </div>
+
+            <!-- Fila 3: Número de Controles y Ecografías -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Número de Controles"
+                                   Width="half"
+                                   @bind-Content="prenatalControlsContent"
+                                   @bind-Content:after="OnPrenatalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Número de Ecografías"
+                                   Width="half"
+                                   @bind-Content="prenatalUltrasoundsContent"
+                                   @bind-Content:after="OnPrenatalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 4: Complicaciones durante el Embarazo -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Complicaciones durante el Embarazo"
+                               Width="full"
+                               @bind-Content="prenatalComplicationsContent"
+                               @bind-Content:after="OnPrenatalDataChanged" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES PERINATALES -->
+        <div class="container-section mt-4">
+            <h5 class="section-title">Antecedentes Perinatales</h5>
+
+            <!-- Fila 1: Tipo de Parto y Número de Semanas -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Parto</label>
+                        <select class="form-select" @bind="perinatalTypeOfBirth" @bind:after="OnPerinatalDataChanged">
+                            <option value="">Seleccione tipo de parto</option>
+                            <option value="Parto normal">Parto normal</option>
+                            <option value="Cesárea">Cesárea</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Número de Semanas"
+                                   Width="half"
+                                   @bind-Content="perinatalWeeksContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 2: Apgar y Tamiz Auditivo -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Apgar"
+                                   Width="half"
+                                   @bind-Content="perinatalApgarContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Tamiz Auditivo"
+                                   Width="half"
+                                   @bind-Content="perinatalAuditoryContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 3: Maniobras de Reanimación y Lugar de Atención -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Maniobras de Reanimación Especiales"
+                                   Width="half"
+                                   @bind-Content="perinatalResuscitationContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Lugar de Atención"
+                                   Width="half"
+                                   @bind-Content="perinatalPlaceOfCareContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 4: Lloró al nacer y Tamiz Metabólico -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <Check Title="Lloró al nacer"
+                           @bind-Value="perinatalHistory.BirthCry"
+                           @bind-Value:after="OnPerinatalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Tamiz Metabólico"
+                                   Width="half"
+                                   @bind-Content="perinatalMetabolicContent"
+                                   @bind-Content:after="OnPerinatalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 5: Complicaciones durante el Parto/Cesárea -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Complicaciones durante el Parto/Cesárea"
+                               Width="full"
+                               @bind-Content="perinatalComplicationsContent"
+                               @bind-Content:after="OnPerinatalDataChanged" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES POSTNATALES -->
+        <div class="container-section mt-4">
+            <h5 class="section-title">Antecedentes Postnatales</h5>
+
+            <!-- Descripción -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Descripción"
+                               Width="full"
+                               @bind-Content="postnatalDescriptionContent"
+                               @bind-Content:after="OnPostnatalDataChanged" />
+            </div>
+
+            <!-- Inmunizaciones -->
+            <div class="mb-3">
+                <h6 class="subsection-title">Inmunizaciones</h6>
+                <div class="row">
+                    <!-- Fila 1 -->
+                    <div class="col-md-4">
+                        <Check Title="BCG"
+                               @bind-Value="postnatalHistory.Bcg"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                    <div class="col-md-4">
+                        <Check Title="Rotavirus"
+                               @bind-Value="postnatalHistory.Rotavirus"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                    <div class="col-md-4">
+                        <Check Title="Pentavalente"
+                               @bind-Value="postnatalHistory.Pentavalente"
+                               @bind-Value:after="OnPostnatalDataChanged" />
                     </div>
                 </div>
                 <div class="row">
-                    <!-- Antecedentes Postnatales -->
-                    <div class="col-md-6 mb-3">
-                        <ContainerBox1 Title="Antecedentes Postnatales"
-                                       Width="half"
-                                       @bind-Content="postnatalContent"
-                                       @bind-Content:after="OnPostnatalContentChanged" />
+                    <!-- Fila 2 -->
+                    <div class="col-md-4">
+                        <Check Title="Influenza"
+                               @bind-Value="postnatalHistory.Influenza"
+                               @bind-Value:after="OnPostnatalDataChanged" />
                     </div>
-
-                    <!-- Antecedentes Neuropsicológicos -->
-                    <div class="col-md-6 mb-3">
-                        <ContainerBox1 Title="Antecedentes Neuropsicológicos"
-                                       Width="half"
-                                       @bind-Content="neuropsychologicalContent"
-                                       @bind-Content:after="OnNeuropsychologicalContentChanged" />
+                    <div class="col-md-4">
+                        <Check Title="Varicela"
+                               @bind-Value="postnatalHistory.Varicela"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                    <div class="col-md-4">
+                        <Check Title="Hepatitis B"
+                               @bind-Value="postnatalHistory.HepatitisB"
+                               @bind-Value:after="OnPostnatalDataChanged" />
                     </div>
                 </div>
+                <div class="row">
+                    <!-- Fila 3 -->
+                    <div class="col-md-4">
+                        <Check Title="Triple Viral"
+                               @bind-Value="postnatalHistory.TripleViral"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                    <div class="col-md-4">
+                        <Check Title="Polio Virus"
+                               @bind-Value="postnatalHistory.PolioVirus"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                    <div class="col-md-4">
+                        <Check Title="Neumococo"
+                               @bind-Value="postnatalHistory.Neumococo"
+                               @bind-Value:after="OnPostnatalDataChanged" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Observaciones"
+                               Width="full"
+                               @bind-Content="postnatalObservationsContent"
+                               @bind-Content:after="OnPostnatalDataChanged" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES NEUROPSICOLÓGICOS -->
+        <div class="container-section mt-4">
+            <h5 class="section-title">Antecedentes Neuropsicológicos</h5>
+
+            <!-- Fila 1: Conducta en Casa y Conducta en la Escuela -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Conducta en Casa"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalHomeConductContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Conducta en la Escuela"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalSchoolConductContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 2: Aprovechamiento y Observación Sueño -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Aprovechamiento"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalLeverageContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Observación Sueño"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalDreamObservationContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 3: Observación Vista y Observación Habla -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Observación Vista"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalSightObservationContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Observación Habla"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalSpeechObservationContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 4: Observación Escucha y Desmayos -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ContainerBox1 Title="Observación Escucha"
+                                   Width="half"
+                                   @bind-Content="neuropsychologicalHearingObservationContent"
+                                   @bind-Content:after="OnNeuropsychologicalDataChanged" />
+                </div>
+                <div class="col-md-6">
+                    <Check Title="Desmayos"
+                           @bind-Value="neuropsychologicalHistory.Faintings"
+                           @bind-Value:after="OnNeuropsychologicalDataChanged" />
+                </div>
+            </div>
+
+            <!-- Fila 5: Observaciones de Capacidades Diferentes -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Observaciones de Capacidades Diferentes"
+                               Width="full"
+                               @bind-Content="neuropsychologicalDifferentAbilityContent"
+                               @bind-Content:after="OnNeuropsychologicalDataChanged" />
+            </div>
+
+            <!-- Fila 6: Observaciones Generales -->
+            <div class="mb-3">
+                <ContainerBox1 Title="Observaciones"
+                               Width="full"
+                               @bind-Content="neuropsychologicalObservationContent"
+                               @bind-Content:after="OnNeuropsychologicalDataChanged" />
+            </div>
+        </div>
+
+        <!-- SECCIÓN: HITOS DE DESARROLLO -->
+        <div class="container-section mt-4">
+            <h5 class="section-title">Hitos de Desarrollo</h5>
+            <div class="editable-table-wrapper">
+                <EditableTable Title="Registro de Desarrollo"
+                               ColumnHeaders="@headersDevelopmentRecords"
+                               Rows="@developmentRecordData.Select(d => d.Values).ToList()"
+                               RowIds="@developmentRecordData.Select(d => d.Id).ToList()"
+                               OnAddRequested="PrepareForAddDevelopmentRecord"
+                               OnEditRequested="PrepareForEditDevelopmentRecord"
+                               OnDeleteRequested="HandleDevelopmentRecordRowDeleted"
+                               OnSaveRequested="SaveDevelopmentRecordChanges"
+                               IsValidForm="() => !string.IsNullOrWhiteSpace(developmentMilestone) && !string.IsNullOrWhiteSpace(developmentAgeRange)"
+                               EmptyMessage="@GetDevelopmentRecordsEmptyMessage()">
+                    <EditModalContent>
+                        <div class="form-group mb-3">
+                            <label>ID del Registro</label>
+                            <input class="form-control" value="@GetCurrentEditingDevelopmentRecordId()" disabled />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Hito de Desarrollo</label>
+                            <textarea class="form-control" @bind="developmentMilestone" rows="3"
+                                      placeholder="Ingrese el hito de desarrollo"
+                                      style="resize: vertical; max-height: 150px;"></textarea>
+                            @if (string.IsNullOrWhiteSpace(developmentMilestone))
+                            {
+                                <div class="text-muted mt-1">El hito de desarrollo es obligatorio</div>
+                            }
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Rango de Edad</label>
+                            <textarea class="form-control" @bind="developmentAgeRange" rows="2"
+                                      placeholder="Ingrese el rango de edad"
+                                      style="resize: vertical; max-height: 100px;"></textarea>
+                            @if (string.IsNullOrWhiteSpace(developmentAgeRange))
+                            {
+                                <div class="text-muted mt-1">El rango de edad es obligatorio</div>
+                            }
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Observaciones</label>
+                            <textarea class="form-control" @bind="developmentObservations" rows="4"
+                                      placeholder="Ingrese las observaciones"
+                                      style="resize: vertical; max-height: 200px;"></textarea>
+                        </div>
+                    </EditModalContent>
+                </EditableTable>
             </div>
         </div>
 
         <!-- SECCIÓN: EXÁMENES NEUROLÓGICOS -->
-        <div class="editable-table-wrapper mt-4">
-            <EditableTable Title="Exámenes Neurológicos"
-                           ColumnHeaders="@headersNeurologicalExams"
-                           Rows="@neurologicalExamData.Select(d => d.Values).ToList()"
-                           RowIds="@neurologicalExamData.Select(d => d.Id).ToList()"
-                           OnAddRequested="PrepareForAddNeurologicalExam"
-                           OnEditRequested="PrepareForEditNeurologicalExam"
-                           OnDeleteRequested="HandleNeurologicalExamRowDeleted"
-                           OnSaveRequested="SaveNeurologicalExamChanges"
-                           IsValidForm="() => !string.IsNullOrWhiteSpace(selectedExamType) && !string.IsNullOrWhiteSpace(selectedExamName)"
-                           EmptyMessage="@(isLoadingNeurologicalExams ? "Cargando..." : "No hay datos disponibles")">
+        <div class="container-section mt-4">
+            <h5 class="section-title">Exámenes Neurológicos</h5>
+            <div class="editable-table-wrapper">
+                <EditableTable Title="Exámenes Neurológicos"
+                               ColumnHeaders="@headersNeurologicalExams"
+                               Rows="@neurologicalExamData.Select(d => d.Values).ToList()"
+                               RowIds="@neurologicalExamData.Select(d => d.Id).ToList()"
+                               OnAddRequested="PrepareForAddNeurologicalExam"
+                               OnEditRequested="PrepareForEditNeurologicalExam"
+                               OnDeleteRequested="HandleNeurologicalExamRowDeleted"
+                               OnSaveRequested="SaveNeurologicalExamChanges"
+                               IsValidForm="() => !string.IsNullOrWhiteSpace(selectedExamType) && !string.IsNullOrWhiteSpace(selectedExamName)"
+                               EmptyMessage="@GetNeurologicalExamsEmptyMessage()">
+                    <EditModalContent>
+                        <div class="form-group mb-3">
+                            <label>ID del Registro</label>
+                            <input class="form-control" value="@GetCurrentEditingNeurologicalExamId()" disabled />
+                        </div>
 
-                <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingNeurologicalExamId()" disabled />
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label>Tipo de Examen</label>
-                        <select class="form-select" @bind="selectedExamType">
-                            <option value="">Seleccione un tipo de examen</option>
-                            @foreach (var examType in availableExamTypes)
+                        <div class="form-group mb-3">
+                            <label>Tipo de Examen</label>
+                            <select class="form-select" @bind="selectedExamType">
+                                <option value="">Seleccione un tipo de examen</option>
+                                @foreach (var examType in availableExamTypes)
+                                {
+                                    <option value="@examType">@examType</option>
+                                }
+                            </select>
+                            @if (isLoadingExamTypes)
                             {
-                                <option value="@examType">@examType</option>
+                                <div class="text-muted mt-1">Cargando tipos de examen...</div>
                             }
-                        </select>
-                        @if (isLoadingExamTypes)
-                        {
-                            <div class="text-muted mt-1">Cargando tipos de examen...</div>
-                        }
-                    </div>
+                        </div>
 
-                    <div class="form-group mb-3">
-                        <label>Examen</label>
-                        <select class="form-select" @bind="selectedExamName">
-                            <option value="">Seleccione un examen</option>
-                            @foreach (var exam in filteredExams)
+                        <div class="form-group mb-3">
+                            <label>Examen</label>
+                            <select class="form-select" @bind="selectedExamName">
+                                <option value="">Seleccione un examen</option>
+                                @foreach (var exam in filteredExams)
+                                {
+                                    <option value="@exam">@exam</option>
+                                }
+                            </select>
+                            @if (string.IsNullOrEmpty(selectedExamType))
                             {
-                                <option value="@exam">@exam</option>
+                                <div class="text-muted mt-1">Primero seleccione un tipo de examen</div>
                             }
-                        </select>
-                        @if (string.IsNullOrEmpty(selectedExamType))
-                        {
-                            <div class="text-muted mt-1">Primero seleccione un tipo de examen</div>
-                        }
-                    </div>
+                        </div>
 
-                    <div class="form-group mb-3">
-                        <label>Fecha del Examen</label>
-                        <input type="date" class="form-control" @bind="neurologicalExamDate" />
-                    </div>
+                        <div class="form-group mb-3">
+                            <label>Fecha del Examen</label>
+                            <input type="date" class="form-control" @bind="neurologicalExamDate" />
+                        </div>
 
-                    <div class="form-group mb-3">
-                        <label>Descripción</label>
-                        <textarea class="form-control" @bind="neurologicalExamDescription" rows="4"
-                                  placeholder="Ingrese la descripción del examen"
-                                  style="resize: vertical; max-height: 200px;"></textarea>
-                    </div>
+                        <div class="form-group mb-3">
+                            <label>Descripción</label>
+                            <textarea class="form-control" @bind="neurologicalExamDescription" rows="4"
+                                      placeholder="Ingrese la descripción del examen"
+                                      style="resize: vertical; max-height: 200px;"></textarea>
+                        </div>
 
-                    <div class="form-group mb-3">
-                        <label>Enlace PDF (Opcional)</label>
-                        <input type="text" class="form-control" @bind="neurologicalExamLinkPdf"
-                               placeholder="Ingrese el enlace al PDF del examen" />
-                    </div>
-                </EditModalContent>
-            </EditableTable>
-        </div>
-
-        <!-- SECCIÓN: REGISTRO DE DESARROLLO -->
-        <div class="editable-table-wrapper mt-4">
-            <EditableTable Title="Registro de Desarrollo"
-                           ColumnHeaders="@headersDevelopmentRecords"
-                           Rows="@developmentRecordData.Select(d => d.Values).ToList()"
-                           RowIds="@developmentRecordData.Select(d => d.Id).ToList()"
-                           OnAddRequested="PrepareForAddDevelopmentRecord"
-                           OnEditRequested="PrepareForEditDevelopmentRecord"
-                           OnDeleteRequested="HandleDevelopmentRecordRowDeleted"
-                           OnSaveRequested="SaveDevelopmentRecordChanges"
-                           IsValidForm="() => !string.IsNullOrWhiteSpace(developmentMilestone) && !string.IsNullOrWhiteSpace(developmentAgeRange)"
-                           EmptyMessage="@(isLoadingDevelopmentRecords ? "Cargando..." : "No hay datos disponibles")">
-
-                <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingDevelopmentRecordId()" disabled />
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label>Hito de Desarrollo</label>
-                        <textarea class="form-control" @bind="developmentMilestone" rows="3"
-                                  placeholder="Ingrese el hito de desarrollo"
-                                  style="resize: vertical; max-height: 150px;"></textarea>
-                        @if (string.IsNullOrWhiteSpace(developmentMilestone))
-                        {
-                            <div class="text-muted mt-1">El hito de desarrollo es obligatorio</div>
-                        }
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label>Rango de Edad</label>
-                        <textarea class="form-control" @bind="developmentAgeRange" rows="2"
-                                  placeholder="Ingrese el rango de edad"
-                                  style="resize: vertical; max-height: 100px;"></textarea>
-                        @if (string.IsNullOrWhiteSpace(developmentAgeRange))
-                        {
-                            <div class="text-muted mt-1">El rango de edad es obligatorio</div>
-                        }
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label>Observaciones</label>
-                        <textarea class="form-control" @bind="developmentObservations" rows="4"
-                                  placeholder="Ingrese las observaciones"
-                                  style="resize: vertical; max-height: 200px;"></textarea>
-                    </div>
-                </EditModalContent>
-            </EditableTable>
+                        <div class="form-group mb-3">
+                            <label>Enlace PDF (Opcional)</label>
+                            <input type="text" class="form-control" @bind="neurologicalExamLinkPdf"
+                                   placeholder="Ingrese el enlace al PDF del examen" />
+                        </div>
+                    </EditModalContent>
+                </EditableTable>
+            </div>
         </div>
 
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -204,49 +471,48 @@
     private bool isLoading = false;
 
     // ==========================================
-    // SECCIÓN: CONTAINERBOX1 - ANTECEDENTES
+    // SECCIÓN: ANTECEDENTES PRENATALES
     // ==========================================
-    private string prenatalContent = "";
-    private string perinatalContent = "";
-    private string postnatalContent = "";
-    private string neuropsychologicalContent = "";
+    private PrenatalHistoryDTO prenatalHistory = new() { HistoryNumber = string.Empty };
+    private string prenatalDeedsContent = ""; // NUEVO CAMPO
+    private string prenatalMedicationsContent = "";
+    private string prenatalControlsContent = "";
+    private string prenatalUltrasoundsContent = "";
+    private string prenatalComplicationsContent = "";
 
-    private PrenatalHistoryDTO prenatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
-    private PerinatalHistoryDTO perinatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
-    private PostnatalHistoryDTO postnatalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
-    private NeuropsychologicalHistoryDTO neuropsychologicalHistory = new() { HistoryNumber = string.Empty, Description = string.Empty };
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES PERINATALES
+    // ==========================================
+    private PerinatalHistoryDTO perinatalHistory = new() { HistoryNumber = string.Empty };
+    private string perinatalTypeOfBirth = "";
+    private string perinatalWeeksContent = "";
+    private string perinatalApgarContent = "";
+    private string perinatalAuditoryContent = "";
+    private string perinatalResuscitationContent = "";
+    private string perinatalPlaceOfCareContent = "";
+    private string perinatalMetabolicContent = "";
+    private string perinatalComplicationsContent = "";
 
-    private async Task OnPrenatalContentChanged()
-    {
-        if (clinicalHistoryId > 0)
-        {
-            await SavePrenatalHistoryAsync();
-        }
-    }
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES POSTNATALES
+    // ==========================================
+    private PostnatalHistoryDTO postnatalHistory = new() { HistoryNumber = string.Empty };
+    private string postnatalDescriptionContent = "";
+    private string postnatalObservationsContent = "";
 
-    private async Task OnPerinatalContentChanged()
-    {
-        if (clinicalHistoryId > 0)
-        {
-            await SavePerinatalHistoryAsync();
-        }
-    }
-
-    private async Task OnPostnatalContentChanged()
-    {
-        if (clinicalHistoryId > 0)
-        {
-            await SavePostnatalHistoryAsync();
-        }
-    }
-
-    private async Task OnNeuropsychologicalContentChanged()
-    {
-        if (clinicalHistoryId > 0)
-        {
-            await SaveNeuropsychologicalHistoryAsync();
-        }
-    }
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES NEUROPSICOLÓGICOS
+    // ==========================================
+    private NeuropsychologicalHistoryDTO neuropsychologicalHistory = new() { HistoryNumber = string.Empty };
+    private string neuropsychologicalHomeConductContent = "";
+    private string neuropsychologicalSchoolConductContent = "";
+    private string neuropsychologicalLeverageContent = "";
+    private string neuropsychologicalDreamObservationContent = "";
+    private string neuropsychologicalSightObservationContent = "";
+    private string neuropsychologicalSpeechObservationContent = "";
+    private string neuropsychologicalHearingObservationContent = "";
+    private string neuropsychologicalDifferentAbilityContent = "";
+    private string neuropsychologicalObservationContent = "";
 
     // ==========================================
     // SECCIÓN: EXÁMENES NEUROLÓGICOS
@@ -268,7 +534,6 @@
     private bool isLoadingNeurologicalExams = false;
     private bool isLoadingExamTypes = false;
 
-    // AGREGA ESTA PROPERTY CON SETTER PERSONALIZADO:
     private string selectedExamType
     {
         get => _selectedExamType;
@@ -277,39 +542,9 @@
             if (_selectedExamType != value)
             {
                 _selectedExamType = value;
-                // Ejecutar después de que el renderizado se complete
                 Task.Run(async () => await HandleExamTypeChangedAsync());
             }
         }
-    }
-
-    private async Task HandleExamTypeChangedAsync()
-    {
-        if (string.IsNullOrEmpty(_selectedExamType))
-        {
-            filteredExams = new();
-            selectedExamName = "";
-            return;
-        }
-
-        var examType = examTypes.FirstOrDefault(et => et.Name == _selectedExamType);
-        if (examType != null)
-        {
-            filteredExams = allExams
-                .Where(e => e.NeurologicalExamTypeId == examType.NeurologicalExamTypeId)
-                .Select(e => e.Name ?? "Sin nombre")
-                .Where(name => !string.IsNullOrEmpty(name))
-                .ToList();
-        }
-        else
-        {
-            filteredExams = new();
-        }
-
-        selectedExamName = "";
-
-        // Forzar actualización de la UI
-        StateHasChanged();
     }
 
     private class NeurologicalExamRow
@@ -342,14 +577,8 @@
         try
         {
             isLoading = true;
-
-            // Cargar tipos de examen neurológico
             await LoadExamTypes();
-
-            // Cargar todos los exámenes neurológicos (sin filtrar por clinicalHistoryId)
             allExams = await NeurologicalExamService.GetAllAsync() ?? new();
-
-            // Cargar exámenes existentes (si hay clinicalHistoryId se filtrarán, sino se cargan todos)
             await LoadNeurologicalExams();
         }
         catch (Exception ex)
@@ -387,10 +616,8 @@
         clinicalHistoryId = patient.ClinicalHistoryId;
         medicalRecordNumber = patient.MedicalRecordNumber;
 
-        // Siempre cargar exámenes, incluso si clinicalHistoryId es 0
         await LoadNeurologicalExams();
 
-        // Cargar los demás datos solo si hay clinicalHistoryId
         if (clinicalHistoryId > 0)
         {
             await LoadPrenatalHistory();
@@ -402,7 +629,7 @@
     }
 
     // ==========================================
-    // MÉTODOS: CARGA DE DATOS CONTAINERBOX1
+    // MÉTODOS: CARGA DE DATOS
     // ==========================================
     private async Task LoadPrenatalHistory()
     {
@@ -410,7 +637,13 @@
         {
             var result = await PrenatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             prenatalHistory = result?.FirstOrDefault() ?? new PrenatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-            prenatalContent = prenatalHistory.Description ?? "";
+
+            // NUEVO CAMPO
+            prenatalDeedsContent = prenatalHistory.NumberOfDeeds?.ToString() ?? "";
+            prenatalMedicationsContent = prenatalHistory.MedicationsOrVitamins ?? "";
+            prenatalControlsContent = prenatalHistory.NumberOfControls?.ToString() ?? "";
+            prenatalUltrasoundsContent = prenatalHistory.NumberOfUltrasounds?.ToString() ?? "";
+            prenatalComplicationsContent = prenatalHistory.ComplicationsDuringPregnancy ?? "";
         }
         catch (Exception ex)
         {
@@ -424,7 +657,15 @@
         {
             var result = await PerinatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             perinatalHistory = result?.FirstOrDefault() ?? new PerinatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-            perinatalContent = perinatalHistory.Description ?? "";
+
+            perinatalTypeOfBirth = perinatalHistory.TypeOfBirth ?? "";
+            perinatalWeeksContent = perinatalHistory.NumberOfWeeks?.ToString() ?? "";
+            perinatalApgarContent = perinatalHistory.Apgar ?? "";
+            perinatalAuditoryContent = perinatalHistory.AuditoryScreen ?? "";
+            perinatalResuscitationContent = perinatalHistory.ResuscitationManeuvers ?? "";
+            perinatalPlaceOfCareContent = perinatalHistory.PlaceOfCare ?? "";
+            perinatalMetabolicContent = perinatalHistory.MetabolicScreen ?? "";
+            perinatalComplicationsContent = perinatalHistory.ComplicationsDuringChildbirth ?? "";
         }
         catch (Exception ex)
         {
@@ -438,7 +679,9 @@
         {
             var result = await PostnatalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             postnatalHistory = result?.FirstOrDefault() ?? new PostnatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-            postnatalContent = postnatalHistory.Description ?? "";
+
+            postnatalDescriptionContent = postnatalHistory.Description ?? "";
+            postnatalObservationsContent = postnatalHistory.Observations ?? "";
         }
         catch (Exception ex)
         {
@@ -452,7 +695,16 @@
         {
             var result = await NeuropsychologicalHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
             neuropsychologicalHistory = result?.FirstOrDefault() ?? new NeuropsychologicalHistoryDTO { HistoryNumber = medicalRecordNumber };
-            neuropsychologicalContent = neuropsychologicalHistory.Description ?? "";
+
+            neuropsychologicalHomeConductContent = neuropsychologicalHistory.HomeConduct ?? "";
+            neuropsychologicalSchoolConductContent = neuropsychologicalHistory.SchoolConduct ?? "";
+            neuropsychologicalLeverageContent = neuropsychologicalHistory.Leverage ?? "";
+            neuropsychologicalDreamObservationContent = neuropsychologicalHistory.DreamObservation ?? "";
+            neuropsychologicalSightObservationContent = neuropsychologicalHistory.SightObservation ?? "";
+            neuropsychologicalSpeechObservationContent = neuropsychologicalHistory.SpeechObservation ?? "";
+            neuropsychologicalHearingObservationContent = neuropsychologicalHistory.HearingObservation ?? "";
+            neuropsychologicalDifferentAbilityContent = neuropsychologicalHistory.ObservationDifferentAbility ?? "";
+            neuropsychologicalObservationContent = neuropsychologicalHistory.Observation ?? "";
         }
         catch (Exception ex)
         {
@@ -460,24 +712,67 @@
         }
     }
 
+    // ==========================================
+    // MÉTODOS: GUARDADO AUTOMÁTICO
+    // ==========================================
+    private async Task OnPrenatalDataChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePrenatalHistoryAsync();
+        }
+    }
+
+    private async Task OnPerinatalDataChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePerinatalHistoryAsync();
+        }
+    }
+
+    private async Task OnPostnatalDataChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SavePostnatalHistoryAsync();
+        }
+    }
+
+    private async Task OnNeuropsychologicalDataChanged()
+    {
+        if (clinicalHistoryId > 0)
+        {
+            await SaveNeuropsychologicalHistoryAsync();
+        }
+    }
+
     private async Task SavePrenatalHistoryAsync()
     {
         try
         {
-            // Si el contenido está vacío y ya existe un registro, eliminarlo
-            if (string.IsNullOrWhiteSpace(prenatalContent))
-            {
-                if (prenatalHistory.PrenatalHistoryId > 0)
-                {
-                    await PrenatalHistoryService.DeleteAsync(prenatalHistory.PrenatalHistoryId);
-                    prenatalHistory = new PrenatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-                }
-                return; // No hacer nada más si el contenido está vacío
-            }
-
             prenatalHistory.ClinicalHistoryId = clinicalHistoryId;
             prenatalHistory.HistoryNumber = medicalRecordNumber;
-            prenatalHistory.Description = prenatalContent.Trim();
+
+            // NUEVO CAMPO
+            if (int.TryParse(prenatalDeedsContent, out var deeds))
+                prenatalHistory.NumberOfDeeds = deeds;
+            else
+                prenatalHistory.NumberOfDeeds = null;
+
+            prenatalHistory.MedicationsOrVitamins = string.IsNullOrWhiteSpace(prenatalMedicationsContent) ? null : prenatalMedicationsContent.Trim();
+
+            if (int.TryParse(prenatalControlsContent, out var controls))
+                prenatalHistory.NumberOfControls = controls;
+            else
+                prenatalHistory.NumberOfControls = null;
+
+            if (int.TryParse(prenatalUltrasoundsContent, out var ultrasounds))
+                prenatalHistory.NumberOfUltrasounds = ultrasounds;
+            else
+                prenatalHistory.NumberOfUltrasounds = null;
+
+            prenatalHistory.ComplicationsDuringPregnancy = string.IsNullOrWhiteSpace(prenatalComplicationsContent) ? null : prenatalComplicationsContent.Trim();
 
             if (prenatalHistory.PrenatalHistoryId == 0)
             {
@@ -492,13 +787,11 @@
                 await PrenatalHistoryService.UpdateAsync(prenatalHistory);
             }
 
-            // Limpiar mensaje de error si la operación fue exitosa
             errorMessage = string.Empty;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error técnico al guardar antecedentes prenatales");
-            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
         }
     }
 
@@ -506,20 +799,21 @@
     {
         try
         {
-            // Si el contenido está vacío y ya existe un registro, eliminarlo
-            if (string.IsNullOrWhiteSpace(perinatalContent))
-            {
-                if (perinatalHistory.PerinatalHistoryId > 0)
-                {
-                    await PerinatalHistoryService.DeleteAsync(perinatalHistory.PerinatalHistoryId);
-                    perinatalHistory = new PerinatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-                }
-                return; // No hacer nada más si el contenido está vacío
-            }
-
             perinatalHistory.ClinicalHistoryId = clinicalHistoryId;
             perinatalHistory.HistoryNumber = medicalRecordNumber;
-            perinatalHistory.Description = perinatalContent.Trim();
+            perinatalHistory.TypeOfBirth = string.IsNullOrWhiteSpace(perinatalTypeOfBirth) ? null : perinatalTypeOfBirth.Trim();
+
+            if (decimal.TryParse(perinatalWeeksContent, out var weeks))
+                perinatalHistory.NumberOfWeeks = weeks;
+            else
+                perinatalHistory.NumberOfWeeks = null;
+
+            perinatalHistory.Apgar = string.IsNullOrWhiteSpace(perinatalApgarContent) ? null : perinatalApgarContent.Trim();
+            perinatalHistory.AuditoryScreen = string.IsNullOrWhiteSpace(perinatalAuditoryContent) ? null : perinatalAuditoryContent.Trim();
+            perinatalHistory.ResuscitationManeuvers = string.IsNullOrWhiteSpace(perinatalResuscitationContent) ? null : perinatalResuscitationContent.Trim();
+            perinatalHistory.PlaceOfCare = string.IsNullOrWhiteSpace(perinatalPlaceOfCareContent) ? null : perinatalPlaceOfCareContent.Trim();
+            perinatalHistory.MetabolicScreen = string.IsNullOrWhiteSpace(perinatalMetabolicContent) ? null : perinatalMetabolicContent.Trim();
+            perinatalHistory.ComplicationsDuringChildbirth = string.IsNullOrWhiteSpace(perinatalComplicationsContent) ? null : perinatalComplicationsContent.Trim();
 
             if (perinatalHistory.PerinatalHistoryId == 0)
             {
@@ -539,7 +833,6 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error técnico al guardar antecedentes perinatales");
-            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
         }
     }
 
@@ -547,20 +840,10 @@
     {
         try
         {
-            // Si el contenido está vacío y ya existe un registro, eliminarlo
-            if (string.IsNullOrWhiteSpace(postnatalContent))
-            {
-                if (postnatalHistory.PostNatalId > 0)
-                {
-                    await PostnatalHistoryService.DeleteAsync(postnatalHistory.PostNatalId);
-                    postnatalHistory = new PostnatalHistoryDTO { HistoryNumber = medicalRecordNumber };
-                }
-                return; // No hacer nada más si el contenido está vacío
-            }
-
             postnatalHistory.ClinicalHistoryId = clinicalHistoryId;
             postnatalHistory.HistoryNumber = medicalRecordNumber;
-            postnatalHistory.Description = postnatalContent.Trim();
+            postnatalHistory.Description = string.IsNullOrWhiteSpace(postnatalDescriptionContent) ? null : postnatalDescriptionContent.Trim();
+            postnatalHistory.Observations = string.IsNullOrWhiteSpace(postnatalObservationsContent) ? null : postnatalObservationsContent.Trim();
 
             if (postnatalHistory.PostNatalId == 0)
             {
@@ -580,7 +863,6 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error técnico al guardar antecedentes postnatales");
-            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
         }
     }
 
@@ -588,20 +870,17 @@
     {
         try
         {
-            // Si el contenido está vacío y ya existe un registro, eliminarlo
-            if (string.IsNullOrWhiteSpace(neuropsychologicalContent))
-            {
-                if (neuropsychologicalHistory.NeuropsychologicalHistoryId > 0)
-                {
-                    await NeuropsychologicalHistoryService.DeleteAsync(neuropsychologicalHistory.NeuropsychologicalHistoryId);
-                    neuropsychologicalHistory = new NeuropsychologicalHistoryDTO { HistoryNumber = medicalRecordNumber };
-                }
-                return; // No hacer nada más si el contenido está vacío
-            }
-
             neuropsychologicalHistory.ClinicalHistoryId = clinicalHistoryId;
             neuropsychologicalHistory.HistoryNumber = medicalRecordNumber;
-            neuropsychologicalHistory.Description = neuropsychologicalContent.Trim();
+            neuropsychologicalHistory.HomeConduct = string.IsNullOrWhiteSpace(neuropsychologicalHomeConductContent) ? null : neuropsychologicalHomeConductContent.Trim();
+            neuropsychologicalHistory.SchoolConduct = string.IsNullOrWhiteSpace(neuropsychologicalSchoolConductContent) ? null : neuropsychologicalSchoolConductContent.Trim();
+            neuropsychologicalHistory.Leverage = string.IsNullOrWhiteSpace(neuropsychologicalLeverageContent) ? null : neuropsychologicalLeverageContent.Trim();
+            neuropsychologicalHistory.DreamObservation = string.IsNullOrWhiteSpace(neuropsychologicalDreamObservationContent) ? null : neuropsychologicalDreamObservationContent.Trim();
+            neuropsychologicalHistory.SightObservation = string.IsNullOrWhiteSpace(neuropsychologicalSightObservationContent) ? null : neuropsychologicalSightObservationContent.Trim();
+            neuropsychologicalHistory.SpeechObservation = string.IsNullOrWhiteSpace(neuropsychologicalSpeechObservationContent) ? null : neuropsychologicalSpeechObservationContent.Trim();
+            neuropsychologicalHistory.HearingObservation = string.IsNullOrWhiteSpace(neuropsychologicalHearingObservationContent) ? null : neuropsychologicalHearingObservationContent.Trim();
+            neuropsychologicalHistory.ObservationDifferentAbility = string.IsNullOrWhiteSpace(neuropsychologicalDifferentAbilityContent) ? null : neuropsychologicalDifferentAbilityContent.Trim();
+            neuropsychologicalHistory.Observation = string.IsNullOrWhiteSpace(neuropsychologicalObservationContent) ? null : neuropsychologicalObservationContent.Trim();
 
             if (neuropsychologicalHistory.NeuropsychologicalHistoryId == 0)
             {
@@ -621,12 +900,11 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error técnico al guardar antecedentes neuropsicológicos");
-            // NO mostrar error cuando el campo está vacío - solo para problemas técnicos reales
         }
     }
 
     // ==========================================
-    // MÉTODOS: EXÁMENES NEUROLÓGICOS
+    // MÉTODOS: EXÁMENES NEUROLÓGICOS (EXISTENTES)
     // ==========================================
     private async Task LoadNeurologicalExams()
     {
@@ -635,7 +913,6 @@
 
         try
         {
-            // CAMBIA ESTA LÍNEA - Si clinicalHistoryId es 0, carga todos los exámenes
             List<NeurologicalExamDTO> result;
             if (clinicalHistoryId > 0)
             {
@@ -655,12 +932,12 @@
                 {
                     Id = exam.NeurologicalExamId,
                     Values = new()
-                {
-                    GetExamTypeName(exam.NeurologicalExamTypeId),
-                    exam.Name ?? "Sin nombre",
-                    exam.ExamDate?.ToShortDateString() ?? "Sin fecha",
-                    exam.Description ?? "Sin observaciones"
-                }
+                    {
+                        GetExamTypeName(exam.NeurologicalExamTypeId),
+                        exam.Name ?? "Sin nombre",
+                        exam.ExamDate?.ToShortDateString() ?? "Sin fecha",
+                        exam.Description ?? "Sin observaciones"
+                    }
                 });
             }
         }
@@ -681,22 +958,16 @@
         return examTypes.FirstOrDefault(et => et.NeurologicalExamTypeId == examTypeId)?.Name ?? "Desconocido";
     }
 
-    private string GetExamName(int? examId)
+    private async Task HandleExamTypeChangedAsync()
     {
-        if (examId == null || examId == 0) return "Sin especificar";
-        return allExams.FirstOrDefault(e => e.NeurologicalExamId == examId)?.Name ?? "Desconocido";
-    }
-
-    private void HandleExamTypeChanged()
-    {
-        if (string.IsNullOrEmpty(selectedExamType))
+        if (string.IsNullOrEmpty(_selectedExamType))
         {
             filteredExams = new();
             selectedExamName = "";
             return;
         }
 
-        var examType = examTypes.FirstOrDefault(et => et.Name == selectedExamType);
+        var examType = examTypes.FirstOrDefault(et => et.Name == _selectedExamType);
         if (examType != null)
         {
             filteredExams = allExams
@@ -711,6 +982,7 @@
         }
 
         selectedExamName = "";
+        StateHasChanged();
     }
 
     private void PrepareForEditNeurologicalExam(int id)
@@ -727,8 +999,8 @@
             }
 
             editingNeurologicalExamId = id;
-            _selectedExamType = GetExamTypeName(dto.NeurologicalExamTypeId); // Usa el campo directo
-            Task.Run(async () => await HandleExamTypeChangedAsync()); // Llama al método
+            _selectedExamType = GetExamTypeName(dto.NeurologicalExamTypeId);
+            Task.Run(async () => await HandleExamTypeChangedAsync());
             selectedExamName = dto.Name ?? "";
             neurologicalExamDescription = dto.Description ?? "";
             neurologicalExamDate = dto.ExamDate ?? DateTime.Now;
@@ -799,7 +1071,7 @@
             {
                 var nuevo = new NeurologicalExamDTO
                 {
-                    ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null, // ← PERMITE NULL
+                    ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null,
                     NeurologicalExamTypeId = examType.NeurologicalExamTypeId,
                     Name = selectedExamName.Trim(),
                     Description = string.IsNullOrWhiteSpace(neurologicalExamDescription) ? null : neurologicalExamDescription.Trim(),
@@ -830,7 +1102,7 @@
                 dto.ExamDate = neurologicalExamDate;
                 dto.LinkPdf = string.IsNullOrWhiteSpace(neurologicalExamLinkPdf) ? null : neurologicalExamLinkPdf.Trim();
                 dto.HistoryNumber = string.IsNullOrWhiteSpace(medicalRecordNumber) ? null : medicalRecordNumber;
-                dto.ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null; // ← PERMITE NULL
+                dto.ClinicalHistoryId = clinicalHistoryId > 0 ? clinicalHistoryId : null;
 
                 var updated = await NeurologicalExamService.UpdateAsync(dto);
                 if (updated == null)
@@ -852,22 +1124,20 @@
     private void PrepareForAddNeurologicalExam()
     {
         editingNeurologicalExamId = -1;
-        _selectedExamType = ""; // Usa el campo directo
+        _selectedExamType = "";
         selectedExamName = "";
         neurologicalExamDescription = "";
         neurologicalExamDate = DateTime.Now;
         neurologicalExamLinkPdf = "";
         filteredExams = new();
         errorMessage = string.Empty;
-
-        // Limpiar también la property
         StateHasChanged();
     }
 
     private string GetCurrentEditingNeurologicalExamId() => editingNeurologicalExamId == -1 ? "Nuevo" : editingNeurologicalExamId.ToString();
 
     // ==========================================
-    // MÉTODOS: REGISTRO DE DESARROLLO
+    // MÉTODOS: REGISTRO DE DESARROLLO (EXISTENTES)
     // ==========================================
     private async Task LoadDevelopmentRecords()
     {
@@ -1028,6 +1298,19 @@
     }
 
     private string GetCurrentEditingDevelopmentRecordId() => editingDevelopmentRecordId == -1 ? "Nuevo" : editingDevelopmentRecordId.ToString();
+
+    // ==========================================
+    // MÉTODOS AUXILIARES PARA MENSAJES
+    // ==========================================
+    private string GetDevelopmentRecordsEmptyMessage()
+    {
+        return isLoadingDevelopmentRecords ? "Cargando..." : "No hay datos disponibles";
+    }
+
+    private string GetNeurologicalExamsEmptyMessage()
+    {
+        return isLoadingNeurologicalExams ? "Cargando..." : "No hay datos disponibles";
+    }
 
     private void ClearErrorMessage() => errorMessage = string.Empty;
 }

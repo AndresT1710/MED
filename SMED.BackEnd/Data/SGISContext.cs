@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using System;
 using SMED.Shared.Entity;
 using Infrastructure.Models;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace SGIS.Models
 {
@@ -141,6 +142,42 @@ namespace SGIS.Models
         public DbSet<MedicalService> MedicalServices { get; set; }
         public DbSet<MedicalProcedure> MedicalProcedures { get; set; }
         public DbSet<Location> Locations { get; set; }
+        
+        //FISIOTERAPIA
+        public DbSet<MedicalEvaluation> MedicalEvaluations { get; set; }
+        public DbSet<TypeOfMedicalEvaluation> TypeOfMedicalEvaluations { get; set; }
+        public DbSet<MedicalEvaluationPosition> MedicalEvaluationPositions { get; set; }
+        public DbSet<MedicalEvaluationMembers> MedicalEvaluationMembers { get; set; }
+        public DbSet<OsteoarticularEvaluation> OsteoarticularEvaluations { get; set; }
+        public DbSet<JointCondition> JointConditions { get; set; }
+        public DbSet<JointRangeOfMotion> JointRangeOfMotions { get; set; }
+        public DbSet<CurrentIllness> CurrentIllnesses { get; set; }
+        public DbSet<NeuromuscularEvaluation> NeuromuscularEvaluations { get; set; }
+        public DbSet<Shade> Shades { get; set; }
+        public DbSet<Strength> Strengths { get; set; }
+        public DbSet<Trophism> Trophisms { get; set; }
+        public DbSet<Sessions> Sessions { get; set; }
+        public DbSet<Activity> Activities { get; set; }
+        public DbSet<TypeOfActivity> TypeOfActivities { get; set; }
+        public DbSet<SensitivityLevel> SensitivityLevels { get; set; }
+        public DbSet<BodyZone> BodyZones { get; set; }
+        public DbSet<SensitivityEvaluation> SensitivityEvaluations { get; set; }
+        public DbSet<SkinEvaluation> SkinEvaluations { get; set; }
+        public DbSet<Color> Colors { get; set; }
+        public DbSet<Edema> Edemas { get; set; }
+        public DbSet<Status> Statuses { get; set; }
+        public DbSet<Swelling> Swellings { get; set; }
+        public DbSet<SpecialTest> SpecialTests { get; set; }
+        public DbSet<ResultType> ResultTypes { get; set; }
+        public DbSet<PhysiotherapyDiagnostic> PhysiotherapyDiagnostics { get; set; }
+        public DbSet<PhysiotherapyTreatment> PhysiotherapyTreatments { get; set; }
+        public DbSet<PainScale> PainScales { get; set; }
+        public DbSet<ActionF> ActionFs { get; set; }
+        public DbSet<Scale> Scales { get; set; }
+        public DbSet<PainMoment> PainMoments { get; set; }
+        public DbSet<PosturalEvaluation> PosturalEvaluations { get; set; }
+        public DbSet<View> Views { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -70,5 +70,35 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("MedicalCare")]
         public virtual AdditionalData? AdditionalData { get; set; }
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<MedicalEvaluation> MedicalEvaluations { get; set; } = new List<MedicalEvaluation>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<OsteoarticularEvaluation> OsteoarticularEvaluations { get; set; } = new List<OsteoarticularEvaluation>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<CurrentIllness> CurrentIllnesses { get; set; } = new List<CurrentIllness>();
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<NeuromuscularEvaluation> NeuromuscularEvaluations { get; set; } = new List<NeuromuscularEvaluation>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<Sessions> Sessions { get; set; } = new List<Sessions>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<SensitivityEvaluation> SensitivityEvaluations { get; set; } = new List<SensitivityEvaluation>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<SkinEvaluation> SkinEvaluations { get; set; } = new List<SkinEvaluation>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<SpecialTest> SpecialTests { get; set; } = new List<SpecialTest>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<PhysiotherapyDiagnostic> PhysiotherapyDiagnostics { get; set; } = new List<PhysiotherapyDiagnostic>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<PainScale> PainScales { get; set; } = new List<PainScale>();
+
     }
 }

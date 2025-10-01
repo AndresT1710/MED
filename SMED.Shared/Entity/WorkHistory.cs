@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public class WorkHistory
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int WorkHistoryId { get; set; }
 
         public string HistoryNumber { get; set; }

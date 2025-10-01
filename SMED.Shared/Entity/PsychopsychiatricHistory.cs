@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public class PsychopsychiatricHistory
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PsychopsychiatricHistoryId { get; set; }
 
         public string HistoryNumber { get; set; }

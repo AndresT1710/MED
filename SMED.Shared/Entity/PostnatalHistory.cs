@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public class PostnatalHistory
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PostNatalId { get; set; }
 
         [StringLength(100)]

@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public class WaterConsumptionHistory
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int WaterConsumptionHistoryId { get; set; }
 
         [StringLength(50)]

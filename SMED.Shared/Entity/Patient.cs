@@ -16,6 +16,11 @@ namespace SMED.Shared.Entity
         [InverseProperty("Patient")]
         public virtual ICollection<MedicalVisit> MedicalVisits { get; set; } = new List<MedicalVisit>();
 
+        public int? AgentId { get; set; }
+
+        [ForeignKey("AgentId")]
+        public virtual Agent? Agent { get; set; }
+
 
         [InverseProperty("Patient")]
         public virtual ICollection<EmergencyContact> EmergencyContacts { get; set; } = new List<EmergencyContact>();

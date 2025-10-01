@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public  class Gender
+    public class Gender
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

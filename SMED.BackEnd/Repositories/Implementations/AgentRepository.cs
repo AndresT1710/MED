@@ -1,4 +1,4 @@
-﻿using SGIS.Models;
+using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
@@ -18,7 +18,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<AgentDTO>> GetAllAsync()
         {
             var entities = await _context.Agents
-                .Include(a => a.DocumentTypeNavigation) 
+                .Include(a => a.DocumentTypeNavigation)
                 .Include(a => a.Gender)
                 .Include(a => a.MaritalStatus)
                 .Include(a => a.Patients)
@@ -30,7 +30,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<AgentDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.Agents
-                .Include(a => a.DocumentTypeNavigation) 
+                .Include(a => a.DocumentTypeNavigation)
                 .Include(a => a.Gender)
                 .Include(a => a.MaritalStatus)
                 .Include(a => a.Patients)
@@ -58,7 +58,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<AgentDTO?> UpdateAsync(AgentDTO dto)
         {
             var entity = await _context.Agents
-                .Include(a => a.DocumentTypeNavigation) 
+                .Include(a => a.DocumentTypeNavigation)
                 .FirstOrDefaultAsync(a => a.AgentId == dto.AgentId);
 
             if (entity == null) return null;
@@ -70,7 +70,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.SecondLastName = dto.SecondLastName;
             entity.PhoneNumber = dto.PhoneNumber;
             entity.CellphoneNumber = dto.CellphoneNumber;
-            entity.DocumentType = dto.DocumentType;  
+            entity.DocumentType = dto.DocumentType;
             entity.GenderId = dto.GenderId;
             entity.MaritalStatusId = dto.MaritalStatusId;
 

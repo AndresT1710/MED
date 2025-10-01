@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 

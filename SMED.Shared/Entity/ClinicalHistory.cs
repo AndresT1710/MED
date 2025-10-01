@@ -102,6 +102,15 @@ namespace SMED.Shared.Entity
         [InverseProperty("ClinicalHistory")]
         public virtual ICollection<DevelopmentRecord> DevelopmentRecords { get; set; } = new List<DevelopmentRecord>();
 
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<HospitalizationsHistory> HospitalizationsHistories { get; set; } = new List<HospitalizationsHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<TransfusionsHistory> TransfusionsHistories { get; set; } = new List<TransfusionsHistory>();
+
+        [InverseProperty("ClinicalHistory")]
+        public virtual ICollection<TraumaticHistory> TraumaticHistories { get; set; } = new List<TraumaticHistory>();
+
         [ForeignKey("PatientId")]
         [InverseProperty("ClinicalHistory")]
         public virtual Patient? Patient { get; set; }

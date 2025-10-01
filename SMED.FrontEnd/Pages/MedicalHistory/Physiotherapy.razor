@@ -1,6 +1,278 @@
-﻿namespace SMED.FrontEnd.Pages.MedicalHistory
-{
-    public class Physiotherapy
+﻿@page "/medical-history/physiotherapy"
+@using SMED.FrontEnd.Components
+@using SMED.FrontEnd.Services
+@using SMED.Frontend.Services
+@using SMED.Shared.DTOs
+
+@inject TraumaticHistoryService TraumaticHistoryService
+@inject ILogger<Physiotherapy> Logger
+
+<TabContainer>
+    <h4>Historia Clínica - Fisioterapia</h4>
+
+    <PatientSelector @bind-Value="clinicalHistoryId"
+                     OnPatientSelected="HandlePatientSelected" />
+
+    @if (clinicalHistoryId > 0)
     {
+        <!-- SECCIÓN: ANTECEDENTES TRAUMATOLÓGICOS -->
+        <div class="container-section mt-4">
+            <h5 class="section-title">Antecedentes Traumatológicos</h5>
+            <div class="editable-table-wrapper">
+                <EditableTable Title="Antecedentes Traumatológicos"
+                               ColumnHeaders="@headersTraumaticHistory"
+                               Rows="@traumaticHistoryData.Select(d => d.Values).ToList()"
+                               RowIds="@traumaticHistoryData.Select(d => d.Id).ToList()"
+                               OnAddRequested="PrepareForAddTraumaticHistory"
+                               OnEditRequested="PrepareForEditTraumaticHistory"
+                               OnDeleteRequested="HandleTraumaticHistoryRowDeleted"
+                               OnSaveRequested="SaveTraumaticHistoryChanges"
+                               IsValidForm="() => !string.IsNullOrWhiteSpace(traumaticDescription)"
+                               EmptyMessage="@GetTraumaticHistoryEmptyMessage()">
+                    <EditModalContent>
+                        <div class="form-group mb-3">
+                            <label>ID del Registro</label>
+                            <input class="form-control" value="@GetCurrentEditingTraumaticHistoryId()" disabled />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Descripción</label>
+                            <textarea class="form-control" @bind="traumaticDescription" rows="6"
+                                      placeholder="Ingrese la descripción del antecedente traumatológico"
+                                      style="resize: vertical; max-height: 300px;"></textarea>
+                            @if (string.IsNullOrWhiteSpace(traumaticDescription))
+                            {
+                                <div class="text-muted mt-1">La descripción es obligatoria</div>
+                            }
+                        </div>
+                    </EditModalContent>
+                </EditableTable>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+                <button type="button" class="btn-close float-end" @onclick="ClearErrorMessage"></button>
+            </div>
+        }
     }
+    else
+    {
+        <p class="text-muted">Seleccione un paciente con historia clínica para mostrar los datos de fisioterapia.</p>
+    }
+</TabContainer>
+
+@code {
+    private int clinicalHistoryId = 0;
+    private string medicalRecordNumber = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES TRAUMATOLÓGICOS
+    // ==========================================
+    private readonly List<string> headersTraumaticHistory = new() { "Descripción" };
+    private List<TraumaticHistoryRow> traumaticHistoryData = new();
+    private List<TraumaticHistoryDTO> currentTraumaticHistories = new();
+
+    private string traumaticDescription = "";
+    private int editingTraumaticHistoryId = -1;
+    private bool isLoadingTraumaticHistory = false;
+
+    private class TraumaticHistoryRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            await LoadTraumaticHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar datos iniciales");
+            errorMessage = "Error al cargar los datos iniciales.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
+    {
+        clinicalHistoryId = patient.ClinicalHistoryId;
+        medicalRecordNumber = patient.MedicalRecordNumber;
+
+        if (clinicalHistoryId > 0)
+        {
+            await LoadTraumaticHistory();
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS: CARGA DE DATOS
+    // ==========================================
+    private async Task LoadTraumaticHistory()
+    {
+        errorMessage = string.Empty;
+        isLoadingTraumaticHistory = true;
+
+        try
+        {
+            var result = await TraumaticHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentTraumaticHistories = result ?? new();
+            traumaticHistoryData = new();
+
+            foreach (var history in currentTraumaticHistories)
+            {
+                traumaticHistoryData.Add(new TraumaticHistoryRow
+                {
+                    Id = history.TraumaticHistoryId,
+                    Values = new()
+                    {
+                        history.Description ?? "Sin descripción"
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes traumatológicos");
+            errorMessage = "Error al cargar los antecedentes traumatológicos.";
+        }
+        finally
+        {
+            isLoadingTraumaticHistory = false;
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS: OPERACIONES CRUD
+    // ==========================================
+    private void PrepareForEditTraumaticHistory(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentTraumaticHistories.FirstOrDefault(h => h.TraumaticHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente traumatológico con ID {id}";
+                return;
+            }
+
+            editingTraumaticHistoryId = id;
+            traumaticDescription = dto.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente traumatológico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleTraumaticHistoryRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await TraumaticHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el antecedente traumatológico.";
+                return;
+            }
+
+            await LoadTraumaticHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente traumatológico");
+            errorMessage = "Error al eliminar el antecedente traumatológico.";
+        }
+    }
+
+    private async Task SaveTraumaticHistoryChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(traumaticDescription))
+            {
+                errorMessage = "La descripción es obligatoria.";
+                return;
+            }
+
+            if (editingTraumaticHistoryId == -1)
+            {
+                var nuevo = new TraumaticHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    Description = traumaticDescription.Trim(),
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var created = await TraumaticHistoryService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el antecedente traumatológico.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentTraumaticHistories.FirstOrDefault(h => h.TraumaticHistoryId == editingTraumaticHistoryId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.Description = traumaticDescription.Trim();
+
+                var updated = await TraumaticHistoryService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el antecedente traumatológico.";
+                    return;
+                }
+            }
+
+            await LoadTraumaticHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente traumatológico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddTraumaticHistory()
+    {
+        editingTraumaticHistoryId = -1;
+        traumaticDescription = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingTraumaticHistoryId() => editingTraumaticHistoryId == -1 ? "Nuevo" : editingTraumaticHistoryId.ToString();
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+    private string GetTraumaticHistoryEmptyMessage()
+    {
+        return isLoadingTraumaticHistory ? "Cargando..." : "No hay datos disponibles";
+    }
+
+    private void ClearErrorMessage() => errorMessage = string.Empty;
 }

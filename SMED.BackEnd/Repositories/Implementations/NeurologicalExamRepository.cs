@@ -18,8 +18,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<NeurologicalExamDTO>> GetAllAsync()
         {
             var entities = await _context.NeurologicalExams
-                .Include(ne => ne.ClinicalHistory)
-                .Include(ne => ne.NeurologicalExamType)
+                .Include(n => n.ClinicalHistory)
+                .Include(n => n.NeurologicalExamType)
                 .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
@@ -27,9 +27,9 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<NeurologicalExamDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.NeurologicalExams
-                .Include(ne => ne.ClinicalHistory)
-                .Include(ne => ne.NeurologicalExamType)
-                .FirstOrDefaultAsync(ne => ne.NeurologicalExamId == id);
+                .Include(n => n.ClinicalHistory)
+                .Include(n => n.NeurologicalExamType)
+                .FirstOrDefaultAsync(n => n.NeurologicalExamId == id);
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -47,7 +47,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.HistoryNumber = dto.HistoryNumber;
-            entity.ClinicalHistoryId = dto.ClinicalHistoryId; // ← YA PUEDE SER NULL
+            entity.ClinicalHistoryId = dto.ClinicalHistoryId;
             entity.Name = dto.Name;
             entity.LinkPdf = dto.LinkPdf;
             entity.ExamDate = dto.ExamDate;
@@ -73,7 +73,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 NeurologicalExamId = entity.NeurologicalExamId,
                 HistoryNumber = entity.HistoryNumber,
-                ClinicalHistoryId = entity.ClinicalHistoryId, // ← YA PUEDE SER NULL
+                ClinicalHistoryId = entity.ClinicalHistoryId,
                 Name = entity.Name,
                 LinkPdf = entity.LinkPdf,
                 ExamDate = entity.ExamDate,
@@ -89,7 +89,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 NeurologicalExamId = dto.NeurologicalExamId,
                 HistoryNumber = dto.HistoryNumber,
-                ClinicalHistoryId = dto.ClinicalHistoryId, // ← YA PUEDE SER NULL
+                ClinicalHistoryId = dto.ClinicalHistoryId,
                 Name = dto.Name,
                 LinkPdf = dto.LinkPdf,
                 ExamDate = dto.ExamDate,

@@ -21,6 +21,26 @@ namespace SMED.Shared.Entity
 
         public string? Description { get; set; }
 
+        public bool? Bcg { get; set; }
+
+        public bool? Rotavirus { get; set; }
+
+        public bool? Pentavalente { get; set; }
+
+        public bool? Influenza { get; set; }
+
+        public bool? Varicela { get; set; }
+
+        public bool? HepatitisB { get; set; }
+
+        public bool? TripleViral { get; set; }
+
+        public bool? PolioVirus { get; set; }
+
+        public bool? Neumococo { get; set; }
+
+        public string? Observations { get; set; }
+
         [ForeignKey("ClinicalHistoryId")]
         [InverseProperty("PostnatalHistories")]
         public virtual ClinicalHistory ClinicalHistory { get; set; } = null!;

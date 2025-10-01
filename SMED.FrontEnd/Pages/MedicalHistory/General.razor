@@ -1,6 +1,7 @@
 ﻿@page "/medical-history/general"
 @using SMED.FrontEnd.Components
 @using SMED.FrontEnd.Services
+@using SMED.Frontend.Services
 @using SMED.Shared.DTOs
 @inject PersonalHistoryService PersonalHistoryService
 @inject DiseaseService DiseaseService
@@ -12,6 +13,9 @@
 @inject HabitHistoryService HabitHistoryService
 @inject RelationshipService RelationshipService
 @inject FamilyHistoryDetailService FamilyHistoryDetailService
+@inject TransfusionsHistoryService TransfusionsHistoryService
+@inject HospitalizationsHistoryService HospitalizationsHistoryService
+@inject TraumaticHistoryService TraumaticHistoryService
 @inject ILogger<General> Logger
 
 <TabContainer>
@@ -277,11 +281,140 @@
                         }
                     </div>
 
-
-
                 </EditModalContent>
             </EditableTable>
         </div>
+
+
+        <!-- SECCIÓN: HISTORIAL DE TRANSFUSIONES -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Historial de Transfusiones"
+                           ColumnHeaders="@headersTransfusiones"
+                           Rows="@transfusionesData.Select(d => d.Values).ToList()"
+                           RowIds="@transfusionesData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddTransfusion"
+                           OnEditRequested="PrepareForEditTransfusion"
+                           OnDeleteRequested="HandleTransfusionRowDeleted"
+                           OnSaveRequested="SaveTransfusionChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(transfusionReason) && transfusionDate != default"
+                           EmptyMessage="@(isLoadingTransfusions ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingTransfusionId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Razón</label>
+                        <input type="text" class="form-control" @bind="transfusionReason" placeholder="Ingrese la razón de la transfusión" />
+                        @if (string.IsNullOrEmpty(transfusionReason))
+                        {
+                            <div class="text-muted mt-1">Este campo es obligatorio</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha</label>
+                        <input type="date" class="form-control" @bind="transfusionDate" />
+                        @if (transfusionDate == default)
+                        {
+                            <div class="text-muted mt-1">Debe seleccionar una fecha válida</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Observaciones</label>
+                        <textarea class="form-control" @bind="transfusionObservations" rows="3"
+                                  placeholder="Ingrese observaciones adicionales..."
+                                  style="resize: vertical; min-height: 80px; max-height: 150px; overflow-y: auto"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTE DE HOSPITALIZACIONES -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedente de Hospitalizaciones"
+                           ColumnHeaders="@headersHospitalizaciones"
+                           Rows="@hospitalizacionesData.Select(d => d.Values).ToList()"
+                           RowIds="@hospitalizacionesData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddHospitalization"
+                           OnEditRequested="PrepareForEditHospitalization"
+                           OnDeleteRequested="HandleHospitalizationRowDeleted"
+                           OnSaveRequested="SaveHospitalizationChanges"
+                           IsValidForm="() => !string.IsNullOrEmpty(hospitalizationReason) && hospitalizationDate != default && !string.IsNullOrEmpty(hospitalizationPlace)"
+                           EmptyMessage="@(isLoadingHospitalizations ? "Cargando..." : "No hay datos disponibles")">
+
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingHospitalizationId()" disabled />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Razón</label>
+                        <input type="text" class="form-control" @bind="hospitalizationReason" placeholder="Ingrese la razón de la hospitalización" />
+                        @if (string.IsNullOrEmpty(hospitalizationReason))
+                        {
+                            <div class="text-muted mt-1">Este campo es obligatorio</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Fecha</label>
+                        <input type="date" class="form-control" @bind="hospitalizationDate" />
+                        @if (hospitalizationDate == default)
+                        {
+                            <div class="text-muted mt-1">Debe seleccionar una fecha válida</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Lugar</label>
+                        <input type="text" class="form-control" @bind="hospitalizationPlace" placeholder="Ingrese el lugar de hospitalización" />
+                        @if (string.IsNullOrEmpty(hospitalizationPlace))
+                        {
+                            <div class="text-muted mt-1">Este campo es obligatorio</div>
+                        }
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Observaciones</label>
+                        <textarea class="form-control" @bind="hospitalizationObservations" rows="3"
+                                  placeholder="Ingrese observaciones adicionales..."
+                                  style="resize: vertical; min-height: 80px; max-height: 150px; overflow-y: auto"></textarea>
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+        <!-- SECCIÓN: ANTECEDENTES TRAUMATOLÓGICOS -->
+        <div class="editable-table-wrapper mt-4">
+            <EditableTable Title="Antecedentes Traumatológicos"
+                           ColumnHeaders="@headersTraumaticHistory"
+                           Rows="@traumaticHistoryData.Select(d => d.Values).ToList()"
+                           RowIds="@traumaticHistoryData.Select(d => d.Id).ToList()"
+                           OnAddRequested="PrepareForAddTraumaticHistory"
+                           OnEditRequested="PrepareForEditTraumaticHistory"
+                           OnDeleteRequested="HandleTraumaticHistoryRowDeleted"
+                           OnSaveRequested="SaveTraumaticHistoryChanges"
+                           IsValidForm="() => !string.IsNullOrWhiteSpace(traumaticDescription)"
+                           EmptyMessage="@GetTraumaticHistoryEmptyMessage()">
+                <EditModalContent>
+                    <div class="form-group mb-3">
+                        <label>ID del Registro</label>
+                        <input class="form-control" value="@GetCurrentEditingTraumaticHistoryId()" disabled />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" @bind="traumaticDescription" rows="6"
+                                  placeholder="Ingrese la descripción del antecedente traumatológico"
+                                  style="resize: vertical; max-height: 300px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(traumaticDescription))
+                        {
+                            <div class="text-muted mt-1">La descripción es obligatoria</div>
+                        }
+                    </div>
+                </EditModalContent>
+            </EditableTable>
+        </div>
+
+
     }
     else
     {
@@ -411,6 +544,218 @@
         public List<string> Values { get; set; } = new();
     }
 
+    // ==========================================
+    // SECCIÓN: HISTORIAL DE TRANSFUSIONES
+    // ==========================================
+    private readonly List<string> headersTransfusiones = new() { "Razón", "Fecha", "Observaciones" };
+    private List<TransfusionRow> transfusionesData = new();
+    private List<TransfusionsHistoryDTO> currentTransfusionHistories = new();
+
+    private string transfusionReason = "";
+    private DateTime transfusionDate = DateTime.Now;
+    private string transfusionObservations = "";
+    private int editingTransfusionId = -1;
+    private bool isLoadingTransfusions = false;
+
+    private class TransfusionRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+
+
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTES TRAUMATOLÓGICOS
+    // ==========================================
+    private readonly List<string> headersTraumaticHistory = new() { "Descripción" };
+    private List<TraumaticHistoryRow> traumaticHistoryData = new();
+    private List<TraumaticHistoryDTO> currentTraumaticHistories = new();
+
+    private string traumaticDescription = "";
+    private int editingTraumaticHistoryId = -1;
+    private bool isLoadingTraumaticHistory = false;
+
+    private class TraumaticHistoryRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
+
+    private async Task LoadTraumaticHistory()
+    {
+        errorMessage = string.Empty;
+        isLoadingTraumaticHistory = true;
+
+        try
+        {
+            var result = await TraumaticHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentTraumaticHistories = result ?? new();
+            traumaticHistoryData = new();
+
+            foreach (var history in currentTraumaticHistories)
+            {
+                traumaticHistoryData.Add(new TraumaticHistoryRow
+                {
+                    Id = history.TraumaticHistoryId,
+                    Values = new()
+                {
+                    history.Description ?? "Sin descripción"
+                }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar antecedentes traumatológicos");
+            errorMessage = "Error al cargar los antecedentes traumatológicos.";
+        }
+        finally
+        {
+            isLoadingTraumaticHistory = false;
+        }
+    }
+
+    private void PrepareForEditTraumaticHistory(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentTraumaticHistories.FirstOrDefault(h => h.TraumaticHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el antecedente traumatológico con ID {id}";
+                return;
+            }
+
+            editingTraumaticHistoryId = id;
+            traumaticDescription = dto.Description ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de antecedente traumatológico");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleTraumaticHistoryRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await TraumaticHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el antecedente traumatológico.";
+                return;
+            }
+
+            await LoadTraumaticHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar antecedente traumatológico");
+            errorMessage = "Error al eliminar el antecedente traumatológico.";
+        }
+    }
+
+    private async Task SaveTraumaticHistoryChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(traumaticDescription))
+            {
+                errorMessage = "La descripción es obligatoria.";
+                return;
+            }
+
+            if (editingTraumaticHistoryId == -1)
+            {
+                var nuevo = new TraumaticHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    Description = traumaticDescription.Trim(),
+                    HistoryNumber = medicalRecordNumber
+                };
+
+                var created = await TraumaticHistoryService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el antecedente traumatológico.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentTraumaticHistories.FirstOrDefault(h => h.TraumaticHistoryId == editingTraumaticHistoryId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.Description = traumaticDescription.Trim();
+
+                var updated = await TraumaticHistoryService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el antecedente traumatológico.";
+                    return;
+                }
+            }
+
+            await LoadTraumaticHistory();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de antecedente traumatológico");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddTraumaticHistory()
+    {
+        editingTraumaticHistoryId = -1;
+        traumaticDescription = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingTraumaticHistoryId() => editingTraumaticHistoryId == -1 ? "Nuevo" : editingTraumaticHistoryId.ToString();
+
+    private string GetTraumaticHistoryEmptyMessage()
+    {
+        return isLoadingTraumaticHistory ? "Cargando..." : "No hay datos disponibles";
+    }
+
+
+
+
+    // ==========================================
+    // SECCIÓN: ANTECEDENTE DE HOSPITALIZACIONES
+    // ==========================================
+    private readonly List<string> headersHospitalizaciones = new() { "Razón", "Fecha", "Lugar", "Observaciones" };
+    private List<HospitalizationRow> hospitalizacionesData = new();
+    private List<HospitalizationsHistoryDTO> currentHospitalizationHistories = new();
+
+    private string hospitalizationReason = "";
+    private DateTime hospitalizationDate = DateTime.Now;
+    private string hospitalizationPlace = "";
+    private string hospitalizationObservations = "";
+    private int editingHospitalizationId = -1;
+    private bool isLoadingHospitalizations = false;
+
+    private class HospitalizationRow
+    {
+        public int Id { get; set; }
+        public List<string> Values { get; set; } = new();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -433,6 +778,8 @@
             // Cargar parentescos disponibles
             relationships = await RelationshipService.GetAllAsync() ?? new();
             availableRelationships = relationships.ToList();
+
+
         }
         catch (Exception ex)
         {
@@ -468,7 +815,7 @@
         {
             ph.DiseaseTypeName ?? "Desconocido",
             ph.DiseaseName ?? "No especificada",
-            ph.Description ?? "Sin descripción" 
+            ph.Description ?? "Sin descripción"
         }
                 });
             }
@@ -579,13 +926,13 @@
             if (editingId == -1)
             {
                 var nuevo = new PersonalHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        DiseaseId = enfermedad.DiseaseId,
-                        Description = personalDescription,
-                        RegistrationDate = DateTime.Now,
-                        MedicalRecordNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    DiseaseId = enfermedad.DiseaseId,
+                    Description = personalDescription,
+                    RegistrationDate = DateTime.Now,
+                    MedicalRecordNumber = medicalRecordNumber
+                };
 
                 var (success, _, error) = await PersonalHistoryService.CreateAsync(nuevo);
                 if (!success)
@@ -640,7 +987,7 @@
         editingId = -1;
         selectedDiseaseType = 0;
         selectedDisease = "";
-        personalDescription = ""; 
+        personalDescription = "";
         availableDiseases = new();
         errorMessage = string.Empty;
     }
@@ -662,15 +1009,15 @@
             foreach (var sh in currentSurgeryHistories)
             {
                 quirurgicosData.Add(new SurgeryRow
-                    {
-                        Id = sh.SurgeryHistoryId,
-                        Values = new()
+                {
+                    Id = sh.SurgeryHistoryId,
+                    Values = new()
                     {
                         GetSurgeryName(sh.SurgeryId ?? 0),
                         sh.SurgeryDate?.ToShortDateString() ?? "Sin fecha",
                         sh.Description ?? "Sin descripción"
                     }
-                    });
+                });
             }
         }
         catch (Exception ex)
@@ -765,15 +1112,15 @@
             if (editingSurgeryId == -1)
             {
                 var nuevo = new SurgeryHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        SurgeryId = cirugia.SurgeryId,
-                        Description = string.IsNullOrWhiteSpace(surgeryDescription) ?
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    SurgeryId = cirugia.SurgeryId,
+                    Description = string.IsNullOrWhiteSpace(surgeryDescription) ?
                                              $"Cirugía: {selectedSurgery}" : surgeryDescription,
-                        SurgeryDate = surgeryDate,
-                        RegistrationDate = DateTime.Now,
-                        HistoryNumber = medicalRecordNumber
-                    };
+                    SurgeryDate = surgeryDate,
+                    RegistrationDate = DateTime.Now,
+                    HistoryNumber = medicalRecordNumber
+                };
 
                 var (success, _, error) = await SurgeryHistoryService.CreateAsync(nuevo);
                 if (!success)
@@ -841,13 +1188,13 @@
             foreach (var ah in currentAllergyHistories)
             {
                 alergiasData.Add(new AllergyRow
-                    {
-                        Id = ah.AllergyHistoryId,
-                        Values = new()
+                {
+                    Id = ah.AllergyHistoryId,
+                    Values = new()
                     {
                         GetAllergyName(ah.AllergyId ?? 0)
                     }
-                    });
+                });
             }
         }
         catch (Exception ex)
@@ -934,13 +1281,13 @@
             if (editingAllergyId == -1)
             {
                 var nuevo = new AllergyHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        AllergyId = alergia.AllergyId,
-                        Description = $"Alergia: {selectedAllergy}",
-                        RegistrationDate = DateTime.Now,
-                        HistoryNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    AllergyId = alergia.AllergyId,
+                    Description = $"Alergia: {selectedAllergy}",
+                    RegistrationDate = DateTime.Now,
+                    HistoryNumber = medicalRecordNumber
+                };
 
                 var (success, _, error) = await AllergyHistoryService.CreateAsync(nuevo);
                 if (!success)
@@ -1004,13 +1351,13 @@
             foreach (var hh in currentHabitHistories)
             {
                 habitosData.Add(new HabitRow
-                    {
-                        Id = hh.HabitHistoryId,
-                        Values = new()
+                {
+                    Id = hh.HabitHistoryId,
+                    Values = new()
                     {
                         GetHabitName(hh.HabitId)
                     }
-                    });
+                });
             }
         }
         catch (Exception ex)
@@ -1096,12 +1443,12 @@
             if (editingHabitId == -1)
             {
                 var nuevo = new HabitHistoryDTO
-                    {
-                        ClinicalHistoryId = clinicalHistoryId,
-                        HabitId = habito.HabitId,
-                        RecordDate = DateTime.Now,
-                        HistoryNumber = medicalRecordNumber
-                    };
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    HabitId = habito.HabitId,
+                    RecordDate = DateTime.Now,
+                    HistoryNumber = medicalRecordNumber
+                };
 
                 var (success, _, error) = await HabitHistoryService.CreateAsync(nuevo);
                 if (!success)
@@ -1170,7 +1517,7 @@
             GetRelationshipName(fh.RelationshipId),
             await GetDiseaseTypeName(fh.DiseaseId ?? 0),
             await GetDiseaseName(fh.DiseaseId ?? 0),
-            fh.Description ?? "Sin descripción", // NUEVO CAMPO
+            fh.Description ?? "Sin descripción",
             fh.appearanceAge?.ToString() ?? "No especificada"
         }
                 });
@@ -1353,7 +1700,7 @@
                     RelationshipId = selectedRelationshipId,
                     DiseaseId = enfermedad.DiseaseId,
                     appearanceAge = familyAppearanceAge,
-                    Description = familyDescription, 
+                    Description = familyDescription,
                     RegistrationDate = DateTime.Now,
                     MedicalRecordNumber = medicalRecordNumber
                 };
@@ -1423,6 +1770,343 @@
     private string GetCurrentEditingFamilyId() => editingFamilyId == -1 ? "Nuevo" : editingFamilyId.ToString();
 
     // ==========================================
+    // MÉTODOS: HISTORIAL DE TRANSFUSIONES
+    // ==========================================
+    private async Task LoadTransfusionHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingTransfusions = true;
+
+        try
+        {
+            var result = await TransfusionsHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentTransfusionHistories = result ?? new();
+            transfusionesData = new();
+
+            foreach (var th in currentTransfusionHistories)
+            {
+                transfusionesData.Add(new TransfusionRow
+                {
+                    Id = th.TransfusionsHistoryId,
+                    Values = new()
+                    {
+                        th.TransfusionReason ?? "Sin especificar",
+                        th.TransfusionDate?.ToShortDateString() ?? "Sin fecha",
+                        th.Observations ?? "Sin observaciones"
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial de transfusiones");
+            errorMessage = "Error al cargar el historial de transfusiones.";
+        }
+        finally
+        {
+            isLoadingTransfusions = false;
+        }
+    }
+
+    private async Task PrepareForEditTransfusion(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentTransfusionHistories.FirstOrDefault(t => t.TransfusionsHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el registro de transfusión con ID {id}";
+                return;
+            }
+
+            editingTransfusionId = id;
+            transfusionReason = dto.TransfusionReason ?? "";
+            transfusionDate = dto.TransfusionDate ?? DateTime.Now;
+            transfusionObservations = dto.Observations ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de transfusión");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleTransfusionRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await TransfusionsHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el registro de transfusión.";
+                return;
+            }
+
+            await LoadTransfusionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar transfusión");
+            errorMessage = "Error al eliminar el registro de transfusión.";
+        }
+    }
+
+    private async Task SaveTransfusionChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(transfusionReason))
+            {
+                errorMessage = "Debe ingresar la razón de la transfusión.";
+                return;
+            }
+
+            if (transfusionDate == default)
+            {
+                errorMessage = "Debe seleccionar una fecha válida.";
+                return;
+            }
+
+            if (editingTransfusionId == -1)
+            {
+                var nuevo = new TransfusionsHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    HistoryNumber = medicalRecordNumber,
+                    TransfusionReason = transfusionReason,
+                    TransfusionDate = transfusionDate,
+                    Observations = string.IsNullOrWhiteSpace(transfusionObservations) ? "Sin observaciones" : transfusionObservations
+                };
+
+                var created = await TransfusionsHistoryService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el registro de transfusión.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentTransfusionHistories.FirstOrDefault(t => t.TransfusionsHistoryId == editingTransfusionId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.TransfusionReason = transfusionReason;
+                dto.TransfusionDate = transfusionDate;
+                dto.Observations = string.IsNullOrWhiteSpace(transfusionObservations) ? "Sin observaciones" : transfusionObservations;
+
+                var updated = await TransfusionsHistoryService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el registro de transfusión.";
+                    return;
+                }
+            }
+
+            await LoadTransfusionHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de transfusión");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddTransfusion()
+    {
+        editingTransfusionId = -1;
+        transfusionReason = "";
+        transfusionDate = DateTime.Now;
+        transfusionObservations = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingTransfusionId() => editingTransfusionId == -1 ? "Nuevo" : editingTransfusionId.ToString();
+
+    // ==========================================
+    // MÉTODOS: ANTECEDENTE DE HOSPITALIZACIONES
+    // ==========================================
+    private async Task LoadHospitalizationHistories()
+    {
+        errorMessage = string.Empty;
+        isLoadingHospitalizations = true;
+
+        try
+        {
+            var result = await HospitalizationsHistoryService.GetByClinicalHistoryIdAsync(clinicalHistoryId);
+            currentHospitalizationHistories = result ?? new();
+            hospitalizacionesData = new();
+
+            foreach (var hh in currentHospitalizationHistories)
+            {
+                hospitalizacionesData.Add(new HospitalizationRow
+                {
+                    Id = hh.HospitalizationsHistoryId,
+                    Values = new()
+                    {
+                        hh.HospitalizationReason ?? "Sin especificar",
+                        hh.HospitalizationDate?.ToShortDateString() ?? "Sin fecha",
+                        hh.HospitalizationPlace ?? "Sin especificar",
+                        hh.Observations ?? "Sin observaciones"
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar historial de hospitalizaciones");
+            errorMessage = "Error al cargar el historial de hospitalizaciones.";
+        }
+        finally
+        {
+            isLoadingHospitalizations = false;
+        }
+    }
+
+    private async Task PrepareForEditHospitalization(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var dto = currentHospitalizationHistories.FirstOrDefault(h => h.HospitalizationsHistoryId == id);
+            if (dto == null)
+            {
+                errorMessage = $"No se encontró el registro de hospitalización con ID {id}";
+                return;
+            }
+
+            editingHospitalizationId = id;
+            hospitalizationReason = dto.HospitalizationReason ?? "";
+            hospitalizationDate = dto.HospitalizationDate ?? DateTime.Now;
+            hospitalizationPlace = dto.HospitalizationPlace ?? "";
+            hospitalizationObservations = dto.Observations ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al preparar edición de hospitalización");
+            errorMessage = "Error al preparar el formulario de edición.";
+        }
+    }
+
+    private async Task HandleHospitalizationRowDeleted(int id)
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var success = await HospitalizationsHistoryService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Error al eliminar el registro de hospitalización.";
+                return;
+            }
+
+            await LoadHospitalizationHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar hospitalización");
+            errorMessage = "Error al eliminar el registro de hospitalización.";
+        }
+    }
+
+    private async Task SaveHospitalizationChanges()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(hospitalizationReason))
+            {
+                errorMessage = "Debe ingresar la razón de la hospitalización.";
+                return;
+            }
+
+            if (hospitalizationDate == default)
+            {
+                errorMessage = "Debe seleccionar una fecha válida.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(hospitalizationPlace))
+            {
+                errorMessage = "Debe ingresar el lugar de hospitalización.";
+                return;
+            }
+
+            if (editingHospitalizationId == -1)
+            {
+                var nuevo = new HospitalizationsHistoryDTO
+                {
+                    ClinicalHistoryId = clinicalHistoryId,
+                    HistoryNumber = medicalRecordNumber,
+                    HospitalizationReason = hospitalizationReason,
+                    HospitalizationDate = hospitalizationDate,
+                    HospitalizationPlace = hospitalizationPlace,
+                    Observations = string.IsNullOrWhiteSpace(hospitalizationObservations) ? "Sin observaciones" : hospitalizationObservations
+                };
+
+                var created = await HospitalizationsHistoryService.CreateAsync(nuevo);
+                if (created == null)
+                {
+                    errorMessage = "Error al crear el registro de hospitalización.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = currentHospitalizationHistories.FirstOrDefault(h => h.HospitalizationsHistoryId == editingHospitalizationId);
+                if (dto == null)
+                {
+                    errorMessage = "Registro no encontrado para editar.";
+                    return;
+                }
+
+                dto.HospitalizationReason = hospitalizationReason;
+                dto.HospitalizationDate = hospitalizationDate;
+                dto.HospitalizationPlace = hospitalizationPlace;
+                dto.Observations = string.IsNullOrWhiteSpace(hospitalizationObservations) ? "Sin observaciones" : hospitalizationObservations;
+
+                var updated = await HospitalizationsHistoryService.UpdateAsync(dto);
+                if (updated == null)
+                {
+                    errorMessage = "Error al actualizar el registro de hospitalización.";
+                    return;
+                }
+            }
+
+            await LoadHospitalizationHistories();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al guardar cambios de hospitalización");
+            errorMessage = "Error inesperado al guardar cambios.";
+        }
+    }
+
+    private void PrepareForAddHospitalization()
+    {
+        editingHospitalizationId = -1;
+        hospitalizationReason = "";
+        hospitalizationDate = DateTime.Now;
+        hospitalizationPlace = "";
+        hospitalizationObservations = "";
+        errorMessage = string.Empty;
+    }
+
+    private string GetCurrentEditingHospitalizationId() => editingHospitalizationId == -1 ? "Nuevo" : editingHospitalizationId.ToString();
+
+    // ==========================================
     // MÉTODOS COMUNES
     // ==========================================
     private async Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) patient)
@@ -1437,6 +2121,9 @@
             await LoadAllergyHistories();
             await LoadHabitHistories();
             await LoadFamilyHistories();
+            await LoadTransfusionHistories();
+            await LoadHospitalizationHistories();
+            await LoadTraumaticHistory();
         }
     }
 

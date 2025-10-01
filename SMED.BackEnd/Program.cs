@@ -68,6 +68,9 @@ builder.Services.AddScoped<IRepository<NeuropsychologicalHistoryDTO, int>, Neuro
 builder.Services.AddScoped<IRepository<NeurologicalExamTypeDTO, int>, NeurologicalExamTypeRepository>();
 builder.Services.AddScoped<IRepository<NeurologicalExamDTO, int>, NeurologicalExamRepository>();
 builder.Services.AddScoped<IRepository<DevelopmentRecordDTO, int>, DevelopmentRecordRepository>();
+builder.Services.AddScoped<IRepository<TraumaticHistoryDTO, int>, TraumaticHistoryRepository>();
+builder.Services.AddScoped<IRepository<HospitalizationsHistoryDTO, int>, HospitalizationsHistoryRepository>();
+builder.Services.AddScoped<IRepository<TransfusionsHistoryDTO, int>, TransfusionsHistoryRepository>();
 builder.Services.AddScoped<IRepository<TypeOfServiceDTO, int>, TypeOfServiceRepository>();
 builder.Services.AddScoped<IRepository<CostOfServiceDTO, int>, CostOfServiceRepository>();
 builder.Services.AddScoped<IRepository<ServiceDTO, int>, ServiceRepository>();

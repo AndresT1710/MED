@@ -19,6 +19,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("DocumentTypeNavigation")]
         public virtual ICollection<PersonDocument> PersonDocuments { get; set; } = new List<PersonDocument>();
+
+        [InverseProperty("DocumentTypeNavigation")]
+        public virtual ICollection<Agent> Agents { get; set; } = new List<Agent>();
     }
 
 }

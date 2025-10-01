@@ -183,6 +183,8 @@ builder.Services.AddScoped<IRepository<PosturalEvaluationDTO, int>, PosturalEval
 builder.Services.AddScoped<PosturalEvaluationRepository>();
 builder.Services.AddScoped<IRepository<ViewDTO, int>, ViewRepository>();
 builder.Services.AddScoped<ViewRepository>();
+builder.Services.AddScoped<AgentRepository>();
+builder.Services.AddScoped<IRepository<AgentDTO, int>, AgentRepository>();
 
 
 // 4. Authentication

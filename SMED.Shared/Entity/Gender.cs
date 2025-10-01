@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
-    public  class Gender
+    public class Gender
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -19,6 +19,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("Gender")]
         public virtual ICollection<Person> Persons { get; set; } = new List<Person>();
+
+        [InverseProperty("Gender")]
+        public virtual ICollection<Agent> Agents { get; set; } = new List<Agent>();
     }
 
 }

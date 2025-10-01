@@ -19,6 +19,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("MaritalStatusNavigation")]
         public virtual ICollection<PersonMaritalStatus> PersonMaritalStatuses { get; set; } = new List<PersonMaritalStatus>();
+
+        [InverseProperty("MaritalStatus")]
+        public virtual ICollection<Agent> Agents { get; set; } = new List<Agent>();
     }
 
 }

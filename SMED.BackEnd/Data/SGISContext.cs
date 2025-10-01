@@ -174,6 +174,7 @@ namespace SGIS.Models
         public DbSet<PainMoment> PainMoments { get; set; }
         public DbSet<PosturalEvaluation> PosturalEvaluations { get; set; }
         public DbSet<View> Views { get; set; }
+        public DbSet<Agent> Agents { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

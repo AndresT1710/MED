@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20250926143359_AddNewEntityFisioterapia")]
+    partial class AddNewEntityFisioterapia
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,52 +159,6 @@ namespace SMED.BackEnd.Migrations
                         .IsUnique();
 
                     b.ToTable("AdditionalData");
-                });
-
-            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
-                {
-                    b.Property<int>("AgentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AgentId"));
-
-                    b.Property<string>("CellphoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("GenderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdentificationNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("MaritalStatusId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MiddleName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SecondLastName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("AgentId");
-
-                    b.HasIndex("GenderId");
-
-                    b.HasIndex("MaritalStatusId");
-
-                    b.ToTable("Agents");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.BloodGroup", b =>
@@ -1957,12 +1914,7 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("PersonId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AgentId")
-                        .HasColumnType("int");
-
                     b.HasKey("PersonId");
-
-                    b.HasIndex("AgentId");
 
                     b.ToTable("Patients");
                 });
@@ -3688,21 +3640,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalCare");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
-                {
-                    b.HasOne("SMED.Shared.Entity.Gender", "Gender")
-                        .WithMany("Agents")
-                        .HasForeignKey("GenderId");
-
-                    b.HasOne("SMED.Shared.Entity.MaritalStatus", "MaritalStatus")
-                        .WithMany("Agents")
-                        .HasForeignKey("MaritalStatusId");
-
-                    b.Navigation("Gender");
-
-                    b.Navigation("MaritalStatus");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.City", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.Province", "ProvinceNavigation")
@@ -4365,17 +4302,11 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Patient", b =>
                 {
-                    b.HasOne("SMED.Shared.Entity.Agent", "Agent")
-                        .WithMany("Patients")
-                        .HasForeignKey("AgentId");
-
                     b.HasOne("SMED.Shared.Entity.Person", "PersonNavigation")
                         .WithOne("Patient")
                         .HasForeignKey("SMED.Shared.Entity.Patient", "PersonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Agent");
 
                     b.Navigation("PersonNavigation");
                 });
@@ -5081,11 +5012,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("PainScales");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
-                {
-                    b.Navigation("Patients");
-                });
-
             modelBuilder.Entity("SMED.Shared.Entity.BloodGroup", b =>
                 {
                     b.Navigation("PersonBloodGroups");
@@ -5215,8 +5141,6 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Gender", b =>
                 {
-                    b.Navigation("Agents");
-
                     b.Navigation("Persons");
                 });
 
@@ -5275,8 +5199,6 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.MaritalStatus", b =>
                 {
-                    b.Navigation("Agents");
-
                     b.Navigation("PersonMaritalStatuses");
                 });
 

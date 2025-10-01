@@ -179,6 +179,10 @@ namespace SGIS.Models
         public DbSet<View> Views { get; set; }
         public DbSet<Agent> Agents { get; set; }
 
+
+   
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Patient>()
@@ -625,6 +629,37 @@ namespace SGIS.Models
                     .WithMany(p => p.HabitHistories)
                     .HasForeignKey(d => d.ClinicalHistoryId)
                     .HasConstraintName("FK_HabitHistory_ClinicalHistory");
+            });
+
+            //WARNINGS
+            modelBuilder.Entity<VitalSigns>(entity =>
+            {
+                entity.Property(e => e.Weight)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.Height)
+                      .HasPrecision(4, 2);
+
+                entity.Property(e => e.Icm)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.AbdominalCircumference)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.Temperature)
+                      .HasPrecision(4, 2);
+
+                entity.Property(e => e.MeanArterialPressure)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.OxygenSaturation)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.BloodGlucose)
+                      .HasPrecision(5, 2);
+
+                entity.Property(e => e.Hemoglobin)
+                      .HasPrecision(4, 2);
             });
 
             modelBuilder.Entity<SportsActivitiesHistory>(entity =>

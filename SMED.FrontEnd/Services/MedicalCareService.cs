@@ -205,5 +205,24 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<MedicalCareDTO>?> GetPhysiotherapyCareAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalCare/physiotherapy");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones de fisioterapia: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de fisioterapia");
+                return new List<MedicalCareDTO>();
+            }
+        }
+
     }
 }

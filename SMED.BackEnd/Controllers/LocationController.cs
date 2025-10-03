@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -48,5 +49,18 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
+
+
+        [HttpGet("byname/{name}")]
+        public async Task<ActionResult<LocationDTO>> GetByName(string name)
+        {
+            if (_repository is LocationRepository locationRepo)
+            {
+                var dto = await locationRepo.GetByNameAsync(name);
+                return dto != null ? Ok(dto) : NotFound();
+            }
+            return BadRequest("El repositorio actual no soporta búsqueda por nombre.");
+        }
+
     }
-    }
+}

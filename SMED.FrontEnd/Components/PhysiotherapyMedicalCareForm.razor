@@ -1,0 +1,747 @@
+﻿@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject AuthorizationService AuthorizationService
+@inject LocationService LocationService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="physiotherapy-care-form">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" id="physiotherapyTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evaluation" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("evaluation"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("treatment"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("evolution"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-chart-line me-2"></i>Seguimiento
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content mt-3">
+        <!-- Patient Selection Tab -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Selección de Paciente
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <!-- Badge para mostrar el área fija -->
+                        <span class="badge bg-info ms-2">
+                            <i class="fas fa-heartbeat me-1"></i>Área: Fisioterapia
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (!isEditMode)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                            OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención de fisioterapia existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <!-- Información del área fija -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Fisioterapia
+                                    <br>
+                                    <small class="text-muted">Esta atención se registrará automáticamente en el área de Fisioterapia.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Motivo de Consulta -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta de fisioterapia..."
+                            maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fisioterapeuta responsable *</label>
+                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                            @bind="selectedHealthProfessionalId"
+                            disabled>
+                                <option value="0">Seleccione un fisioterapeuta</option>
+                                @foreach (var profesional in fisioterapeutas)
+                                {
+                                    <option value="@profesional.HealthProfessionalId">
+                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                    </option>
+                                }
+                            </select>
+                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                            {
+                                <div class="invalid-feedback">
+                                    Debe seleccionar un fisioterapeuta responsable
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Alert informativo -->
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-user-md me-2"></i>
+                            <strong>Fisioterapeuta asignado automáticamente:</strong> Este registro será asignado
+                            automáticamente al fisioterapeuta actualmente logueado en el sistema.
+                        </div>
+
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
+                                    </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                            Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation Tab -->
+        <div class="tab-pane @(activeTab == "evaluation" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario específico para la evaluación de fisioterapia.
+                        </div>
+                        <!-- Aquí puedes agregar los campos específicos de evaluación de fisioterapia -->
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
+                                Continuar a Tratamiento <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Treatment Plan Tab -->
+        <div class="tab-pane @(activeTab == "treatment" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para el plan de tratamiento de fisioterapia.
+                        </div>
+                        <!-- Aquí puedes agregar los campos específicos del plan de tratamiento -->
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
+                                Continuar a Seguimiento <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Evolution Tab -->
+        <div class="tab-pane @(activeTab == "evolution" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Seguimiento
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para el seguimiento y evolución del paciente.
+                        </div>
+                        <!-- Aquí puedes agregar los campos específicos de seguimiento -->
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("treatment"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="FinalizarAtencionFisioterapia" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="fas fa-check me-2"></i>Finalizar Atención de Fisioterapia
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string activeTab = "patient";
+    private int clinicalHistoryId = 0;
+    private int selectedPatientId = 0;
+    private string selectedHistoryNumber = "";
+    private int fisioterapiaLocationId = 0; // Cambiado a LocationId
+    private string motivoConsulta = "";
+    private bool isEditMode = false;
+    private string lugarSeleccionada = "";
+    private bool showValidationErrors = false;
+    private bool isSaving = false;
+    private int selectedHealthProfessionalId = 0;
+    private HealthProfessionalDTO? currentProfessional = null;
+
+    // ID de la atención médica actual
+    private int currentMedicalCareId = 0;
+
+    // Listas dinámicas
+    private List<HealthProfessionalDTO> fisioterapeutas = new();
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+    private List<LocationDTO> locations = new(); 
+
+    //Para edición
+    private ReasonForConsultationDTO? existingReasonForConsultation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocations(); // cargar locations
+        await LoadFisioterapiaLocationId(); // LUEGO buscar Fisioterapia en locations
+        await LoadLugaresAtencion();
+        await LoadHealthProfessionals();
+        await AssignCurrentProfessional();
+
+        // Si es modo edición, cargar los datos existentes
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
+            await LoadExistingData();
+        }
+    }
+
+    private async Task LoadLocations()
+    {
+        try
+        {
+            locations = await LocationService.GetAllAsync() ?? new List<LocationDTO>();
+
+            if (!locations.Any())
+            {
+                await JS.InvokeVoidAsync("console.error", "No se pudieron cargar las ubicaciones (locations)");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"Se cargaron {locations.Count} ubicaciones: {string.Join(", ", locations.Select(l => l.Name))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading locations: {ex.Message}");
+            locations = new List<LocationDTO>();
+        }
+    }
+
+    private async Task LoadFisioterapiaLocationId()
+    {
+        try
+        {
+            if (locations == null || !locations.Any())
+            {
+                await JS.InvokeVoidAsync("console.error",
+                    "La lista de locations está vacía o no se cargó correctamente");
+                return;
+            }
+
+            // Buscar Fisioterapia en la tabla Locations
+            var fisioterapiaLocation = locations.FirstOrDefault(l =>
+                l.Name.Contains("Fisioterapia", StringComparison.OrdinalIgnoreCase));
+
+            if (fisioterapiaLocation != null)
+            {
+                fisioterapiaLocationId = fisioterapiaLocation.Id;
+                await JS.InvokeVoidAsync("console.log",
+                    $"Location de Fisioterapia encontrado: ID={fisioterapiaLocationId}, Nombre={fisioterapiaLocation.Name}");
+            }
+            else
+            {
+                // Si no existe Fisioterapia, buscar alternativas
+                var alternativa = locations.FirstOrDefault(l =>
+                    l.Name.Contains("Rehabilitación", StringComparison.OrdinalIgnoreCase) ||
+                    l.Name.Contains("Terapia", StringComparison.OrdinalIgnoreCase));
+
+                if (alternativa != null)
+                {
+                    fisioterapiaLocationId = alternativa.Id;
+                    await JS.InvokeVoidAsync("console.warn",
+                        $"No se encontró 'Fisioterapia' en locations, usando alternativa: {alternativa.Name}");
+                }
+                else if (locations.Any())
+                {
+                    fisioterapiaLocationId = locations.First().Id;
+                    await JS.InvokeVoidAsync("console.warn",
+                        $"No se encontró location específico, usando el primero disponible: {locations.First().Name}");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert",
+                        "Error: No hay ubicaciones (locations) disponibles en la base de datos.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert",
+                $"Error al cargar la ubicación de Fisioterapia: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        try
+        {
+            var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync() ?? new List<HealthProfessionalDTO>();
+
+            // Filtrar solo fisioterapeutas
+            fisioterapeutas = allProfessionals
+                .Where(p => p.NameTypeProfessional?.Contains("Fisioterapia", StringComparison.OrdinalIgnoreCase) == true ||
+                           p.NameTypeProfessional?.Contains("Fisioterapeuta", StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+
+            if (!fisioterapeutas.Any())
+            {
+                await JS.InvokeVoidAsync("console.warn",
+                    "No se encontraron fisioterapeutas, usando todos los profesionales");
+                fisioterapeutas = allProfessionals.Take(5).ToList(); // Usar primeros 5 como fallback
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading health professionals:", ex.Message);
+            fisioterapeutas = new List<HealthProfessionalDTO>();
+        }
+    }
+
+    private async Task LoadLugaresAtencion()
+    {
+        try
+        {
+            lugaresAtencion = await PlaceService.GetAllPlacesAsync() ?? new List<PlaceOfAttentionDTO>();
+
+            if (!lugaresAtencion.Any())
+            {
+                await JS.InvokeVoidAsync("console.error", "No se pudieron cargar los lugares de atención");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"Se cargaron {lugaresAtencion.Count} lugares de atención");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading places: {ex.Message}");
+            lugaresAtencion = new List<PlaceOfAttentionDTO>();
+        }
+    }
+
+
+    private async Task AssignCurrentProfessional()
+    {
+        try
+        {
+            // Obtener el usuario actual logueado
+            var currentUser = await AuthorizationService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                // Buscar el fisioterapeuta correspondiente al usuario
+                currentProfessional = fisioterapeutas.FirstOrDefault(hp =>
+                    hp.HealthProfessionalId == currentUser.PersonId)
+                    ?? fisioterapeutas.FirstOrDefault(hp =>
+                        hp.RegistrationNumber == currentUser.RegistrationNumber);
+
+                if (currentProfessional != null)
+                {
+                    // Asignar automáticamente
+                    selectedHealthProfessionalId = currentProfessional.HealthProfessionalId;
+                    StateHasChanged();
+
+                    await JS.InvokeVoidAsync("console.log",
+                        "[Physiotherapy] Professional auto-assigned:",
+                        currentProfessional.FullName);
+                }
+                else
+                {
+                    // Fallback si no encuentra el fisioterapeuta
+                    selectedHealthProfessionalId = currentUser.PersonId ?? 0;
+                    await JS.InvokeVoidAsync("console.warn",
+                        "[Physiotherapy] Using PersonId as fallback:",
+                        selectedHealthProfessionalId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error",
+                "[Physiotherapy] Error assigning professional:", ex.Message);
+        }
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               selectedHealthProfessionalId > 0 &&
+               !string.IsNullOrWhiteSpace(motivoConsulta);
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task LoadExistingData()
+    {
+        if (MedicalCare == null) return;
+
+        selectedPatientId = MedicalCare.PatientId;
+        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId;
+        lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
+        selectedHistoryNumber = MedicalCare.NamePatient ?? "";
+
+        var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+        existingReasonForConsultation = existingReasons?.FirstOrDefault();
+        if (existingReasonForConsultation != null)
+        {
+            motivoConsulta = existingReasonForConsultation.Description ?? "";
+        }
+
+        StateHasChanged();
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+
+    private async Task GuardarDatosPaciente()
+    {
+        isSaving = true;
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
+
+            // Validar que tenemos un fisioterapeuta asignado
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "No se pudo identificar al fisioterapeuta. Por favor, contacte con soporte.");
+                return;
+            }
+
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            {
+                // Actualizar atención existente
+                MedicalCare.LocationId = fisioterapiaLocationId; // Usar el LocationId correcto
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    return;
+                }
+
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                // Crear nueva atención de fisioterapia
+                var medicalCareDto = new MedicalCareDTO
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = selectedHealthProfessionalId,
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = fisioterapiaLocationId, // Usar el LocationId correcto
+                        CareDate = DateTime.Now
+                    };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert",
+                        $"Error al crear la atención de fisioterapia: {result.Error}");
+                    return;
+                }
+
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            // Guardar motivo de consulta
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
+                    };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con la evaluación del paciente.");
+
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task FinalizarAtencionFisioterapia()
+    {
+        isSaving = true;
+        try
+        {
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención de fisioterapia válida para finalizar.");
+                return;
+            }
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención de fisioterapia finalizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

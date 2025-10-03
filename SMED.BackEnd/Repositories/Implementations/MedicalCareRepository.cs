@@ -364,6 +364,49 @@ namespace SMED.BackEnd.Repositories.Implementations
             }
         }
 
+        public async Task<List<MedicalCareDTO>> GetPhysiotherapyCareAsync()
+        {
+            var medicalCares = await _context.MedicalCares
+                .Include(m => m.LocationNavigation)
+                .Include(m => m.PlaceOfAttentionNavigation)
+                .Include(m => m.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
+                .Include(m => m.HealthProfessional)
+                    .ThenInclude(h => h.PersonNavigation)
+                .Where(m => m.LocationNavigation != null &&
+                           (m.LocationNavigation.Name.ToLower() == "fisioterapia" ||
+                            m.LocationNavigation.Name.ToLower().Contains("fisio")))
+                .OrderByDescending(m => m.CareDate)
+                .ToListAsync();
+
+            return medicalCares.Select(m => new MedicalCareDTO
+            {
+                CareId = m.CareId,
+                LocationId = m.LocationId,
+                PlaceOfAttentionId = m.PlaceOfAttentionId,
+                NameLocation = m.LocationNavigation?.Name,
+                NamePatient = m.Patient?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.Patient.PersonNavigation.FirstName,
+                m.Patient.PersonNavigation.MiddleName,
+                m.Patient.PersonNavigation.LastName,
+                m.Patient.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                PatientId = m.PatientId,
+                HealthProfessionalId = m.HealthProfessionalId,
+                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
+                    ? string.Join(" ", new[] {
+                m.HealthProfessional.PersonNavigation.FirstName,
+                m.HealthProfessional.PersonNavigation.MiddleName,
+                m.HealthProfessional.PersonNavigation.LastName,
+                m.HealthProfessional.PersonNavigation.SecondLastName
+                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                    : string.Empty,
+                CareDate = m.CareDate
+            }).ToList();
+        }
+
         public async Task<List<MedicalCareDTO>> GetByPatientDocumentAsync(string documentNumber)
         {
             var medicalCares = await _context.MedicalCares

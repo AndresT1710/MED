@@ -103,5 +103,19 @@ namespace SMED.BackEnd.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
+
+        [HttpGet("physiotherapy")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetPhysiotherapyCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetPhysiotherapyCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al obtener atenciones de fisioterapia: {ex.Message}");
+            }
+        }
     }
 }

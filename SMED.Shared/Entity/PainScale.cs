@@ -19,7 +19,7 @@ namespace SMED.Shared.Entity
         public int? PainMomentId { get; set; }
         public int? MedicalCareId { get; set; }
 
-        // Navigation properties
+        // Navigation propertiesss
         [ForeignKey("ActionId")]
         public virtual ActionF? Action { get; set; }
 

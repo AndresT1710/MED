@@ -16,9 +16,10 @@
 @inject PainScaleService PainScaleService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <div class="physiotherapy-care-form">
-    <!-- Tabs Navigation -->
+
     <ul class="nav nav-tabs" id="physiotherapyTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
@@ -41,6 +42,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-notes-medical me-2"></i>Enfermedad Actual
+                @if (IsCurrentIllnessComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -49,40 +54,71 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-thermometer-half me-2"></i>Escala de Dolor
+                @if (IsPainScaleComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "evaluation" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("evaluation"))"
+            <button class="nav-link @(activeTab == "skin" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("skin"))"
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
-                <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                <i class="fas fa-hand-paper me-2"></i>Piel
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("treatment"))"
+            <button class="nav-link @(activeTab == "jointMuscular" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("jointMuscular"))"
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
-                <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                <i class="fas fa-bone me-2"></i>Articular/Muscular
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("evolution"))"
+            <button class="nav-link @(activeTab == "neuromuscular" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("neuromuscular"))"
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
-                <i class="fas fa-chart-line me-2"></i>Seguimiento
+                <i class="fas fa-brain me-2"></i>Neuromuscular
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "postural" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("postural"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-walking me-2"></i>Postural
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "testsExams" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("testsExams"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-file-medical me-2"></i>Pruebas/Exámenes
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "sessions" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("sessions"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-calendar-check me-2"></i>Sesiones
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
     </ul>
 
-    <!-- Tab Content -->
+
     <div class="tab-content mt-3">
-        <!-- Patient Selection Tab -->
+
         <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
@@ -241,7 +277,7 @@
             </div>
         </div>
 
-        <!-- Nuevo tab de Enfermedad Actual -->
+
         <div class="tab-pane @(activeTab == "currentIllness" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
@@ -253,69 +289,71 @@
                     @if (currentMedicalCareId > 0)
                     {
                         <div class="row g-3">
+                            @* Added auto-save on content change for each ContainerBox1 *@
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Tiempo de Evolución"
                                                Width="full"
-                                               @bind-Content="@currentIllness.EvolutionTime" />
+                                               @bind-Content="@currentIllness.EvolutionTime"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Localización"
                                                Width="full"
-                                               @bind-Content="@currentIllness.Localization" />
+                                               @bind-Content="@currentIllness.Localization"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Intensidad"
                                                Width="full"
-                                               @bind-Content="@currentIllness.Intensity" />
+                                               @bind-Content="@currentIllness.Intensity"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Factores Agravantes"
                                                Width="full"
-                                               @bind-Content="@currentIllness.AggravatingFactors" />
+                                               @bind-Content="@currentIllness.AggravatingFactors"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Factores Atenuantes"
                                                Width="full"
-                                               @bind-Content="@currentIllness.MitigatingFactors" />
+                                               @bind-Content="@currentIllness.MitigatingFactors"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Dolor Nocturno"
                                                Width="full"
-                                               @bind-Content="@currentIllness.NocturnalPain" />
+                                               @bind-Content="@currentIllness.NocturnalPain"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Debilidad"
                                                Width="full"
-                                               @bind-Content="@currentIllness.Weakness" />
+                                               @bind-Content="@currentIllness.Weakness"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Parestesias"
                                                Width="full"
-                                               @bind-Content="@currentIllness.Paresthesias" />
+                                               @bind-Content="@currentIllness.Paresthesias"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-12">
                                 <ContainerBox1 Title="Exámenes Complementarios"
                                                Width="full"
-                                               @bind-Content="@currentIllness.ComplementaryExams" />
+                                               @bind-Content="@currentIllness.ComplementaryExams"
+                                               @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                         </div>
 
+                        @* Removed "Guardar Enfermedad Actual" button - now auto-saves *@
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <div>
-                                <button class="btn btn-success me-2" @onclick="GuardarEnfermedadActual" disabled="@isSaving">
-                                    @if (isSaving)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-2"></span>
-                                    }
-                                    <i class="fas fa-save me-2"></i>Guardar Enfermedad Actual
-                                </button>
-                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("painScale"))">
-                                    Continuar a Escala de Dolor <i class="fas fa-arrow-right ms-2"></i>
-                                </button>
-                            </div>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("painScale"))">
+                                Continuar a Escala de Dolor <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
                         </div>
                     }
                     else
@@ -329,7 +367,7 @@
             </div>
         </div>
 
-        <!-- Nuevo tab de Escala de Dolor -->
+
         <div class="tab-pane @(activeTab == "painScale" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
@@ -338,77 +376,76 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                        <EditableTable Title="Registros de Escala de Dolor"
-                                       ColumnHeaders="@painScaleHeaders"
-                                       Rows="@painScaleRows"
-                                       RowIds="@painScaleIds"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       OnAddRequested="@AbrirModalAgregarPainScale"
-                                       OnEditRequested="@EditarPainScale"
-                                       OnDeleteRequested="@EliminarPainScale"
-                                       OnSaveRequested="@GuardarPainScale"
-                                       IsValidForm="@ValidarFormularioPainScale">
-                            <EditModalContent>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label">Momento del Dolor</label>
-                                        <select class="form-select" @bind="editingPainScale.PainMomentId">
-                                            <option value="0">Seleccione un momento</option>
-                                            @foreach (var moment in painMoments)
-                                            {
-                                                <option value="@moment.PainMomentId">@moment.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Actividad</label>
-                                        <select class="form-select" @bind="editingPainScale.ActionId">
-                                            <option value="0">Seleccione una actividad</option>
-                                            @foreach (var action in actions)
-                                            {
-                                                <option value="@action.ActionId">@action.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Escala de Intensidad</label>
-                                        <select class="form-select" @bind="editingPainScale.ScaleId">
-                                            <option value="0">Seleccione una escala</option>
-                                            @foreach (var scale in scales)
-                                            {
-                                                <option value="@scale.ScaleId">@scale.Value - @scale.Description</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label">Observación</label>
-                                        <textarea class="form-control" @bind="editingPainScale.Observation" rows="3"></textarea>
-                                    </div>
+                    <EditableTable Title="Registros de Escala de Dolor"
+                                   ColumnHeaders="@painScaleHeaders"
+                                   Rows="@painScaleRows"
+                                   RowIds="@painScaleIds"
+                                   ShowAddButton="true"
+                                   ShowEditButton="true"
+                                   ShowDeleteButton="true"
+                                   OnAddRequested="@AbrirModalAgregarPainScale"
+                                   OnEditRequested="@EditarPainScale"
+                                   OnDeleteRequested="@EliminarPainScale"
+                                   OnSaveRequested="@GuardarPainScale"
+                                   IsValidForm="@ValidarFormularioPainScale">
+                        <EditModalContent>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Momento del Dolor</label>
+                                    <select class="form-select" @bind="editingPainScale.PainMomentId">
+                                        <option value="0">Seleccione un momento</option>
+                                        @foreach (var moment in painMoments)
+                                        {
+                                            <option value="@moment.PainMomentId">@moment.Name</option>
+                                        }
+                                    </select>
                                 </div>
-                            </EditModalContent>
-                        </EditableTable>
+                                <div class="col-md-12">
+                                    <label class="form-label">Actividad</label>
+                                    <select class="form-select" @bind="editingPainScale.ActionId">
+                                        <option value="0">Seleccione una actividad</option>
+                                        @foreach (var action in actions)
+                                        {
+                                            <option value="@action.ActionId">@action.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Escala de Intensidad</label>
+                                    <select class="form-select" @bind="editingPainScale.ScaleId">
+                                        <option value="0">Seleccione una escala</option>
+                                        @foreach (var scale in scales)
+                                        {
+                                            <option value="@scale.ScaleId">@scale.Value - @scale.Description</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Observación</label>
+                                    <textarea class="form-control" @bind="editingPainScale.Observation" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </EditModalContent>
+                    </EditableTable>
 
-                        <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("currentIllness"))">
-                                <i class="fas fa-arrow-left me-2"></i>Volver
-                            </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
-                                Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("currentIllness"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("skin"))">
+                            Continuar a Piel <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
 
-        <!-- Evaluation Tab -->
-        <div class="tab-pane @(activeTab == "evaluation" ? "show active" : "")" role="tabpanel">
+        <div class="tab-pane @(activeTab == "skin" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                        <i class="fas fa-hand-paper me-2"></i>Piel
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
@@ -417,15 +454,15 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario específico para la evaluación de fisioterapia.
+                            Aquí irá el formulario específico para la evaluación de la piel.
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("painScale"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
-                                Continuar a Tratamiento <i class="fas fa-arrow-right ms-2"></i>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("jointMuscular"))">
+                                Continuar a Articular/Muscular <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -440,12 +477,11 @@
             </div>
         </div>
 
-        <!-- Treatment Plan Tab -->
-        <div class="tab-pane @(activeTab == "treatment" ? "show active" : "")" role="tabpanel">
+        <div class="tab-pane @(activeTab == "jointMuscular" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                        <i class="fas fa-bone me-2"></i>Articular/Muscular
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
@@ -454,15 +490,15 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para el plan de tratamiento de fisioterapia.
+                            Aquí irá el formulario para la evaluación articular y muscular.
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("evaluation"))">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("skin"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
-                                Continuar a Seguimiento <i class="fas fa-arrow-right ms-2"></i>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("neuromuscular"))">
+                                Continuar a Neuromuscular <i class="fas fa-arrow-right ms-2"></i>
                             </button>
                         </div>
                     }
@@ -477,12 +513,11 @@
             </div>
         </div>
 
-        <!-- Evolution Tab -->
-        <div class="tab-pane @(activeTab == "evolution" ? "show active" : "")" role="tabpanel">
+        <div class="tab-pane @(activeTab == "neuromuscular" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-chart-line me-2"></i>Seguimiento
+                        <i class="fas fa-brain me-2"></i>Neuromuscular
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
@@ -491,11 +526,119 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para el seguimiento y evolución del paciente.
+                            Aquí irá el formulario para la evaluación neuromuscular.
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("treatment"))">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("jointMuscular"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("postural"))">
+                                Continuar a Postural <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane @(activeTab == "postural" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-walking me-2"></i>Postural
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para la evaluación postural.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("neuromuscular"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("testsExams"))">
+                                Continuar a Pruebas/Exámenes <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane @(activeTab == "testsExams" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-medical me-2"></i>Pruebas/Exámenes
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para registrar pruebas y exámenes realizados.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("postural"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("sessions"))">
+                                Continuar a Sesiones <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane @(activeTab == "sessions" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>Sesiones
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para registrar y gestionar las sesiones de fisioterapia.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("testsExams"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
                             <button class="btn btn-success" @onclick="FinalizarAtencionFisioterapia" disabled="@isSaving">
@@ -543,6 +686,9 @@
 
     private CurrentIllnessDTO currentIllness = new CurrentIllnessDTO();
 
+    private System.Threading.Timer? autoSaveTimer;
+    private bool isAutoSaving = false;
+
     private PainScaleDTO editingPainScale = new PainScaleDTO();
     private List<PainScaleDTO> painScales = new();
     private List<ActionFDTO> actions = new();
@@ -579,6 +725,55 @@
             isEditMode = true;
             currentMedicalCareId = MedicalCare.CareId;
             await LoadExistingData();
+        }
+    }
+
+    private void AutoSaveCurrentIllness()
+    {
+        // Cancel any existing timer
+        autoSaveTimer?.Dispose();
+
+        // Create a new timer that will save after 1 second of inactivity
+        autoSaveTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SaveCurrentIllnessData();
+            });
+        }, null, 1000, Timeout.Infinite);
+    }
+
+    private async Task SaveCurrentIllnessData()
+    {
+        if (isAutoSaving) return;
+
+        isAutoSaving = true;
+        try
+        {
+            currentIllness.MedicalCareId = currentMedicalCareId;
+
+            if (currentIllness.CurrentIllnessId > 0)
+            {
+                await CurrentIllnessService.UpdateAsync(currentIllness);
+            }
+            else
+            {
+                var result = await CurrentIllnessService.CreateAsync(currentIllness);
+                if (result != null)
+                {
+                    currentIllness.CurrentIllnessId = result.CurrentIllnessId;
+                }
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error auto-saving current illness: {ex.Message}");
+        }
+        finally
+        {
+            isAutoSaving = false;
         }
     }
 
@@ -648,14 +843,14 @@
         if (painScale != null)
         {
             editingPainScale = new PainScaleDTO
-                {
-                    PainScaleId = painScale.PainScaleId,
-                    PainMomentId = painScale.PainMomentId,
-                    ActionId = painScale.ActionId,
-                    ScaleId = painScale.ScaleId,
-                    Observation = painScale.Observation,
-                    MedicalCareId = painScale.MedicalCareId
-                };
+            {
+                PainScaleId = painScale.PainScaleId,
+                PainMomentId = painScale.PainMomentId,
+                ActionId = painScale.ActionId,
+                ScaleId = painScale.ScaleId,
+                Observation = painScale.Observation,
+                MedicalCareId = painScale.MedicalCareId
+            };
         }
     }
 
@@ -702,38 +897,24 @@
                editingPainScale.ScaleId > 0;
     }
 
-    private async Task GuardarEnfermedadActual()
+    private bool IsCurrentIllnessComplete()
     {
-        isSaving = true;
-        try
-        {
-            currentIllness.MedicalCareId = currentMedicalCareId;
-
-            if (currentIllness.CurrentIllnessId > 0)
-            {
-                await CurrentIllnessService.UpdateAsync(currentIllness);
-            }
-            else
-            {
-                var result = await CurrentIllnessService.CreateAsync(currentIllness);
-                if (result != null)
-                {
-                    currentIllness.CurrentIllnessId = result.CurrentIllnessId;
-                }
-            }
-
-            await JS.InvokeVoidAsync("alert", "Enfermedad actual guardada correctamente.");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
-        }
-        finally
-        {
-            isSaving = false;
-        }
+        return currentIllness.CurrentIllnessId > 0 &&
+               (!string.IsNullOrWhiteSpace(currentIllness.EvolutionTime) ||
+                !string.IsNullOrWhiteSpace(currentIllness.Localization) ||
+                !string.IsNullOrWhiteSpace(currentIllness.Intensity) ||
+                !string.IsNullOrWhiteSpace(currentIllness.AggravatingFactors) ||
+                !string.IsNullOrWhiteSpace(currentIllness.MitigatingFactors) ||
+                !string.IsNullOrWhiteSpace(currentIllness.NocturnalPain) ||
+                !string.IsNullOrWhiteSpace(currentIllness.Weakness) ||
+                !string.IsNullOrWhiteSpace(currentIllness.Paresthesias) ||
+                !string.IsNullOrWhiteSpace(currentIllness.ComplementaryExams));
     }
 
+    private bool IsPainScaleComplete()
+    {
+        return painScales != null && painScales.Any();
+    }
 
     private async Task LoadLocations()
     {
@@ -905,7 +1086,6 @@
         }
         else
         {
-            // If not in DTO, try loading from services
             await LoadPainScales();
         }
 
@@ -964,13 +1144,13 @@
             else
             {
                 var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = selectedHealthProfessionalId,
-                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                        LocationId = fisioterapiaLocationId,
-                        CareDate = DateTime.Now
-                    };
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = selectedHealthProfessionalId,
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = fisioterapiaLocationId,
+                    CareDate = DateTime.Now
+                };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -988,11 +1168,11 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                    {
-                        Id = existingReasonForConsultation?.Id ?? 0,
-                        Description = motivoConsulta.Trim(),
-                        MedicalCareId = currentMedicalCareId
-                    };
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
@@ -1039,5 +1219,10 @@
         {
             isSaving = false;
         }
+    }
+
+    public void Dispose()
+    {
+        autoSaveTimer?.Dispose();
     }
 }

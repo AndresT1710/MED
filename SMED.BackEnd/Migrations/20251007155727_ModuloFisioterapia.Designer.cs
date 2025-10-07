@@ -12,8 +12,8 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    [Migration("20250922164019_NewConfigS")]
-    partial class NewConfigS
+    [Migration("20251007155727_ModuloFisioterapia")]
+    partial class ModuloFisioterapia
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -95,6 +95,49 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("Surgeries");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.ActionF", b =>
+                {
+                    b.Property<int>("ActionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ActionId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ActionId");
+
+                    b.ToTable("ActionFs");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Activity", b =>
+                {
+                    b.Property<int>("ActivityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ActivityId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TypeOfActivityId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ActivityId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("TypeOfActivityId");
+
+                    b.ToTable("Activities");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.AdditionalData", b =>
                 {
                     b.Property<int>("AdditionalDataId")
@@ -118,6 +161,57 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("AdditionalData");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
+                {
+                    b.Property<int>("AgentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AgentId"));
+
+                    b.Property<string>("CellphoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("GenderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdentificationNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MaritalStatusId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MiddleName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SecondLastName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("AgentId");
+
+                    b.HasIndex("DocumentType");
+
+                    b.HasIndex("GenderId");
+
+                    b.HasIndex("MaritalStatusId");
+
+                    b.ToTable("Agents");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.BloodGroup", b =>
                 {
                     b.Property<int>("Id")
@@ -133,6 +227,23 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("BloodGroups");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.BodyZone", b =>
+                {
+                    b.Property<int>("BodyZoneId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BodyZoneId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("BodyZoneId");
+
+                    b.ToTable("BodyZones");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.City", b =>
@@ -196,6 +307,23 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("ClinicalHistories");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Color", b =>
+                {
+                    b.Property<int>("ColorId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ColorId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ColorId");
+
+                    b.ToTable("Colors");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.CostOfService", b =>
                 {
                     b.Property<int>("CostOfServiceId")
@@ -216,6 +344,130 @@ namespace SMED.BackEnd.Migrations
                         .IsUnique();
 
                     b.ToTable("CostOfServices");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.CurrentIllness", b =>
+                {
+                    b.Property<int>("CurrentIllnessId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CurrentIllnessId"));
+
+                    b.Property<string>("AggravatingFactors")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ComplementaryExams")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EvolutionTime")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Intensity")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Localization")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MitigatingFactors")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NocturnalPain")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Paresthesias")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Weakness")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("CurrentIllnessId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.ToTable("CurrentIllnesses");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.CurrentProblemHistory", b =>
+                {
+                    b.Property<int>("CurrentProblemHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CurrentProblemHistoryId"));
+
+                    b.Property<string>("AppearanceEvolution")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FrequencyIntensitySymptoms")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Impact")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("TriggeringFactors")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("CurrentProblemHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("CurrentProblemHistories");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.DevelopmentRecord", b =>
+                {
+                    b.Property<int>("DevelopmentRecordId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DevelopmentRecordId"));
+
+                    b.Property<string>("AgeRange")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DevelopmentMilestone")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Observations")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("DevelopmentRecordId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("DevelopmentRecords");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DiagnosticType", b =>
@@ -323,6 +575,23 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DocumentTypes");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Edema", b =>
+                {
+                    b.Property<int>("EdemaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EdemaId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("EdemaId");
+
+                    b.ToTable("Edemas");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.EducationLevel", b =>
@@ -767,6 +1036,44 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("HealthProfessionalTypes");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.HospitalizationsHistory", b =>
+                {
+                    b.Property<int>("HospitalizationsHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HospitalizationsHistoryId"));
+
+                    b.Property<int?>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("HospitalizationDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("HospitalizationPlace")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HospitalizationReason")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Observations")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("HospitalizationsHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("HospitalizationsHistories");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.IdentifiedDisease", b =>
                 {
                     b.Property<int>("Id")
@@ -844,6 +1151,38 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("Interconsultations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.JointCondition", b =>
+                {
+                    b.Property<int>("JointConditionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JointConditionId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("JointConditionId");
+
+                    b.ToTable("JointConditions");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.JointRangeOfMotion", b =>
+                {
+                    b.Property<int>("JointRangeOfMotionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JointRangeOfMotionId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("JointRangeOfMotionId");
+
+                    b.ToTable("JointRangeOfMotions");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.LaborActivity", b =>
@@ -1046,6 +1385,74 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("MedicalDiagnosis", (string)null);
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluation", b =>
+                {
+                    b.Property<int>("MedicalEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicalEvaluationId"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MedicalEvaluationMembersId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MedicalEvaluationPositionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TypeOfMedicalEvaluationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MedicalEvaluationId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("MedicalEvaluationMembersId");
+
+                    b.HasIndex("MedicalEvaluationPositionId");
+
+                    b.HasIndex("TypeOfMedicalEvaluationId");
+
+                    b.ToTable("MedicalEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluationMembers", b =>
+                {
+                    b.Property<int>("MedicalEvaluationMembersId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicalEvaluationMembersId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MedicalEvaluationMembersId");
+
+                    b.ToTable("MedicalEvaluationMembers");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluationPosition", b =>
+                {
+                    b.Property<int>("MedicalEvaluationPositionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicalEvaluationPositionId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MedicalEvaluationPositionId");
+
+                    b.ToTable("MedicalEvaluationPositions");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.MedicalInsurance", b =>
                 {
                     b.Property<int>("Id")
@@ -1207,6 +1614,38 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("MedicalVisits");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.MedicationHistory", b =>
+                {
+                    b.Property<int>("MedicationHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicationHistoryId"));
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ConsumptionDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("MedicineId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MedicationHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.HasIndex("MedicineId");
+
+                    b.ToTable("MedicationHistories");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Medicine", b =>
                 {
                     b.Property<int>("Id")
@@ -1225,6 +1664,165 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Medicines");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeurologicalExam", b =>
+                {
+                    b.Property<int>("NeurologicalExamId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NeurologicalExamId"));
+
+                    b.Property<int?>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<DateTime?>("ExamDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("LinkPdf")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<int>("NeurologicalExamTypeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NeurologicalExamId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.HasIndex("NeurologicalExamTypeId");
+
+                    b.ToTable("NeurologicalExams");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeurologicalExamType", b =>
+                {
+                    b.Property<int>("NeurologicalExamTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NeurologicalExamTypeId"));
+
+                    b.Property<string>("Name")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("NeurologicalExamTypeId");
+
+                    b.ToTable("NeurologicalExamTypes");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeuromuscularEvaluation", b =>
+                {
+                    b.Property<int>("NeuromuscularEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NeuromuscularEvaluationId"));
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ShadeId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StrengthId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TrophismId")
+                        .HasColumnType("int");
+
+                    b.HasKey("NeuromuscularEvaluationId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("ShadeId");
+
+                    b.HasIndex("StrengthId");
+
+                    b.HasIndex("TrophismId");
+
+                    b.ToTable("NeuromuscularEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeuropsychologicalHistory", b =>
+                {
+                    b.Property<int>("NeuropsychologicalHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NeuropsychologicalHistoryId"));
+
+                    b.Property<int?>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("DreamObservation")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<bool?>("Faintings")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HearingObservation")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("HomeConduct")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Leverage")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Observation")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("ObservationDifferentAbility")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("SchoolConduct")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("SightObservation")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("SpeechObservation")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("NeuropsychologicalHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("NeuropsychologicalHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ObstetricHistory", b =>
@@ -1338,6 +1936,88 @@ namespace SMED.BackEnd.Migrations
                     b.UseTphMappingStrategy();
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.OsteoarticularEvaluation", b =>
+                {
+                    b.Property<int>("OsteoarticularEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OsteoarticularEvaluationId"));
+
+                    b.Property<int?>("JointConditionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("JointRangeOfMotionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.HasKey("OsteoarticularEvaluationId");
+
+                    b.HasIndex("JointConditionId");
+
+                    b.HasIndex("JointRangeOfMotionId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.ToTable("OsteoarticularEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PainMoment", b =>
+                {
+                    b.Property<int>("PainMomentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PainMomentId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PainMomentId");
+
+                    b.ToTable("PainMoments");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PainScale", b =>
+                {
+                    b.Property<int>("PainScaleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PainScaleId"));
+
+                    b.Property<int?>("ActionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PainMomentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ScaleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PainScaleId");
+
+                    b.HasIndex("ActionId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("PainMomentId");
+
+                    b.HasIndex("ScaleId");
+
+                    b.ToTable("PainScales");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.PathologicalEvidence", b =>
                 {
                     b.Property<int>("Id")
@@ -1361,7 +2041,12 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("PersonId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("AgentId")
+                        .HasColumnType("int");
+
                     b.HasKey("PersonId");
+
+                    b.HasIndex("AgentId");
 
                     b.ToTable("Patients");
                 });
@@ -1379,6 +2064,67 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("RelationshipId");
 
                     b.ToTable("PatientRelationships");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PerinatalHistory", b =>
+                {
+                    b.Property<int>("PerinatalHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PerinatalHistoryId"));
+
+                    b.Property<string>("Apgar")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("AuditoryScreen")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<bool?>("BirthCry")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ComplicationsDuringChildbirth")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("MetabolicScreen")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<decimal?>("NumberOfWeeks")
+                        .HasColumnType("decimal(3,1)");
+
+                    b.Property<string>("PlaceOfCare")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("ResuscitationManeuvers")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("TypeOfBirth")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("PerinatalHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("PerinatalHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Person", b =>
@@ -1720,6 +2466,50 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("PhysicalExamTypes");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.PhysiotherapyDiagnostic", b =>
+                {
+                    b.Property<int>("PhysiotherapyDiagnosticId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhysiotherapyDiagnosticId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PhysiotherapyDiagnosticId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.ToTable("PhysiotherapyDiagnostics");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PhysiotherapyTreatment", b =>
+                {
+                    b.Property<int>("PhysiotherapyTreatmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhysiotherapyTreatmentId"));
+
+                    b.Property<int?>("PhysiotherapyDiagnosticId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Recommendations")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PhysiotherapyTreatmentId");
+
+                    b.HasIndex("PhysiotherapyDiagnosticId");
+
+                    b.ToTable("PhysiotherapyTreatments");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.PlaceOfAttention", b =>
                 {
                     b.Property<int>("Id")
@@ -1736,6 +2526,151 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PlaceOfAttentions");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PostnatalHistory", b =>
+                {
+                    b.Property<int>("PostNatalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PostNatalId"));
+
+                    b.Property<bool?>("Bcg")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<bool?>("HepatitisB")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<bool?>("Influenza")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("Neumococo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Observations")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<bool?>("Pentavalente")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("PolioVirus")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("Rotavirus")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("TripleViral")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("Varicela")
+                        .HasColumnType("bit");
+
+                    b.HasKey("PostNatalId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("PostnatalHistories");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PosturalEvaluation", b =>
+                {
+                    b.Property<int>("PosturalEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PosturalEvaluationId"));
+
+                    b.Property<string>("BodyAlignment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<float>("Grade")
+                        .HasColumnType("real");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ViewId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PosturalEvaluationId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("ViewId");
+
+                    b.ToTable("PosturalEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PrenatalHistory", b =>
+                {
+                    b.Property<int>("PrenatalHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrenatalHistoryId"));
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ComplicationsDuringPregnancy")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<bool?>("FetalSuffering")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("MedicationsOrVitamins")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<int?>("NumberOfControls")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NumberOfDeeds")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NumberOfUltrasounds")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("PlannedPregnancy")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("RadiationExposure")
+                        .HasColumnType("bit");
+
+                    b.HasKey("PrenatalHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("PrenatalHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Procedures", b =>
@@ -1817,6 +2752,73 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Pronvince", (string)null);
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PsychopsychiatricHistory", b =>
+                {
+                    b.Property<int>("PsychopsychiatricHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PsychopsychiatricHistoryId"));
+
+                    b.Property<string>("Actor")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("HistoryDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("HistoryState")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("PsychopsychiatricHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("PsychopsychiatricHistories");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PsychosexualHistory", b =>
+                {
+                    b.Property<int>("PsychosexualHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PsychosexualHistoryId"));
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("PsychosexualHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("PsychosexualHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ReasonForConsultation", b =>
@@ -1946,6 +2948,23 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("Restriction");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.ResultType", b =>
+                {
+                    b.Property<int>("ResultTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResultTypeId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ResultTypeId");
+
+                    b.ToTable("ResultTypes");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.ReviewSystemDevices", b =>
                 {
                     b.Property<int>("Id")
@@ -1973,11 +2992,78 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("MedicalCareId");
 
                     b.HasIndex("SystemsDevicesId", "MedicalCareId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId")
-                        .HasFilter("[MedicalCareId] IS NOT NULL");
+                        .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId");
 
                     b.ToTable("ReviewSystemDevices");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Scale", b =>
+                {
+                    b.Property<int>("ScaleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScaleId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.HasKey("ScaleId");
+
+                    b.ToTable("Scales");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SensitivityEvaluation", b =>
+                {
+                    b.Property<int>("SensitivityEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SensitivityEvaluationId"));
+
+                    b.Property<int?>("BodyZoneId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Demandmas")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SensitivityLevelId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SensitivityEvaluationId");
+
+                    b.HasIndex("BodyZoneId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("SensitivityLevelId");
+
+                    b.ToTable("SensitivityEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SensitivityLevel", b =>
+                {
+                    b.Property<int>("SensitivityLevelId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SensitivityLevelId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SensitivityLevelId");
+
+                    b.ToTable("SensitivityLevels");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Service", b =>
@@ -2000,6 +3086,84 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("TypeOfServiceId");
 
                     b.ToTable("Services");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Sessions", b =>
+                {
+                    b.Property<int>("SessionsId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SessionsId"));
+
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SessionsId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.ToTable("Sessions");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Shade", b =>
+                {
+                    b.Property<int>("ShadeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ShadeId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ShadeId");
+
+                    b.ToTable("Shades");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SkinEvaluation", b =>
+                {
+                    b.Property<int>("SkinEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkinEvaluationId"));
+
+                    b.Property<int?>("ColorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EdemaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SwellingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SkinEvaluationId");
+
+                    b.HasIndex("ColorId");
+
+                    b.HasIndex("EdemaId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("StatusId");
+
+                    b.HasIndex("SwellingId");
+
+                    b.ToTable("SkinEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SleepHabit", b =>
@@ -2052,6 +3216,37 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("SleepHabitId");
 
                     b.ToTable("SleepHabitHistory", (string)null);
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SpecialTest", b =>
+                {
+                    b.Property<int>("SpecialTestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SpecialTestId"));
+
+                    b.Property<int>("MedicalCareId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observations")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ResultTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Test")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SpecialTestId");
+
+                    b.HasIndex("MedicalCareId");
+
+                    b.HasIndex("ResultTypeId");
+
+                    b.ToTable("SpecialTests");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SportsActivities", b =>
@@ -2113,6 +3308,39 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("SportsActivitiesHistory", (string)null);
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Status", b =>
+                {
+                    b.Property<int>("StatusId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StatusId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("StatusId");
+
+                    b.ToTable("Statuses");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Strength", b =>
+                {
+                    b.Property<int>("StrengthId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StrengthId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("StrengthId");
+
+                    b.ToTable("Strengths");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.SurgeryHistory", b =>
                 {
                     b.Property<int>("SurgeryHistoryId")
@@ -2153,6 +3381,23 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("SurgeryHistories");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Swelling", b =>
+                {
+                    b.Property<int>("SwellingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SwellingId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SwellingId");
+
+                    b.ToTable("Swellings");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.SystemsDevices", b =>
                 {
                     b.Property<int>("Id")
@@ -2190,13 +3435,13 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("ToxicHabits");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.ToxicHabitBackground", b =>
+            modelBuilder.Entity("SMED.Shared.Entity.ToxicHabitHistory", b =>
                 {
-                    b.Property<int>("ToxicHabitBackgroundId")
+                    b.Property<int>("ToxicHabitHistoryId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ToxicHabitBackgroundId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ToxicHabitHistoryId"));
 
                     b.Property<int>("ClinicalHistoryId")
                         .HasColumnType("int");
@@ -2218,13 +3463,74 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int?>("ToxicHabitId")
                         .HasColumnType("int");
 
-                    b.HasKey("ToxicHabitBackgroundId");
+                    b.HasKey("ToxicHabitHistoryId");
 
                     b.HasIndex("ClinicalHistoryId");
 
                     b.HasIndex("ToxicHabitId");
 
-                    b.ToTable("ToxicHabitHistories");
+                    b.ToTable("ToxicHabitHistory", (string)null);
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TransfusionsHistory", b =>
+                {
+                    b.Property<int>("TransfusionsHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TransfusionsHistoryId"));
+
+                    b.Property<int?>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Observations")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<DateTime?>("TransfusionDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("TransfusionReason")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("TransfusionsHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("TransfusionsHistories");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TraumaticHistory", b =>
+                {
+                    b.Property<int>("TraumaticHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TraumaticHistoryId"));
+
+                    b.Property<int?>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("TraumaticHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("TraumaticHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Treatment", b =>
@@ -2248,6 +3554,54 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("Treatments", (string)null);
 
                     b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Trophism", b =>
+                {
+                    b.Property<int>("TrophismId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TrophismId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TrophismId");
+
+                    b.ToTable("Trophisms");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TypeOfActivity", b =>
+                {
+                    b.Property<int>("TypeOfActivityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TypeOfActivityId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TypeOfActivityId");
+
+                    b.ToTable("TypeOfActivities");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TypeOfMedicalEvaluation", b =>
+                {
+                    b.Property<int>("TypeOfMedicalEvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TypeOfMedicalEvaluationId"));
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("TypeOfMedicalEvaluationId");
+
+                    b.ToTable("TypeOfMedicalEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.TypeOfProcedures", b =>
@@ -2311,6 +3665,23 @@ namespace SMED.BackEnd.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.View", b =>
+                {
+                    b.Property<int>("ViewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ViewId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ViewId");
+
+                    b.ToTable("Views");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.VitalSigns", b =>
                 {
                     b.Property<int>("Id")
@@ -2320,10 +3691,12 @@ namespace SMED.BackEnd.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal?>("AbdominalCircumference")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<decimal?>("BloodGlucose")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<string>("BloodPressure")
                         .HasColumnType("nvarchar(max)");
@@ -2332,31 +3705,38 @@ namespace SMED.BackEnd.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("Height")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(4, 2)
+                        .HasColumnType("decimal(4,2)");
 
                     b.Property<decimal?>("Hemoglobin")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(4, 2)
+                        .HasColumnType("decimal(4,2)");
 
                     b.Property<decimal?>("Icm")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<decimal?>("MeanArterialPressure")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("OxygenSaturation")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<int?>("RespiratoryRate")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("Temperature")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(4, 2)
+                        .HasColumnType("decimal(4,2)");
 
                     b.Property<decimal?>("Weight")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.HasKey("Id");
 
@@ -2401,6 +3781,42 @@ namespace SMED.BackEnd.Migrations
                     b.HasIndex("ClinicalHistoryId");
 
                     b.ToTable("WaterConsumptionHistory", (string)null);
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.WorkHistory", b =>
+                {
+                    b.Property<int>("WorkHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WorkHistoryId"));
+
+                    b.Property<int>("ClinicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Experience")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("HistoryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("SatisfactionLevel")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.Property<string>("Stability")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(max)");
+
+                    b.HasKey("WorkHistoryId");
+
+                    b.HasIndex("ClinicalHistoryId");
+
+                    b.ToTable("WorkHistories");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ImageOrders", b =>
@@ -2486,6 +3902,21 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("HistoryNavigation");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Activity", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.Sessions", "Session")
+                        .WithMany("Activities")
+                        .HasForeignKey("SessionId");
+
+                    b.HasOne("SMED.Shared.Entity.TypeOfActivity", "TypeOfActivity")
+                        .WithMany("Activities")
+                        .HasForeignKey("TypeOfActivityId");
+
+                    b.Navigation("Session");
+
+                    b.Navigation("TypeOfActivity");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.AdditionalData", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
@@ -2495,6 +3926,27 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("MedicalCare");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.DocumentType", "DocumentTypeNavigation")
+                        .WithMany("Agents")
+                        .HasForeignKey("DocumentType");
+
+                    b.HasOne("SMED.Shared.Entity.Gender", "Gender")
+                        .WithMany("Agents")
+                        .HasForeignKey("GenderId");
+
+                    b.HasOne("SMED.Shared.Entity.MaritalStatus", "MaritalStatus")
+                        .WithMany("Agents")
+                        .HasForeignKey("MaritalStatusId");
+
+                    b.Navigation("DocumentTypeNavigation");
+
+                    b.Navigation("Gender");
+
+                    b.Navigation("MaritalStatus");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.City", b =>
@@ -2526,6 +3978,39 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.CurrentIllness", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("CurrentIllnesses")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.Navigation("MedicalCare");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.CurrentProblemHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("CurrentProblemHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_CurrentProblemHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.DevelopmentRecord", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("DevelopmentRecords")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_DevelopmentRecord_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DietaryHabitsHistory", b =>
@@ -2720,6 +4205,16 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("PersonNavigation");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.HospitalizationsHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("HospitalizationsHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .HasConstraintName("FK_HospitalizationsHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.IdentifiedDisease", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.Disease", "DiseaseNavigation")
@@ -2846,6 +4341,33 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalCare");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("MedicalEvaluations")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalEvaluationMembers", "MedicalEvaluationMembers")
+                        .WithMany("MedicalEvaluations")
+                        .HasForeignKey("MedicalEvaluationMembersId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalEvaluationPosition", "MedicalEvaluationPosition")
+                        .WithMany("MedicalEvaluations")
+                        .HasForeignKey("MedicalEvaluationPositionId");
+
+                    b.HasOne("SMED.Shared.Entity.TypeOfMedicalEvaluation", "TypeOfMedicalEvaluation")
+                        .WithMany("MedicalEvaluations")
+                        .HasForeignKey("TypeOfMedicalEvaluationId");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("MedicalEvaluationMembers");
+
+                    b.Navigation("MedicalEvaluationPosition");
+
+                    b.Navigation("TypeOfMedicalEvaluation");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.MedicalProcedure", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
@@ -2939,6 +4461,83 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.MedicationHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("MedicationHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_MedicationHistory_ClinicalHistory");
+
+                    b.HasOne("SMED.Shared.Entity.Medicine", "Medicine")
+                        .WithMany("MedicationHistories")
+                        .HasForeignKey("MedicineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_MedicationHistory_Medicine");
+
+                    b.Navigation("ClinicalHistory");
+
+                    b.Navigation("Medicine");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeurologicalExam", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("NeurologicalExams")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .HasConstraintName("FK_NeurologicalExam_ClinicalHistory");
+
+                    b.HasOne("SMED.Shared.Entity.NeurologicalExamType", "NeurologicalExamType")
+                        .WithMany("NeurologicalExams")
+                        .HasForeignKey("NeurologicalExamTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_NeurologicalExam_NeurologicalExamType");
+
+                    b.Navigation("ClinicalHistory");
+
+                    b.Navigation("NeurologicalExamType");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeuromuscularEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("NeuromuscularEvaluations")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.HasOne("SMED.Shared.Entity.Shade", "Shade")
+                        .WithMany("NeuromuscularEvaluations")
+                        .HasForeignKey("ShadeId");
+
+                    b.HasOne("SMED.Shared.Entity.Strength", "Strength")
+                        .WithMany("NeuromuscularEvaluations")
+                        .HasForeignKey("StrengthId");
+
+                    b.HasOne("SMED.Shared.Entity.Trophism", "Trophism")
+                        .WithMany("NeuromuscularEvaluations")
+                        .HasForeignKey("TrophismId");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("Shade");
+
+                    b.Navigation("Strength");
+
+                    b.Navigation("Trophism");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeuropsychologicalHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("NeuropsychologicalHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .HasConstraintName("FK_NeuropsychologicalHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.ObstetricHistory", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.ClinicalHistory", "HistoryNavigation")
@@ -2970,13 +4569,67 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.OsteoarticularEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.JointCondition", "JointCondition")
+                        .WithMany("OsteoarticularEvaluations")
+                        .HasForeignKey("JointConditionId");
+
+                    b.HasOne("SMED.Shared.Entity.JointRangeOfMotion", "JointRangeOfMotion")
+                        .WithMany("OsteoarticularEvaluations")
+                        .HasForeignKey("JointRangeOfMotionId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("OsteoarticularEvaluations")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.Navigation("JointCondition");
+
+                    b.Navigation("JointRangeOfMotion");
+
+                    b.Navigation("MedicalCare");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PainScale", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ActionF", "Action")
+                        .WithMany("PainScales")
+                        .HasForeignKey("ActionId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("PainScales")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.HasOne("SMED.Shared.Entity.PainMoment", "PainMoment")
+                        .WithMany("PainScales")
+                        .HasForeignKey("PainMomentId");
+
+                    b.HasOne("SMED.Shared.Entity.Scale", "Scale")
+                        .WithMany("PainScales")
+                        .HasForeignKey("ScaleId");
+
+                    b.Navigation("Action");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("PainMoment");
+
+                    b.Navigation("Scale");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Patient", b =>
                 {
+                    b.HasOne("SMED.Shared.Entity.Agent", "Agent")
+                        .WithMany("Patients")
+                        .HasForeignKey("AgentId");
+
                     b.HasOne("SMED.Shared.Entity.Person", "PersonNavigation")
                         .WithOne("Patient")
                         .HasForeignKey("SMED.Shared.Entity.Patient", "PersonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Agent");
 
                     b.Navigation("PersonNavigation");
                 });
@@ -2996,6 +4649,18 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("Patient");
 
                     b.Navigation("Relationship");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PerinatalHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("PerinatalHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PerinatalHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Person", b =>
@@ -3251,6 +4916,63 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("RegionNavigation");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.PhysiotherapyDiagnostic", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("PhysiotherapyDiagnostics")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.Navigation("MedicalCare");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PhysiotherapyTreatment", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.PhysiotherapyDiagnostic", "PhysiotherapyDiagnostic")
+                        .WithMany("PhysiotherapyTreatments")
+                        .HasForeignKey("PhysiotherapyDiagnosticId");
+
+                    b.Navigation("PhysiotherapyDiagnostic");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PostnatalHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("PostnatalHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PostnatalHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PosturalEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany()
+                        .HasForeignKey("MedicalCareId");
+
+                    b.HasOne("SMED.Shared.Entity.View", "View")
+                        .WithMany("PosturalEvaluations")
+                        .HasForeignKey("ViewId");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("View");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PrenatalHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("PrenatalHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PrenatalHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Procedures", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.TypeOfProcedures", "TypeOfProcedure")
@@ -3271,6 +4993,30 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("MedicalVisitNavigation");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PsychopsychiatricHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("PsychopsychiatricHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PsychopsychiatricHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PsychosexualHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("PsychosexualHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PsychosexualHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ReasonForConsultation", b =>
@@ -3324,6 +5070,29 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("SystemsDevices");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.SensitivityEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.BodyZone", "BodyZone")
+                        .WithMany("SensitivityEvaluations")
+                        .HasForeignKey("BodyZoneId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("SensitivityEvaluations")
+                        .HasForeignKey("MedicalCareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMED.Shared.Entity.SensitivityLevel", "SensitivityLevel")
+                        .WithMany("SensitivityEvaluations")
+                        .HasForeignKey("SensitivityLevelId");
+
+                    b.Navigation("BodyZone");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("SensitivityLevel");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Service", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.TypeOfService", "TypeOfService")
@@ -3333,6 +5102,48 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("TypeOfService");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Sessions", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("Sessions")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.Navigation("MedicalCare");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SkinEvaluation", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.Color", "Color")
+                        .WithMany("SkinEvaluations")
+                        .HasForeignKey("ColorId");
+
+                    b.HasOne("SMED.Shared.Entity.Edema", "Edema")
+                        .WithMany("SkinEvaluations")
+                        .HasForeignKey("EdemaId");
+
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("SkinEvaluations")
+                        .HasForeignKey("MedicalCareId");
+
+                    b.HasOne("SMED.Shared.Entity.Status", "Status")
+                        .WithMany("SkinEvaluations")
+                        .HasForeignKey("StatusId");
+
+                    b.HasOne("SMED.Shared.Entity.Swelling", "Swelling")
+                        .WithMany("SkinEvaluations")
+                        .HasForeignKey("SwellingId");
+
+                    b.Navigation("Color");
+
+                    b.Navigation("Edema");
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("Status");
+
+                    b.Navigation("Swelling");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SleepHabitHistory", b =>
@@ -3352,6 +5163,25 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("HistoryNavigation");
 
                     b.Navigation("SleepHabitNavigation");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SpecialTest", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
+                        .WithMany("SpecialTests")
+                        .HasForeignKey("MedicalCareId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SMED.Shared.Entity.ResultType", "ResultType")
+                        .WithMany("SpecialTests")
+                        .HasForeignKey("ResultTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MedicalCare");
+
+                    b.Navigation("ResultType");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SportsActivitiesHistory", b =>
@@ -3390,23 +5220,43 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("SurgeryNavigation");
                 });
 
-            modelBuilder.Entity("SMED.Shared.Entity.ToxicHabitBackground", b =>
+            modelBuilder.Entity("SMED.Shared.Entity.ToxicHabitHistory", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
-                        .WithMany("ToxicHabitBackgrounds")
+                        .WithMany("ToxicHabitsHistory")
                         .HasForeignKey("ClinicalHistoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK_ToxicHabitBackground_ClinicalHistory");
+                        .HasConstraintName("FK_ToxicHabitHistory_ClinicalHistory");
 
                     b.HasOne("SMED.Shared.Entity.ToxicHabit", "ToxicHabit")
-                        .WithMany("ToxicHabitBackgrounds")
+                        .WithMany("ToxicHabitsHistory")
                         .HasForeignKey("ToxicHabitId")
-                        .HasConstraintName("FK_ToxicHabitBackground_ToxicHabit");
+                        .HasConstraintName("FK_ToxicHabitHistory_ToxicHabit");
 
                     b.Navigation("ClinicalHistory");
 
                     b.Navigation("ToxicHabit");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TransfusionsHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("TransfusionsHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .HasConstraintName("FK_TransfusionsHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TraumaticHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("TraumaticHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .HasConstraintName("FK_TraumaticHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Treatment", b =>
@@ -3451,6 +5301,18 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalRecordNavigation");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.WorkHistory", b =>
+                {
+                    b.HasOne("SMED.Shared.Entity.ClinicalHistory", "ClinicalHistory")
+                        .WithMany("WorkHistories")
+                        .HasForeignKey("ClinicalHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_WorkHistory_ClinicalHistory");
+
+                    b.Navigation("ClinicalHistory");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Non_PharmacologicalTreatment", b =>
                 {
                     b.HasOne("SMED.Shared.Entity.Treatment", null)
@@ -3488,9 +5350,24 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("SurgeryHistories");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.ActionF", b =>
+                {
+                    b.Navigation("PainScales");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Agent", b =>
+                {
+                    b.Navigation("Patients");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.BloodGroup", b =>
                 {
                     b.Navigation("PersonBloodGroups");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.BodyZone", b =>
+                {
+                    b.Navigation("SensitivityEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.City", b =>
@@ -3501,6 +5378,10 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.ClinicalHistory", b =>
                 {
                     b.Navigation("AllergyHistories");
+
+                    b.Navigation("CurrentProblemHistories");
+
+                    b.Navigation("DevelopmentRecords");
 
                     b.Navigation("DietaryHabitHistories");
 
@@ -3514,11 +5395,29 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("HabitHistories");
 
+                    b.Navigation("HospitalizationsHistories");
+
                     b.Navigation("LifeStyleHistories");
+
+                    b.Navigation("MedicationHistories");
+
+                    b.Navigation("NeurologicalExams");
+
+                    b.Navigation("NeuropsychologicalHistories");
 
                     b.Navigation("ObstetricHistories");
 
+                    b.Navigation("PerinatalHistories");
+
                     b.Navigation("PersonalHistories");
+
+                    b.Navigation("PostnatalHistories");
+
+                    b.Navigation("PrenatalHistories");
+
+                    b.Navigation("PsychopsychiatricHistories");
+
+                    b.Navigation("PsychosexualHistories");
 
                     b.Navigation("SleepHabitHistories");
 
@@ -3526,9 +5425,20 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("SurgeryHistories");
 
-                    b.Navigation("ToxicHabitBackgrounds");
+                    b.Navigation("ToxicHabitsHistory");
+
+                    b.Navigation("TransfusionsHistories");
+
+                    b.Navigation("TraumaticHistories");
 
                     b.Navigation("WaterConsumptionHistories");
+
+                    b.Navigation("WorkHistories");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Color", b =>
+                {
+                    b.Navigation("SkinEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.DiagnosticType", b =>
@@ -3554,7 +5464,14 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.DocumentType", b =>
                 {
+                    b.Navigation("Agents");
+
                     b.Navigation("PersonDocuments");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Edema", b =>
+                {
+                    b.Navigation("SkinEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.EducationLevel", b =>
@@ -3580,6 +5497,8 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Gender", b =>
                 {
+                    b.Navigation("Agents");
+
                     b.Navigation("Persons");
                 });
 
@@ -3602,6 +5521,16 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.HealthProfessionalType", b =>
                 {
                     b.Navigation("HealthProfessionals");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.JointCondition", b =>
+                {
+                    b.Navigation("OsteoarticularEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.JointRangeOfMotion", b =>
+                {
+                    b.Navigation("OsteoarticularEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.LaborActivity", b =>
@@ -3628,12 +5557,16 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.MaritalStatus", b =>
                 {
+                    b.Navigation("Agents");
+
                     b.Navigation("PersonMaritalStatuses");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.MedicalCare", b =>
                 {
                     b.Navigation("AdditionalData");
+
+                    b.Navigation("CurrentIllnesses");
 
                     b.Navigation("Diagnoses");
 
@@ -3643,17 +5576,35 @@ namespace SMED.BackEnd.Migrations
 
                     b.Navigation("IdentifiedDiseases");
 
+                    b.Navigation("MedicalEvaluations");
+
                     b.Navigation("MedicalProcedures");
 
                     b.Navigation("MedicalReferrals");
 
                     b.Navigation("MedicalServices");
 
+                    b.Navigation("NeuromuscularEvaluations");
+
+                    b.Navigation("OsteoarticularEvaluations");
+
+                    b.Navigation("PainScales");
+
                     b.Navigation("PhysicalExams");
+
+                    b.Navigation("PhysiotherapyDiagnostics");
 
                     b.Navigation("ReasonsForConsultation");
 
                     b.Navigation("ReviewSystemDevices");
+
+                    b.Navigation("SensitivityEvaluations");
+
+                    b.Navigation("Sessions");
+
+                    b.Navigation("SkinEvaluations");
+
+                    b.Navigation("SpecialTests");
 
                     b.Navigation("VitalSigns");
                 });
@@ -3665,6 +5616,16 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("OrderDiagnosis");
 
                     b.Navigation("Treatments");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluationMembers", b =>
+                {
+                    b.Navigation("MedicalEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.MedicalEvaluationPosition", b =>
+                {
+                    b.Navigation("MedicalEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.MedicalInsurance", b =>
@@ -3679,12 +5640,24 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.Medicine", b =>
                 {
+                    b.Navigation("MedicationHistories");
+
                     b.Navigation("PharmacologicalTreatments");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.NeurologicalExamType", b =>
+                {
+                    b.Navigation("NeurologicalExams");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Orders", b =>
                 {
                     b.Navigation("OrderDiagnosis");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.PainMoment", b =>
+                {
+                    b.Navigation("PainScales");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.PathologicalEvidence", b =>
@@ -3748,6 +5721,11 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("PhysicalExams");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.PhysiotherapyDiagnostic", b =>
+                {
+                    b.Navigation("PhysiotherapyTreatments");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.PlaceOfAttention", b =>
                 {
                     b.Navigation("MedicalCares");
@@ -3796,12 +5774,37 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.ResultType", b =>
+                {
+                    b.Navigation("SpecialTests");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Scale", b =>
+                {
+                    b.Navigation("PainScales");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.SensitivityLevel", b =>
+                {
+                    b.Navigation("SensitivityEvaluations");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.Service", b =>
                 {
                     b.Navigation("CostOfService")
                         .IsRequired();
 
                     b.Navigation("Interconsultations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Sessions", b =>
+                {
+                    b.Navigation("Activities");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Shade", b =>
+                {
+                    b.Navigation("NeuromuscularEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.SleepHabit", b =>
@@ -3814,6 +5817,21 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("SportsActivitiesHistories");
                 });
 
+            modelBuilder.Entity("SMED.Shared.Entity.Status", b =>
+                {
+                    b.Navigation("SkinEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Strength", b =>
+                {
+                    b.Navigation("NeuromuscularEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Swelling", b =>
+                {
+                    b.Navigation("SkinEvaluations");
+                });
+
             modelBuilder.Entity("SMED.Shared.Entity.SystemsDevices", b =>
                 {
                     b.Navigation("Reviews");
@@ -3821,12 +5839,27 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.ToxicHabit", b =>
                 {
-                    b.Navigation("ToxicHabitBackgrounds");
+                    b.Navigation("ToxicHabitsHistory");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Treatment", b =>
                 {
                     b.Navigation("Indications");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.Trophism", b =>
+                {
+                    b.Navigation("NeuromuscularEvaluations");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TypeOfActivity", b =>
+                {
+                    b.Navigation("Activities");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.TypeOfMedicalEvaluation", b =>
+                {
+                    b.Navigation("MedicalEvaluations");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.TypeOfProcedures", b =>
@@ -3837,6 +5870,11 @@ namespace SMED.BackEnd.Migrations
             modelBuilder.Entity("SMED.Shared.Entity.TypeOfService", b =>
                 {
                     b.Navigation("Services");
+                });
+
+            modelBuilder.Entity("SMED.Shared.Entity.View", b =>
+                {
+                    b.Navigation("PosturalEvaluations");
                 });
 #pragma warning restore 612, 618
         }

@@ -20,6 +20,9 @@ namespace SMED.Shared.Entity
         public int? StatusId { get; set; }
         public int? SwellingId { get; set; }
 
+        [Column(TypeName = "datetime")]
+        public DateTime? EvaluationDate { get; set; }
+
 
         [ForeignKey("MedicalCareId")]
         [InverseProperty("SkinEvaluations")]
@@ -36,5 +39,6 @@ namespace SMED.Shared.Entity
 
         [ForeignKey("SwellingId")]
         public virtual Swelling Swelling { get; set; }
+
     }
 }

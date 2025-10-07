@@ -113,6 +113,11 @@ builder.Services.AddScoped<CurrentIllnessService>();
 builder.Services.AddScoped<PainMomentService>();
 builder.Services.AddScoped<PainScaleService>();
 builder.Services.AddScoped<ScaleService>();
+builder.Services.AddScoped<SkinEvaluationService>();
+builder.Services.AddScoped<ColorService>();
+builder.Services.AddScoped<EdemaService>();
+builder.Services.AddScoped<StatusService>();
+builder.Services.AddScoped<SwellingService>();
 
 
 builder.Services.AddLogging();

@@ -14,6 +14,14 @@
 @inject ScaleService ScaleService
 @inject PainMomentService PainMomentService
 @inject PainScaleService PainScaleService
+@inject SkinEvaluationService SkinEvaluationService
+@inject ColorService ColorService
+@inject EdemaService EdemaService
+@inject StatusService StatusService
+@inject SwellingService SwellingService
+
+
+
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -46,6 +54,7 @@
                 {
                     <span class="badge bg-success ms-1">✓</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -58,6 +67,7 @@
                 {
                     <span class="badge bg-success ms-1">✓</span>
                 }
+                <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -66,6 +76,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-hand-paper me-2"></i>Piel
+                @if (IsSkinEvaluationComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -283,6 +297,7 @@
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-notes-medical me-2"></i>Enfermedad Actual
+                        <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -373,6 +388,7 @@
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-thermometer-half me-2"></i>Escala de Dolor
+                        <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -441,6 +457,9 @@
             </div>
         </div>
 
+
+
+
         <div class="tab-pane @(activeTab == "skin" ? "show active" : "")" role="tabpanel">
             <div class="card">
                 <div class="card-header">
@@ -452,10 +471,69 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario específico para la evaluación de la piel.
-                        </div>
+                        <EditableTable Title="Evaluaciones de Piel"
+                                       ColumnHeaders="@skinEvaluationHeaders"
+                                       Rows="@skinEvaluationRows"
+                                       RowIds="@skinEvaluationIds"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       OnAddRequested="@AbrirModalAgregarSkinEvaluation"
+                                       OnEditRequested="@EditarSkinEvaluation"
+                                       OnDeleteRequested="@EliminarSkinEvaluation"
+                                       OnSaveRequested="@GuardarSkinEvaluation"
+                                       IsValidForm="@ValidarFormularioSkinEvaluation">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Color *</label>
+                                        <select class="form-select" @bind="editingSkinEvaluation.ColorId">
+                                            <option value="0">Seleccione un color</option>
+                                            @foreach (var color in colors)
+                                            {
+                                                <option value="@color.ColorId">@color.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Edema *</label>
+                                        <select class="form-select" @bind="editingSkinEvaluation.EdemaId">
+                                            <option value="0">Seleccione un edema</option>
+                                            @foreach (var edema in edemas)
+                                            {
+                                                <option value="@edema.EdemaId">@edema.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Estado *</label>
+                                        <select class="form-select" @bind="editingSkinEvaluation.StatusId">
+                                            <option value="0">Seleccione un estado</option>
+                                            @foreach (var status in statuses)
+                                            {
+                                                <option value="@status.StatusId">@status.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tumefacción *</label>
+                                        <select class="form-select" @bind="editingSkinEvaluation.SwellingId">
+                                            <option value="0">Seleccione una tumefacción</option>
+                                            @foreach (var swelling in swellings)
+                                            {
+                                                <option value="@swelling.SwellingId">@swelling.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Fecha de Evaluación *</label>
+                                        <input type="date" class="form-control"
+                                               @bind="editingSkinEvaluation.EvaluationDate"
+                                               @bind:format="yyyy-MM-dd" />
+                                    </div>
+                                </div>
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("painScale"))">
@@ -476,6 +554,9 @@
                 </div>
             </div>
         </div>
+
+
+
 
         <div class="tab-pane @(activeTab == "jointMuscular" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -705,6 +786,21 @@
     private List<List<string>> painScaleRows = new();
     private List<int> painScaleIds = new();
 
+
+
+    // Variables para Skin Evaluation
+    private SkinEvaluationDTO editingSkinEvaluation = new SkinEvaluationDTO();
+    private List<SkinEvaluationDTO> skinEvaluations = new();
+    private List<ColorDTO> colors = new();
+    private List<EdemaDTO> edemas = new();
+    private List<StatusDTO> statuses = new();
+    private List<SwellingDTO> swellings = new();
+    private List<string> skinEvaluationHeaders = new() { "Color", "Edema", "Estado", "Tumefacción", "Fecha Evaluación" };
+    private List<List<string>> skinEvaluationRows = new();
+    private List<int> skinEvaluationIds = new();
+
+
+
     private List<HealthProfessionalDTO> fisioterapeutas = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
     private List<LocationDTO> locations = new();
@@ -719,6 +815,7 @@
         await AssignCurrentProfessional();
 
         await LoadPainScaleData();
+        await LoadSkinEvaluationData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -916,6 +1013,195 @@
         return painScales != null && painScales.Any();
     }
 
+
+    //Metodos para  apartado Piel
+
+    private async Task LoadSkinEvaluationData()
+    {
+        try
+        {
+            // Cargar todos los catálogos en paralelo para mejor performance
+            var colorTask = ColorService.GetAllAsync();
+            var edemaTask = EdemaService.GetAllAsync();
+            var statusTask = StatusService.GetAllAsync();
+            var swellingTask = SwellingService.GetAllAsync();
+
+            // Esperar a que todos terminen
+            await Task.WhenAll(colorTask, edemaTask, statusTask, swellingTask);
+
+            colors = await colorTask ?? new List<ColorDTO>();
+            edemas = await edemaTask ?? new List<EdemaDTO>();
+            statuses = await statusTask ?? new List<StatusDTO>();
+            swellings = await swellingTask ?? new List<SwellingDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded catalogs - Colors: {colors.Count}, Edemas: {edemas.Count}, Statuses: {statuses.Count}, Swellings: {swellings.Count}");
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadSkinEvaluations();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading skin evaluation data: {ex.Message}");
+
+            // Inicializar listas vacías para evitar null references
+            colors = new List<ColorDTO>();
+            edemas = new List<EdemaDTO>();
+            statuses = new List<StatusDTO>();
+            swellings = new List<SwellingDTO>();
+        }
+    }
+
+    private async Task LoadSkinEvaluations()
+    {
+        try
+        {
+            var allEvaluations = await SkinEvaluationService.GetAllAsync() ?? new List<SkinEvaluationDTO>();
+            skinEvaluations = allEvaluations
+                .Where(se => se.MedicalCareId == currentMedicalCareId)
+                .ToList();
+
+            await JS.InvokeVoidAsync("console.log", $"Loaded {skinEvaluations.Count} skin evaluations");
+            RefreshSkinEvaluationTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading skin evaluations: {ex.Message}");
+            skinEvaluations = new List<SkinEvaluationDTO>();
+            RefreshSkinEvaluationTable(); // Limpiar la tabla en caso de error
+        }
+    }
+
+    private void RefreshSkinEvaluationTable()
+    {
+        skinEvaluationRows.Clear();
+        skinEvaluationIds.Clear();
+
+        foreach (var se in skinEvaluations)
+        {
+            var colorName = colors.FirstOrDefault(c => c.ColorId == se.ColorId)?.Name ?? "-";
+            var edemaName = edemas.FirstOrDefault(e => e.EdemaId == se.EdemaId)?.Name ?? "-";
+            var statusName = statuses.FirstOrDefault(s => s.StatusId == se.StatusId)?.Name ?? "-";
+            var swellingName = swellings.FirstOrDefault(s => s.SwellingId == se.SwellingId)?.Name ?? "-";
+            var evaluationDate = se.EvaluationDate?.ToString("dd/MM/yyyy") ?? "-";
+
+            skinEvaluationRows.Add(new List<string> {
+            colorName,
+            edemaName,
+            statusName,
+            swellingName,
+            evaluationDate
+        });
+            skinEvaluationIds.Add(se.SkinEvaluationId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarSkinEvaluation()
+    {
+        editingSkinEvaluation = new SkinEvaluationDTO
+        {
+            MedicalCareId = currentMedicalCareId,
+            EvaluationDate = DateTime.Today // Fecha actual por defecto
+        };
+    }
+
+    private void EditarSkinEvaluation(int id)
+    {
+        var skinEvaluation = skinEvaluations.FirstOrDefault(se => se.SkinEvaluationId == id);
+        if (skinEvaluation != null)
+        {
+            editingSkinEvaluation = new SkinEvaluationDTO
+            {
+                SkinEvaluationId = skinEvaluation.SkinEvaluationId,
+                MedicalCareId = skinEvaluation.MedicalCareId,
+                ColorId = skinEvaluation.ColorId,
+                EdemaId = skinEvaluation.EdemaId,
+                StatusId = skinEvaluation.StatusId,
+                SwellingId = skinEvaluation.SwellingId,
+                EvaluationDate = skinEvaluation.EvaluationDate
+            };
+        }
+    }
+
+    private async Task GuardarSkinEvaluation()
+    {
+        try
+        {
+            if (editingSkinEvaluation.SkinEvaluationId > 0)
+            {
+                var updateResult = await SkinEvaluationService.UpdateAsync(editingSkinEvaluation);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await SkinEvaluationService.CreateAsync(editingSkinEvaluation);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadSkinEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación de piel guardada correctamente.");
+
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarSkinEvaluation(int id)
+    {
+        try
+        {
+            var deleteResult = await SkinEvaluationService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadSkinEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación de piel eliminada correctamente.");
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioSkinEvaluation()
+    {
+        return editingSkinEvaluation.ColorId > 0 &&
+               editingSkinEvaluation.EdemaId > 0 &&
+               editingSkinEvaluation.StatusId > 0 &&
+               editingSkinEvaluation.SwellingId > 0 &&
+               editingSkinEvaluation.EvaluationDate.HasValue;
+    }
+
+
+    private bool IsSkinEvaluationComplete()
+    {
+        return skinEvaluations != null && skinEvaluations.Any();
+    }
+
+
+
+
     private async Task LoadLocations()
     {
         try
@@ -1087,6 +1373,27 @@
         else
         {
             await LoadPainScales();
+        }
+
+
+        try
+        {
+            // Cargar los catálogos primero
+            await LoadSkinEvaluationData();
+
+            // Luego cargar las evaluaciones específicas de esta atención médica
+            var allSkinEvaluations = await SkinEvaluationService.GetAllAsync() ?? new List<SkinEvaluationDTO>();
+            skinEvaluations = allSkinEvaluations
+                .Where(se => se.MedicalCareId == currentMedicalCareId)
+                .ToList();
+
+            await JS.InvokeVoidAsync("console.log", $"Loaded {skinEvaluations.Count} skin evaluations for medical care {currentMedicalCareId}");
+            RefreshSkinEvaluationTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading skin evaluations in LoadExistingData: {ex.Message}");
+            skinEvaluations = new List<SkinEvaluationDTO>();
         }
 
         StateHasChanged();

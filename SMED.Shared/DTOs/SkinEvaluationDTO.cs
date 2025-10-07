@@ -14,5 +14,7 @@ namespace SMED.Shared.DTOs
         public int? EdemaId { get; set; }
         public int? StatusId { get; set; }
         public int? SwellingId { get; set; }
+
+        public DateTime? EvaluationDate { get; set; }
     }
 }

@@ -45,6 +45,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.EdemaId = dto.EdemaId;
             entity.StatusId = dto.StatusId;
             entity.SwellingId = dto.SwellingId;
+            entity.EvaluationDate = dto.EvaluationDate;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -72,7 +73,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ColorId = entity.ColorId,
                 EdemaId = entity.EdemaId,
                 StatusId = entity.StatusId,
-                SwellingId = entity.SwellingId
+                SwellingId = entity.SwellingId,
+                EvaluationDate = entity.EvaluationDate
             };
         }
 
@@ -85,7 +87,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ColorId = dto.ColorId,
                 EdemaId = dto.EdemaId,
                 StatusId = dto.StatusId,
-                SwellingId = dto.SwellingId
+                SwellingId = dto.SwellingId,
+                EvaluationDate = dto.EvaluationDate
             };
         }
     }

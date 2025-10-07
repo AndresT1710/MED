@@ -61,6 +61,13 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             return true;
         }
+        public async Task<LocationDTO?> GetByNameAsync(string name)
+        {
+            var entity = await _context.Locations
+                .FirstOrDefaultAsync(l => l.Name.ToLower() == name.ToLower());
+
+            return entity == null ? null : MapToDto(entity);
+        }
 
         private static LocationDTO MapToDto(Location place) => new LocationDTO
         {

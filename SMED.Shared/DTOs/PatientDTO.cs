@@ -11,5 +11,9 @@ namespace SMED.Shared.DTOs
         public int PersonId { get; set; }
         public PersonDTO? Person { get; set; }
 
+        public int? AgentId { get; set; }
+        public AgentDTO? Agent { get; set; }
     }
+
+
 }

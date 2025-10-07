@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SMED.Shared.DTOs
 {
@@ -19,5 +16,14 @@ namespace SMED.Shared.DTOs
         public string? Area { get; set; }
         public DateTime CareDate { get; set; }
 
+        public List<CurrentIllnessDTO>? CurrentIllnesses { get; set; }
+        public List<PhysiotherapyDiagnosticDTO>? PhysiotherapyDiagnostics { get; set; }
+        public List<OsteoarticularEvaluationDTO>? OsteoarticularEvaluations { get; set; }
+        public List<NeuromuscularEvaluationDTO>? NeuromuscularEvaluations { get; set; }
+        public List<SensitivityEvaluationDTO>? SensitivityEvaluations { get; set; }
+        public List<SkinEvaluationDTO>? SkinEvaluations { get; set; }
+        public List<SpecialTestDTO>? SpecialTests { get; set; }
+        public List<PainScaleDTO>? PainScales { get; set; }
+        public List<SessionsDTO>? Sessions { get; set; }
     }
 }

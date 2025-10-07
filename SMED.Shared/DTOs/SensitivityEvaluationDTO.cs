@@ -13,5 +13,8 @@ namespace SMED.Shared.DTOs
 
         public int? SensitivityLevelId { get; set; }
         public int? BodyZoneId { get; set; }
+
+        public int? MedicalCareId { get; set; }
+
     }
 }

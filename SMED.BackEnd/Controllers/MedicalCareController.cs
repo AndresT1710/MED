@@ -11,15 +11,44 @@ namespace SMED.BackEnd.Controllers
     {
         private readonly IRepository<MedicalCareDTO, int> _repository;
         private readonly MedicalCareRepository _medicalCareRepository;
+        private readonly ILogger<MedicalCareController> _logger;
 
-        public MedicalCareController(IRepository<MedicalCareDTO, int> repository, MedicalCareRepository medicalCareRepository)
+        public MedicalCareController(
+            IRepository<MedicalCareDTO, int> repository,
+            MedicalCareRepository medicalCareRepository,
+            ILogger<MedicalCareController> logger)
         {
             _repository = repository;
             _medicalCareRepository = medicalCareRepository;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetAll() => Ok(await _repository.GetAllAsync());
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<MedicalCareDTO>> GetById(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando atención médica con ID: {Id}", id);
+                var dto = await _repository.GetByIdAsync(id);
+
+                if (dto == null)
+                {
+                    _logger.LogWarning("No se encontró atención médica con ID: {Id}", id);
+                    return NotFound(new { message = $"No se encontró la atención médica con ID {id}" });
+                }
+
+                _logger.LogInformation("Atención médica encontrada: {Id}", id);
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atención médica con ID: {Id}", id);
+                return StatusCode(500, new { message = "Error interno al obtener la atención médica", error = ex.Message });
+            }
+        }
 
         [HttpGet("nursing")]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetNursingCare()
@@ -31,7 +60,23 @@ namespace SMED.BackEnd.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al obtener atenciones de enfermería");
                 return BadRequest($"Error al obtener atenciones de enfermería: {ex.Message}");
+            }
+        }
+
+        [HttpGet("physiotherapy")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetPhysiotherapyCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetPhysiotherapyCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de fisioterapia");
+                return BadRequest($"Error al obtener atenciones de fisioterapia: {ex.Message}");
             }
         }
 
@@ -45,6 +90,7 @@ namespace SMED.BackEnd.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al obtener atenciones por área y fecha");
                 return BadRequest($"Error al obtener atenciones por área y fecha: {ex.Message}");
             }
         }
@@ -59,13 +105,10 @@ namespace SMED.BackEnd.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al obtener atenciones por lugar de atención y fecha");
                 return BadRequest($"Error al obtener atenciones por lugar de atención y fecha: {ex.Message}");
             }
         }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<MedicalCareDTO>> GetById(int id) =>
-            await _repository.GetByIdAsync(id) is { } dto ? Ok(dto) : NotFound();
 
         [HttpGet("by-document/{documentNumber}")]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetByPatientDocument(string documentNumber)
@@ -77,6 +120,7 @@ namespace SMED.BackEnd.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al buscar atenciones por cédula");
                 return BadRequest($"Error al buscar atenciones por cédula: {ex.Message}");
             }
         }
@@ -84,24 +128,49 @@ namespace SMED.BackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<MedicalCareDTO>> Create(MedicalCareDTO dto)
         {
-            var created = await _repository.AddAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.CareId }, created);
+            try
+            {
+                var created = await _repository.AddAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.CareId }, created);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear atención médica");
+                return BadRequest($"Error al crear atención médica: {ex.Message}");
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, MedicalCareDTO dto)
         {
-            if (id != dto.CareId) return BadRequest();
-            var updated = await _repository.UpdateAsync(dto);
-            return updated != null ? Ok(updated) : NotFound();
+            try
+            {
+                if (id != dto.CareId)
+                    return BadRequest(new { message = "El ID no coincide con el DTO" });
+
+                var updated = await _repository.UpdateAsync(dto);
+                return updated != null ? Ok(updated) : NotFound(new { message = $"No se encontró la atención médica con ID {id}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar atención médica con ID: {Id}", id);
+                return BadRequest($"Error al actualizar atención médica: {ex.Message}");
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _repository.DeleteAsync(id);
-            return deleted ? NoContent() : NotFound();
+            try
+            {
+                var deleted = await _repository.DeleteAsync(id);
+                return deleted ? NoContent() : NotFound(new { message = $"No se encontró la atención médica con ID {id}" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar atención médica con ID: {Id}", id);
+                return BadRequest($"Error al eliminar atención médica: {ex.Message}");
+            }
         }
-
     }
 }

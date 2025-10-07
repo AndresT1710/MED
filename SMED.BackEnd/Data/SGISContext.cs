@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Xml.Linq;
@@ -710,10 +710,8 @@ namespace SGIS.Models
                 .HasForeignKey(r => r.SystemsDevicesId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Índice único compuesto para evitar duplicados por atención médica
             modelBuilder.Entity<ReviewSystemDevices>()
                 .HasIndex(r => new { r.SystemsDevicesId, r.MedicalCareId })
-                .IsUnique()
                 .HasDatabaseName("IX_ReviewSystemDevices_SystemsDevicesId_MedicalCareId");
 
             modelBuilder.Entity<OrderDiagnosis>()

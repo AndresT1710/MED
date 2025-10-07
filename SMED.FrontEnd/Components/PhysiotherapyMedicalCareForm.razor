@@ -1,0 +1,1043 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.Shared.Entity
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject AuthorizationService AuthorizationService
+@inject LocationService LocationService
+@inject CurrentIllnessService CurrentIllnessService
+@inject ActionFService ActionFService
+@inject ScaleService ScaleService
+@inject PainMomentService PainMomentService
+@inject PainScaleService PainScaleService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="physiotherapy-care-form">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" id="physiotherapyTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "currentIllness" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("currentIllness"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-notes-medical me-2"></i>Enfermedad Actual
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "painScale" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("painScale"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-thermometer-half me-2"></i>Escala de Dolor
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evaluation" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("evaluation"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("treatment"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("evolution"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-chart-line me-2"></i>Seguimiento
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content mt-3">
+        <!-- Patient Selection Tab -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Selección de Paciente
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <span class="badge bg-info ms-2">
+                            <i class="fas fa-heartbeat me-1"></i>Área: Fisioterapia
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (!isEditMode)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                                             OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención de fisioterapia existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Fisioterapia
+                                    <br>
+                                    <small class="text-muted">Esta atención se registrará automáticamente en el área de Fisioterapia.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                        @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta de fisioterapia..."
+                                      maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fisioterapeuta responsable *</label>
+                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                    @bind="selectedHealthProfessionalId"
+                                    disabled>
+                                <option value="0">Seleccione un fisioterapeuta</option>
+                                @foreach (var profesional in fisioterapeutas)
+                                {
+                                    <option value="@profesional.HealthProfessionalId">
+                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                    </option>
+                                }
+                            </select>
+                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                            {
+                                <div class="invalid-feedback">
+                                    Debe seleccionar un fisioterapeuta responsable
+                                </div>
+                            }
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-user-md me-2"></i>
+                            <strong>Fisioterapeuta asignado automáticamente:</strong> Este registro será asignado
+                            automáticamente al fisioterapeuta actualmente logueado en el sistema.
+                        </div>
+
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
+                                    </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("currentIllness"))">
+                                            Continuar a Enfermedad Actual <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Nuevo tab de Enfermedad Actual -->
+        <div class="tab-pane @(activeTab == "currentIllness" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-notes-medical me-2"></i>Enfermedad Actual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Tiempo de Evolución"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.EvolutionTime" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Localización"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.Localization" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Intensidad"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.Intensity" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Factores Agravantes"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.AggravatingFactors" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Factores Atenuantes"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.MitigatingFactors" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Dolor Nocturno"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.NocturnalPain" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Debilidad"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.Weakness" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Parestesias"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.Paresthesias" />
+                            </div>
+                            <div class="col-md-12">
+                                <ContainerBox1 Title="Exámenes Complementarios"
+                                               Width="full"
+                                               @bind-Content="@currentIllness.ComplementaryExams" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                <button class="btn btn-success me-2" @onclick="GuardarEnfermedadActual" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="fas fa-save me-2"></i>Guardar Enfermedad Actual
+                                </button>
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("painScale"))">
+                                    Continuar a Escala de Dolor <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Nuevo tab de Escala de Dolor -->
+        <div class="tab-pane @(activeTab == "painScale" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-thermometer-half me-2"></i>Escala de Dolor
+                    </h5>
+                </div>
+                <div class="card-body">
+                        <EditableTable Title="Registros de Escala de Dolor"
+                                       ColumnHeaders="@painScaleHeaders"
+                                       Rows="@painScaleRows"
+                                       RowIds="@painScaleIds"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       OnAddRequested="@AbrirModalAgregarPainScale"
+                                       OnEditRequested="@EditarPainScale"
+                                       OnDeleteRequested="@EliminarPainScale"
+                                       OnSaveRequested="@GuardarPainScale"
+                                       IsValidForm="@ValidarFormularioPainScale">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Momento del Dolor</label>
+                                        <select class="form-select" @bind="editingPainScale.PainMomentId">
+                                            <option value="0">Seleccione un momento</option>
+                                            @foreach (var moment in painMoments)
+                                            {
+                                                <option value="@moment.PainMomentId">@moment.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Actividad</label>
+                                        <select class="form-select" @bind="editingPainScale.ActionId">
+                                            <option value="0">Seleccione una actividad</option>
+                                            @foreach (var action in actions)
+                                            {
+                                                <option value="@action.ActionId">@action.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Escala de Intensidad</label>
+                                        <select class="form-select" @bind="editingPainScale.ScaleId">
+                                            <option value="0">Seleccione una escala</option>
+                                            @foreach (var scale in scales)
+                                            {
+                                                <option value="@scale.ScaleId">@scale.Value - @scale.Description</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Observación</label>
+                                        <textarea class="form-control" @bind="editingPainScale.Observation" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("currentIllness"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation Tab -->
+        <div class="tab-pane @(activeTab == "evaluation" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Evaluación de Fisioterapia
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario específico para la evaluación de fisioterapia.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("painScale"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("treatment"))">
+                                Continuar a Tratamiento <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Treatment Plan Tab -->
+        <div class="tab-pane @(activeTab == "treatment" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-dumbbell me-2"></i>Plan de Tratamiento
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para el plan de tratamiento de fisioterapia.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evolution"))">
+                                Continuar a Seguimiento <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Evolution Tab -->
+        <div class="tab-pane @(activeTab == "evolution" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Seguimiento
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aquí irá el formulario para el seguimiento y evolución del paciente.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("treatment"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="FinalizarAtencionFisioterapia" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="fas fa-check me-2"></i>Finalizar Atención de Fisioterapia
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+    [Parameter] public MedicalCare? ExistingMedicalCareEntity { get; set; }
+
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string activeTab = "patient";
+    private int clinicalHistoryId = 0;
+    private int selectedPatientId = 0;
+    private string selectedHistoryNumber = "";
+    private int fisioterapiaLocationId = 0;
+    private string motivoConsulta = "";
+    private bool isEditMode = false;
+    private string lugarSeleccionada = "";
+    private bool showValidationErrors = false;
+    private bool isSaving = false;
+    private int selectedHealthProfessionalId = 0;
+    private HealthProfessionalDTO? currentProfessional = null;
+    private int currentMedicalCareId = 0;
+
+    private CurrentIllnessDTO currentIllness = new CurrentIllnessDTO();
+
+    private PainScaleDTO editingPainScale = new PainScaleDTO();
+    private List<PainScaleDTO> painScales = new();
+    private List<ActionFDTO> actions = new();
+    private List<ScaleDTO> scales = new();
+    private List<PainMomentDTO> painMoments = new();
+    private List<string> actionOptions = new();
+    private List<string> scaleOptions = new();
+    private List<string> painMomentOptions = new();
+    private string selectedAction = "";
+    private string selectedScale = "";
+    private string selectedPainMoment = "";
+    private string painScaleObservation = "";
+    private List<string> painScaleHeaders = new() { "Momento", "Actividad", "Escala", "Observación" };
+    private List<List<string>> painScaleRows = new();
+    private List<int> painScaleIds = new();
+
+    private List<HealthProfessionalDTO> fisioterapeutas = new();
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+    private List<LocationDTO> locations = new();
+    private ReasonForConsultationDTO? existingReasonForConsultation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocations();
+        await LoadFisioterapiaLocationId();
+        await LoadLugaresAtencion();
+        await LoadHealthProfessionals();
+        await AssignCurrentProfessional();
+
+        await LoadPainScaleData();
+
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
+            await LoadExistingData();
+        }
+    }
+
+    private async Task LoadPainScaleData()
+    {
+        try
+        {
+            actions = await ActionFService.GetAllAsync() ?? new List<ActionFDTO>();
+            scales = await ScaleService.GetAllAsync() ?? new List<ScaleDTO>();
+            painMoments = await PainMomentService.GetAllAsync() ?? new List<PainMomentDTO>();
+
+            actionOptions = actions.Select(a => a.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList();
+            scaleOptions = scales.Select(s => $"{s.Value} - {s.Description}").ToList();
+            painMomentOptions = painMoments.Select(p => p.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList();
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadPainScales();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading pain scale data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadPainScales()
+    {
+        try
+        {
+            painScales = await PainScaleService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<PainScaleDTO>();
+            RefreshPainScaleTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading pain scales: {ex.Message}");
+        }
+    }
+
+    private void RefreshPainScaleTable()
+    {
+        painScaleRows.Clear();
+        painScaleIds.Clear();
+
+        foreach (var ps in painScales)
+        {
+            var momentName = painMoments.FirstOrDefault(p => p.PainMomentId == ps.PainMomentId)?.Name ?? "-";
+            var actionName = actions.FirstOrDefault(a => a.ActionId == ps.ActionId)?.Name ?? "-";
+            var scale = scales.FirstOrDefault(s => s.ScaleId == ps.ScaleId);
+            var scaleName = scale != null ? $"{scale.Value} - {scale.Description}" : "-";
+
+            painScaleRows.Add(new List<string> { momentName, actionName, scaleName, ps.Observation ?? "" });
+            painScaleIds.Add(ps.PainScaleId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarPainScale()
+    {
+        editingPainScale = new PainScaleDTO { MedicalCareId = currentMedicalCareId };
+    }
+
+    private void EditarPainScale(int id)
+    {
+        var painScale = painScales.FirstOrDefault(ps => ps.PainScaleId == id);
+        if (painScale != null)
+        {
+            editingPainScale = new PainScaleDTO
+                {
+                    PainScaleId = painScale.PainScaleId,
+                    PainMomentId = painScale.PainMomentId,
+                    ActionId = painScale.ActionId,
+                    ScaleId = painScale.ScaleId,
+                    Observation = painScale.Observation,
+                    MedicalCareId = painScale.MedicalCareId
+                };
+        }
+    }
+
+    private async Task GuardarPainScale()
+    {
+        try
+        {
+            if (editingPainScale.PainScaleId > 0)
+            {
+                await PainScaleService.UpdateAsync(editingPainScale);
+            }
+            else
+            {
+                await PainScaleService.CreateAsync(editingPainScale);
+            }
+
+            await LoadPainScales();
+            await JS.InvokeVoidAsync("alert", "Escala de dolor guardada correctamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarPainScale(int id)
+    {
+        try
+        {
+            await PainScaleService.DeleteAsync(id);
+            await LoadPainScales();
+            await JS.InvokeVoidAsync("alert", "Registro eliminado correctamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioPainScale()
+    {
+        return editingPainScale.PainMomentId > 0 &&
+               editingPainScale.ActionId > 0 &&
+               editingPainScale.ScaleId > 0;
+    }
+
+    private async Task GuardarEnfermedadActual()
+    {
+        isSaving = true;
+        try
+        {
+            currentIllness.MedicalCareId = currentMedicalCareId;
+
+            if (currentIllness.CurrentIllnessId > 0)
+            {
+                await CurrentIllnessService.UpdateAsync(currentIllness);
+            }
+            else
+            {
+                var result = await CurrentIllnessService.CreateAsync(currentIllness);
+                if (result != null)
+                {
+                    currentIllness.CurrentIllnessId = result.CurrentIllnessId;
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Enfermedad actual guardada correctamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+
+    private async Task LoadLocations()
+    {
+        try
+        {
+            locations = await LocationService.GetAllAsync() ?? new List<LocationDTO>();
+
+            if (!locations.Any())
+            {
+                await JS.InvokeVoidAsync("console.error", "No se pudieron cargar las ubicaciones (locations)");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading locations: {ex.Message}");
+            locations = new List<LocationDTO>();
+        }
+    }
+
+    private async Task LoadFisioterapiaLocationId()
+    {
+        try
+        {
+            if (locations == null || !locations.Any())
+            {
+                await JS.InvokeVoidAsync("console.error", "La lista de locations está vacía");
+                return;
+            }
+
+            var fisioterapiaLocation = locations.FirstOrDefault(l =>
+                l.Name.Contains("Fisioterapia", StringComparison.OrdinalIgnoreCase));
+
+            if (fisioterapiaLocation != null)
+            {
+                fisioterapiaLocationId = fisioterapiaLocation.Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al cargar la ubicación de Fisioterapia: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        try
+        {
+            var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync() ?? new List<HealthProfessionalDTO>();
+
+            fisioterapeutas = allProfessionals
+                .Where(p => p.NameTypeProfessional?.Contains("Fisioterapia", StringComparison.OrdinalIgnoreCase) == true ||
+                           p.NameTypeProfessional?.Contains("Fisioterapeuta", StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+
+            if (!fisioterapeutas.Any())
+            {
+                fisioterapeutas = allProfessionals.Take(5).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading health professionals:", ex.Message);
+            fisioterapeutas = new List<HealthProfessionalDTO>();
+        }
+    }
+
+    private async Task LoadLugaresAtencion()
+    {
+        try
+        {
+            lugaresAtencion = await PlaceService.GetAllPlacesAsync() ?? new List<PlaceOfAttentionDTO>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading places: {ex.Message}");
+            lugaresAtencion = new List<PlaceOfAttentionDTO>();
+        }
+    }
+
+    private async Task AssignCurrentProfessional()
+    {
+        try
+        {
+            var currentUser = await AuthorizationService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                currentProfessional = fisioterapeutas.FirstOrDefault(hp =>
+                    hp.HealthProfessionalId == currentUser.PersonId)
+                    ?? fisioterapeutas.FirstOrDefault(hp =>
+                        hp.RegistrationNumber == currentUser.RegistrationNumber);
+
+                if (currentProfessional != null)
+                {
+                    selectedHealthProfessionalId = currentProfessional.HealthProfessionalId;
+                    StateHasChanged();
+                }
+                else
+                {
+                    selectedHealthProfessionalId = currentUser.PersonId ?? 0;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error assigning professional:", ex.Message);
+        }
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               selectedHealthProfessionalId > 0 &&
+               !string.IsNullOrWhiteSpace(motivoConsulta);
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task LoadExistingData()
+    {
+        if (MedicalCare == null) return;
+
+        selectedPatientId = MedicalCare.PatientId;
+        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId;
+        lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
+        selectedHistoryNumber = MedicalCare.NamePatient ?? "";
+
+        var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+        existingReasonForConsultation = existingReasons?.FirstOrDefault();
+        if (existingReasonForConsultation != null)
+        {
+            motivoConsulta = existingReasonForConsultation.Description ?? "";
+        }
+
+        var existingIllness = await CurrentIllnessService.GetByMedicalCareIdAsync(currentMedicalCareId);
+        if (existingIllness != null)
+        {
+            currentIllness = existingIllness;
+        }
+
+        if (MedicalCare.PainScales != null && MedicalCare.PainScales.Any())
+        {
+            painScales = MedicalCare.PainScales;
+            await JS.InvokeVoidAsync("console.log", $"Loaded {painScales.Count} pain scales from MedicalCare DTO");
+            RefreshPainScaleTable();
+        }
+        else
+        {
+            // If not in DTO, try loading from service
+            await LoadPainScales();
+        }
+
+        StateHasChanged();
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task GuardarDatosPaciente()
+    {
+        isSaving = true;
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
+
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar al fisioterapeuta. Por favor, contacte con soporte.");
+                return;
+            }
+
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            {
+                MedicalCare.LocationId = fisioterapiaLocationId;
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    return;
+                }
+
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                var medicalCareDto = new MedicalCareDTO
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = selectedHealthProfessionalId,
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = fisioterapiaLocationId,
+                        CareDate = DateTime.Now
+                    };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención de fisioterapia: {result.Error}");
+                    return;
+                }
+
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
+                    };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con la evaluación del paciente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task FinalizarAtencionFisioterapia()
+    {
+        isSaving = true;
+        try
+        {
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención de fisioterapia válida para finalizar.");
+                return;
+            }
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención de fisioterapia finalizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

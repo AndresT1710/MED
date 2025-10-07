@@ -64,6 +64,14 @@ namespace SMED.BackEnd.Repositories.Implementations
             await _context.SaveChangesAsync();
             return true;
         }
+        public async Task<CurrentIllnessDTO?> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            var entity = await _context.CurrentIllnesses
+                .FirstOrDefaultAsync(ci => ci.MedicalCareId == medicalCareId);
+
+            return entity != null ? MapToDto(entity) : null;
+        }
+
 
         // =========================
         // 🔹 Mapeos

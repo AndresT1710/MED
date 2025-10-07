@@ -58,8 +58,12 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                var locations = await GetAllAsync();
-                return locations?.FirstOrDefault(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                var response = await _httpClient.GetAsync($"api/Location/byname/{name}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<LocationDTO>();
+                }
+                return null;
             }
             catch (Exception ex)
             {
@@ -70,16 +74,10 @@ namespace SMED.FrontEnd.Services
 
         public async Task<int?> GetLocationIdByNameAsync(string name)
         {
-            try
-            {
-                var location = await GetByNameAsync(name);
-                return location?.Id;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener ID de ubicación por nombre: {Name}", name);
-                return null;
-            }
+            var location = await GetByNameAsync(name);
+            return location?.Id;
         }
+
+
     }
 }

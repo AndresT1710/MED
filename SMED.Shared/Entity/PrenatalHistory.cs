@@ -11,6 +11,7 @@ namespace SMED.Shared.Entity
     public class PrenatalHistory
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PrenatalHistoryId { get; set; }
 
         [StringLength(100)]

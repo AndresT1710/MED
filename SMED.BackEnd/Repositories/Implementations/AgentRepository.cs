@@ -1,4 +1,4 @@
-﻿using SGIS.Models;
+using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;

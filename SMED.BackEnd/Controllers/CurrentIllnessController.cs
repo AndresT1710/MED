@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
@@ -8,9 +8,9 @@ namespace SMED.BackEnd.Controllers
     [Route("api/[controller]")]
     public class CurrentIllnessController : ControllerBase
     {
-        private readonly IRepository<CurrentIllnessDTO, int> _repository;
+        private readonly CurrentIllnessRepository _repository;
 
-        public CurrentIllnessController(IRepository<CurrentIllnessDTO, int> repository)
+        public CurrentIllnessController(CurrentIllnessRepository repository) 
         {
             _repository = repository;
         }
@@ -65,6 +65,17 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        // GET: api/CurrentIllness/ByMedicalCare/5
+        [HttpGet("ByMedicalCare/{medicalCareId}")]
+        public async Task<ActionResult<CurrentIllnessDTO>> GetByMedicalCareId(int medicalCareId)
+        {
+            var result = await _repository.GetByMedicalCareIdAsync(medicalCareId);
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
         }
     }
 }

@@ -222,8 +222,8 @@
         try
         {
             var result = await MedicalCareService.GetPhysiotherapyCareAsync();
+            await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} physiotherapy records");
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
-            totalMedicalCareCount = allMedicalCareList.Count;
 
             ApplyFilters();
         }
@@ -508,7 +508,8 @@
     private async Task OnMedicalCareSaved(MedicalCareDTO savedMedicalCare)
     {
         showForm = false;
-        await LoadPhysiotherapyCareData(); // Cambiado aquí también
+        await LoadPhysiotherapyCareData();
+        await InvokeAsync(StateHasChanged);
 
         var message = savedMedicalCare.CareId == 0
             ? "Atención de fisioterapia creada exitosamente"

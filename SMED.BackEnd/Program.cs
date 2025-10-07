@@ -185,6 +185,8 @@ builder.Services.AddScoped<IRepository<ViewDTO, int>, ViewRepository>();
 builder.Services.AddScoped<ViewRepository>();
 builder.Services.AddScoped<AgentRepository>();
 builder.Services.AddScoped<IRepository<AgentDTO, int>, AgentRepository>();
+builder.Services.AddScoped<CurrentIllnessRepository>();
+
 
 
 // 4. Authentication

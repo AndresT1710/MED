@@ -119,6 +119,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
+                @if (IsTreatmentTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -1804,6 +1808,43 @@
         return diagnosisList.Any();
     }
 
+
+    //Codigo para tab diferente  Enfermedad/Tratamiento
+    private bool IsTreatmentTabComplete()
+    {
+        try
+        {
+            // Si no hay diagnósticos, no puede haber tratamientos completos
+            if (!diagnosisList.Any()) return false;
+
+            // Verificar si hay algún tratamiento farmacológico registrado
+            if (pharmacologicalList.Any()) return true;
+
+            // Verificar si hay tratamiento no farmacológico
+            if (nonPharmacologicalList.Any(n => !string.IsNullOrWhiteSpace(n.Description))) return true;
+
+            // Verificar si hay indicaciones
+            if (currentIndication != null && !string.IsNullOrWhiteSpace(currentIndication.Description)) return true;
+
+            // También verificar el contenido actual en los ContainerBox1 (por si no se ha guardado aún)
+            if (!string.IsNullOrWhiteSpace(nonPharmacologicalContent) || !string.IsNullOrWhiteSpace(indicationsContent))
+                return true;
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // En caso de error, asumir que no está completo
+            Console.WriteLine($"Error checking treatment completion: {ex.Message}");
+            return false;
+        }
+    }
+
+
+
+
+
+
     private bool IsReferralTabComplete()
     {
         return referralsList.Any();
@@ -1964,6 +2005,9 @@
         diagnosisList = await MedicalDiagnosisService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshDiagnosisTable();
 
+        // cargar tratamientos existentes
+        await LoadExistingTreatments();
+
         // Cargar derivaciones existentes
         referralsList = await MedicalReferralService.GetByMedicalCareIdAsync(MedicalCare.CareId);
         await RefreshReferralsTable();
@@ -1973,6 +2017,86 @@
         await RefreshEvolutionsTable();
 
         StateHasChanged();
+    }
+
+    // ============================================================================
+    // MÉTODO PARA CARGAR TRATAMIENTOS EXISTENTES AL EDITAR
+    // ============================================================================
+    private async Task LoadExistingTreatments()
+    {
+        try
+        {
+            Console.WriteLine("LoadExistingTreatments - Cargando tratamientos existentes...");
+
+            // Limpiar listas existentes
+            pharmacologicalList.Clear();
+            nonPharmacologicalList.Clear();
+            indicationsContent = "";
+            nonPharmacologicalContent = "";
+            currentIndication = null;
+
+            // Si no hay diagnósticos, no hay tratamientos que cargar
+            if (!diagnosisList.Any())
+            {
+                Console.WriteLine("LoadExistingTreatments - No hay diagnósticos, no se cargan tratamientos");
+                return;
+            }
+
+            // Cargar tratamientos farmacológicos para TODOS los diagnósticos
+            foreach (var diagnosis in diagnosisList)
+            {
+                var pharmaTreatments = await PharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (pharmaTreatments != null && pharmaTreatments.Any())
+                {
+                    pharmacologicalList.AddRange(pharmaTreatments);
+                    Console.WriteLine($"LoadExistingTreatments - Cargados {pharmaTreatments.Count()} tratamientos farmacológicos para diagnóstico {diagnosis.Id}");
+                }
+            }
+
+            // Cargar tratamientos no farmacológicos para TODOS los diagnósticos
+            foreach (var diagnosis in diagnosisList)
+            {
+                var nonPharmaTreatments = await NonPharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (nonPharmaTreatments != null && nonPharmaTreatments.Any())
+                {
+                    nonPharmacologicalList.AddRange(nonPharmaTreatments);
+
+                    // Tomar el contenido del primer tratamiento no farmacológico si existe
+                    var firstNonPharma = nonPharmaTreatments.FirstOrDefault();
+                    if (firstNonPharma != null && !string.IsNullOrWhiteSpace(firstNonPharma.Description))
+                    {
+                        nonPharmacologicalContent = firstNonPharma.Description;
+                    }
+
+                    Console.WriteLine($"LoadExistingTreatments - Cargados {nonPharmaTreatments.Count()} tratamientos no farmacológicos para diagnóstico {diagnosis.Id}");
+                }
+            }
+
+            // Cargar indicaciones para TODOS los diagnósticos (tomamos el primero que encuentre)
+            foreach (var diagnosis in diagnosisList)
+            {
+                var indication = await IndicationsService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (indication != null && !string.IsNullOrWhiteSpace(indication.Description))
+                {
+                    currentIndication = indication;
+                    indicationsContent = indication.Description;
+                    Console.WriteLine($"LoadExistingTreatments - Cargadas indicaciones para diagnóstico {diagnosis.Id}");
+                    break; // Solo necesitamos uno
+                }
+            }
+
+            Console.WriteLine($"LoadExistingTreatments - Resumen final: pharmacologicalList={pharmacologicalList.Count}, nonPharmacologicalList={nonPharmacologicalList.Count}, indicationsContent={(string.IsNullOrEmpty(indicationsContent) ? "vacío" : "contenido")}");
+
+            // Actualizar las filas de la tabla farmacológica
+            UpdatePharmacologicalRows();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LoadExistingTreatments - Error: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"Error loading existing treatments: {ex.Message}");
+        }
     }
 
 
@@ -3471,12 +3595,38 @@
         }
     }
 
-    private void CloseTreatmentModal()
+    private async void CloseTreatmentModal()
     {
-        showTreatmentModal = false;
-        selectedDiagnosisForTreatment = null;
-        currentTreatmentId = 0;
-        ClearTreatmentData();
+        try
+        {
+            Console.WriteLine("CloseTreatmentModal - Guardando datos antes de cerrar...");
+
+            // Guardar todos los datos pendientes antes de cerrar
+            if (!string.IsNullOrWhiteSpace(nonPharmacologicalContent))
+            {
+                await SaveNonPharmacologicalTreatment();
+            }
+
+            if (!string.IsNullOrWhiteSpace(indicationsContent))
+            {
+                await SaveIndications();
+            }
+
+            // Cerrar el modal
+            showTreatmentModal = false;
+            selectedDiagnosisForTreatment = null;
+            currentTreatmentId = 0;
+
+            Console.WriteLine("CloseTreatmentModal - Modal cerrado, forzando refresh");
+
+            // Forzar actualización
+            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error en CloseTreatmentModal: {ex.Message}");
+        }
     }
 
     private async Task LoadTreatmentForDiagnosis(int diagnosisId)
@@ -3489,6 +3639,8 @@
             await LoadPharmacologicalTreatments(diagnosisId);
             await LoadNonPharmacologicalTreatment(diagnosisId);
             await LoadIndications(diagnosisId);
+
+            Console.WriteLine($"LoadTreatmentForDiagnosis - pharmacologicalList count: {pharmacologicalList.Count}");
         }
         catch (Exception ex)
         {
@@ -3496,11 +3648,23 @@
         }
     }
 
+    private async Task ReloadAllTreatments()
+    {
+        if (selectedDiagnosisForTreatment != null)
+        {
+            await LoadTreatmentForDiagnosis(selectedDiagnosisForTreatment.Id);
+            StateHasChanged();
+        }
+    }
+
     private async Task LoadPharmacologicalTreatments(int diagnosisId)
     {
         try
         {
-            pharmacologicalList = await PharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosisId) ?? new List<PharmacologicalTreatmentDTO>();
+            var treatments = await PharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosisId);
+            pharmacologicalList = treatments?.ToList() ?? new List<PharmacologicalTreatmentDTO>();
+
+            Console.WriteLine($"LoadPharmacologicalTreatments - Loaded {pharmacologicalList.Count} treatments for diagnosis {diagnosisId}");
             UpdatePharmacologicalRows();
         }
         catch (Exception ex)
@@ -3576,6 +3740,7 @@
                     nonPharmacologicalList.Add(createResult.Data);
                 }
             }
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -3630,6 +3795,7 @@
             {
                 await JS.InvokeVoidAsync("console.error", $"Error al guardar indicaciones: {result.Error}");
             }
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -3639,14 +3805,16 @@
 
     private void ClearTreatmentData()
     {
-        pharmacologicalList.Clear();
+        // NO limpiar pharmacologicalList, nonPharmacologicalList, etc.
+        // Solo limpiar los datos temporales de edición
         pharmacologicalRows.Clear();
         pharmacologicalIds.Clear();
-        nonPharmacologicalContent = "";
-        indicationsContent = "";
         currentPharmacological = new PharmacologicalTreatmentDTO();
         pharmacologicalErrors.Clear();
         pharmacologicalFormError = "";
+
+        // NO hacer: pharmacologicalList.Clear();
+        // NO hacer: nonPharmacologicalList.Clear();
     }
 
     private void UpdatePharmacologicalRows()
@@ -3716,6 +3884,7 @@
                 pharmacologicalList.RemoveAll(p => p.Id == id);
                 UpdatePharmacologicalRows();
                 await JS.InvokeVoidAsync("alert", "Medicamento eliminado correctamente.");
+                StateHasChanged();
             }
             else
             {
@@ -3785,6 +3954,8 @@
             currentPharmacological = new PharmacologicalTreatmentDTO();
             pharmacologicalErrors.Clear();
             pharmacologicalFormError = "";
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {

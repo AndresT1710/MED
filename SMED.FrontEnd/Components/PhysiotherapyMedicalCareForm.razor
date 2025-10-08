@@ -19,6 +19,13 @@
 @inject EdemaService EdemaService
 @inject StatusService StatusService
 @inject SwellingService SwellingService
+@inject OsteoarticularEvaluationService OsteoarticularEvaluationService
+@inject JointConditionService JointConditionService
+@inject JointRangeOfMotionService JointRangeOfMotionService
+@inject MedicalEvaluationService MedicalEvaluationService
+@inject TypeOfMedicalEvaluationService TypeOfMedicalEvaluationService
+@inject MedicalEvaluationPositionService MedicalEvaluationPositionService
+@inject MedicalEvaluationMembersService MedicalEvaluationMembersService
 
 
 
@@ -89,6 +96,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-bone me-2"></i>Articular/Muscular
+                @if (IsJointMuscularComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -569,9 +580,103 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para la evaluación articular y muscular.
+                        <!-- Evaluación Osteoarticular -->
+                        <div class="mb-4">
+                            <EditableTable Title="Evaluación Osteoarticular"
+                                           ColumnHeaders="@osteoarticularHeaders"
+                                           Rows="@osteoarticularRows"
+                                           RowIds="@osteoarticularIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarOsteoarticular"
+                                           OnEditRequested="@EditarOsteoarticular"
+                                           OnDeleteRequested="@EliminarOsteoarticular"
+                                           OnSaveRequested="@GuardarOsteoarticular"
+                                           IsValidForm="@ValidarFormularioOsteoarticular">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Estado Articular *</label>
+                                            <select class="form-select" @bind="editingOsteoarticular.JointConditionId">
+                                                <option value="0">Seleccione un estado articular</option>
+                                                @foreach (var condition in jointConditions)
+                                                {
+                                                    <option value="@condition.JointConditionId">@condition.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Amplitud Articular *</label>
+                                            <select class="form-select" @bind="editingOsteoarticular.JointRangeOfMotionId">
+                                                <option value="0">Seleccione una amplitud</option>
+                                                @foreach (var motion in jointRangeOfMotions)
+                                                {
+                                                    <option value="@motion.JointRangeOfMotionId">@motion.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
+                        </div>
+
+                        <!-- Evaluación Articular/Muscular -->
+                        <div class="mt-4">
+                            <EditableTable Title="Evaluación Articular/Muscular"
+                                           ColumnHeaders="@medicalEvaluationHeaders"
+                                           Rows="@medicalEvaluationRows"
+                                           RowIds="@medicalEvaluationIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarMedicalEvaluation"
+                                           OnEditRequested="@EditarMedicalEvaluation"
+                                           OnDeleteRequested="@EliminarMedicalEvaluation"
+                                           OnSaveRequested="@GuardarMedicalEvaluation"
+                                           IsValidForm="@ValidarFormularioMedicalEvaluation">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tipo de Valoración *</label>
+                                            <select class="form-select" @bind="editingMedicalEvaluation.TypeOfMedicalEvaluationId">
+                                                <option value="0">Seleccione un tipo</option>
+                                                @foreach (var type in typeOfMedicalEvaluations)
+                                                {
+                                                    <option value="@type.TypeOfMedicalEvaluationId">@type.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Posición Corporal *</label>
+                                            <select class="form-select" @bind="editingMedicalEvaluation.MedicalEvaluationPositionId">
+                                                <option value="0">Seleccione una posición</option>
+                                                @foreach (var position in medicalEvaluationPositions)
+                                                {
+                                                    <option value="@position.MedicalEvaluationPositionId">@position.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Ubicación *</label>
+                                            <select class="form-select" @bind="editingMedicalEvaluation.MedicalEvaluationMembersId">
+                                                <option value="0">Seleccione una ubicación</option>
+                                                @foreach (var member in medicalEvaluationMembers)
+                                                {
+                                                    <option value="@member.MedicalEvaluationMembersId">@member.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Observación</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingMedicalEvaluation.Description"
+                                                      rows="3"
+                                                      placeholder="Ingrese observaciones adicionales..."></textarea>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -593,6 +698,7 @@
                 </div>
             </div>
         </div>
+
 
         <div class="tab-pane @(activeTab == "neuromuscular" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -799,6 +905,25 @@
     private List<List<string>> skinEvaluationRows = new();
     private List<int> skinEvaluationIds = new();
 
+    // Variables para Evaluación Osteoarticular
+    private OsteoarticularEvaluationDTO editingOsteoarticular = new OsteoarticularEvaluationDTO();
+    private List<OsteoarticularEvaluationDTO> osteoarticularEvaluations = new();
+    private List<JointConditionDTO> jointConditions = new();
+    private List<JointRangeOfMotionDTO> jointRangeOfMotions = new();
+    private List<string> osteoarticularHeaders = new() { "Estado Articular", "Amplitud Articular" };
+    private List<List<string>> osteoarticularRows = new();
+    private List<int> osteoarticularIds = new();
+
+    // Variables para Evaluación Articular/Muscular
+    private MedicalEvaluationDTO editingMedicalEvaluation = new MedicalEvaluationDTO();
+    private List<MedicalEvaluationDTO> medicalEvaluations = new();
+    private List<TypeOfMedicalEvaluationDTO> typeOfMedicalEvaluations = new();
+    private List<MedicalEvaluationPositionDTO> medicalEvaluationPositions = new();
+    private List<MedicalEvaluationMembersDTO> medicalEvaluationMembers = new();
+    private List<string> medicalEvaluationHeaders = new() { "Tipo de Valoración", "Posición Corporal", "Ubicación", "Observación" };
+    private List<List<string>> medicalEvaluationRows = new();
+    private List<int> medicalEvaluationIds = new();
+
 
 
     private List<HealthProfessionalDTO> fisioterapeutas = new();
@@ -816,6 +941,7 @@
 
         await LoadPainScaleData();
         await LoadSkinEvaluationData();
+        await LoadJointMuscularData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -1200,6 +1326,293 @@
     }
 
 
+    //Metodos para evaluación Osteoarticular
+    private async Task LoadJointMuscularData()
+    {
+        try
+        {
+            // Cargar todos los catálogos en paralelo
+            var jointConditionTask = JointConditionService.GetAllAsync();
+            var jointMotionTask = JointRangeOfMotionService.GetAllAsync();
+            var typeEvaluationTask = TypeOfMedicalEvaluationService.GetAllAsync();
+            var positionTask = MedicalEvaluationPositionService.GetAllAsync();
+            var membersTask = MedicalEvaluationMembersService.GetAllAsync();
+
+            await Task.WhenAll(jointConditionTask, jointMotionTask, typeEvaluationTask, positionTask, membersTask);
+
+            jointConditions = await jointConditionTask ?? new List<JointConditionDTO>();
+            jointRangeOfMotions = await jointMotionTask ?? new List<JointRangeOfMotionDTO>();
+            typeOfMedicalEvaluations = await typeEvaluationTask ?? new List<TypeOfMedicalEvaluationDTO>();
+            medicalEvaluationPositions = await positionTask ?? new List<MedicalEvaluationPositionDTO>();
+            medicalEvaluationMembers = await membersTask ?? new List<MedicalEvaluationMembersDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded joint muscular catalogs - Conditions: {jointConditions.Count}, Motions: {jointRangeOfMotions.Count}, Types: {typeOfMedicalEvaluations.Count}, Positions: {medicalEvaluationPositions.Count}, Members: {medicalEvaluationMembers.Count}");
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadOsteoarticularEvaluations();
+                await LoadMedicalEvaluations();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading joint muscular data: {ex.Message}");
+
+            // Inicializar listas vacías
+            jointConditions = new List<JointConditionDTO>();
+            jointRangeOfMotions = new List<JointRangeOfMotionDTO>();
+            typeOfMedicalEvaluations = new List<TypeOfMedicalEvaluationDTO>();
+            medicalEvaluationPositions = new List<MedicalEvaluationPositionDTO>();
+            medicalEvaluationMembers = new List<MedicalEvaluationMembersDTO>();
+        }
+    }
+
+    private async Task LoadOsteoarticularEvaluations()
+    {
+        try
+        {
+            osteoarticularEvaluations = await OsteoarticularEvaluationService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<OsteoarticularEvaluationDTO>();
+            RefreshOsteoarticularTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading osteoarticular evaluations: {ex.Message}");
+            osteoarticularEvaluations = new List<OsteoarticularEvaluationDTO>();
+            RefreshOsteoarticularTable();
+        }
+    }
+
+    private void RefreshOsteoarticularTable()
+    {
+        osteoarticularRows.Clear();
+        osteoarticularIds.Clear();
+
+        foreach (var oe in osteoarticularEvaluations)
+        {
+            var conditionName = jointConditions.FirstOrDefault(jc => jc.JointConditionId == oe.JointConditionId)?.Name ?? "-";
+            var motionName = jointRangeOfMotions.FirstOrDefault(jrm => jrm.JointRangeOfMotionId == oe.JointRangeOfMotionId)?.Name ?? "-";
+
+            osteoarticularRows.Add(new List<string> { conditionName, motionName });
+            osteoarticularIds.Add(oe.OsteoarticularEvaluationId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarOsteoarticular()
+    {
+        editingOsteoarticular = new OsteoarticularEvaluationDTO
+        {
+            MedicalCareId = currentMedicalCareId
+        };
+    }
+
+    private void EditarOsteoarticular(int id)
+    {
+        var evaluation = osteoarticularEvaluations.FirstOrDefault(oe => oe.OsteoarticularEvaluationId == id);
+        if (evaluation != null)
+        {
+            editingOsteoarticular = new OsteoarticularEvaluationDTO
+            {
+                OsteoarticularEvaluationId = evaluation.OsteoarticularEvaluationId,
+                MedicalCareId = evaluation.MedicalCareId,
+                JointConditionId = evaluation.JointConditionId,
+                JointRangeOfMotionId = evaluation.JointRangeOfMotionId
+            };
+        }
+    }
+
+    private async Task GuardarOsteoarticular()
+    {
+        try
+        {
+            if (editingOsteoarticular.OsteoarticularEvaluationId > 0)
+            {
+                var updateResult = await OsteoarticularEvaluationService.UpdateAsync(editingOsteoarticular);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await OsteoarticularEvaluationService.CreateAsync(editingOsteoarticular);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadOsteoarticularEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación osteoarticular guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarOsteoarticular(int id)
+    {
+        try
+        {
+            var deleteResult = await OsteoarticularEvaluationService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadOsteoarticularEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación osteoarticular eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioOsteoarticular()
+    {
+        return editingOsteoarticular.JointConditionId > 0 &&
+               editingOsteoarticular.JointRangeOfMotionId > 0;
+    }
+
+
+
+    //metodos para evaluacion articular/muscular
+
+    private async Task LoadMedicalEvaluations()
+    {
+        try
+        {
+            medicalEvaluations = await MedicalEvaluationService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<MedicalEvaluationDTO>();
+            RefreshMedicalEvaluationTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading medical evaluations: {ex.Message}");
+            medicalEvaluations = new List<MedicalEvaluationDTO>();
+            RefreshMedicalEvaluationTable();
+        }
+    }
+
+    private void RefreshMedicalEvaluationTable()
+    {
+        medicalEvaluationRows.Clear();
+        medicalEvaluationIds.Clear();
+
+        foreach (var me in medicalEvaluations)
+        {
+            var typeName = typeOfMedicalEvaluations.FirstOrDefault(t => t.TypeOfMedicalEvaluationId == me.TypeOfMedicalEvaluationId)?.Name ?? "-";
+            var positionName = medicalEvaluationPositions.FirstOrDefault(p => p.MedicalEvaluationPositionId == me.MedicalEvaluationPositionId)?.Name ?? "-";
+            var memberName = medicalEvaluationMembers.FirstOrDefault(m => m.MedicalEvaluationMembersId == me.MedicalEvaluationMembersId)?.Name ?? "-";
+            var observation = me.Description ?? "-";
+
+            medicalEvaluationRows.Add(new List<string> { typeName, positionName, memberName, observation });
+            medicalEvaluationIds.Add(me.MedicalEvaluationId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarMedicalEvaluation()
+    {
+        editingMedicalEvaluation = new MedicalEvaluationDTO
+        {
+            MedicalCareId = currentMedicalCareId
+        };
+    }
+
+    private void EditarMedicalEvaluation(int id)
+    {
+        var evaluation = medicalEvaluations.FirstOrDefault(me => me.MedicalEvaluationId == id);
+        if (evaluation != null)
+        {
+            editingMedicalEvaluation = new MedicalEvaluationDTO
+            {
+                MedicalEvaluationId = evaluation.MedicalEvaluationId,
+                MedicalCareId = evaluation.MedicalCareId,
+                TypeOfMedicalEvaluationId = evaluation.TypeOfMedicalEvaluationId,
+                MedicalEvaluationPositionId = evaluation.MedicalEvaluationPositionId,
+                MedicalEvaluationMembersId = evaluation.MedicalEvaluationMembersId,
+                Description = evaluation.Description
+            };
+        }
+    }
+
+    private async Task GuardarMedicalEvaluation()
+    {
+        try
+        {
+            if (editingMedicalEvaluation.MedicalEvaluationId > 0)
+            {
+                var updateResult = await MedicalEvaluationService.UpdateAsync(editingMedicalEvaluation);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await MedicalEvaluationService.CreateAsync(editingMedicalEvaluation);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadMedicalEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación articular/muscular guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarMedicalEvaluation(int id)
+    {
+        try
+        {
+            var deleteResult = await MedicalEvaluationService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadMedicalEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación articular/muscular eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioMedicalEvaluation()
+    {
+        return editingMedicalEvaluation.TypeOfMedicalEvaluationId > 0 &&
+               editingMedicalEvaluation.MedicalEvaluationPositionId > 0 &&
+               editingMedicalEvaluation.MedicalEvaluationMembersId > 0;
+    }
+
+    private bool IsJointMuscularComplete()
+    {
+        return (osteoarticularEvaluations != null && osteoarticularEvaluations.Any()) ||
+               (medicalEvaluations != null && medicalEvaluations.Any());
+    }
+
 
 
     private async Task LoadLocations()
@@ -1375,7 +1788,6 @@
             await LoadPainScales();
         }
 
-
         try
         {
             // Cargar los catálogos primero
@@ -1394,6 +1806,17 @@
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading skin evaluations in LoadExistingData: {ex.Message}");
             skinEvaluations = new List<SkinEvaluationDTO>();
+        }
+
+
+        try
+        {
+            await LoadOsteoarticularEvaluations();
+            await LoadMedicalEvaluations();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading joint muscular evaluations in LoadExistingData: {ex.Message}");
         }
 
         StateHasChanged();

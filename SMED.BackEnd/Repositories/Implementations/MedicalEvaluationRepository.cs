@@ -40,7 +40,12 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.MedicalEvaluations.FindAsync(dto.MedicalEvaluationId);
             if (entity == null) return null;
 
+
             entity.Description = dto.Description;
+            entity.MedicalCareId = dto.MedicalCareId;
+            entity.TypeOfMedicalEvaluationId = dto.TypeOfMedicalEvaluationId;
+            entity.MedicalEvaluationPositionId = dto.MedicalEvaluationPositionId;
+            entity.MedicalEvaluationMembersId = dto.MedicalEvaluationMembersId;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -57,14 +62,18 @@ namespace SMED.BackEnd.Repositories.Implementations
         }
 
         // =========================
-        // 🔹 Mapeos
+        // 🔹 MAPEOS ACTUALIZADOS
         // =========================
         private MedicalEvaluationDTO MapToDto(MedicalEvaluation entity)
         {
             return new MedicalEvaluationDTO
             {
                 MedicalEvaluationId = entity.MedicalEvaluationId,
-                Description = entity.Description
+                Description = entity.Description,
+                MedicalCareId = entity.MedicalCareId,
+                TypeOfMedicalEvaluationId = entity.TypeOfMedicalEvaluationId,
+                MedicalEvaluationPositionId = entity.MedicalEvaluationPositionId,
+                MedicalEvaluationMembersId = entity.MedicalEvaluationMembersId
             };
         }
 
@@ -73,7 +82,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             return new MedicalEvaluation
             {
                 MedicalEvaluationId = dto.MedicalEvaluationId,
-                Description = dto.Description
+                Description = dto.Description,
+                MedicalCareId = dto.MedicalCareId,
+                TypeOfMedicalEvaluationId = dto.TypeOfMedicalEvaluationId,
+                MedicalEvaluationPositionId = dto.MedicalEvaluationPositionId,
+                MedicalEvaluationMembersId = dto.MedicalEvaluationMembersId
             };
         }
     }

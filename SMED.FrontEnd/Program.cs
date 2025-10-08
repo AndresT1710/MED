@@ -118,6 +118,13 @@ builder.Services.AddScoped<ColorService>();
 builder.Services.AddScoped<EdemaService>();
 builder.Services.AddScoped<StatusService>();
 builder.Services.AddScoped<SwellingService>();
+builder.Services.AddScoped<OsteoarticularEvaluationService>();
+builder.Services.AddScoped<JointConditionService>();
+builder.Services.AddScoped<JointRangeOfMotionService>();
+builder.Services.AddScoped<MedicalEvaluationService>();
+builder.Services.AddScoped<TypeOfMedicalEvaluationService>();
+builder.Services.AddScoped<MedicalEvaluationPositionService>();
+builder.Services.AddScoped<MedicalEvaluationMembersService>();
 
 
 builder.Services.AddLogging();

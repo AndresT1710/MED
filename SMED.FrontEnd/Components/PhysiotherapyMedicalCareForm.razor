@@ -26,6 +26,10 @@
 @inject TypeOfMedicalEvaluationService TypeOfMedicalEvaluationService
 @inject MedicalEvaluationPositionService MedicalEvaluationPositionService
 @inject MedicalEvaluationMembersService MedicalEvaluationMembersService
+@inject NeuromuscularEvaluationService NeuromuscularService
+@inject ShadeService ShadeService
+@inject TrophismService TrophismService
+@inject StrengthService StrengthService
 
 
 
@@ -109,6 +113,11 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-brain me-2"></i>Neuromuscular
+
+                @if (IsNeuromuscularComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -711,10 +720,53 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para la evaluación neuromuscular.
-                        </div>
+                        <EditableTable Title="Evaluación Neuromuscular"
+                                       ColumnHeaders="@neuromuscularHeaders"
+                                       Rows="@neuromuscularRows"
+                                       RowIds="@neuromuscularIds"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       OnAddRequested="@AbrirModalAgregarNeuromuscular"
+                                       OnEditRequested="@EditarNeuromuscular"
+                                       OnDeleteRequested="@EliminarNeuromuscular"
+                                       OnSaveRequested="@GuardarNeuromuscular"
+                                       IsValidForm="@ValidarFormularioNeuromuscular">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tono *</label>
+                                        <select class="form-select" @bind="editingNeuromuscular.ShadeId">
+                                            <option value="0">Seleccione un tono</option>
+                                            @foreach (var shade in shades)
+                                            {
+                                                <option value="@shade.ShadeId">@shade.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Trofismo *</label>
+                                        <select class="form-select" @bind="editingNeuromuscular.TrophismId">
+                                            <option value="0">Seleccione un trofismo</option>
+                                            @foreach (var trophism in trophisms)
+                                            {
+                                                <option value="@trophism.TrophismId">@trophism.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fuerza *</label>
+                                        <select class="form-select" @bind="editingNeuromuscular.StrengthId">
+                                            <option value="0">Seleccione una fuerza</option>
+                                            @foreach (var strength in strengths)
+                                            {
+                                                <option value="@strength.StrengthId">@strength.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("jointMuscular"))">
@@ -735,6 +787,7 @@
                 </div>
             </div>
         </div>
+
 
         <div class="tab-pane @(activeTab == "postural" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -925,6 +978,17 @@
     private List<int> medicalEvaluationIds = new();
 
 
+    // Variables para Neuromuscular Evaluation
+    private NeuromuscularEvaluationDTO editingNeuromuscular = new NeuromuscularEvaluationDTO();
+    private List<NeuromuscularEvaluationDTO> neuromuscularEvaluations = new();
+    private List<ShadeDTO> shades = new();
+    private List<TrophismDTO> trophisms = new();
+    private List<StrengthDTO> strengths = new();
+    private List<string> neuromuscularHeaders = new() { "Tono", "Trofismo", "Fuerza" };
+    private List<List<string>> neuromuscularRows = new();
+    private List<int> neuromuscularIds = new();
+
+
 
     private List<HealthProfessionalDTO> fisioterapeutas = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
@@ -942,6 +1006,7 @@
         await LoadPainScaleData();
         await LoadSkinEvaluationData();
         await LoadJointMuscularData();
+        await LoadNeuromuscularData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -1614,6 +1679,169 @@
     }
 
 
+    //metodos para neuromuscular
+
+    private async Task LoadNeuromuscularData()
+    {
+        try
+        {
+            // Cargar todos los catálogos en paralelo
+            var shadeTask = ShadeService.GetAllAsync();
+            var trophismTask = TrophismService.GetAllAsync();
+            var strengthTask = StrengthService.GetAllAsync();
+
+            await Task.WhenAll(shadeTask, trophismTask, strengthTask);
+
+            shades = await shadeTask ?? new List<ShadeDTO>();
+            trophisms = await trophismTask ?? new List<TrophismDTO>();
+            strengths = await strengthTask ?? new List<StrengthDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded neuromuscular catalogs - Shades: {shades.Count}, Trophisms: {trophisms.Count}, Strengths: {strengths.Count}");
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadNeuromuscularEvaluations();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading neuromuscular data: {ex.Message}");
+
+            // Inicializar listas vacías
+            shades = new List<ShadeDTO>();
+            trophisms = new List<TrophismDTO>();
+            strengths = new List<StrengthDTO>();
+        }
+    }
+
+    private async Task LoadNeuromuscularEvaluations()
+    {
+        try
+        {
+            neuromuscularEvaluations = await NeuromuscularService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<NeuromuscularEvaluationDTO>();
+            RefreshNeuromuscularTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading neuromuscular evaluations: {ex.Message}");
+            neuromuscularEvaluations = new List<NeuromuscularEvaluationDTO>();
+            RefreshNeuromuscularTable();
+        }
+    }
+
+    private void RefreshNeuromuscularTable()
+    {
+        neuromuscularRows.Clear();
+        neuromuscularIds.Clear();
+
+        foreach (var ne in neuromuscularEvaluations)
+        {
+            var shadeName = shades.FirstOrDefault(s => s.ShadeId == ne.ShadeId)?.Name ?? "-";
+            var trophismName = trophisms.FirstOrDefault(t => t.TrophismId == ne.TrophismId)?.Name ?? "-";
+            var strengthName = strengths.FirstOrDefault(s => s.StrengthId == ne.StrengthId)?.Name ?? "-";
+
+            neuromuscularRows.Add(new List<string> { shadeName, trophismName, strengthName });
+            neuromuscularIds.Add(ne.NeuromuscularEvaluationId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarNeuromuscular()
+    {
+        editingNeuromuscular = new NeuromuscularEvaluationDTO
+        {
+            MedicalCareId = currentMedicalCareId
+        };
+    }
+
+    private void EditarNeuromuscular(int id)
+    {
+        var evaluation = neuromuscularEvaluations.FirstOrDefault(ne => ne.NeuromuscularEvaluationId == id);
+        if (evaluation != null)
+        {
+            editingNeuromuscular = new NeuromuscularEvaluationDTO
+            {
+                NeuromuscularEvaluationId = evaluation.NeuromuscularEvaluationId,
+                MedicalCareId = evaluation.MedicalCareId,
+                ShadeId = evaluation.ShadeId,
+                TrophismId = evaluation.TrophismId,
+                StrengthId = evaluation.StrengthId
+            };
+        }
+    }
+
+    private async Task GuardarNeuromuscular()
+    {
+        try
+        {
+            if (editingNeuromuscular.NeuromuscularEvaluationId > 0)
+            {
+                var updateResult = await NeuromuscularService.UpdateAsync(editingNeuromuscular);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await NeuromuscularService.CreateAsync(editingNeuromuscular);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadNeuromuscularEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación neuromuscular guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarNeuromuscular(int id)
+    {
+        try
+        {
+            var deleteResult = await NeuromuscularService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadNeuromuscularEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación neuromuscular eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioNeuromuscular()
+    {
+        return editingNeuromuscular.ShadeId > 0 &&
+               editingNeuromuscular.TrophismId > 0 &&
+               editingNeuromuscular.StrengthId > 0;
+    }
+
+    private bool IsNeuromuscularComplete()
+    {
+        return neuromuscularEvaluations != null && neuromuscularEvaluations.Any();
+    }
+
+
+
+
+
 
     private async Task LoadLocations()
     {
@@ -1790,10 +2018,10 @@
 
         try
         {
-            // Cargar los catálogos primero
+
             await LoadSkinEvaluationData();
 
-            // Luego cargar las evaluaciones específicas de esta atención médica
+
             var allSkinEvaluations = await SkinEvaluationService.GetAllAsync() ?? new List<SkinEvaluationDTO>();
             skinEvaluations = allSkinEvaluations
                 .Where(se => se.MedicalCareId == currentMedicalCareId)
@@ -1818,6 +2046,16 @@
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading joint muscular evaluations in LoadExistingData: {ex.Message}");
         }
+
+        try
+        {
+            await LoadNeuromuscularEvaluations();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading neuromuscular evaluations in LoadExistingData: {ex.Message}");
+        }
+
 
         StateHasChanged();
     }

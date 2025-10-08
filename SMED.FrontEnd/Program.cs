@@ -125,6 +125,11 @@ builder.Services.AddScoped<MedicalEvaluationService>();
 builder.Services.AddScoped<TypeOfMedicalEvaluationService>();
 builder.Services.AddScoped<MedicalEvaluationPositionService>();
 builder.Services.AddScoped<MedicalEvaluationMembersService>();
+builder.Services.AddScoped<NeuromuscularEvaluationService>();
+builder.Services.AddScoped<ShadeService>();
+builder.Services.AddScoped<TrophismService>();
+builder.Services.AddScoped<StrengthService>();
+
 
 
 builder.Services.AddLogging();

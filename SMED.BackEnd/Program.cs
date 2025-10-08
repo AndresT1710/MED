@@ -186,6 +186,8 @@ builder.Services.AddScoped<ViewRepository>();
 builder.Services.AddScoped<AgentRepository>();
 builder.Services.AddScoped<IRepository<AgentDTO, int>, AgentRepository>();
 builder.Services.AddScoped<CurrentIllnessRepository>();
+builder.Services.AddScoped<ComplementaryExamsRepository>();
+builder.Services.AddScoped<IRepository<ComplementaryExamsDTO, int>, ComplementaryExamsRepository>();
 
 
 

@@ -178,9 +178,10 @@ namespace SGIS.Models
         public DbSet<PosturalEvaluation> PosturalEvaluations { get; set; }
         public DbSet<View> Views { get; set; }
         public DbSet<Agent> Agents { get; set; }
+        public DbSet<ComplementaryExams> ComplementaryExams { get; set; }
 
 
-   
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

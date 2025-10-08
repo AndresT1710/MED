@@ -100,5 +100,9 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<PainScale> PainScales { get; set; } = new List<PainScale>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<ComplementaryExams> ComplementaryExams { get; set; } = new List<ComplementaryExams>();
+
+
     }
 }

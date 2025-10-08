@@ -14,7 +14,7 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ViewId { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public virtual ICollection<PosturalEvaluation> PosturalEvaluations { get; set; }
     }

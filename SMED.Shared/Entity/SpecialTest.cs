@@ -9,8 +9,8 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SpecialTestId { get; set; }
 
-        public string Test { get; set; }
-        public string Observations { get; set; }
+        public string? Test { get; set; }
+        public string? Observations { get; set; }
 
         public int ResultTypeId { get; set; }
         public int MedicalCareId { get; set; }

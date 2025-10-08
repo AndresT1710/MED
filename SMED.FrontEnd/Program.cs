@@ -129,6 +129,8 @@ builder.Services.AddScoped<NeuromuscularEvaluationService>();
 builder.Services.AddScoped<ShadeService>();
 builder.Services.AddScoped<TrophismService>();
 builder.Services.AddScoped<StrengthService>();
+builder.Services.AddScoped<PosturalEvaluationService>();
+builder.Services.AddScoped<ViewService>();
 
 
 

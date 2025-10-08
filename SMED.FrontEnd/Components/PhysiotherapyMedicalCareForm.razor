@@ -30,6 +30,8 @@
 @inject ShadeService ShadeService
 @inject TrophismService TrophismService
 @inject StrengthService StrengthService
+@inject PosturalEvaluationService PosturalEvaluationService
+@inject ViewService ViewService
 
 
 
@@ -127,6 +129,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-walking me-2"></i>Postural
+                @if (IsPosturalComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -800,10 +806,59 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para la evaluación postural.
-                        </div>
+                        <EditableTable Title="Evaluación Postural"
+                                       ColumnHeaders="@posturalHeaders"
+                                       Rows="@posturalRows"
+                                       RowIds="@posturalIds"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       OnAddRequested="@AbrirModalAgregarPostural"
+                                       OnEditRequested="@EditarPostural"
+                                       OnDeleteRequested="@EliminarPostural"
+                                       OnSaveRequested="@GuardarPostural"
+                                       IsValidForm="@ValidarFormularioPostural">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Vista *</label>
+                                        <select class="form-select" @bind="editingPostural.ViewId">
+                                            <option value="0">Seleccione una vista</option>
+                                            @foreach (var view in views)
+                                            {
+                                                <option value="@view.ViewId">@view.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Grado (%) *</label>
+                                        <input type="number"
+                                               class="form-control"
+                                               @bind="editingPostural.Grade"
+                                               step="0.1"
+                                               min="0"
+                                               max="100"
+                                               placeholder="0.0" />
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Observación</label>
+                                        <textarea class="form-control"
+                                                  @bind="editingPostural.Observation"
+                                                  rows="3"
+                                                  style="resize: vertical; min-height: 80px;"
+                                                  placeholder="Ingrese observaciones sobre la evaluación postural..."></textarea>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Alineación Corporal</label>
+                                        <textarea class="form-control"
+                                                  @bind="editingPostural.BodyAlignment"
+                                                  rows="3"
+                                                  style="resize: vertical; min-height: 80px;"
+                                                  placeholder="Describa la alineación corporal observada..."></textarea>
+                                    </div>
+                                </div>
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("neuromuscular"))">
@@ -989,6 +1044,15 @@
     private List<int> neuromuscularIds = new();
 
 
+    // Variables para Postural Evaluation
+    private PosturalEvaluationDTO editingPostural = new PosturalEvaluationDTO();
+    private List<PosturalEvaluationDTO> posturalEvaluations = new();
+    private List<ViewDTO> views = new();
+    private List<string> posturalHeaders = new() { "Vista", "Observación", "Alineación Corporal", "Grado" };
+    private List<List<string>> posturalRows = new();
+    private List<int> posturalIds = new();
+
+
 
     private List<HealthProfessionalDTO> fisioterapeutas = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
@@ -1007,6 +1071,7 @@
         await LoadSkinEvaluationData();
         await LoadJointMuscularData();
         await LoadNeuromuscularData();
+        await LoadPosturalData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -1839,10 +1904,163 @@
     }
 
 
+    //metodos para Postural
+    private async Task LoadPosturalData()
+    {
+        try
+        {
+            // Cargar el catálogo de vistas
+            views = await ViewService.GetAllAsync() ?? new List<ViewDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded postural catalogs - Views: {views.Count}");
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadPosturalEvaluations();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading postural data: {ex.Message}");
+
+            // Inicializar listas vacías
+            views = new List<ViewDTO>();
+        }
+    }
+
+    private async Task LoadPosturalEvaluations()
+    {
+        try
+        {
+            posturalEvaluations = await PosturalEvaluationService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<PosturalEvaluationDTO>();
+            RefreshPosturalTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading postural evaluations: {ex.Message}");
+            posturalEvaluations = new List<PosturalEvaluationDTO>();
+            RefreshPosturalTable();
+        }
+    }
+
+    private void RefreshPosturalTable()
+    {
+        posturalRows.Clear();
+        posturalIds.Clear();
+
+        foreach (var pe in posturalEvaluations)
+        {
+            var viewName = views.FirstOrDefault(v => v.ViewId == pe.ViewId)?.Name ?? "-";
+            var observation = pe.Observation ?? "-";
+            var bodyAlignment = pe.BodyAlignment ?? "-";
+            var grade = $"{pe.Grade}%";
+
+            posturalRows.Add(new List<string> { viewName, observation, bodyAlignment, grade });
+            posturalIds.Add(pe.PosturalEvaluationId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarPostural()
+    {
+        editingPostural = new PosturalEvaluationDTO
+        {
+            MedicalCareId = currentMedicalCareId,
+            Grade = 0.0f // Valor por defecto
+        };
+    }
+
+    private void EditarPostural(int id)
+    {
+        var evaluation = posturalEvaluations.FirstOrDefault(pe => pe.PosturalEvaluationId == id);
+        if (evaluation != null)
+        {
+            editingPostural = new PosturalEvaluationDTO
+            {
+                PosturalEvaluationId = evaluation.PosturalEvaluationId,
+                MedicalCareId = evaluation.MedicalCareId,
+                ViewId = evaluation.ViewId,
+                Observation = evaluation.Observation,
+                BodyAlignment = evaluation.BodyAlignment,
+                Grade = evaluation.Grade
+            };
+        }
+    }
+
+    private async Task GuardarPostural()
+    {
+        try
+        {
+            if (editingPostural.PosturalEvaluationId > 0)
+            {
+                var updateResult = await PosturalEvaluationService.UpdateAsync(editingPostural);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await PosturalEvaluationService.CreateAsync(editingPostural);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadPosturalEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación postural guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarPostural(int id)
+    {
+        try
+        {
+            var deleteResult = await PosturalEvaluationService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadPosturalEvaluations();
+            await JS.InvokeVoidAsync("alert", "Evaluación postural eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioPostural()
+    {
+        return editingPostural.ViewId > 0 &&
+               editingPostural.Grade >= 0 &&
+               editingPostural.Grade <= 100;
+    }
+
+    private bool IsPosturalComplete()
+    {
+        return posturalEvaluations != null && posturalEvaluations.Any();
+    }
 
 
 
 
+
+
+    //metodos para location
     private async Task LoadLocations()
     {
         try
@@ -2054,6 +2272,15 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading neuromuscular evaluations in LoadExistingData: {ex.Message}");
+        }
+
+        try
+        {
+            await LoadPosturalEvaluations();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading postural evaluations in LoadExistingData: {ex.Message}");
         }
 
 

@@ -14,9 +14,9 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PosturalEvaluationId { get; set; }
 
-        public string Observation { get; set; }
+        public string? Observation { get; set; }
         public float Grade { get; set; }
-        public string BodyAlignment { get; set; }
+        public string? BodyAlignment { get; set; }
 
         public int? MedicalCareId { get; set; }
         public int? ViewId { get; set; }

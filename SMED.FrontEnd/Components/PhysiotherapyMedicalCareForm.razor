@@ -32,6 +32,9 @@
 @inject StrengthService StrengthService
 @inject PosturalEvaluationService PosturalEvaluationService
 @inject ViewService ViewService
+@inject SpecialTestService SpecialTestService
+@inject ResultTypeService ResultTypeService
+@inject ComplementaryExamsService ComplementaryExamsService
 
 
 
@@ -142,6 +145,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-file-medical me-2"></i>Pruebas/Exámenes
+                @if (IsTestsExamsComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
@@ -886,14 +893,106 @@
                     <h5 class="mb-0">
                         <i class="fas fa-file-medical me-2"></i>Pruebas/Exámenes
                         <span class="badge bg-info ms-2">Opcional</span>
+
                     </h5>
                 </div>
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Aquí irá el formulario para registrar pruebas y exámenes realizados.
+                        <!-- Pruebas Especiales -->
+                        <div class="mb-5">
+                            <EditableTable Title="Pruebas Especiales"
+                                           ColumnHeaders="@specialTestHeaders"
+                                           Rows="@specialTestRows"
+                                           RowIds="@specialTestIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarSpecialTest"
+                                           OnEditRequested="@EditarSpecialTest"
+                                           OnDeleteRequested="@EliminarSpecialTest"
+                                           OnSaveRequested="@GuardarSpecialTest"
+                                           IsValidForm="@ValidarFormularioSpecialTest">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Prueba *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingSpecialTest.Test"
+                                                   placeholder="Ingrese el nombre de la prueba especial..." />
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Resultado *</label>
+                                            <select class="form-select" @bind="editingSpecialTest.ResultTypeId">
+                                                <option value="0">Seleccione un resultado</option>
+                                                @foreach (var resultType in resultTypes)
+                                                {
+                                                    <option value="@resultType.ResultTypeId">@resultType.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingSpecialTest.Observations"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Ingrese observaciones sobre la prueba..."></textarea>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
+                        </div>
+
+                        <!-- Exámenes Complementarios -->
+                        <div class="mt-5">
+                            <EditableTable Title="Exámenes Complementarios"
+                                           ColumnHeaders="@complementaryExamsHeaders"
+                                           Rows="@complementaryExamsRows"
+                                           RowIds="@complementaryExamsIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarComplementaryExam"
+                                           OnEditRequested="@EditarComplementaryExam"
+                                           OnDeleteRequested="@EliminarComplementaryExam"
+                                           OnSaveRequested="@GuardarComplementaryExam"
+                                           IsValidForm="@ValidarFormularioComplementaryExam">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Examen *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingComplementaryExam.Exam"
+                                                   placeholder="Ingrese el nombre del examen..." />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha de Examen *</label>
+                                            <input type="date"
+                                                   class="form-control"
+                                                   @bind="editingComplementaryExam.ExamDate"
+                                                   @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Link del PDF</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingComplementaryExam.PdfLink"
+                                                   placeholder="Ingrese el link del PDF..." />
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Descripción</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingComplementaryExam.Descriptions"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Ingrese una descripción del examen..."></textarea>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -915,6 +1014,7 @@
                 </div>
             </div>
         </div>
+
 
         <div class="tab-pane @(activeTab == "sessions" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -1053,6 +1153,22 @@
     private List<int> posturalIds = new();
 
 
+    // Variables para Pruebas Especiales
+    private SpecialTestDTO editingSpecialTest = new SpecialTestDTO();
+    private List<SpecialTestDTO> specialTests = new();
+    private List<ResultTypeDTO> resultTypes = new();
+    private List<string> specialTestHeaders = new() { "Prueba", "Resultado", "Observaciones" };
+    private List<List<string>> specialTestRows = new();
+    private List<int> specialTestIds = new();
+
+    // Variables para Exámenes Complementarios
+    private ComplementaryExamsDTO editingComplementaryExam = new ComplementaryExamsDTO();
+    private List<ComplementaryExamsDTO> complementaryExams = new();
+    private List<string> complementaryExamsHeaders = new() { "Examen", "Fecha", "Descripción", "Link PDF" };
+    private List<List<string>> complementaryExamsRows = new();
+    private List<int> complementaryExamsIds = new();
+
+
 
     private List<HealthProfessionalDTO> fisioterapeutas = new();
     private List<PlaceOfAttentionDTO> lugaresAtencion = new();
@@ -1072,6 +1188,7 @@
         await LoadJointMuscularData();
         await LoadNeuromuscularData();
         await LoadPosturalData();
+        await LoadTestsExamsData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -2056,6 +2173,278 @@
     }
 
 
+    //metodos para examenes y pruebas
+    private async Task LoadTestsExamsData()
+    {
+        try
+        {
+            // Cargar todos los catálogos en paralelo
+            var resultTypeTask = ResultTypeService.GetAllAsync();
+
+            await Task.WhenAll(resultTypeTask);
+
+            resultTypes = await resultTypeTask ?? new List<ResultTypeDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded tests/exams catalogs - ResultTypes: {resultTypes.Count}");
+
+            if (currentMedicalCareId > 0)
+            {
+                await LoadSpecialTests();
+                await LoadComplementaryExams();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading tests/exams data: {ex.Message}");
+
+            // Inicializar listas vacías
+            resultTypes = new List<ResultTypeDTO>();
+        }
+    }
+
+    // Métodos para Pruebas Especiales
+    private async Task LoadSpecialTests()
+    {
+        try
+        {
+            specialTests = await SpecialTestService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<SpecialTestDTO>();
+            RefreshSpecialTestTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading special tests: {ex.Message}");
+            specialTests = new List<SpecialTestDTO>();
+            RefreshSpecialTestTable();
+        }
+    }
+
+    private void RefreshSpecialTestTable()
+    {
+        specialTestRows.Clear();
+        specialTestIds.Clear();
+
+        foreach (var st in specialTests)
+        {
+            var resultTypeName = resultTypes.FirstOrDefault(rt => rt.ResultTypeId == st.ResultTypeId)?.Name ?? "-";
+            var observations = st.Observations ?? "-";
+
+            specialTestRows.Add(new List<string> { st.Test ?? "-", resultTypeName, observations });
+            specialTestIds.Add(st.SpecialTestId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarSpecialTest()
+    {
+        editingSpecialTest = new SpecialTestDTO
+        {
+            MedicalCareId = currentMedicalCareId
+        };
+    }
+
+    private void EditarSpecialTest(int id)
+    {
+        var test = specialTests.FirstOrDefault(st => st.SpecialTestId == id);
+        if (test != null)
+        {
+            editingSpecialTest = new SpecialTestDTO
+            {
+                SpecialTestId = test.SpecialTestId,
+                MedicalCareId = test.MedicalCareId,
+                Test = test.Test,
+                ResultTypeId = test.ResultTypeId,
+                Observations = test.Observations
+            };
+        }
+    }
+
+    private async Task GuardarSpecialTest()
+    {
+        try
+        {
+            if (editingSpecialTest.SpecialTestId > 0)
+            {
+                var updateResult = await SpecialTestService.UpdateAsync(editingSpecialTest);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await SpecialTestService.CreateAsync(editingSpecialTest);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadSpecialTests();
+            await JS.InvokeVoidAsync("alert", "Prueba especial guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarSpecialTest(int id)
+    {
+        try
+        {
+            var deleteResult = await SpecialTestService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadSpecialTests();
+            await JS.InvokeVoidAsync("alert", "Prueba especial eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioSpecialTest()
+    {
+        return !string.IsNullOrWhiteSpace(editingSpecialTest.Test) &&
+               editingSpecialTest.ResultTypeId > 0;
+    }
+
+    // Métodos para Exámenes Complementarios
+    private async Task LoadComplementaryExams()
+    {
+        try
+        {
+            complementaryExams = await ComplementaryExamsService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<ComplementaryExamsDTO>();
+            RefreshComplementaryExamsTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading complementary exams: {ex.Message}");
+            complementaryExams = new List<ComplementaryExamsDTO>();
+            RefreshComplementaryExamsTable();
+        }
+    }
+
+    private void RefreshComplementaryExamsTable()
+    {
+        complementaryExamsRows.Clear();
+        complementaryExamsIds.Clear();
+
+        foreach (var ce in complementaryExams)
+        {
+            var examDate = ce.ExamDate.ToString("dd/MM/yyyy");
+            var description = ce.Descriptions ?? "-";
+            var pdfLink = ce.PdfLink ?? "-";
+
+            complementaryExamsRows.Add(new List<string> { ce.Exam ?? "-", examDate, description, pdfLink });
+            complementaryExamsIds.Add(ce.ComplementaryExamsId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarComplementaryExam()
+    {
+        editingComplementaryExam = new ComplementaryExamsDTO
+        {
+            MedicalCareId = currentMedicalCareId,
+            ExamDate = DateTime.Today // Fecha actual por defecto
+        };
+    }
+
+    private void EditarComplementaryExam(int id)
+    {
+        var exam = complementaryExams.FirstOrDefault(ce => ce.ComplementaryExamsId == id);
+        if (exam != null)
+        {
+            editingComplementaryExam = new ComplementaryExamsDTO
+            {
+                ComplementaryExamsId = exam.ComplementaryExamsId,
+                MedicalCareId = exam.MedicalCareId,
+                Exam = exam.Exam,
+                ExamDate = exam.ExamDate,
+                Descriptions = exam.Descriptions,
+                PdfLink = exam.PdfLink
+            };
+        }
+    }
+
+    private async Task GuardarComplementaryExam()
+    {
+        try
+        {
+            if (editingComplementaryExam.ComplementaryExamsId > 0)
+            {
+                var updateResult = await ComplementaryExamsService.UpdateAsync(editingComplementaryExam);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await ComplementaryExamsService.CreateAsync(editingComplementaryExam);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadComplementaryExams();
+            await JS.InvokeVoidAsync("alert", "Examen complementario guardado correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarComplementaryExam(int id)
+    {
+        try
+        {
+            var deleteResult = await ComplementaryExamsService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadComplementaryExams();
+            await JS.InvokeVoidAsync("alert", "Examen complementario eliminado correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioComplementaryExam()
+    {
+        return !string.IsNullOrWhiteSpace(editingComplementaryExam.Exam) &&
+               editingComplementaryExam.ExamDate != default;
+    }
+
+    private bool IsTestsExamsComplete()
+    {
+        return (specialTests != null && specialTests.Any()) ||
+               (complementaryExams != null && complementaryExams.Any());
+    }
 
 
 
@@ -2281,6 +2670,16 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading postural evaluations in LoadExistingData: {ex.Message}");
+        }
+
+        try
+        {
+            await LoadSpecialTests();
+            await LoadComplementaryExams();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading tests/exams in LoadExistingData: {ex.Message}");
         }
 
 

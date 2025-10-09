@@ -17,13 +17,19 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<SessionsDTO>> GetAllAsync()
         {
-            var entities = await _context.Sessions.ToListAsync();
+            var entities = await _context.Sessions
+                .Include(s => s.MedicalCare)
+                .ToListAsync();
+
             return entities.Select(MapToDto).ToList();
         }
 
         public async Task<SessionsDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.Sessions.FindAsync(id);
+            var entity = await _context.Sessions
+                .Include(s => s.MedicalCare)
+                .FirstOrDefaultAsync(s => s.SessionsId == id);
+
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -42,6 +48,9 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.Description = dto.Description;
             entity.Date = dto.Date;
+            entity.Treatment = dto.Treatment;
+            entity.MedicalDischarge = dto.MedicalDischarge;
+            entity.Observations = dto.Observations;
             entity.MedicalCareId = dto.MedicalCareId;
 
             await _context.SaveChangesAsync();
@@ -68,6 +77,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 SessionsId = entity.SessionsId,
                 Description = entity.Description,
                 Date = entity.Date,
+                Treatment = entity.Treatment,
+                MedicalDischarge = entity.MedicalDischarge,
+                Observations = entity.Observations,
                 MedicalCareId = entity.MedicalCareId
             };
         }
@@ -79,6 +91,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 SessionsId = dto.SessionsId,
                 Description = dto.Description,
                 Date = dto.Date,
+                Treatment = dto.Treatment,
+                MedicalDischarge = dto.MedicalDischarge,
+                Observations = dto.Observations,
                 MedicalCareId = dto.MedicalCareId
             };
         }

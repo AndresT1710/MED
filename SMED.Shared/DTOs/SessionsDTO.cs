@@ -11,6 +11,9 @@ namespace SMED.Shared.DTOs
         public int SessionsId { get; set; }
         public string? Description { get; set; }
         public DateTime? Date { get; set; }
+        public string? Treatment { get; set; }
+        public bool? MedicalDischarge { get; set; }
+        public string Observations { get; set; }
         public int? MedicalCareId { get; set; }
     }
 

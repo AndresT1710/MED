@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SMED.BackEnd.Repositories.Interface;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
@@ -8,9 +8,9 @@ namespace SMED.BackEnd.Controllers
     [Route("api/[controller]")]
     public class SessionsController : ControllerBase
     {
-        private readonly IRepository<SessionsDTO, int> _repository;
+        private readonly SessionsRepository _repository;
 
-        public SessionsController(IRepository<SessionsDTO, int> repository)
+        public SessionsController(SessionsRepository repository)
         {
             _repository = repository;
         }

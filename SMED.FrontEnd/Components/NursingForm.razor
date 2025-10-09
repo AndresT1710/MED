@@ -20,8 +20,8 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -35,9 +35,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "vitals" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("vitals"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
+            @onclick="@(() => SetActiveTab("vitals"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-heartbeat me-2"></i>Signos Vitales
                 @if (HasVitalSignsData())
                 {
@@ -48,9 +48,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "services" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("services"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
+            @onclick="@(() => SetActiveTab("services"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-stethoscope me-2"></i>Servicios
                 @if (serviciosList.Any())
                 {
@@ -61,9 +61,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("procedures"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete())">
+            @onclick="@(() => SetActiveTab("procedures"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete())">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (procedimientosList.Any())
                 {
@@ -95,7 +95,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                                             OnPatientSelected="HandlePatientSelected" />
+                            OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -135,7 +135,7 @@
                             <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                        @bind="lugarSeleccionada">
+                                @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -155,10 +155,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                                      @bind="motivoConsulta"
-                                      rows="3"
-                                      placeholder="Describa el motivo principal de la consulta médica..."
-                                      maxlength="500"></textarea>
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta médica..."
+                            maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -168,26 +168,60 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Profesional responsable *</label>
-                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
-                                    @bind="selectedHealthProfessionalId"
-                                    disabled>
-                                <!-- Disabled para que no se pueda cambiar -->
-                                <option value="0">Seleccione un profesional</option>
-                                @foreach (var profesional in profesionales)
-                                {
-                                    <option value="@profesional.HealthProfessionalId">
-                                        @profesional.FullName - @profesional.NameTypeProfessional
-                                    </option>
-                                }
-                            </select>
-                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                            <label class="form-label fw-bold">Especialista en Enfermería</label>
+
+                            @if (profesionalCargado)
                             {
-                                <div class="invalid-feedback">
-                                    Debe seleccionar un profesional responsable
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Especialista asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el especialista responsable en enfermería.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                            @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un especialista de enfermería manualmente</option>
+                                                @foreach (var profesional in especialistasEnfermeria)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un especialista en enfermería responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del especialista en enfermería...</span>
                                 </div>
                             }
                         </div>
+
 
                         @if (!IsPatientTabComplete())
                         {
@@ -254,10 +288,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Peso (kg)</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("peso")"
-                                       @bind="pesoInput"
-                                       @oninput="@((e) => OnNumericInput(e, "peso"))"
-                                       placeholder="70.5" />
+                                class="@GetVitalSignInputClass("peso")"
+                                @bind="pesoInput"
+                                @oninput="@((e) => OnNumericInput(e, "peso"))"
+                                placeholder="70.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("peso")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -271,10 +305,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Talla (cm)</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("talla")"
-                                       @bind="tallaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "talla"))"
-                                       placeholder="175" />
+                                class="@GetVitalSignInputClass("talla")"
+                                @bind="tallaInput"
+                                @oninput="@((e) => OnNumericInput(e, "talla"))"
+                                placeholder="175" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("talla")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -288,10 +322,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">IMC</label>
                                 <input type="text"
-                                       class="form-control bg-light"
-                                       value="@imcCalculado"
-                                       readonly
-                                       placeholder="Se calcula automáticamente" />
+                                class="form-control bg-light"
+                                value="@imcCalculado"
+                                readonly
+                                placeholder="Se calcula automáticamente" />
                                 <small class="form-text text-muted">Se calcula automáticamente: Peso / (Talla/100)²</small>
                             </div>
 
@@ -299,10 +333,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Perímetro Abdominal (cm)</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("perimetroAbdominal")"
-                                       @bind="perimetroAbdominalInput"
-                                       @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
-                                       placeholder="85" />
+                                class="@GetVitalSignInputClass("perimetroAbdominal")"
+                                @bind="perimetroAbdominalInput"
+                                @oninput="@((e) => OnNumericInput(e, "perimetroAbdominal"))"
+                                placeholder="85" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("perimetroAbdominal")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -316,11 +350,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Presión Arterial</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("presionArterial")"
-                                       @bind="presionArterialInput"
-                                       @oninput="OnBloodPressureInput"
-                                       placeholder="120/80"
-                                       maxlength="7" />
+                                class="@GetVitalSignInputClass("presionArterial")"
+                                @bind="presionArterialInput"
+                                @oninput="OnBloodPressureInput"
+                                placeholder="120/80"
+                                maxlength="7" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("presionArterial")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -334,10 +368,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Temperatura (°C)</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("temperatura")"
-                                       @bind="temperaturaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "temperatura"))"
-                                       placeholder="36.5" />
+                                class="@GetVitalSignInputClass("temperatura")"
+                                @bind="temperaturaInput"
+                                @oninput="@((e) => OnNumericInput(e, "temperatura"))"
+                                placeholder="36.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("temperatura")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -351,10 +385,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Presión Arterial Media</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("pam")"
-                                       @bind="pamInput"
-                                       @oninput="@((e) => OnNumericInput(e, "pam"))"
-                                       placeholder="90" />
+                                class="@GetVitalSignInputClass("pam")"
+                                @bind="pamInput"
+                                @oninput="@((e) => OnNumericInput(e, "pam"))"
+                                placeholder="90" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("pam")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -368,10 +402,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Frecuencia Cardíaca</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("frecuenciaCardiaca")"
-                                       @bind="frecuenciaCardiacaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
-                                       placeholder="72" />
+                                class="@GetVitalSignInputClass("frecuenciaCardiaca")"
+                                @bind="frecuenciaCardiacaInput"
+                                @oninput="@((e) => OnNumericInput(e, "frecuenciaCardiaca"))"
+                                placeholder="72" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaCardiaca")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -385,10 +419,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Saturación Oxígeno (%)</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("saturacionOxigeno")"
-                                       @bind="saturacionOxigenoInput"
-                                       @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
-                                       placeholder="98" />
+                                class="@GetVitalSignInputClass("saturacionOxigeno")"
+                                @bind="saturacionOxigenoInput"
+                                @oninput="@((e) => OnNumericInput(e, "saturacionOxigeno"))"
+                                placeholder="98" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("saturacionOxigeno")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -402,10 +436,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Frecuencia Respiratoria</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
-                                       @bind="frecuenciaRespiratoriaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
-                                       placeholder="16" />
+                                class="@GetVitalSignInputClass("frecuenciaRespiratoria")"
+                                @bind="frecuenciaRespiratoriaInput"
+                                @oninput="@((e) => OnNumericInput(e, "frecuenciaRespiratoria"))"
+                                placeholder="16" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("frecuenciaRespiratoria")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -419,10 +453,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Glucosa Capilar</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("glucosaCapilar")"
-                                       @bind="glucosaCapilarInput"
-                                       @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
-                                       placeholder="100" />
+                                class="@GetVitalSignInputClass("glucosaCapilar")"
+                                @bind="glucosaCapilarInput"
+                                @oninput="@((e) => OnNumericInput(e, "glucosaCapilar"))"
+                                placeholder="100" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("glucosaCapilar")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -436,10 +470,10 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Hemoglobina</label>
                                 <input type="text"
-                                       class="@GetVitalSignInputClass("hemoglobina")"
-                                       @bind="hemoglobinaInput"
-                                       @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
-                                       placeholder="14.5" />
+                                class="@GetVitalSignInputClass("hemoglobina")"
+                                @bind="hemoglobinaInput"
+                                @oninput="@((e) => OnNumericInput(e, "hemoglobina"))"
+                                placeholder="14.5" />
                                 @if (!string.IsNullOrEmpty(GetVitalSignError("hemoglobina")))
                                 {
                                     <div class="invalid-feedback" style="display: block;">
@@ -564,20 +598,20 @@
                         </div>
 
                         <EditableTable Title="Procedimientos Médicos"
-                                       ColumnHeaders="@procedureColumnHeaders"
-                                       Rows="@procedureRows"
-                                       RowIds="@procedureRowIds"
-                                       EmptyMessage="No hay procedimientos agregados"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddProcedureRequested"
-                                       OnEditRequested="@OnEditProcedureRequested"
-                                       OnDeleteRequested="@OnDeleteProcedureRequested"
-                                       OnSaveRequested="@OnSaveProcedureRequested"
-                                       IsValidForm="@IsProcedureFormValid">
+                        ColumnHeaders="@procedureColumnHeaders"
+                        Rows="@procedureRows"
+                        RowIds="@procedureRowIds"
+                        EmptyMessage="No hay procedimientos agregados"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddProcedureRequested"
+                        OnEditRequested="@OnEditProcedureRequested"
+                        OnDeleteRequested="@OnDeleteProcedureRequested"
+                        OnSaveRequested="@OnSaveProcedureRequested"
+                        IsValidForm="@IsProcedureFormValid">
                             <EditModalContent>
                                 @if (currentProcedure != null)
                                 {
@@ -586,8 +620,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Fecha del Procedimiento <span class="text-danger">*</span></label>
                                             <input type="datetime-local"
-                                                   class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
-                                                   @bind="currentProcedure.ProcedureDate" />
+                                            class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
+                                            @bind="currentProcedure.ProcedureDate" />
                                             @if (procedureErrors.ContainsKey("ProcedureDate"))
                                             {
                                                 <div class="invalid-feedback">@procedureErrors["ProcedureDate"]</div>
@@ -598,8 +632,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Tipo de Procedimiento <span class="text-danger">*</span></label>
                                             <select class="form-select @(procedureErrors.ContainsKey("TypeOfProcedureId") ? "is-invalid" : "")"
-                                                    @bind:get="selectedTypeOfProcedureId"
-                                                    @bind:set="OnTypeOfProcedureChangedAsync">
+                                            @bind:get="selectedTypeOfProcedureId"
+                                            @bind:set="OnTypeOfProcedureChangedAsync">
                                                 <option value="0">Seleccione un tipo</option>
                                                 @foreach (var type in availableTypesOfProcedures)
                                                 {
@@ -616,8 +650,8 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Procedimiento Específico <span class="text-danger">*</span></label>
                                             <select class="form-select @(procedureErrors.ContainsKey("SpecificProcedureId") ? "is-invalid" : "")"
-                                                    @bind="currentProcedure.SpecificProcedureId"
-                                                    disabled="@(selectedTypeOfProcedureId <= 0)">
+                                            @bind="currentProcedure.SpecificProcedureId"
+                                            disabled="@(selectedTypeOfProcedureId <= 0)">
                                                 <option value="0">Seleccione un procedimiento</option>
                                                 @foreach (var procedure in filteredProcedures)
                                                 {
@@ -634,11 +668,11 @@
                                         <div class="col-md-12">
                                             <label class="form-label fw-bold">Observaciones</label>
                                             <textarea class="form-control"
-                                                      @bind="currentProcedure.Observations"
-                                                      rows="3"
-                                                      maxlength="1000"
-                                                      placeholder="Observaciones adicionales sobre el procedimiento..."
-                                                      style="resize: vertical; max-height: 150px;"></textarea>
+                                            @bind="currentProcedure.Observations"
+                                            rows="3"
+                                            maxlength="1000"
+                                            placeholder="Observaciones adicionales sobre el procedimiento..."
+                                            style="resize: vertical; max-height: 150px;"></textarea>
                                             <small class="form-text text-muted">
                                                 Máximo 1000 caracteres. Restantes: @(1000 - (currentProcedure.Observations?.Length ?? 0))
                                             </small>
@@ -717,10 +751,10 @@
                 <div class="modal-body">
                     @* Usa tu componente ProcedureForm (ya existente) *@
                     <ProcedureFormNursing Procedure="currentProcedure"
-                                          OnSaved="OnProcedureSaved"
-                                          OnCancel="CerrarModalProcedimiento"
-                                          PatientId="selectedPatientId"
-                                          CareId="currentMedicalCareId" />
+                    OnSaved="OnProcedureSaved"
+                    OnCancel="CerrarModalProcedimiento"
+                    PatientId="selectedPatientId"
+                    CareId="currentMedicalCareId" />
                 </div>
             </div>
         </div>
@@ -764,6 +798,9 @@
     private int enfermerialLocationId = 0; // Added to store dynamic LocationId
     private int selectedHealthProfessionalId = 0;
     private HealthProfessionalDTO? currentProfessional = null;
+    private HealthProfessionalDTO? profesionalLogueado;
+    private bool profesionalCargado = false;
+    private List<HealthProfessionalDTO> especialistasEnfermeria = new();
 
 
     private bool showValidationErrors = false;
@@ -871,6 +908,8 @@
         await LoadLugaresAtencion();
         await LoadEnfermeriaLocationId();
         await AssignCurrentProfessional();
+        await ObtenerProfesionalLogueado();
+
 
 
         // CARGAR DATOS DE PROCEDIMIENTOS (AÑADIR ESTO)
@@ -882,6 +921,52 @@
         {
             isEditMode = true;
             await LoadExistingData();
+        }
+        else
+        {
+            await AsignarProfesionalLogueado();
+
+        }
+    }
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Profesional logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el profesional logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo profesional logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Profesional logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (especialistasEnfermeria.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn",
+                "⚠️ No se encontró profesional logueado, mostrando selector manual");
         }
     }
 

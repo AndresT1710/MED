@@ -1,0 +1,487 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.Shared.Entity
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject LocationService LocationService
+@inject AuthorizationService AuthorizationService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="early-stimulation-care-form">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-baby me-2"></i>Nueva Atención - Estimulación Temprana
+                <span class="badge bg-danger ms-2">Obligatorio</span>
+                <span class="badge bg-info ms-2">
+                    <i class="fas fa-baby me-1"></i>Área: Estimulación Temprana
+                </span>
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (!isEditMode)
+            {
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Paciente *</label>
+                    <PatientSelector @bind-Value="clinicalHistoryId"
+                                     OnPatientSelected="HandlePatientSelected" />
+                    @if (showValidationErrors && selectedPatientId <= 0)
+                    {
+                        <div class="text-danger mt-1">
+                            <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Editando atención de estimulación temprana existente. Paciente: @selectedHistoryNumber
+                </div>
+            }
+
+            @if (selectedPatientId > 0)
+            {
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                </div>
+
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <div>
+                            <strong>Área de Atención:</strong> Estimulación Temprana
+                            <br>
+                            <small class="text-muted">Esta atención se registrará automáticamente en el área de Estimulación Temprana.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label fw-bold">Lugar de Atención *</label>
+                        <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                        @bind="lugarSeleccionada">
+                            <option value="">Seleccione el lugar de Atención</option>
+                            @foreach (var lugar in lugaresAtencion)
+                            {
+                                <option value="@lugar.Id">@lugar.Name</option>
+                            }
+                        </select>
+                        @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                        {
+                            <div class="invalid-feedback">
+                                Debe seleccionar un lugar de atención
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                    <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                    @bind="motivoConsulta"
+                    rows="3"
+                    placeholder="Describa el motivo principal de la consulta de estimulación temprana..."
+                    maxlength="500"></textarea>
+                    @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                    {
+                        <div class="invalid-feedback">
+                            Debe ingresar el motivo de la consulta
+                        </div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Especialista en Estimulación Temprana *</label>
+                    
+                    @if (profesionalCargado)
+                    {
+                        @if (profesionalLogueado != null)
+                        {
+                            <div class="alert alert-success">
+                                <i class="fas fa-user-md me-2"></i>
+                                <strong>Especialista asignado automáticamente:</strong> 
+                                @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Usted ha sido asignado automáticamente como el profesional responsable.
+                                    </small>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>No se pudo identificar su perfil profesional.</strong>
+                                <div class="mt-2">
+                                    <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                            @bind="selectedHealthProfessionalId">
+                                        <option value="0">Seleccione un especialista manualmente</option>
+                                        @foreach (var profesional in especialistasEstimulacion)
+                                        {
+                                            <option value="@profesional.HealthProfessionalId">
+                                                @profesional.FullName - @profesional.NameTypeProfessional
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        Debe seleccionar un especialista responsable
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            <span>Cargando información del profesional...</span>
+                        </div>
+                    }
+                </div>
+
+
+                @if (!IsPatientTabComplete())
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Complete todos los campos obligatorios para guardar la atención.
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between mt-3">
+                    <div>
+                        <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                            <i class="fas fa-check me-2"></i>Validar Información
+                        </button>
+                    </div>
+                    <div>
+                        @if (IsPatientTabComplete())
+                        {
+                            <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Atención
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary" disabled>
+                                Complete la información obligatoria
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO MedicalCare { get; set; } = new();
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private int clinicalHistoryId;
+    private int selectedPatientId;
+    private string selectedHistoryNumber = string.Empty;
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+    private string lugarSeleccionada = string.Empty;
+    private string motivoConsulta = string.Empty;
+    private List<HealthProfessionalDTO> especialistasEstimulacion = new();
+    private HealthProfessionalDTO? profesionalLogueado; @* ✅ NUEVA VARIABLE *@
+    private int selectedHealthProfessionalId;
+    private int earlyStimulationLocationId;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private bool showValidationErrors = false;
+    private bool profesionalCargado = false; @* ✅ NUEVA VARIABLE *@
+    private int currentMedicalCareId = 0;
+    private ReasonForConsultationDTO? existingReasonForConsultation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocationsAndPlaces();
+        await LoadHealthProfessionals();
+        await ObtenerProfesionalLogueado(); @* ✅ NUEVO MÉTODO *@
+
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
+            selectedPatientId = MedicalCare.PatientId;
+            await LoadExistingData();
+        }
+        else
+        {
+            await AsignarProfesionalLogueado(); @* ✅ ASIGNAR AUTOMÁTICAMENTE EN MODO CREACIÓN *@
+        }
+    }
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+            
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log", 
+                    $"✅ Profesional logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el profesional logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo profesional logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log", 
+                $"✅ Profesional logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (especialistasEstimulacion.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn", 
+                "⚠️ No se encontró profesional logueado, mostrando selector manual");
+        }
+    }
+
+    private async Task LoadLocationsAndPlaces()
+    {
+        try
+        {
+            // Obtener el ID de Estimulación Temprana dinámicamente
+            var locations = await LocationService.GetAllAsync();
+            var earlyStimulationLocation = locations?.FirstOrDefault(l =>
+                l.Name.Equals("Estimulación Temprana", StringComparison.OrdinalIgnoreCase));
+
+            earlyStimulationLocationId = earlyStimulationLocation?.Id ?? 0;
+
+            if (earlyStimulationLocationId == 0)
+            {
+                await JS.InvokeVoidAsync("console.error", "No se encontró la ubicación de Estimulación Temprana");
+            }
+
+            lugaresAtencion = await PlaceService.GetAllPlacesAsync() ?? new List<PlaceOfAttentionDTO>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading locations and places: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        try
+        {
+            var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
+            especialistasEstimulacion = allProfessionals?
+                .Where(hp => hp.NameTypeProfessional != null &&
+                           (hp.NameTypeProfessional.ToLower().Contains("estimulación") ||
+                            hp.NameTypeProfessional.ToLower().Contains("estimulacion") ||
+                            hp.NameTypeProfessional.ToLower().Contains("pediatría") ||
+                            hp.NameTypeProfessional.ToLower().Contains("pediatria") ||
+                            hp.NameTypeProfessional.ToLower().Contains("fisioterapia") ||
+                            hp.NameTypeProfessional.ToLower().Contains("fisioterapeuta")))
+                .ToList() ?? new List<HealthProfessionalDTO>();
+
+            await JS.InvokeVoidAsync("console.log", 
+                $"Se encontraron {especialistasEstimulacion.Count} especialistas en estimulación temprana");
+                
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading health professionals: {ex.Message}");
+        }
+    }
+
+    private async Task LoadExistingData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                var medicalCare = await MedicalCareService.GetByIdAsync(currentMedicalCareId);
+                if (medicalCare != null)
+                {
+                    lugarSeleccionada = medicalCare.PlaceOfAttentionId.ToString();
+                    selectedHealthProfessionalId = medicalCare.HealthProfessionalId;
+
+                    // Cargar motivo de consulta existente
+                    var reasons = await ReasonForConsultationService.GetByCareIdAsync(currentMedicalCareId);
+                    existingReasonForConsultation = reasons?.FirstOrDefault();
+                    if (existingReasonForConsultation != null)
+                    {
+                        motivoConsulta = existingReasonForConsultation.Description;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
+        }
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta) &&
+               selectedHealthProfessionalId > 0 &&
+               earlyStimulationLocationId > 0;
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task GuardarDatosPaciente()
+    {
+        isSaving = true;
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
+
+            if (earlyStimulationLocationId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar el área de estimulación temprana. Por favor, contacte con soporte.");
+                return;
+            }
+
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar al especialista. Por favor, contacte con soporte.");
+                return;
+            }
+
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            {
+                MedicalCare.LocationId = earlyStimulationLocationId;
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    return;
+                }
+
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                var medicalCareDto = new MedicalCareDTO
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = selectedHealthProfessionalId,
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = earlyStimulationLocationId,
+                        CareDate = DateTime.Now
+                    };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención de estimulación temprana: {result.Error}");
+                    return;
+                }
+
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
+                    };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            await OnSaved.InvokeAsync(medicalCareResult);
+            await JS.InvokeVoidAsync("alert", "Atención de estimulación temprana guardada correctamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup si es necesario
+    }
+}

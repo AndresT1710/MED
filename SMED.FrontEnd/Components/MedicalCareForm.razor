@@ -35,8 +35,8 @@
     <ul class="nav nav-tabs" id="medicalCareTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -50,9 +50,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "systems" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("systems"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("systems"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-lungs me-2"></i>Aparatos y Sistemas
                 @if (IsSystemsTabComplete())
                 {
@@ -63,9 +63,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "physical-exam" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("physical-exam"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("physical-exam"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-stethoscope me-2"></i>Examen Físico
                 @if (IsPhysicalExamTabComplete())
                 {
@@ -76,9 +76,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "additional-data" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("additional-data"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("additional-data"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-list me-2"></i>Datos Adicionales
                 @if (IsAdditionalDataTabComplete())
                 {
@@ -89,9 +89,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "procedures" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("procedures"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("procedures"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-procedures me-2"></i>Procedimientos
                 @if (IsProceduresTabComplete())
                 {
@@ -102,9 +102,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "diagnosis" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("diagnosis"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("diagnosis"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-diagnoses me-2"></i>Diagnóstico
                 @if (IsDiagnosisTabComplete())
                 {
@@ -115,9 +115,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "treatment" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("treatment"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("treatment"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-pills me-2"></i>Enfermedad/Tratamiento
                 @if (IsTreatmentTabComplete())
                 {
@@ -129,9 +129,9 @@
         @* Added new referral tab *@
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "referral" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("referral"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("referral"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-share me-2"></i>Derivación
                 @if (IsReferralTabComplete())
                 {
@@ -142,9 +142,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "evolution" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("evolution"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("evolution"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-chart-line me-2"></i>Evolución
                 @if (IsEvolutionTabComplete())
                 {
@@ -236,10 +236,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                                      @bind="motivoConsulta"
-                                      rows="3"
-                                      placeholder="Describa el motivo principal de la consulta médica..."
-                                      maxlength="500"></textarea>
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta médica..."
+                            maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -249,33 +249,60 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Profesional responsable *</label>
-                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
-                                    @bind="selectedHealthProfessionalId"
-                                    disabled>
-                                <!-- Disabled para que no se pueda cambiar -->
-                                <option value="0">Seleccione un profesional</option>
-                                @foreach (var profesional in profesionales)
-                                {
-                                    <option value="@profesional.HealthProfessionalId">
-                                        @profesional.FullName - @profesional.NameTypeProfessional
-                                    </option>
-                                }
-                            </select>
-                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                            <label class="form-label fw-bold">Especialista en Medicina General</label>
+
+                            @if (profesionalCargado)
                             {
-                                <div class="invalid-feedback">
-                                    Debe seleccionar un profesional responsable
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Especialista asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el especialista responsable en medicina general.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                            @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un especialista de medicina general manualmente</option>
+                                                @foreach (var profesional in especialistasMedicinaGeneral)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un especialista en medicina general responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del especialista en medicina general...</span>
                                 </div>
                             }
                         </div>
 
-                        <!-- Alert informativo -->
-                        <div class="alert alert-info mb-3">
-                            <i class="fas fa-user-md me-2"></i>
-                            <strong>Profesional asignado automáticamente:</strong> Este registro será asignado
-                            automáticamente al profesional de salud actualmente logueado en el sistema.
-                        </div>
 
                         @if (!IsPatientTabComplete())
                         {
@@ -341,26 +368,26 @@
                         </div>
 
                         <EditableTable Title="Revisión de Aparatos y Sistemas"
-                                       ColumnHeaders="@systemsHeaders"
-                                       Rows="@systemsRows"
-                                       RowIds="@systemsIds"
-                                       EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddSystemRequested"
-                                       OnEditRequested="@OnEditSystemRequested"
-                                       OnDeleteRequested="@OnDeleteSystemRequested"
-                                       OnSaveRequested="@OnSaveSystemRequested"
-                                       IsValidForm="@IsSystemFormValid">
+                        ColumnHeaders="@systemsHeaders"
+                        Rows="@systemsRows"
+                        RowIds="@systemsIds"
+                        EmptyMessage="No se han registrado revisiones de aparatos y sistemas"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta revisión de aparato/sistema?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddSystemRequested"
+                        OnEditRequested="@OnEditSystemRequested"
+                        OnDeleteRequested="@OnDeleteSystemRequested"
+                        OnSaveRequested="@OnSaveSystemRequested"
+                        IsValidForm="@IsSystemFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Tipo de Aparato/Sistema <span class="text-danger">*</span></label>
                                         <select class="form-select @(systemErrors.ContainsKey("SystemsDevicesId") ? "is-invalid" : "")"
-                                                @bind="currentSystem.SystemsDevicesId">
+                                        @bind="currentSystem.SystemsDevicesId">
                                             <option value="0">Seleccione un aparato o sistema</option>
                                             @foreach (var system in availableSystems)
                                             {
@@ -375,11 +402,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Estado <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(systemErrors.ContainsKey("State") ? "is-invalid" : "")"
-                                                  @bind="currentSystem.State"
-                                                  rows="3"
-                                                  maxlength="500"
-                                                  placeholder="Describa el estado actual del aparato o sistema..."
-                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @bind="currentSystem.State"
+                                        rows="3"
+                                        maxlength="500"
+                                        placeholder="Describa el estado actual del aparato o sistema..."
+                                        style="resize: vertical; max-height: 150px;"></textarea>
                                         @if (systemErrors.ContainsKey("State"))
                                         {
                                             <div class="invalid-feedback">@systemErrors["State"]</div>
@@ -391,11 +418,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Observaciones</label>
                                         <textarea class="form-control"
-                                                  @bind="currentSystem.Observations"
-                                                  rows="4"
-                                                  maxlength="1000"
-                                                  placeholder="Observaciones adicionales (opcional)..."
-                                                  style="resize: vertical; max-height: 200px;"></textarea>
+                                        @bind="currentSystem.Observations"
+                                        rows="4"
+                                        maxlength="1000"
+                                        placeholder="Observaciones adicionales (opcional)..."
+                                        style="resize: vertical; max-height: 200px;"></textarea>
                                         <small class="form-text text-muted">
                                             Máximo 1000 caracteres. Restantes: @(1000 - (currentSystem.Observations?.Length ?? 0))
                                         </small>
@@ -459,26 +486,26 @@
                         </div>
 
                         <EditableTable Title="Examen Físico del Paciente"
-                                       ColumnHeaders="@physicalExamHeaders"
-                                       Rows="@physicalExamRows"
-                                       RowIds="@physicalExamIds"
-                                       EmptyMessage="No se han registrado exámenes físicos"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este examen físico?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddPhysicalExamRequested"
-                                       OnEditRequested="@OnEditPhysicalExamRequested"
-                                       OnDeleteRequested="@OnDeletePhysicalExamRequested"
-                                       OnSaveRequested="@OnSavePhysicalExamRequested"
-                                       IsValidForm="@IsPhysicalExamFormValid">
+                        ColumnHeaders="@physicalExamHeaders"
+                        Rows="@physicalExamRows"
+                        RowIds="@physicalExamIds"
+                        EmptyMessage="No se han registrado exámenes físicos"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar este examen físico?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddPhysicalExamRequested"
+                        OnEditRequested="@OnEditPhysicalExamRequested"
+                        OnDeleteRequested="@OnDeletePhysicalExamRequested"
+                        OnSaveRequested="@OnSavePhysicalExamRequested"
+                        IsValidForm="@IsPhysicalExamFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Región <span class="text-danger">*</span></label>
                                         <select class="form-select @(physicalExamErrors.ContainsKey("RegionId") ? "is-invalid" : "")"
-                                                @bind="currentPhysicalExam.RegionId">
+                                        @bind="currentPhysicalExam.RegionId">
                                             <option value="0">Seleccione una región</option>
                                             @foreach (var region in availableRegions)
                                             {
@@ -493,7 +520,7 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Evidencia Patológica <span class="text-danger">*</span></label>
                                         <select class="form-select @(physicalExamErrors.ContainsKey("PathologicalEvidenceId") ? "is-invalid" : "")"
-                                                @bind="currentPhysicalExam.PathologicalEvidenceId">
+                                        @bind="currentPhysicalExam.PathologicalEvidenceId">
                                             <option value="0">Seleccione una evidencia patológica</option>
                                             @foreach (var evidence in availablePathologicalEvidences)
                                             {
@@ -508,11 +535,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Observación <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(physicalExamErrors.ContainsKey("Observation") ? "is-invalid" : "")"
-                                                  @bind="currentPhysicalExam.Observation"
-                                                  rows="4"
-                                                  maxlength="500"
-                                                  placeholder="Describa las observaciones del examen físico..."
-                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @bind="currentPhysicalExam.Observation"
+                                        rows="4"
+                                        maxlength="500"
+                                        placeholder="Describa las observaciones del examen físico..."
+                                        style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
                                         @if (physicalExamErrors.ContainsKey("Observation"))
                                         {
                                             <div class="invalid-feedback">@physicalExamErrors["Observation"]</div>
@@ -586,8 +613,8 @@
                         <div class="row">
                             <div class="col-12">
                                 <ContainerBox1 Title="Observaciones Adicionales"
-                                               Width="full"
-                                               @bind-Content="additionalDataContent" />
+                                Width="full"
+                                @bind-Content="additionalDataContent" />
                             </div>
                         </div>
 
@@ -632,28 +659,28 @@
                         </div>
 
                         <EditableTable Title="Procedimientos Médicos"
-                                       ColumnHeaders="@procedureColumnHeaders"
-                                       Rows="@procedureRows"
-                                       RowIds="@procedureRowIds"
-                                       EmptyMessage="No hay procedimientos agregados"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddProcedureRequested"
-                                       OnEditRequested="@OnEditProcedureRequested"
-                                       OnDeleteRequested="@OnDeleteProcedureRequested"
-                                       OnSaveRequested="@OnSaveProcedureRequested"
-                                       IsValidForm="@IsProcedureFormValid">
+                        ColumnHeaders="@procedureColumnHeaders"
+                        Rows="@procedureRows"
+                        RowIds="@procedureRowIds"
+                        EmptyMessage="No hay procedimientos agregados"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar este procedimiento?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddProcedureRequested"
+                        OnEditRequested="@OnEditProcedureRequested"
+                        OnDeleteRequested="@OnDeleteProcedureRequested"
+                        OnSaveRequested="@OnSaveProcedureRequested"
+                        IsValidForm="@IsProcedureFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <!-- Departamento -->
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Departamento <span class="text-danger">*</span></label>
                                         <select class="form-select @(procedureErrors.ContainsKey("LocationId") ? "is-invalid" : "")"
-                                                @bind:get="selectedLocationId"
-                                                @bind:set="OnDepartmentChangedAsync">
+                                        @bind:get="selectedLocationId"
+                                        @bind:set="OnDepartmentChangedAsync">
                                             <option value="">Seleccione un departamento</option>
                                             @foreach (var location in availableLocations)
                                             {
@@ -670,8 +697,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Fecha del Procedimiento <span class="text-danger">*</span></label>
                                         <input type="datetime-local"
-                                               class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
-                                               @bind="currentProcedure.ProcedureDate" />
+                                        class="form-control @(procedureErrors.ContainsKey("ProcedureDate") ? "is-invalid" : "")"
+                                        @bind="currentProcedure.ProcedureDate" />
                                         @if (procedureErrors.ContainsKey("ProcedureDate"))
                                         {
                                             <div class="invalid-feedback">@procedureErrors["ProcedureDate"]</div>
@@ -682,8 +709,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Tipo de Procedimiento <span class="text-danger">*</span></label>
                                         <select class="form-select @(procedureErrors.ContainsKey("TypeOfProcedureId") ? "is-invalid" : "")"
-                                                @bind:get="selectedTypeOfProcedureId"
-                                                @bind:set="OnTypeOfProcedureChangedAsync">
+                                        @bind:get="selectedTypeOfProcedureId"
+                                        @bind:set="OnTypeOfProcedureChangedAsync">
                                             <option value="0">Seleccione un tipo</option>
                                             @foreach (var type in availableTypesOfProcedures)
                                             {
@@ -700,8 +727,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Procedimiento Específico <span class="text-danger">*</span></label>
                                         <select class="form-select @(procedureErrors.ContainsKey("SpecificProcedureId") ? "is-invalid" : "")"
-                                                @bind="currentProcedure.SpecificProcedureId"
-                                                disabled="@(selectedTypeOfProcedureId <= 0)">
+                                        @bind="currentProcedure.SpecificProcedureId"
+                                        disabled="@(selectedTypeOfProcedureId <= 0)">
                                             <option value="0">Seleccione un procedimiento</option>
                                             @foreach (var procedure in filteredProcedures)
                                             {
@@ -738,11 +765,11 @@
                                     <div class="col-md-12">
                                         <label class="form-label fw-bold">Observaciones</label>
                                         <textarea class="form-control"
-                                                  @bind="currentProcedure.Observations"
-                                                  rows="3"
-                                                  maxlength="1000"
-                                                  placeholder="Observaciones adicionales sobre el procedimiento..."
-                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @bind="currentProcedure.Observations"
+                                        rows="3"
+                                        maxlength="1000"
+                                        placeholder="Observaciones adicionales sobre el procedimiento..."
+                                        style="resize: vertical; max-height: 150px;"></textarea>
                                         <small class="form-text text-muted">
                                             Máximo 1000 caracteres. Restantes: @(1000 - (currentProcedure.Observations?.Length ?? 0))
                                         </small>
@@ -793,10 +820,10 @@
                         <div class="modal-body">
                             @* Usa tu componente ProcedureForm (ya existente) *@
                             <ProcedureForm Procedure="currentProcedure"
-                                           OnSaved="OnProcedureSaved"
-                                           OnCancel="CerrarModalProcedimiento"
-                                           PatientId="selectedPatientId"
-                                           CareId="currentMedicalCareId" />
+                            OnSaved="OnProcedureSaved"
+                            OnCancel="CerrarModalProcedimiento"
+                            PatientId="selectedPatientId"
+                            CareId="currentMedicalCareId" />
                         </div>
                     </div>
                 </div>
@@ -824,30 +851,30 @@
                         </div>
 
                         <EditableTable Title="Diagnósticos Médicos"
-                                       ColumnHeaders="@diagnosisHeaders"
-                                       Rows="@diagnosisRows"
-                                       RowIds="@diagnosisIds"
-                                       EmptyMessage="No se han registrado diagnósticos médicos"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este diagnóstico?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddDiagnosisRequested"
-                                       OnEditRequested="@OnEditDiagnosisRequested"
-                                       OnDeleteRequested="@OnDeleteDiagnosisRequested"
-                                       OnSaveRequested="@OnSaveDiagnosisRequested"
-                                       IsValidForm="@IsDiagnosisFormValid">
+                        ColumnHeaders="@diagnosisHeaders"
+                        Rows="@diagnosisRows"
+                        RowIds="@diagnosisIds"
+                        EmptyMessage="No se han registrado diagnósticos médicos"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar este diagnóstico?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddDiagnosisRequested"
+                        OnEditRequested="@OnEditDiagnosisRequested"
+                        OnDeleteRequested="@OnDeleteDiagnosisRequested"
+                        OnSaveRequested="@OnSaveDiagnosisRequested"
+                        IsValidForm="@IsDiagnosisFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">CIE10 <span class="text-danger">*</span></label>
                                         <input type="text"
-                                               class="form-control @(diagnosisErrors.ContainsKey("Cie10") ? "is-invalid" : "")"
-                                               @bind="currentDiagnosis.Cie10"
-                                               maxlength="20"
-                                               placeholder="Ingrese el código CIE10"
-                                               disabled="@isUnidentifiedCie10" />
+                                        class="form-control @(diagnosisErrors.ContainsKey("Cie10") ? "is-invalid" : "")"
+                                        @bind="currentDiagnosis.Cie10"
+                                        maxlength="20"
+                                        placeholder="Ingrese el código CIE10"
+                                        disabled="@isUnidentifiedCie10" />
                                         @if (diagnosisErrors.ContainsKey("Cie10"))
                                         {
                                             <div class="invalid-feedback">@diagnosisErrors["Cie10"]</div>
@@ -858,9 +885,9 @@
 
                                         <div class="form-check mt-2">
                                             <input class="form-check-input"
-                                                   type="checkbox"
-                                                   id="unidentifiedCie10Check"
-                                                   @bind="isUnidentifiedCie10" />
+                                            type="checkbox"
+                                            id="unidentifiedCie10Check"
+                                            @bind="isUnidentifiedCie10" />
                                             <label class="form-check-label" for="unidentifiedCie10Check">
                                                 No Identificado
                                             </label>
@@ -869,7 +896,7 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Tipo de Diagnóstico <span class="text-danger">*</span></label>
                                         <select class="form-select @(diagnosisErrors.ContainsKey("DiagnosticTypeId") ? "is-invalid" : "")"
-                                                @bind="currentDiagnosis.DiagnosticTypeId">
+                                        @bind="currentDiagnosis.DiagnosticTypeId">
                                             <option value="0">Seleccione un tipo de diagnóstico</option>
                                             @foreach (var type in availableDiagnosticTypes)
                                             {
@@ -884,11 +911,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Denominación <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(diagnosisErrors.ContainsKey("Denomination") ? "is-invalid" : "")"
-                                                  @bind="currentDiagnosis.Denomination"
-                                                  rows="3"
-                                                  maxlength="500"
-                                                  placeholder="Describa la denominación del diagnóstico..."
-                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @bind="currentDiagnosis.Denomination"
+                                        rows="3"
+                                        maxlength="500"
+                                        placeholder="Describa la denominación del diagnóstico..."
+                                        style="resize: vertical; max-height: 150px;"></textarea>
                                         @if (diagnosisErrors.ContainsKey("Denomination"))
                                         {
                                             <div class="invalid-feedback">@diagnosisErrors["Denomination"]</div>
@@ -900,11 +927,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Recurrencia <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(diagnosisErrors.ContainsKey("Recurrence") ? "is-invalid" : "")"
-                                                  @bind="currentDiagnosis.Recurrence"
-                                                  rows="3"
-                                                  maxlength="500"
-                                                  placeholder="Describa la recurrencia del diagnóstico..."
-                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @bind="currentDiagnosis.Recurrence"
+                                        rows="3"
+                                        maxlength="500"
+                                        placeholder="Describa la recurrencia del diagnóstico..."
+                                        style="resize: vertical; max-height: 150px;"></textarea>
                                         @if (diagnosisErrors.ContainsKey("Recurrence"))
                                         {
                                             <div class="invalid-feedback">@diagnosisErrors["Recurrence"]</div>
@@ -916,11 +943,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Motivación del Diagnóstico <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(diagnosisErrors.ContainsKey("DiagnosisMotivation") ? "is-invalid" : "")"
-                                                  @bind="currentDiagnosis.DiagnosisMotivation"
-                                                  rows="4"
-                                                  maxlength="1000"
-                                                  placeholder="Describa la motivación del diagnóstico..."
-                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @bind="currentDiagnosis.DiagnosisMotivation"
+                                        rows="4"
+                                        maxlength="1000"
+                                        placeholder="Describa la motivación del diagnóstico..."
+                                        style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
                                         @if (diagnosisErrors.ContainsKey("DiagnosisMotivation"))
                                         {
                                             <div class="invalid-feedback">@diagnosisErrors["DiagnosisMotivation"]</div>
@@ -1067,26 +1094,26 @@
                         </div>
 
                         <EditableTable Title="Derivaciones a Especialistas"
-                                       ColumnHeaders="@referralHeaders"
-                                       Rows="@referralRows"
-                                       RowIds="@referralIds"
-                                       EmptyMessage="No se han registrado derivaciones"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddReferralRequested"
-                                       OnEditRequested="@OnEditReferralRequested"
-                                       OnDeleteRequested="@OnDeleteReferralRequested"
-                                       OnSaveRequested="@OnSaveReferralRequested"
-                                       IsValidForm="@IsReferralFormValid">
+                        ColumnHeaders="@referralHeaders"
+                        Rows="@referralRows"
+                        RowIds="@referralIds"
+                        EmptyMessage="No se han registrado derivaciones"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddReferralRequested"
+                        OnEditRequested="@OnEditReferralRequested"
+                        OnDeleteRequested="@OnDeleteReferralRequested"
+                        OnSaveRequested="@OnSaveReferralRequested"
+                        IsValidForm="@IsReferralFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Especialidad <span class="text-danger">*</span></label>
                                         <select class="form-select @(referralErrors.ContainsKey("Specialty") ? "is-invalid" : "")"
-                                                @bind="selectedSpecialtyId">
+                                        @bind="selectedSpecialtyId">
                                             <option value="0">Seleccione una especialidad</option>
                                             @foreach (var location in availableLocations)
                                             {
@@ -1101,9 +1128,9 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Fecha de Derivación <span class="text-danger">*</span></label>
                                         <input type="date"
-                                               class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
-                                               @bind="currentReferral.DateOfReferral"
-                                               @bind:format="yyyy-MM-dd" />
+                                        class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
+                                        @bind="currentReferral.DateOfReferral"
+                                        @bind:format="yyyy-MM-dd" />
                                         @if (referralErrors.ContainsKey("DateOfReferral"))
                                         {
                                             <div class="invalid-feedback">@referralErrors["DateOfReferral"]</div>
@@ -1112,11 +1139,11 @@
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Motivo de Derivación <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(referralErrors.ContainsKey("Description") ? "is-invalid" : "")"
-                                                  @bind="currentReferral.Description"
-                                                  rows="6"
-                                                  maxlength="1000"
-                                                  placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
-                                                  style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
+                                        @bind="currentReferral.Description"
+                                        rows="6"
+                                        maxlength="1000"
+                                        placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
+                                        style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
                                         @if (referralErrors.ContainsKey("Description"))
                                         {
                                             <div class="invalid-feedback">@referralErrors["Description"]</div>
@@ -1183,30 +1210,30 @@
                         </div>
 
                         <EditableTable Title="Evolución del Paciente"
-                                       ColumnHeaders="@evolutionHeaders"
-                                       Rows="@evolutionRows"
-                                       RowIds="@evolutionIds"
-                                       EmptyMessage="No se han registrado evoluciones del paciente"
-                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta evolución?"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       ShowActions="true"
-                                       OnAddRequested="@OnAddEvolutionRequested"
-                                       OnEditRequested="@OnEditEvolutionRequested"
-                                       OnDeleteRequested="@OnDeleteEvolutionRequested"
-                                       OnSaveRequested="@OnSaveEvolutionRequested"
-                                       IsValidForm="@IsEvolutionFormValid">
+                        ColumnHeaders="@evolutionHeaders"
+                        Rows="@evolutionRows"
+                        RowIds="@evolutionIds"
+                        EmptyMessage="No se han registrado evoluciones del paciente"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta evolución?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddEvolutionRequested"
+                        OnEditRequested="@OnEditEvolutionRequested"
+                        OnDeleteRequested="@OnDeleteEvolutionRequested"
+                        OnSaveRequested="@OnSaveEvolutionRequested"
+                        IsValidForm="@IsEvolutionFormValid">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Observación <span class="text-danger">*</span></label>
                                         <textarea class="form-control @(evolutionErrors.ContainsKey("Description") ? "is-invalid" : "")"
-                                                  @bind="currentEvolution.Description"
-                                                  rows="6"
-                                                  maxlength="1000"
-                                                  placeholder="Describa la evolución del paciente, síntomas, mejoras, cambios en el tratamiento, etc..."
-                                                  style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
+                                        @bind="currentEvolution.Description"
+                                        rows="6"
+                                        maxlength="1000"
+                                        placeholder="Describa la evolución del paciente, síntomas, mejoras, cambios en el tratamiento, etc..."
+                                        style="resize: vertical; min-height: 120px; max-height: 300px;"></textarea>
                                         @if (evolutionErrors.ContainsKey("Description"))
                                         {
                                             <div class="invalid-feedback">@evolutionErrors["Description"]</div>
@@ -1219,12 +1246,12 @@
                                         <label class="form-label fw-bold">Porcentaje de Mejora <span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <input type="number"
-                                                   class="form-control @(evolutionErrors.ContainsKey("Percentage") ? "is-invalid" : "")"
-                                                   @bind="currentEvolution.Percentage"
-                                                   min="0"
-                                                   max="100"
-                                                   step="0.1"
-                                                   placeholder="Ingrese el porcentaje de mejora" />
+                                            class="form-control @(evolutionErrors.ContainsKey("Percentage") ? "is-invalid" : "")"
+                                            @bind="currentEvolution.Percentage"
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
+                                            placeholder="Ingrese el porcentaje de mejora" />
                                             <span class="input-group-text">%</span>
                                             @if (evolutionErrors.ContainsKey("Percentage"))
                                             {
@@ -1304,26 +1331,26 @@
                             </h6>
 
                             <EditableTable Title="Medicamentos"
-                                           ColumnHeaders="@pharmacologicalHeaders"
-                                           Rows="@pharmacologicalRows"
-                                           RowIds="@pharmacologicalIds"
-                                           EmptyMessage="No se han registrado medicamentos"
-                                           DeleteConfirmationMessage="¿Está seguro que desea eliminar este medicamento?"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           ShowActions="true"
-                                           OnAddRequested="@OnAddPharmacologicalRequested"
-                                           OnEditRequested="@OnEditPharmacologicalRequested"
-                                           OnDeleteRequested="@OnDeletePharmacologicalRequested"
-                                           OnSaveRequested="@OnSavePharmacologicalRequested"
-                                           IsValidForm="@IsPharmacologicalFormValid">
+                            ColumnHeaders="@pharmacologicalHeaders"
+                            Rows="@pharmacologicalRows"
+                            RowIds="@pharmacologicalIds"
+                            EmptyMessage="No se han registrado medicamentos"
+                            DeleteConfirmationMessage="¿Está seguro que desea eliminar este medicamento?"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            ShowActions="true"
+                            OnAddRequested="@OnAddPharmacologicalRequested"
+                            OnEditRequested="@OnEditPharmacologicalRequested"
+                            OnDeleteRequested="@OnDeletePharmacologicalRequested"
+                            OnSaveRequested="@OnSavePharmacologicalRequested"
+                            IsValidForm="@IsPharmacologicalFormValid">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Medicamento <span class="text-danger">*</span></label>
                                             <select class="form-select @(pharmacologicalErrors.ContainsKey("MedicineId") ? "is-invalid" : "")"
-                                                    @bind="currentPharmacological.MedicineId">
+                                            @bind="currentPharmacological.MedicineId">
                                                 <option value="0">Seleccione un medicamento</option>
                                                 @foreach (var medicine in availableMedicines)
                                                 {
@@ -1338,10 +1365,10 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Dosis <span class="text-danger">*</span></label>
                                             <input type="number"
-                                                   class="form-control @(pharmacologicalErrors.ContainsKey("Dose") ? "is-invalid" : "")"
-                                                   @bind="currentPharmacological.Dose"
-                                                   min="1"
-                                                   placeholder="Ingrese la dosis" />
+                                            class="form-control @(pharmacologicalErrors.ContainsKey("Dose") ? "is-invalid" : "")"
+                                            @bind="currentPharmacological.Dose"
+                                            min="1"
+                                            placeholder="Ingrese la dosis" />
                                             @if (pharmacologicalErrors.ContainsKey("Dose"))
                                             {
                                                 <div class="invalid-feedback">@pharmacologicalErrors["Dose"]</div>
@@ -1350,10 +1377,10 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Frecuencia <span class="text-danger">*</span></label>
                                             <input type="text"
-                                                   class="form-control @(pharmacologicalErrors.ContainsKey("Frequency") ? "is-invalid" : "")"
-                                                   @bind="currentPharmacological.Frequency"
-                                                   maxlength="100"
-                                                   placeholder="Ej: Cada 8 horas" />
+                                            class="form-control @(pharmacologicalErrors.ContainsKey("Frequency") ? "is-invalid" : "")"
+                                            @bind="currentPharmacological.Frequency"
+                                            maxlength="100"
+                                            placeholder="Ej: Cada 8 horas" />
                                             @if (pharmacologicalErrors.ContainsKey("Frequency"))
                                             {
                                                 <div class="invalid-feedback">@pharmacologicalErrors["Frequency"]</div>
@@ -1362,10 +1389,10 @@
                                         <div class="col-md-6">
                                             <label class="form-label fw-bold">Duración <span class="text-danger">*</span></label>
                                             <input type="text"
-                                                   class="form-control @(pharmacologicalErrors.ContainsKey("Duration") ? "is-invalid" : "")"
-                                                   @bind="currentPharmacological.Duration"
-                                                   maxlength="100"
-                                                   placeholder="Ej: 7 días" />
+                                            class="form-control @(pharmacologicalErrors.ContainsKey("Duration") ? "is-invalid" : "")"
+                                            @bind="currentPharmacological.Duration"
+                                            maxlength="100"
+                                            placeholder="Ej: 7 días" />
                                             @if (pharmacologicalErrors.ContainsKey("Duration"))
                                             {
                                                 <div class="invalid-feedback">@pharmacologicalErrors["Duration"]</div>
@@ -1374,10 +1401,10 @@
                                         <div class="col-12">
                                             <label class="form-label fw-bold">Vía de Administración <span class="text-danger">*</span></label>
                                             <input type="text"
-                                                   class="form-control @(pharmacologicalErrors.ContainsKey("ViaAdmission") ? "is-invalid" : "")"
-                                                   @bind="currentPharmacological.ViaAdmission"
-                                                   maxlength="100"
-                                                   placeholder="Ej: Oral, Intravenosa, etc." />
+                                            class="form-control @(pharmacologicalErrors.ContainsKey("ViaAdmission") ? "is-invalid" : "")"
+                                            @bind="currentPharmacological.ViaAdmission"
+                                            maxlength="100"
+                                            placeholder="Ej: Oral, Intravenosa, etc." />
                                             @if (pharmacologicalErrors.ContainsKey("ViaAdmission"))
                                             {
                                                 <div class="invalid-feedback">@pharmacologicalErrors["ViaAdmission"]</div>
@@ -1399,15 +1426,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Tratamiento No Farmacológico"
-                                               Width="full"
-                                               @bind-Content="nonPharmacologicalContent"
-                                               @bind-Content:after="SaveNonPharmacologicalTreatment" />
+                                Width="full"
+                                @bind-Content="nonPharmacologicalContent"
+                                @bind-Content:after="SaveNonPharmacologicalTreatment" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Indicaciones"
-                                               Width="full"
-                                               @bind-Content="indicationsContent"
-                                               @bind-Content:after="SaveIndications" />
+                                Width="full"
+                                @bind-Content="indicationsContent"
+                                @bind-Content:after="SaveIndications" />
                             </div>
                         </div>
                     }
@@ -1440,6 +1467,10 @@
     private bool isSaving = false;
     private int selectedHealthProfessionalId = 0;
     private HealthProfessionalDTO? currentProfessional = null;
+
+    private HealthProfessionalDTO? profesionalLogueado;
+    private bool profesionalCargado = false;
+    private List<HealthProfessionalDTO> especialistasMedicinaGeneral = new();
 
 
     // ID de la atención médica actual
@@ -1685,7 +1716,9 @@
         await LoadPhysicalExamData();
         await LoadDiagnosisData();
         await LoadTreatmentData();
-        await LoadReferralData(); // Added referral data loading
+        await LoadReferralData();
+        await ObtenerProfesionalLogueado();
+
         await AssignCurrentProfessional(); // Nueva función
 
 
@@ -1696,9 +1729,54 @@
             currentMedicalCareId = MedicalCare.CareId;
             await LoadExistingData();
         }
+        else
+        {
+            await AsignarProfesionalLogueado();
+        }
 
         // Verificar datos sin guardar al inicializar
         await CheckUnsavedData();
+    }
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Profesional logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el profesional logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo profesional logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Profesional logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (especialistasMedicinaGeneral.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn",
+                "⚠️ No se encontró profesional logueado, mostrando selector manual");
+        }
     }
 
     private async Task CheckUnsavedData()

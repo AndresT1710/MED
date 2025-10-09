@@ -47,8 +47,8 @@
     <ul class="nav nav-tabs" id="physiotherapyTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -62,9 +62,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "currentIllness" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("currentIllness"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("currentIllness"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-notes-medical me-2"></i>Enfermedad Actual
                 @if (IsCurrentIllnessComplete())
                 {
@@ -75,9 +75,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "painScale" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("painScale"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("painScale"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-thermometer-half me-2"></i>Escala de Dolor
                 @if (IsPainScaleComplete())
                 {
@@ -88,9 +88,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "skin" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("skin"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("skin"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-hand-paper me-2"></i>Piel
                 @if (IsSkinEvaluationComplete())
                 {
@@ -101,9 +101,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "jointMuscular" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("jointMuscular"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("jointMuscular"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-bone me-2"></i>Articular/Muscular
                 @if (IsJointMuscularComplete())
                 {
@@ -114,9 +114,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "neuromuscular" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("neuromuscular"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("neuromuscular"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-brain me-2"></i>Neuromuscular
 
                 @if (IsNeuromuscularComplete())
@@ -128,9 +128,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "postural" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("postural"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("postural"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-walking me-2"></i>Postural
                 @if (IsPosturalComplete())
                 {
@@ -141,9 +141,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "testsExams" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("testsExams"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("testsExams"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-file-medical me-2"></i>Pruebas/Exámenes
                 @if (IsTestsExamsComplete())
                 {
@@ -154,9 +154,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "sessions" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("sessions"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("sessions"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-calendar-check me-2"></i>Sesiones
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
@@ -183,7 +183,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                                             OnPatientSelected="HandlePatientSelected" />
+                            OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -222,7 +222,7 @@
                             <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                        @bind="lugarSeleccionada">
+                                @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -241,10 +241,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                                      @bind="motivoConsulta"
-                                      rows="3"
-                                      placeholder="Describa el motivo principal de la consulta de fisioterapia..."
-                                      maxlength="500"></textarea>
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta de fisioterapia..."
+                            maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -254,31 +254,61 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Fisioterapeuta responsable *</label>
-                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
-                                    @bind="selectedHealthProfessionalId"
-                                    disabled>
-                                <option value="0">Seleccione un fisioterapeuta</option>
-                                @foreach (var profesional in fisioterapeutas)
-                                {
-                                    <option value="@profesional.HealthProfessionalId">
-                                        @profesional.FullName - @profesional.NameTypeProfessional
-                                    </option>
-                                }
-                            </select>
-                            @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                            <label class="form-label fw-bold">Especialista en Fisioterapia</label>
+
+                            @if (profesionalCargado)
                             {
-                                <div class="invalid-feedback">
-                                    Debe seleccionar un fisioterapeuta responsable
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Especialista asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el especialista responsable en fisioterapia.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                            @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un especialista de fisioterapia manualmente</option>
+                                                @foreach (var profesional in especialistasFisioterapia)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un especialista en fisioterapia responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del especialista en fisioterapia...</span>
                                 </div>
                             }
                         </div>
+                        
 
-                        <div class="alert alert-info mb-3">
-                            <i class="fas fa-user-md me-2"></i>
-                            <strong>Fisioterapeuta asignado automáticamente:</strong> Este registro será asignado
-                            automáticamente al fisioterapeuta actualmente logueado en el sistema.
-                        </div>
 
                         @if (!IsPatientTabComplete())
                         {
@@ -340,57 +370,57 @@
                             @* Added auto-save on content change for each ContainerBox1 *@
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Tiempo de Evolución"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.EvolutionTime"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.EvolutionTime"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Localización"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.Localization"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.Localization"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Intensidad"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.Intensity"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.Intensity"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Factores Agravantes"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.AggravatingFactors"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.AggravatingFactors"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Factores Atenuantes"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.MitigatingFactors"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.MitigatingFactors"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Dolor Nocturno"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.NocturnalPain"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.NocturnalPain"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Debilidad"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.Weakness"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.Weakness"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-6">
                                 <ContainerBox1 Title="Parestesias"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.Paresthesias"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.Paresthesias"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                             <div class="col-md-12">
                                 <ContainerBox1 Title="Exámenes Complementarios"
-                                               Width="full"
-                                               @bind-Content="@currentIllness.ComplementaryExams"
-                                               @bind-Content:after="AutoSaveCurrentIllness" />
+                                Width="full"
+                                @bind-Content="@currentIllness.ComplementaryExams"
+                                @bind-Content:after="AutoSaveCurrentIllness" />
                             </div>
                         </div>
 
@@ -426,17 +456,17 @@
                 </div>
                 <div class="card-body">
                     <EditableTable Title="Registros de Escala de Dolor"
-                                   ColumnHeaders="@painScaleHeaders"
-                                   Rows="@painScaleRows"
-                                   RowIds="@painScaleIds"
-                                   ShowAddButton="true"
-                                   ShowEditButton="true"
-                                   ShowDeleteButton="true"
-                                   OnAddRequested="@AbrirModalAgregarPainScale"
-                                   OnEditRequested="@EditarPainScale"
-                                   OnDeleteRequested="@EliminarPainScale"
-                                   OnSaveRequested="@GuardarPainScale"
-                                   IsValidForm="@ValidarFormularioPainScale">
+                    ColumnHeaders="@painScaleHeaders"
+                    Rows="@painScaleRows"
+                    RowIds="@painScaleIds"
+                    ShowAddButton="true"
+                    ShowEditButton="true"
+                    ShowDeleteButton="true"
+                    OnAddRequested="@AbrirModalAgregarPainScale"
+                    OnEditRequested="@EditarPainScale"
+                    OnDeleteRequested="@EliminarPainScale"
+                    OnSaveRequested="@GuardarPainScale"
+                    IsValidForm="@ValidarFormularioPainScale">
                         <EditModalContent>
                             <div class="row g-3">
                                 <div class="col-md-12">
@@ -505,17 +535,17 @@
                     @if (currentMedicalCareId > 0)
                     {
                         <EditableTable Title="Evaluaciones de Piel"
-                                       ColumnHeaders="@skinEvaluationHeaders"
-                                       Rows="@skinEvaluationRows"
-                                       RowIds="@skinEvaluationIds"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       OnAddRequested="@AbrirModalAgregarSkinEvaluation"
-                                       OnEditRequested="@EditarSkinEvaluation"
-                                       OnDeleteRequested="@EliminarSkinEvaluation"
-                                       OnSaveRequested="@GuardarSkinEvaluation"
-                                       IsValidForm="@ValidarFormularioSkinEvaluation">
+                        ColumnHeaders="@skinEvaluationHeaders"
+                        Rows="@skinEvaluationRows"
+                        RowIds="@skinEvaluationIds"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        OnAddRequested="@AbrirModalAgregarSkinEvaluation"
+                        OnEditRequested="@EditarSkinEvaluation"
+                        OnDeleteRequested="@EliminarSkinEvaluation"
+                        OnSaveRequested="@GuardarSkinEvaluation"
+                        IsValidForm="@ValidarFormularioSkinEvaluation">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -561,8 +591,8 @@
                                     <div class="col-md-12">
                                         <label class="form-label">Fecha de Evaluación *</label>
                                         <input type="date" class="form-control"
-                                               @bind="editingSkinEvaluation.EvaluationDate"
-                                               @bind:format="yyyy-MM-dd" />
+                                        @bind="editingSkinEvaluation.EvaluationDate"
+                                        @bind:format="yyyy-MM-dd" />
                                     </div>
                                 </div>
                             </EditModalContent>
@@ -605,17 +635,17 @@
                         <!-- Evaluación Osteoarticular -->
                         <div class="mb-4">
                             <EditableTable Title="Evaluación Osteoarticular"
-                                           ColumnHeaders="@osteoarticularHeaders"
-                                           Rows="@osteoarticularRows"
-                                           RowIds="@osteoarticularIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarOsteoarticular"
-                                           OnEditRequested="@EditarOsteoarticular"
-                                           OnDeleteRequested="@EliminarOsteoarticular"
-                                           OnSaveRequested="@GuardarOsteoarticular"
-                                           IsValidForm="@ValidarFormularioOsteoarticular">
+                            ColumnHeaders="@osteoarticularHeaders"
+                            Rows="@osteoarticularRows"
+                            RowIds="@osteoarticularIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarOsteoarticular"
+                            OnEditRequested="@EditarOsteoarticular"
+                            OnDeleteRequested="@EliminarOsteoarticular"
+                            OnSaveRequested="@GuardarOsteoarticular"
+                            IsValidForm="@ValidarFormularioOsteoarticular">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-6">
@@ -646,17 +676,17 @@
                         <!-- Evaluación Articular/Muscular -->
                         <div class="mt-4">
                             <EditableTable Title="Evaluación Articular/Muscular"
-                                           ColumnHeaders="@medicalEvaluationHeaders"
-                                           Rows="@medicalEvaluationRows"
-                                           RowIds="@medicalEvaluationIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarMedicalEvaluation"
-                                           OnEditRequested="@EditarMedicalEvaluation"
-                                           OnDeleteRequested="@EliminarMedicalEvaluation"
-                                           OnSaveRequested="@GuardarMedicalEvaluation"
-                                           IsValidForm="@ValidarFormularioMedicalEvaluation">
+                            ColumnHeaders="@medicalEvaluationHeaders"
+                            Rows="@medicalEvaluationRows"
+                            RowIds="@medicalEvaluationIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarMedicalEvaluation"
+                            OnEditRequested="@EditarMedicalEvaluation"
+                            OnDeleteRequested="@EliminarMedicalEvaluation"
+                            OnSaveRequested="@GuardarMedicalEvaluation"
+                            IsValidForm="@ValidarFormularioMedicalEvaluation">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-6">
@@ -692,9 +722,9 @@
                                         <div class="col-md-12">
                                             <label class="form-label">Observación</label>
                                             <textarea class="form-control"
-                                                      @bind="editingMedicalEvaluation.Description"
-                                                      rows="3"
-                                                      placeholder="Ingrese observaciones adicionales..."></textarea>
+                                            @bind="editingMedicalEvaluation.Description"
+                                            rows="3"
+                                            placeholder="Ingrese observaciones adicionales..."></textarea>
                                         </div>
                                     </div>
                                 </EditModalContent>
@@ -734,17 +764,17 @@
                     @if (currentMedicalCareId > 0)
                     {
                         <EditableTable Title="Evaluación Neuromuscular"
-                                       ColumnHeaders="@neuromuscularHeaders"
-                                       Rows="@neuromuscularRows"
-                                       RowIds="@neuromuscularIds"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       OnAddRequested="@AbrirModalAgregarNeuromuscular"
-                                       OnEditRequested="@EditarNeuromuscular"
-                                       OnDeleteRequested="@EliminarNeuromuscular"
-                                       OnSaveRequested="@GuardarNeuromuscular"
-                                       IsValidForm="@ValidarFormularioNeuromuscular">
+                        ColumnHeaders="@neuromuscularHeaders"
+                        Rows="@neuromuscularRows"
+                        RowIds="@neuromuscularIds"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        OnAddRequested="@AbrirModalAgregarNeuromuscular"
+                        OnEditRequested="@EditarNeuromuscular"
+                        OnDeleteRequested="@EliminarNeuromuscular"
+                        OnSaveRequested="@GuardarNeuromuscular"
+                        IsValidForm="@ValidarFormularioNeuromuscular">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -814,17 +844,17 @@
                     @if (currentMedicalCareId > 0)
                     {
                         <EditableTable Title="Evaluación Postural"
-                                       ColumnHeaders="@posturalHeaders"
-                                       Rows="@posturalRows"
-                                       RowIds="@posturalIds"
-                                       ShowAddButton="true"
-                                       ShowEditButton="true"
-                                       ShowDeleteButton="true"
-                                       OnAddRequested="@AbrirModalAgregarPostural"
-                                       OnEditRequested="@EditarPostural"
-                                       OnDeleteRequested="@EliminarPostural"
-                                       OnSaveRequested="@GuardarPostural"
-                                       IsValidForm="@ValidarFormularioPostural">
+                        ColumnHeaders="@posturalHeaders"
+                        Rows="@posturalRows"
+                        RowIds="@posturalIds"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        OnAddRequested="@AbrirModalAgregarPostural"
+                        OnEditRequested="@EditarPostural"
+                        OnDeleteRequested="@EliminarPostural"
+                        OnSaveRequested="@GuardarPostural"
+                        IsValidForm="@ValidarFormularioPostural">
                             <EditModalContent>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -840,28 +870,28 @@
                                     <div class="col-md-6">
                                         <label class="form-label">Grado (%) *</label>
                                         <input type="number"
-                                               class="form-control"
-                                               @bind="editingPostural.Grade"
-                                               step="0.1"
-                                               min="0"
-                                               max="100"
-                                               placeholder="0.0" />
+                                        class="form-control"
+                                        @bind="editingPostural.Grade"
+                                        step="0.1"
+                                        min="0"
+                                        max="100"
+                                        placeholder="0.0" />
                                     </div>
                                     <div class="col-md-12">
                                         <label class="form-label">Observación</label>
                                         <textarea class="form-control"
-                                                  @bind="editingPostural.Observation"
-                                                  rows="3"
-                                                  style="resize: vertical; min-height: 80px;"
-                                                  placeholder="Ingrese observaciones sobre la evaluación postural..."></textarea>
+                                        @bind="editingPostural.Observation"
+                                        rows="3"
+                                        style="resize: vertical; min-height: 80px;"
+                                        placeholder="Ingrese observaciones sobre la evaluación postural..."></textarea>
                                     </div>
                                     <div class="col-md-12">
                                         <label class="form-label">Alineación Corporal</label>
                                         <textarea class="form-control"
-                                                  @bind="editingPostural.BodyAlignment"
-                                                  rows="3"
-                                                  style="resize: vertical; min-height: 80px;"
-                                                  placeholder="Describa la alineación corporal observada..."></textarea>
+                                        @bind="editingPostural.BodyAlignment"
+                                        rows="3"
+                                        style="resize: vertical; min-height: 80px;"
+                                        placeholder="Describa la alineación corporal observada..."></textarea>
                                     </div>
                                 </div>
                             </EditModalContent>
@@ -902,25 +932,25 @@
                         <!-- Pruebas Especiales -->
                         <div class="mb-5">
                             <EditableTable Title="Pruebas Especiales"
-                                           ColumnHeaders="@specialTestHeaders"
-                                           Rows="@specialTestRows"
-                                           RowIds="@specialTestIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarSpecialTest"
-                                           OnEditRequested="@EditarSpecialTest"
-                                           OnDeleteRequested="@EliminarSpecialTest"
-                                           OnSaveRequested="@GuardarSpecialTest"
-                                           IsValidForm="@ValidarFormularioSpecialTest">
+                            ColumnHeaders="@specialTestHeaders"
+                            Rows="@specialTestRows"
+                            RowIds="@specialTestIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarSpecialTest"
+                            OnEditRequested="@EditarSpecialTest"
+                            OnDeleteRequested="@EliminarSpecialTest"
+                            OnSaveRequested="@GuardarSpecialTest"
+                            IsValidForm="@ValidarFormularioSpecialTest">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-12">
                                             <label class="form-label">Prueba *</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingSpecialTest.Test"
-                                                   placeholder="Ingrese el nombre de la prueba especial..." />
+                                            class="form-control"
+                                            @bind="editingSpecialTest.Test"
+                                            placeholder="Ingrese el nombre de la prueba especial..." />
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label">Resultado *</label>
@@ -935,10 +965,10 @@
                                         <div class="col-md-12">
                                             <label class="form-label">Observaciones</label>
                                             <textarea class="form-control"
-                                                      @bind="editingSpecialTest.Observations"
-                                                      rows="3"
-                                                      style="resize: vertical; min-height: 80px;"
-                                                      placeholder="Ingrese observaciones sobre la prueba..."></textarea>
+                                            @bind="editingSpecialTest.Observations"
+                                            rows="3"
+                                            style="resize: vertical; min-height: 80px;"
+                                            placeholder="Ingrese observaciones sobre la prueba..."></textarea>
                                         </div>
                                     </div>
                                 </EditModalContent>
@@ -948,47 +978,47 @@
                         <!-- Exámenes Complementarios -->
                         <div class="mt-5">
                             <EditableTable Title="Exámenes Complementarios"
-                                           ColumnHeaders="@complementaryExamsHeaders"
-                                           Rows="@complementaryExamsRows"
-                                           RowIds="@complementaryExamsIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarComplementaryExam"
-                                           OnEditRequested="@EditarComplementaryExam"
-                                           OnDeleteRequested="@EliminarComplementaryExam"
-                                           OnSaveRequested="@GuardarComplementaryExam"
-                                           IsValidForm="@ValidarFormularioComplementaryExam">
+                            ColumnHeaders="@complementaryExamsHeaders"
+                            Rows="@complementaryExamsRows"
+                            RowIds="@complementaryExamsIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarComplementaryExam"
+                            OnEditRequested="@EditarComplementaryExam"
+                            OnDeleteRequested="@EliminarComplementaryExam"
+                            OnSaveRequested="@GuardarComplementaryExam"
+                            IsValidForm="@ValidarFormularioComplementaryExam">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-12">
                                             <label class="form-label">Examen *</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingComplementaryExam.Exam"
-                                                   placeholder="Ingrese el nombre del examen..." />
+                                            class="form-control"
+                                            @bind="editingComplementaryExam.Exam"
+                                            placeholder="Ingrese el nombre del examen..." />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Fecha de Examen *</label>
                                             <input type="date"
-                                                   class="form-control"
-                                                   @bind="editingComplementaryExam.ExamDate"
-                                                   @bind:format="yyyy-MM-dd" />
+                                            class="form-control"
+                                            @bind="editingComplementaryExam.ExamDate"
+                                            @bind:format="yyyy-MM-dd" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Link del PDF</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingComplementaryExam.PdfLink"
-                                                   placeholder="Ingrese el link del PDF..." />
+                                            class="form-control"
+                                            @bind="editingComplementaryExam.PdfLink"
+                                            placeholder="Ingrese el link del PDF..." />
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label">Descripción</label>
                                             <textarea class="form-control"
-                                                      @bind="editingComplementaryExam.Descriptions"
-                                                      rows="3"
-                                                      style="resize: vertical; min-height: 80px;"
-                                                      placeholder="Ingrese una descripción del examen..."></textarea>
+                                            @bind="editingComplementaryExam.Descriptions"
+                                            rows="3"
+                                            style="resize: vertical; min-height: 80px;"
+                                            placeholder="Ingrese una descripción del examen..."></textarea>
                                         </div>
                                     </div>
                                 </EditModalContent>
@@ -1064,6 +1094,11 @@
 
     [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    private HealthProfessionalDTO? profesionalLogueado;
+    private bool profesionalCargado = false;
+    private List<HealthProfessionalDTO> especialistasFisioterapia = new();
+
 
     private string activeTab = "patient";
     private int clinicalHistoryId = 0;
@@ -1182,6 +1217,7 @@
         await LoadLugaresAtencion();
         await LoadHealthProfessionals();
         await AssignCurrentProfessional();
+        await ObtenerProfesionalLogueado();
 
         await LoadPainScaleData();
         await LoadSkinEvaluationData();
@@ -1195,6 +1231,52 @@
             isEditMode = true;
             currentMedicalCareId = MedicalCare.CareId;
             await LoadExistingData();
+        }
+        else
+        {
+            await AsignarProfesionalLogueado();
+
+        }
+    }
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Profesional logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el profesional logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo profesional logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Profesional logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (especialistasFisioterapia.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn",
+                "⚠️ No se encontró profesional logueado, mostrando selector manual");
         }
     }
 
@@ -2503,10 +2585,8 @@
                            p.NameTypeProfessional?.Contains("Fisioterapeuta", StringComparison.OrdinalIgnoreCase) == true)
                 .ToList();
 
-            if (!fisioterapeutas.Any())
-            {
-                fisioterapeutas = allProfessionals.Take(5).ToList();
-            }
+            await JS.InvokeVoidAsync("console.log",
+    $"Se encontraron {especialistasFisioterapia.Count} especialistas en Fisioterapia");
         }
         catch (Exception ex)
         {

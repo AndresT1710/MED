@@ -80,6 +80,21 @@ namespace SMED.BackEnd.Controllers
             }
         }
 
+        [HttpGet("early-stimulation")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetEarlyStimulationCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetEarlyStimulationCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de estimulación temprana");
+                return BadRequest($"Error al obtener atenciones de estimulación temprana: {ex.Message}");
+            }
+        }
+
         [HttpGet("by-area-and-date")]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetByAreaAndDate([FromQuery] string area, [FromQuery] DateTime? date = null)
         {

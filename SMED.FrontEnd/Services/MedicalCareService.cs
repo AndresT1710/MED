@@ -223,7 +223,24 @@ namespace SMED.FrontEnd.Services
                 return new List<MedicalCareDTO>();
             }
         }
-
+        public async Task<List<MedicalCareDTO>?> GetEarlyStimulationCareAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalCare/early-stimulation");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones de estimulación temprana: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de estimulación temprana");
+                return new List<MedicalCareDTO>();
+            }
+        }
 
 
     }

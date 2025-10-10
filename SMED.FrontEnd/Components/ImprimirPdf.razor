@@ -1,0 +1,93 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<button class="btn btn-primary" @onclick="ImprimirConFuncionInline" disabled="@isLoading">
+    <i class="fas fa-print me-2"></i>
+    @(isLoading ? "Generando PDF..." : "Imprimir PDF")
+</button>
+
+@code {
+    [Parameter] public string Tipo { get; set; } = "person";
+    [Parameter] public int Id { get; set; }
+
+    private bool isLoading = false;
+
+    private async Task ImprimirConFuncionInline()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var url = $"api/pdf/{Tipo}/{Id}";
+            Console.WriteLine($"Solicitando PDF desde: {url}");
+
+            var pdfBytes = await Http.GetByteArrayAsync(url);
+            Console.WriteLine($"PDF recibido: {pdfBytes.Length} bytes");
+
+            if (pdfBytes.Length == 0)
+            {
+                Console.WriteLine("No se recibieron datos del PDF");
+                await JS.InvokeVoidAsync("alert", "No se pudo generar el PDF");
+                return;
+            }
+
+            var base64Pdf = Convert.ToBase64String(pdfBytes);
+
+            // JavaScript inline
+            var jsFunction = @"
+                function abrirPdf(base64Str) {
+                    try {
+                        console.log('Abriendo PDF...');
+                        const byteCharacters = atob(base64Str);
+                        const byteNumbers = new Array(byteCharacters.length);
+
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
+
+                        // Abrir en nueva pestaña
+                        const newWindow = window.open(url, '_blank');
+
+                        if (!newWindow) {
+                            // Fallback: descarga directa
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = 'ficha_persona.pdf';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+
+                        // Limpiar memoria después de 10 segundos
+                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+                    } catch (err) {
+                        console.error('Error abriendo PDF:', err);
+                        alert('Error al abrir el PDF: ' + err.message);
+                    }
+                }
+
+                // Ejecutar
+                abrirPdf('" + base64Pdf + @"');
+            ";
+
+            await JS.InvokeVoidAsync("eval", jsFunction);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error generando PDF: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

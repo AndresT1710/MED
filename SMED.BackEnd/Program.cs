@@ -10,6 +10,7 @@ using System.Text;
 using SGIS.Models;
 using SMED.Shared.Entity;
 using SMED.BackEnd.Repositories;
+using SMED.BackEnd.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -189,6 +190,9 @@ builder.Services.AddScoped<CurrentIllnessRepository>();
 builder.Services.AddScoped<ComplementaryExamsRepository>();
 builder.Services.AddScoped<IRepository<ComplementaryExamsDTO, int>, ComplementaryExamsRepository>();
 
+//PDF
+builder.Services.AddScoped<PdfService>();
+builder.Services.AddHttpClient();
 
 
 // 4. Authentication

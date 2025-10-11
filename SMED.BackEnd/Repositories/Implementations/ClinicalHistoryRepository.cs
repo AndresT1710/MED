@@ -74,6 +74,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.PostnatalHistories)
                 .Include(ch => ch.PerinatalHistories)
                 .Include(ch => ch.NeuropsychologicalHistories)
+                .Include(ch => ch.TraumaticHistories)
                 .Include(ch => ch.NeurologicalExams)
                     .ThenInclude(ne => ne.NeurologicalExamType)
                 .Include(ch => ch.DevelopmentRecords)
@@ -208,6 +209,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.PostnatalHistories)
                 .Include(ch => ch.PerinatalHistories)
                 .Include(ch => ch.NeuropsychologicalHistories)
+                .Include(ch => ch.TraumaticHistories)
                 .Include(ch => ch.NeurologicalExams)
                     .ThenInclude(ne => ne.NeurologicalExamType)
                 .Include(ch => ch.DevelopmentRecords)
@@ -251,6 +253,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.MedicationHistories)
                     .ThenInclude(mh => mh.Medicine)
                 .Include(ch => ch.PsychopsychiatricHistories)
+                .Include(ch => ch.TraumaticHistories)
                 .Include(ch => ch.CurrentProblemHistories)
                 .Include(ch => ch.WorkHistories)
                 .Include(ch => ch.PsychosexualHistories)
@@ -546,6 +549,14 @@ namespace SMED.BackEnd.Repositories.Implementations
                     SatisfactionLevel = w.SatisfactionLevel
                 }).ToList(),
 
+                TraumaticHistories = entity.TraumaticHistories.Select(th => new TraumaticHistoryDTO
+                {
+                     ClinicalHistoryId = th.ClinicalHistoryId,
+                     Description = th.Description,
+                     HistoryNumber = th.HistoryNumber,
+                     TraumaticHistoryId = th.TraumaticHistoryId
+                }).ToList(),
+
                 PsychosexualHistories = entity.PsychosexualHistories.Select(ps => new PsychosexualHistoryDTO
                 {
                     PsychosexualHistoryId = ps.PsychosexualHistoryId,
@@ -561,7 +572,15 @@ namespace SMED.BackEnd.Repositories.Implementations
                     PrenatalHistoryId = ph.PrenatalHistoryId,
                     HistoryNumber = ph.HistoryNumber,
                     ClinicalHistoryId = ph.ClinicalHistoryId,
-                    Description = ph.Description
+                    Description = ph.Description,
+                    NumberOfDeeds = ph.NumberOfDeeds,
+                    PlannedPregnancy = ph.PlannedPregnancy,
+                    RadiationExposure = ph.RadiationExposure,
+                    FetalSuffering = ph.FetalSuffering,
+                    MedicationsOrVitamins = ph.MedicationsOrVitamins,
+                    NumberOfControls = ph.NumberOfControls,
+                    NumberOfUltrasounds = ph.NumberOfUltrasounds,
+                    ComplicationsDuringPregnancy = ph.ComplicationsDuringPregnancy
                 }).ToList(),
 
                 PostnatalHistories = entity.PostnatalHistories.Select(ph => new PostnatalHistoryDTO
@@ -569,7 +588,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                     PostNatalId = ph.PostNatalId,
                     HistoryNumber = ph.HistoryNumber,
                     ClinicalHistoryId = ph.ClinicalHistoryId,
-                    Description = ph.Description
+                    Description = ph.Description,
+                    Bcg = ph.Bcg,
+                    Rotavirus = ph.Rotavirus,
+                    Pentavalente = ph.Pentavalente,
+                    Influenza = ph.Influenza,
+                    Varicela = ph.Varicela,
+                    HepatitisB = ph.HepatitisB,
+                    TripleViral = ph.TripleViral,
+                    PolioVirus = ph.PolioVirus,
+                    Neumococo = ph.Neumococo,
+                    Observations = ph.Observations
                 }).ToList(),
 
                 PerinatalHistories = entity.PerinatalHistories.Select(ph => new PerinatalHistoryDTO
@@ -577,7 +606,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                     PerinatalHistoryId = ph.PerinatalHistoryId,
                     HistoryNumber = ph.HistoryNumber,
                     ClinicalHistoryId = ph.ClinicalHistoryId,
-                    Description = ph.Description
+                    Description = ph.Description,
+                    TypeOfBirth = ph.TypeOfBirth,
+                    NumberOfWeeks = ph.NumberOfWeeks,
+                    Apgar = ph.Apgar,
+                    AuditoryScreen = ph.AuditoryScreen,
+                    ResuscitationManeuvers = ph.ResuscitationManeuvers,
+                    PlaceOfCare = ph.PlaceOfCare,
+                    BirthCry = ph.BirthCry,
+                    MetabolicScreen = ph.MetabolicScreen,
+                    ComplicationsDuringChildbirth = ph.ComplicationsDuringChildbirth
                 }).ToList(),
 
                 NeuropsychologicalHistories = entity.NeuropsychologicalHistories.Select(nh => new NeuropsychologicalHistoryDTO
@@ -585,7 +623,17 @@ namespace SMED.BackEnd.Repositories.Implementations
                     NeuropsychologicalHistoryId = nh.NeuropsychologicalHistoryId,
                     HistoryNumber = nh.HistoryNumber,
                     ClinicalHistoryId = nh.ClinicalHistoryId,
-                    Description = nh.Description
+                    Description = nh.Description,
+                    HomeConduct = nh.HomeConduct,
+                    SchoolConduct = nh.SchoolConduct,
+                    Leverage = nh.Leverage,
+                    DreamObservation = nh.DreamObservation,
+                    SightObservation = nh.SightObservation,
+                    SpeechObservation = nh.SpeechObservation,
+                    HearingObservation = nh.HearingObservation,
+                    Faintings = nh.Faintings,
+                    ObservationDifferentAbility = nh.ObservationDifferentAbility,
+                    Observation = nh.Observation
                 }).ToList(),
 
                 NeurologicalExams = entity.NeurologicalExams.Select(ne => new NeurologicalExamDTO

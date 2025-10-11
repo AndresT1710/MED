@@ -8,6 +8,15 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>Historia Clínica: @History?.HistoryNumber</h4>
+        <div class="mt-3 text-end">
+            <ImprimirPdf Tipo="clinicalhistory" Id="@History.ClinicalHistoryId" />
+        </div>
+    </div>
+
+
+    
     <div class="row mb-3">
         <div class="col-md-6">
             <h5>Información Básica</h5>
@@ -415,6 +424,914 @@
                     else
                     {
                         <span class="text-muted">No hay datos registrados sobre el consumo de agua</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- NUEVA SECCIÓN: PSICOLOGÍA -->
+    <div class="row mb-3">
+        <h4 class="text-center">Psicología</h4>
+    </div>
+
+    <!-- Antecedente de Medicamentos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedente de Medicamentos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.MedicationHistories != null && History.MedicationHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var medication in History.MedicationHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Medicamento:</strong> @medication.MedicineName <br />
+                                    <strong>Fecha de Registro:</strong> @medication.ConsumptionDate?.ToString("dd/MM/yyyy")
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes de medicamentos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antecedente Psicopsiquiátrico -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedente Psicopsiquiátrico</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PsychopsychiatricHistories != null && History.PsychopsychiatricHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var psych in History.PsychopsychiatricHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Tipo:</strong> @psych.Type <br />
+                                    <strong>Actor:</strong> @psych.Actor <br />
+                                    <strong>Fecha:</strong> @psych.HistoryDate?.ToString("dd/MM/yyyy") <br />
+                                    <strong>Estado:</strong> @psych.HistoryState
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes psicopsiquiátricos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Problema Actual -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Historial de Problema Actual</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.CurrentProblemHistories != null && History.CurrentProblemHistories.Any())
+                    {
+                        var currentProblem = History.CurrentProblemHistories.FirstOrDefault();
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6>Aparición y Evolución</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(currentProblem?.AppearanceEvolution))
+                                        {
+                                            @currentProblem.AppearanceEvolution
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6>Factores Desencadenantes</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(currentProblem?.TriggeringFactors))
+                                        {
+                                            @currentProblem.TriggeringFactors
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6>Frecuencia e Intensidad de Síntomas</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(currentProblem?.FrequencyIntensitySymptoms))
+                                        {
+                                            @currentProblem.FrequencyIntensitySymptoms
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6>Impacto</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(currentProblem?.Impact))
+                                        {
+                                            @currentProblem.Impact
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay historial de problema actual registrado</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hábitos Tóxicos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Hábitos Tóxicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.ToxicHabitHistories != null && History.ToxicHabitHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var habit in History.ToxicHabitHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Hábito Tóxico:</strong> @habit.Description <br />
+                                    <strong>Fecha de Registro:</strong> @habit.RecordDate?.ToString("dd/MM/yyyy")
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay hábitos tóxicos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antecedente Psicosexual -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedente Psicosexual</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PsychosexualHistories != null && History.PsychosexualHistories.Any())
+                    {
+                        var psychosexual = History.PsychosexualHistories.FirstOrDefault();
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                @if (!string.IsNullOrWhiteSpace(psychosexual?.Description))
+                                {
+                                    @psychosexual.Description
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No hay información registrada</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes psicosexuales registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial Laboral -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Historial Laboral</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.WorkHistories != null && History.WorkHistories.Any())
+                    {
+                        var workHistory = History.WorkHistories.FirstOrDefault();
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <h6>Experiencia</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(workHistory?.Experience))
+                                        {
+                                            @workHistory.Experience
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>Estabilidad</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(workHistory?.Stability))
+                                        {
+                                            @workHistory.Stability
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>Nivel de Satisfacción</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(workHistory?.SatisfactionLevel))
+                                        {
+                                            @workHistory.SatisfactionLevel
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay historial laboral registrado</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: FISIOTERAPIA -->
+    <div class="row mb-3">
+        <h4 class="text-center">Fisioterapia</h4>
+    </div>
+
+    <!-- Antecedentes Traumatológicos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Traumatológicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.TraumaticHistories != null && History.TraumaticHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var traumatic in History.TraumaticHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Descripción:</strong> @traumatic.Description <br />
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes traumatológicos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <h4 class="text-center">Estimulación Temprana</h4>
+    </div>
+
+    <!-- Antecedentes Prenatales -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Prenatales</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PrenatalHistories != null && History.PrenatalHistories.Any())
+                    {
+                        var prenatal = History.PrenatalHistories.FirstOrDefault();
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <strong>Producto de Número de Gestas:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (prenatal?.NumberOfDeeds.HasValue == true)
+                                        {
+                                            @prenatal.NumberOfDeeds
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <strong>Embarazo Planificado:</strong>
+                                @(prenatal?.PlannedPregnancy == true ? "Sí" : "No")
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Exposición a Radiación:</strong>
+                                @(prenatal?.RadiationExposure == true ? "Sí" : "No")
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Sufrimiento Fetal:</strong>
+                                @(prenatal?.FetalSuffering == true ? "Sí" : "No")
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <strong>Medicamentos o Vitaminas:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(prenatal?.MedicationsOrVitamins))
+                                        {
+                                            @prenatal.MedicationsOrVitamins
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Número de Controles:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (prenatal?.NumberOfControls.HasValue == true)
+                                        {
+                                            @prenatal.NumberOfControls
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Número de Ecografías:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (prenatal?.NumberOfUltrasounds.HasValue == true)
+                                        {
+                                            @prenatal.NumberOfUltrasounds
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <strong>Complicaciones durante el Embarazo:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(prenatal?.ComplicationsDuringPregnancy))
+                                        {
+                                            @prenatal.ComplicationsDuringPregnancy
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay complicaciones registradas</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes prenatales registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antecedentes Perinatales -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Perinatales</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PerinatalHistories != null && History.PerinatalHistories.Any())
+                    {
+                        var perinatal = History.PerinatalHistories.FirstOrDefault();
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Tipo de Parto:</strong> @perinatal?.TypeOfBirth
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Número de Semanas:</strong>
+                                @if (perinatal?.NumberOfWeeks.HasValue == true)
+                                {
+                                    @perinatal.NumberOfWeeks
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No especificado</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Apgar:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.Apgar))
+                                        {
+                                            @perinatal.Apgar
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tamiz Auditivo:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.AuditoryScreen))
+                                        {
+                                            @perinatal.AuditoryScreen
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Maniobras de Reanimación:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.ResuscitationManeuvers))
+                                        {
+                                            @perinatal.ResuscitationManeuvers
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Lugar de Atención:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.PlaceOfCare))
+                                        {
+                                            @perinatal.PlaceOfCare
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Lloró al nacer:</strong> @(perinatal?.BirthCry == true ? "Sí" : "No")
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tamiz Metabólico:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.MetabolicScreen))
+                                        {
+                                            @perinatal.MetabolicScreen
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No especificado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <strong>Complicaciones durante el Parto/Cesárea:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(perinatal?.ComplicationsDuringChildbirth))
+                                        {
+                                            @perinatal.ComplicationsDuringChildbirth
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay complicaciones registradas</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes perinatales registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antecedentes Postnatales -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Postnatales</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.PostnatalHistories != null && History.PostnatalHistories.Any())
+                    {
+                        var postnatal = History.PostnatalHistories.FirstOrDefault();
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <strong>Descripción:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(postnatal?.Description))
+                                        {
+                                            @postnatal.Description
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay descripción registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6>Inmunizaciones</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>BCG:</strong> @(postnatal?.Bcg == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Rotavirus:</strong> @(postnatal?.Rotavirus == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Pentavalente:</strong> @(postnatal?.Pentavalente == true ? "Sí" : "No")
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-4">
+                                        <strong>Influenza:</strong> @(postnatal?.Influenza == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Varicela:</strong> @(postnatal?.Varicela == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Hepatitis B:</strong> @(postnatal?.HepatitisB == true ? "Sí" : "No")
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-4">
+                                        <strong>Triple Viral:</strong> @(postnatal?.TripleViral == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Polio Virus:</strong> @(postnatal?.PolioVirus == true ? "Sí" : "No")
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Neumococo:</strong> @(postnatal?.Neumococo == true ? "Sí" : "No")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <strong>Observaciones:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(postnatal?.Observations))
+                                        {
+                                            @postnatal.Observations
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay observaciones registradas</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes postnatales registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Antecedentes Neuropsicológicos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Neuropsicológicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.NeuropsychologicalHistories != null && History.NeuropsychologicalHistories.Any())
+                    {
+                        var neuropsychological = History.NeuropsychologicalHistories.FirstOrDefault();
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Conducta en Casa:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.HomeConduct))
+                                        {
+                                            @neuropsychological.HomeConduct
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Conducta en la Escuela:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.SchoolConduct))
+                                        {
+                                            @neuropsychological.SchoolConduct
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Aprovechamiento:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.Leverage))
+                                        {
+                                            @neuropsychological.Leverage
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Observación Sueño:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.DreamObservation))
+                                        {
+                                            @neuropsychological.DreamObservation
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Observación Vista:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.SightObservation))
+                                        {
+                                            @neuropsychological.SightObservation
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Observación Habla:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.SpeechObservation))
+                                        {
+                                            @neuropsychological.SpeechObservation
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Observación Escucha:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.HearingObservation))
+                                        {
+                                            @neuropsychological.HearingObservation
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay información registrada</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Desmayos:</strong> @(neuropsychological?.Faintings == true ? "Sí" : "No")
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <strong>Observaciones de Capacidades Diferentes:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.ObservationDifferentAbility))
+                                        {
+                                            @neuropsychological.ObservationDifferentAbility
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay observaciones registradas</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <strong>Observaciones Generales:</strong>
+                                <div class="card bg-light mt-1">
+                                    <div class="card-body">
+                                        @if (!string.IsNullOrWhiteSpace(neuropsychological?.Observation))
+                                        {
+                                            @neuropsychological.Observation
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No hay observaciones registradas</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes neuropsicológicos registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hitos de Desarrollo -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Hitos de Desarrollo</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.DevelopmentRecords != null && History.DevelopmentRecords.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var record in History.DevelopmentRecords)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Hito:</strong> @record.DevelopmentMilestone <br />
+                                    <strong>Rango de Edad:</strong> @record.AgeRange <br />
+                                    <strong>Observaciones:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(record.Observations))
+                                    {
+                                        @record.Observations
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin observaciones</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay hitos de desarrollo registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exámenes Neurológicos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Exámenes Neurológicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.NeurologicalExams != null && History.NeurologicalExams.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var exam in History.NeurologicalExams)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Tipo de Examen:</strong> @exam.NeurologicalExamTypeName <br />
+                                    <strong>Examen:</strong> @exam.Name <br />
+                                    <strong>Fecha:</strong> @exam.ExamDate?.ToString("dd/MM/yyyy") <br />
+                                    <strong>Descripción:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(exam.Description))
+                                    {
+                                        @exam.Description
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin descripción</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(exam.LinkPdf))
+                                    {
+                                        <br />
+                                        <strong>Enlace PDF:</strong>
+                                        <a href="@exam.LinkPdf" target="_blank" class="btn btn-sm btn-outline-primary">Ver PDF</a>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay exámenes neurológicos registrados</span>
                     }
                 </div>
             </div>

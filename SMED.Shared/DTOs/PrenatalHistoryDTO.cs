@@ -23,5 +23,7 @@ namespace SMED.Shared.DTOs
         public int? NumberOfDeeds { get; set; }
 
 
+
+
     }
 }

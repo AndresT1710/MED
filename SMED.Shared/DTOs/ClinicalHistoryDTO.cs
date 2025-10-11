@@ -50,5 +50,7 @@ namespace SMED.Shared.DTOs
         public FoodConsumptionHistoryDTO? FoodConsumptionHistory { get; set; } = new();
         public WaterConsumptionHistoryDTO? WaterConsumptionHistory { get; set; } = new();
         public ObstetricHistoryDTO? ObstetricHistory { get; set; }
+
+        public List<ToxicHabitHistoryDTO>? ToxicHabitHistories { get; set; } = new();
     }
 }

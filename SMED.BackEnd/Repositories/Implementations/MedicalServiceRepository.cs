@@ -17,13 +17,21 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<MedicalServiceDTO>> GetAllAsync()
         {
-            var entities = await _context.MedicalServices.ToListAsync();
+            var entities = await _context.MedicalServices
+                .Include(ms => ms.HealthProfessional)
+                    .ThenInclude(hp => hp.PersonNavigation)
+                .ToListAsync();
+
             return entities.Select(MapToDto).ToList();
         }
 
         public async Task<MedicalServiceDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.MedicalServices.FindAsync(id);
+            var entity = await _context.MedicalServices
+                .Include(ms => ms.HealthProfessional)
+                    .ThenInclude(hp => hp.PersonNavigation)
+                .FirstOrDefaultAsync(ms => ms.ServiceId == id);
+
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -32,12 +40,23 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = MapToEntity(dto);
             _context.MedicalServices.Add(entity);
             await _context.SaveChangesAsync();
-            return MapToDto(entity);
+
+            // Recargar la entidad con las relaciones para obtener el nombre
+            var savedEntity = await _context.MedicalServices
+                .Include(ms => ms.HealthProfessional)
+                    .ThenInclude(hp => hp.PersonNavigation)
+                .FirstOrDefaultAsync(ms => ms.ServiceId == entity.ServiceId);
+
+            return MapToDto(savedEntity!);
         }
 
         public async Task<MedicalServiceDTO?> UpdateAsync(MedicalServiceDTO dto)
         {
-            var entity = await _context.MedicalServices.FindAsync(dto.ServiceId);
+            var entity = await _context.MedicalServices
+                .Include(ms => ms.HealthProfessional)
+                    .ThenInclude(hp => hp.PersonNavigation)
+                .FirstOrDefaultAsync(ms => ms.ServiceId == dto.ServiceId);
+
             if (entity == null) return null;
 
             entity.CareId = dto.CareId;
@@ -63,7 +82,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // Mapeo manual
+        // Mapeo manual actualizado
         private MedicalServiceDTO MapToDto(MedicalService entity)
         {
             return new MedicalServiceDTO
@@ -76,7 +95,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Observations = entity.Observations,
                 Recommendations = entity.Recommendations,
                 PatientId = entity.PatientId,
-                HealthProfessionalId = entity.HealthProfessionalId
+                HealthProfessionalId = entity.HealthProfessionalId,
+                HealthProfessionalName = GetHealthProfessionalName(entity.HealthProfessional)
             };
         }
 
@@ -95,6 +115,15 @@ namespace SMED.BackEnd.Repositories.Implementations
                 HealthProfessionalId = dto.HealthProfessionalId
             };
         }
-    }
 
+        private string GetHealthProfessionalName(HealthProfessional? healthProfessional)
+        {
+            if (healthProfessional?.PersonNavigation == null)
+                return string.Empty;
+
+            var person = healthProfessional.PersonNavigation;
+            var names = new List<string> { person.FirstName, person.MiddleName, person.LastName, person.SecondLastName };
+            return string.Join(" ", names.Where(name => !string.IsNullOrEmpty(name)));
+        }
+    }
 }

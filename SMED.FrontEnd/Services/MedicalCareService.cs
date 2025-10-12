@@ -223,6 +223,7 @@ namespace SMED.FrontEnd.Services
                 return new List<MedicalCareDTO>();
             }
         }
+
         public async Task<List<MedicalCareDTO>?> GetEarlyStimulationCareAsync()
         {
             try
@@ -242,6 +243,23 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-
+        public async Task<List<MedicalCareDTO>?> GetGeneralMedicineCareAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalCare/general-medicine");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones de medicina general: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de medicina general");
+                return new List<MedicalCareDTO>();
+            }
+        }
     }
 }

@@ -13,15 +13,18 @@ namespace SMED.BackEnd.Controllers
         private readonly PdfService _pdfService;
         private readonly PersonRepository _personRepository;
         private readonly ClinicalHistoryRepository _clinicalHistoryRepository;
+        private readonly MedicalCareRepository _medicalCareRepository;
 
         public PdfController(
             PdfService pdfService,
             PersonRepository personRepository,
-            ClinicalHistoryRepository clinicalHistoryRepository)
+            ClinicalHistoryRepository clinicalHistoryRepository,
+            MedicalCareRepository medicalCareRepository)
         {
             _pdfService = pdfService;
             _personRepository = personRepository;
             _clinicalHistoryRepository = clinicalHistoryRepository;
+            _medicalCareRepository = medicalCareRepository;
         }
 
         [HttpGet("person/{id}")]
@@ -79,6 +82,29 @@ namespace SMED.BackEnd.Controllers
         {
             var nombre = $"{persona.FirstName}_{persona.LastName}";
             return System.Text.RegularExpressions.Regex.Replace(nombre, @"[^a-zA-Z0-9_-]", "");
+        }
+
+        [HttpGet("nursing/{id}")]
+        public async Task<IActionResult> GetNursingPdf(int id)
+        {
+            try
+            {
+                // Obtener la atención de enfermería completa
+                var nursingCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (nursingCare == null)
+                {
+                    return NotFound($"Atención de enfermería con ID {id} no encontrada");
+                }
+
+                // Generar PDF específico para enfermería
+                var pdfBytes = await _pdfService.GenerateNursingPdfAsync(nursingCare);
+                var fileName = $"Atencion_Enfermeria_{nursingCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de enfermería: {ex.Message}");
+            }
         }
     }
 }

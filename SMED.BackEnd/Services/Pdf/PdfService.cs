@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Services
@@ -17,6 +18,10 @@ namespace SMED.BackEnd.Services
         {
             _environment = environment;
         }
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        //History Clinical PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
 
         public async Task<byte[]> GenerateClinicalHistoryPdfAsync(ClinicalHistoryDTO clinicalHistory)
         {
@@ -158,6 +163,9 @@ namespace SMED.BackEnd.Services
                 throw;
             }
         }
+
+
+
 
         private void AddClinicalHistoryBasicInfo(Document document, ClinicalHistoryDTO clinicalHistory, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray)
         {
@@ -758,38 +766,8 @@ namespace SMED.BackEnd.Services
             document.Add(section);
         }
 
-        private void AddSimpleTableRow(Document document, string label, string value, Font labelFont, Font textFont)
-        {
-            var table = new PdfPTable(2)
-            {
-                WidthPercentage = 100,
-                SpacingAfter = 5f
-            };
-            table.SetWidths(new float[] { 40, 60 });
-
-            var labelCell = new PdfPCell(new Phrase(label, labelFont))
-            {
-                Border = Rectangle.NO_BORDER,
-                Padding = 4,
-                VerticalAlignment = Element.ALIGN_TOP
-            };
-
-            var valueCell = new PdfPCell(new Phrase(value ?? "No disponible", textFont))
-            {
-                Border = Rectangle.NO_BORDER,
-                Padding = 4,
-                VerticalAlignment = Element.ALIGN_TOP
-            };
-
-            table.AddCell(labelCell);
-            table.AddCell(valueCell);
-            document.Add(table);
-        }
-
-
-
         //---------------------------------------------------------------------------------------------------------------------------------------------
-        //PERSON
+        //Person PDF Generation
         //---------------------------------------------------------------------------------------------------------------------------------------------
 
         public async Task<byte[]> GeneratePersonPdfAsync(PersonDTO persona)
@@ -963,7 +941,6 @@ namespace SMED.BackEnd.Services
             }
         }
 
-        // Los métodos privados se mantienen EXACTAMENTE IGUAL...
         private void AddPersonalInfoSection(Document document, PersonDTO persona, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
         {
             var sectionTitle = new Paragraph("INFORMACIÓN PERSONAL", titleFont)
@@ -1125,5 +1102,504 @@ namespace SMED.BackEnd.Services
             table.AddCell(labelCell);
             table.AddCell(valueCell);
         }
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        //NURSING PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+
+        public async Task<byte[]> GenerateNursingPdfAsync(MedicalCareDTO nursingCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                // Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                var headerTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+                // Celda para el logo (izquierda)
+                var logoCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 8,
+                    BackgroundColor = universityRed
+                };
+
+                // Cargar logo
+                try
+                {
+                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                    if (File.Exists(logoPath))
+                    {
+                        var logo = Image.GetInstance(logoPath);
+                        logo.ScaleToFit(70, 70);
+                        logo.Alignment = Image.ALIGN_CENTER;
+                        logoCell.AddElement(logo);
+                    }
+                    else
+                    {
+                        var fallbackLogo = new Paragraph("UTA",
+                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                        {
+                            Alignment = Element.ALIGN_CENTER
+                        };
+                        logoCell.AddElement(fallbackLogo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error cargando logo: {ex.Message}");
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+
+                var textCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 10,
+                    BackgroundColor = universityRed
+                };
+
+                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                var systemName = new Paragraph("SISTEMA MÉDICO - ENFERMERÍA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+                {
+                    SpacingBefore = 5f,
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                textCell.AddElement(universityName);
+                textCell.AddElement(systemName);
+
+                var emptyCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    BackgroundColor = universityRed
+                };
+
+                headerTable.AddCell(logoCell);
+                headerTable.AddCell(textCell);
+                headerTable.AddCell(emptyCell);
+
+                document.Add(headerTable);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN DE ENFERMERÍA", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN DE LA ATENCIÓN =====
+                AddNursingInfoSection(document, nursingCare, titleFont, labelFont, textFont, lightGray, universityRed);
+
+                // ===== MOTIVO DE CONSULTA =====
+                AddReasonForConsultationSection(document, nursingCare, titleFont, textFont, lightGray);
+
+                // ===== SIGNOS VITALES =====
+                AddVitalSignsSection(document, nursingCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== SERVICIOS MÉDICOS =====
+                AddMedicalServicesSection(document, nursingCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== PROCEDIMIENTOS MÉDICOS =====
+                AddMedicalProceduresSection(document, nursingCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== RESUMEN DE ATENCIÓN =====
+                AddSummarySection(document, nursingCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de enfermería: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+
+        private void AddNursingInfoSection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN DE LA ATENCIÓN", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", nursingCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", nursingCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", nursingCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", nursingCare.Area ?? "Enfermería", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", nursingCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Profesional:", nursingCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", nursingCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+        private void AddReasonForConsultationSection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (nursingCare.ReasonForConsultation != null && !string.IsNullOrEmpty(nursingCare.ReasonForConsultation.Description))
+            {
+                var sectionTitle = new Paragraph("MOTIVO DE CONSULTA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var reasonTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var reasonCell = new PdfPCell(new Phrase(nursingCare.ReasonForConsultation.Description, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                reasonTable.AddCell(reasonCell);
+
+                document.Add(reasonTable);
+            }
+        }
+
+        private void AddVitalSignsSection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (nursingCare.VitalSigns != null)
+            {
+                var sectionTitle = new Paragraph("SIGNOS VITALES", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var vitalSignsTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                vitalSignsTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                var vitalSigns = nursingCare.VitalSigns;
+
+                // Primera fila
+                AddVitalSignCell(vitalSignsTable, "PESO", $"{vitalSigns.Weight?.ToString("F1") ?? "N/A"} kg", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "TALLA", $"{vitalSigns.Height?.ToString("F1") ?? "N/A"} cm", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "IMC", $"{vitalSigns.Icm?.ToString("F1") ?? "N/A"}", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "PRESIÓN ARTERIAL", vitalSigns.BloodPressure ?? "N/A", tableHeaderFont, textFont, universityRed);
+
+                // Segunda fila
+                AddVitalSignCell(vitalSignsTable, "TEMPERATURA", $"{vitalSigns.Temperature?.ToString("F1") ?? "N/A"} °C", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "PAM", $"{vitalSigns.MeanArterialPressure?.ToString("F1") ?? "N/A"}", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "FC", $"{vitalSigns.HeartRate?.ToString() ?? "N/A"} lpm", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "FR", $"{vitalSigns.RespiratoryRate?.ToString() ?? "N/A"} rpm", tableHeaderFont, textFont, universityRed);
+
+                // Tercera fila
+                AddVitalSignCell(vitalSignsTable, "SAT O2", $"{vitalSigns.OxygenSaturation?.ToString("F1") ?? "N/A"} %", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "GLUCOSA", $"{vitalSigns.BloodGlucose?.ToString("F1") ?? "N/A"} mg/dl", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "HEMOGLOBINA", $"{vitalSigns.Hemoglobin?.ToString("F1") ?? "N/A"} g/dl", tableHeaderFont, textFont, universityRed);
+                AddVitalSignCell(vitalSignsTable, "P. ABDOMINAL", $"{vitalSigns.AbdominalCircumference?.ToString("F1") ?? "N/A"} cm", tableHeaderFont, textFont, universityRed);
+
+                document.Add(vitalSignsTable);
+            }
+        }
+
+        private void AddMedicalServicesSection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (nursingCare.MedicalServices != null && nursingCare.MedicalServices.Any())
+            {
+                var sectionTitle = new Paragraph($"SERVICIOS MÉDICOS ({nursingCare.MedicalServices.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var servicesTable = new PdfPTable(6)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                servicesTable.SetWidths(new float[] { 15, 20, 15, 15, 15, 20 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(servicesTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(servicesTable, "TIPO SERVICIO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(servicesTable, "DIAGNÓSTICO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(servicesTable, "OBSERVACIONES", tableHeaderFont, universityRed);
+                AddTableHeaderCell(servicesTable, "RECOMENDACIONES", tableHeaderFont, universityRed);
+                AddTableHeaderCell(servicesTable, "PROFESIONAL", tableHeaderFont, universityRed);
+
+                foreach (var service in nursingCare.MedicalServices)
+                {
+                    AddTableCell(servicesTable, service.ServiceDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A", textFont);
+                    AddTableCell(servicesTable, service.ServiceType ?? "N/A", textFont);
+                    AddTableCell(servicesTable, service.Diagnosis ?? "N/A", textFont);
+                    AddTableCell(servicesTable, service.Observations ?? "N/A", textFont);
+                    AddTableCell(servicesTable, service.Recommendations ?? "N/A", textFont);
+                    AddTableCell(servicesTable, service.HealthProfessionalName ?? "N/A", textFont);
+                }
+
+                document.Add(servicesTable);
+            }
+        }
+
+        private void AddMedicalProceduresSection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (nursingCare.MedicalProcedures != null && nursingCare.MedicalProcedures.Any())
+            {
+                var sectionTitle = new Paragraph($"PROCEDIMIENTOS MÉDICOS ({nursingCare.MedicalProcedures.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var proceduresTable = new PdfPTable(8)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                proceduresTable.SetWidths(new float[] { 12, 12, 15, 12, 12, 12, 10, 15 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(proceduresTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "TIPO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "PROCEDIMIENTO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "PERSONAL SALUD", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "MÉDICO TRATANTE", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "UBICACIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "ESTADO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(proceduresTable, "OBSERVACIONES", tableHeaderFont, universityRed);
+
+                foreach (var procedure in nursingCare.MedicalProcedures)
+                {
+                    AddTableCell(proceduresTable, procedure.ProcedureDate.ToString("dd/MM/yyyy HH:mm"), textFont);
+                    AddTableCell(proceduresTable, procedure.TypeOfProcedureName ?? "N/A", textFont);
+                    AddTableCell(proceduresTable, procedure.SpecificProcedureName ?? "N/A", textFont);
+                    AddTableCell(proceduresTable, procedure.HealthProfessionalName ?? "N/A", textFont);
+                    AddTableCell(proceduresTable, procedure.TreatingPhysicianName ?? "N/A", textFont);
+                    AddTableCell(proceduresTable, procedure.LocationName ?? "N/A", textFont);
+
+                    // Celda de estado con color
+                    var statusCell = new PdfPCell(new Phrase(procedure.Status ?? "N/A", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = GetStatusColor(procedure.Status)
+                    };
+                    proceduresTable.AddCell(statusCell);
+
+                    AddTableCell(proceduresTable, procedure.Observations ?? "N/A", textFont);
+                }
+
+                document.Add(proceduresTable);
+            }
+        }
+
+        private void AddSummarySection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(3)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 33, 34, 33 });
+
+            // Contar elementos
+            var hasVitalSigns = nursingCare.VitalSigns != null;
+            var servicesCount = nursingCare.MedicalServices?.Count ?? 0;
+            var proceduresCount = nursingCare.MedicalProcedures?.Count ?? 0;
+
+            // Tarjeta de Signos Vitales
+            AddSummaryCard(summaryTable, "SIGNOS VITALES", hasVitalSigns ? "✓" : "—", universityRed, textFont);
+
+            // Tarjeta de Servicios
+            AddSummaryCard(summaryTable, "SERVICIOS MÉDICOS", servicesCount.ToString(), universityRed, textFont);
+
+            // Tarjeta de Procedimientos
+            AddSummaryCard(summaryTable, "PROCEDIMIENTOS", proceduresCount.ToString(), universityRed, textFont);
+
+            document.Add(summaryTable);
+        }
+
+        // Métodos auxiliares específicos para Nursing PDF
+        private void AddVitalSignCell(PdfPTable table, string title, string value, Font titleFont, Font valueFont, BaseColor headerColor)
+        {
+            // Celda de título
+            var titleCell = new PdfPCell(new Phrase(title, titleFont))
+            {
+                BackgroundColor = headerColor,
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.White,
+                Padding = 8,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            table.AddCell(titleCell);
+
+            // Celda de valor
+            var valueCell = new PdfPCell(new Phrase(value, valueFont))
+            {
+                BackgroundColor = BaseColor.White,
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.LightGray,
+                Padding = 8,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            table.AddCell(valueCell);
+        }
+
+        private void AddTableHeaderCell(PdfPTable table, string text, Font font, BaseColor backgroundColor)
+        {
+            var cell = new PdfPCell(new Phrase(text, font))
+            {
+                BackgroundColor = backgroundColor,
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.White,
+                Padding = 8,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            table.AddCell(cell);
+        }
+
+        private void AddTableCell(PdfPTable table, string text, Font font)
+        {
+            var cell = new PdfPCell(new Phrase(text, font))
+            {
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.LightGray,
+                Padding = 6,
+                HorizontalAlignment = Element.ALIGN_LEFT
+            };
+            table.AddCell(cell);
+        }
+
+        private void AddSummaryCard(PdfPTable table, string title, string value, BaseColor color, Font textFont)
+        {
+            var cardCell = new PdfPCell()
+            {
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.LightGray,
+                Padding = 15,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                BackgroundColor = new BaseColor(248, 249, 250) // Color gris claro similar a bg-light
+            };
+
+            var titleParagraph = new Paragraph(title, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, color))
+            {
+                Alignment = Element.ALIGN_CENTER
+            };
+
+            var valueParagraph = new Paragraph(value, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.Black))
+            {
+                Alignment = Element.ALIGN_CENTER,
+                SpacingBefore = 5f
+            };
+
+            cardCell.AddElement(titleParagraph);
+            cardCell.AddElement(valueParagraph);
+            table.AddCell(cardCell);
+        }
+
+        private BaseColor GetStatusColor(string status)
+        {
+            return status?.ToLower() switch
+            {
+                "realizado" => new BaseColor(40, 167, 69), // Verde
+                "pendiente" => new BaseColor(255, 193, 7),  // Amarillo
+                "cancelado" => new BaseColor(220, 53, 69),  // Rojo
+                _ => new BaseColor(108, 117, 125)           // Gris
+            };
+        }
+
     }
 }

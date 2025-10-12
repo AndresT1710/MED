@@ -2,6 +2,10 @@
 using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -92,6 +96,21 @@ namespace SMED.BackEnd.Controllers
             {
                 _logger.LogError(ex, "Error al obtener atenciones de estimulación temprana");
                 return BadRequest($"Error al obtener atenciones de estimulación temprana: {ex.Message}");
+            }
+        }
+
+        [HttpGet("general-medicine")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetGeneralMedicineCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetGeneralMedicineCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de medicina general");
+                return BadRequest($"Error al obtener atenciones de medicina general: {ex.Message}");
             }
         }
 

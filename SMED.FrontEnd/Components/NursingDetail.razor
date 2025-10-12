@@ -1,17 +1,31 @@
 ﻿@using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
+@using SMED.FrontEnd.Components
 
 @inject VitalSignsService VitalSignsService
 @inject MedicalServiceService MedicalServiceService
 @inject MedicalProcedureService MedicalProcedureService
+@inject ReasonForConsultationService ReasonForConsultationService
 @inject IJSRuntime JS
 
 <div class="medical-care-detail">
+    <!-- HEADER CON BOTÓN DE IMPRIMIR -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención de Enfermería</h4>
+                <div>
+                    <ImprimirPdf Tipo="nursing" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Información básica -->
         <div class="col-12">
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
                 </div>
                 <div class="card-body">
@@ -22,14 +36,35 @@
                             <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "N/A")</p>
-                            <p><strong>Ubicación:</strong> @MedicalCare?.NameLocation</p>
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "Enfermería")</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
                             <p><strong>Profesional:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Resto del código se mantiene igual -->
+        <!-- Motivo de Consulta -->
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
 
         <!-- Signos Vitales -->
         @if (vitalSigns != null)
@@ -72,7 +107,7 @@
         {
             <div class="col-12">
                 <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header bg-warning text-dark">
                         <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Servicios Médicos (@medicalServices.Count)</h5>
                     </div>
                     <div class="card-body">
@@ -85,6 +120,7 @@
                                         <th>Diagnóstico</th>
                                         <th>Observaciones</th>
                                         <th>Recomendaciones</th>
+                                        <th>Profesional</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -96,6 +132,7 @@
                                             <td>@(service.Diagnosis ?? "N/A")</td>
                                             <td>@(service.Observations ?? "N/A")</td>
                                             <td>@(service.Recommendations ?? "N/A")</td>
+                                            <td>@(service.HealthProfessionalName ?? "N/A")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -111,7 +148,7 @@
         {
             <div class="col-12">
                 <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
+                    <div class="card-header bg-danger text-white">
                         <h5 class="mb-0"><i class="fas fa-procedures me-2"></i>Procedimientos Médicos (@medicalProcedures.Count)</h5>
                     </div>
                     <div class="card-body">
@@ -124,6 +161,8 @@
                                         <th>Procedimiento</th>
                                         <th>Personal de Salud</th>
                                         <th>Médico Tratante</th>
+                                        <th>Ubicación</th>
+                                        <th>Estado</th>
                                         <th>Observaciones</th>
                                     </tr>
                                 </thead>
@@ -136,6 +175,12 @@
                                             <td>@(procedure.SpecificProcedureName ?? "N/A")</td>
                                             <td>@(procedure.HealthProfessionalName ?? "N/A")</td>
                                             <td>@(procedure.TreatingPhysicianName ?? "N/A")</td>
+                                            <td>@(procedure.LocationName ?? "N/A")</td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(procedure.Status)">
+                                                    @(procedure.Status ?? "N/A")
+                                                </span>
+                                            </td>
                                             <td>@(procedure.Observations ?? "N/A")</td>
                                         </tr>
                                     }
@@ -147,7 +192,44 @@
             </div>
         }
 
-        @if (vitalSigns == null && !medicalServices.Any() && !medicalProcedures.Any())
+        <!-- Resumen de Datos -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resumen de Atención</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Signos Vitales</h6>
+                                    <p class="card-text display-6">@(vitalSigns != null ? "✓" : "—")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Servicios</h6>
+                                    <p class="card-text display-6">@medicalServices.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Procedimientos</h6>
+                                    <p class="card-text display-6">@medicalProcedures.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (vitalSigns == null && !medicalServices.Any() && !medicalProcedures.Any() && reasonForConsultation == null)
         {
             <div class="col-12">
                 <div class="alert alert-info">
@@ -163,6 +245,7 @@
     [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
 
     private VitalSignsDTO? vitalSigns;
+    private ReasonForConsultationDTO? reasonForConsultation;
     private List<MedicalServiceDTO> medicalServices = new();
     private List<MedicalProcedureDTO> medicalProcedures = new();
 
@@ -188,6 +271,10 @@
 
         try
         {
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
+
             // Cargar signos vitales
             var allVitalSigns = await VitalSignsService.GetAllAsync();
             vitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
@@ -205,5 +292,16 @@
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading medical care details: {ex.Message}");
         }
+    }
+
+    private string GetStatusBadgeClass(string? status)
+    {
+        return status?.ToLower() switch
+        {
+            "realizado" => "bg-success",
+            "pendiente" => "bg-warning",
+            "cancelado" => "bg-danger",
+            _ => "bg-secondary"
+        };
     }
 }

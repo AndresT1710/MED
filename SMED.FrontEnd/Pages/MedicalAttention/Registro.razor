@@ -88,7 +88,7 @@
         <div class="col-12">
             <div class="d-flex align-items-center gap-3">
                 <span class="badge bg-success">
-                    <i class="fas fa-hospital me-1"></i>Todas las áreas médicas
+                    <i class="fas fa-hospital me-1"></i>Medicina General
                 </span>
                 @if (selectedDate.HasValue)
                 {
@@ -206,7 +206,7 @@
     // Columnas de la tabla (sin ID)
     private List<string> MedicalCareColumns = new()
     {
-        "Fecha", "Paciente", "Sectores", "Profesional", "Acciones"
+        "Fecha", "Paciente", "Sectores","Área", "Profesional", "Acciones"
     };
 
     protected override async Task OnInitializedAsync()
@@ -219,10 +219,18 @@
     {
         try
         {
-            var result = await MedicalCareService.GetAllAsync();
+            var result = await MedicalCareService.GetGeneralMedicineCareAsync();
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
-            totalMedicalCareCount = allMedicalCareList.Count;
 
+            // Debug: verificar los datos recibidos
+            foreach (var care in allMedicalCareList.Take(5))
+            {
+                Console.WriteLine($"[FRONTEND] CareId: {care.CareId}, " +
+                                $"NamePlace: {care.NamePlace}, " +
+                                $"PlaceOfAttentionId: {care.PlaceOfAttentionId}");
+            }
+
+            totalMedicalCareCount = allMedicalCareList.Count;
             ApplyFilters();
         }
         catch (Exception ex)
@@ -291,8 +299,8 @@
             filters.Add($"ID {quickSearchTerm}");
 
         searchMessage = filters.Count > 0
-            ? $"No se encontraron atenciones médicas de enfermería para: {string.Join(", ", filters)}"
-            : "No se encontraron atenciones médicas de enfermería";
+            ? $"No se encontraron atenciones médicas de medicina general para: {string.Join(", ", filters)}"
+            : "No se encontraron atenciones médicas de medicina general";
 
         // MOSTRAR el mensaje de "no results" pero OCULTAR el botón de creación cuando hay fecha
         showNoMedicalCareAlert = !selectedDate.HasValue; // Solo mostrar alerta si NO hay fecha seleccionada
@@ -300,11 +308,13 @@
 
     private void UpdateTableData()
     {
+
         MedicalCareData = filteredMedicalCareList.Select(mc => new List<string>
         {
             mc.CareDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
             mc.NamePatient ?? "N/A",
-            mc.NameLocation ?? "N/A",
+            mc.NamePlace ?? "N/A",
+            mc.Area ?? "N/A",
             mc.NameHealthProfessional ?? "N/A",
             mc.CareId.ToString() // Para las acciones, pero no se muestra en la tabla
         }).ToList();
@@ -377,7 +387,7 @@
     RenderFragment<List<string>> RenderMedicalCareActions => row => builder =>
     {
         int seq = 0;
-        var id = row[4];
+        var id = row[5];
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "class", "btn btn-sm btn-info me-1");

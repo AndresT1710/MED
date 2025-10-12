@@ -8,7 +8,7 @@ namespace SMED.Shared.DTOs
         public int CareId { get; set; }
         public int LocationId { get; set; }
         public int PlaceOfAttentionId { get; set; }
-        public string? NameLocation { get; set; }
+        public string? NamePlace { get; set; }
         public int PatientId { get; set; }
         public string? NamePatient { get; set; }
         public int HealthProfessionalId { get; set; }
@@ -25,5 +25,10 @@ namespace SMED.Shared.DTOs
         public List<SpecialTestDTO>? SpecialTests { get; set; }
         public List<PainScaleDTO>? PainScales { get; set; }
         public List<SessionsDTO>? Sessions { get; set; }
+
+        public VitalSignsDTO? VitalSigns { get; set; }
+        public List<MedicalServiceDTO> MedicalServices { get; set; } = new();
+        public List<MedicalProcedureDTO> MedicalProcedures { get; set; } = new();
+        public ReasonForConsultationDTO? ReasonForConsultation { get; set; }
     }
 }

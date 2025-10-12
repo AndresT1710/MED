@@ -14,6 +14,7 @@ namespace SMED.FrontEnd.Services
             _logger = logger;
         }
 
+        // 🔹 Obtener todos los signos vitales
         public async Task<List<VitalSignsDTO>?> GetAllAsync()
         {
             try
@@ -32,6 +33,26 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // 🔹 Obtener un registro por ID
+        public async Task<VitalSignsDTO?> GetByIdAsync(int id)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/VitalSigns/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<VitalSignsDTO>();
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener signo vital por ID");
+                return null;
+            }
+        }
+
+        // 🔹 Crear un nuevo registro
         public async Task<(bool Success, VitalSignsDTO? Data, string Error)> CreateAsync(VitalSignsDTO dto)
         {
             try
@@ -53,6 +74,7 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // 🔹 Actualizar un registro existente
         public async Task<(bool Success, string Error)> UpdateAsync(VitalSignsDTO dto)
         {
             try
@@ -72,6 +94,26 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
-    }
 
+        // 🔹 Eliminar un registro
+        public async Task<(bool Success, string Error)> DeleteAsync(int id)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"api/VitalSigns/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar signo vital");
+                return (false, ex.Message);
+            }
+        }
+    }
 }

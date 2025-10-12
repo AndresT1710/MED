@@ -632,37 +632,35 @@ namespace SGIS.Models
                     .HasConstraintName("FK_HabitHistory_ClinicalHistory");
             });
 
-            //WARNINGS
             modelBuilder.Entity<VitalSigns>(entity =>
             {
                 entity.Property(e => e.Weight)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99 kg
 
                 entity.Property(e => e.Height)
-                      .HasPrecision(4, 2);
+                      .HasPrecision(5, 2); // Corregido de (4,2) a (5,2) para permitir hasta 999.99 cm
 
                 entity.Property(e => e.Icm)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99
 
                 entity.Property(e => e.AbdominalCircumference)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99 cm
 
                 entity.Property(e => e.Temperature)
-                      .HasPrecision(4, 2);
+                      .HasPrecision(4, 2); // Hasta 99.99°C
 
                 entity.Property(e => e.MeanArterialPressure)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99 mmHg
 
                 entity.Property(e => e.OxygenSaturation)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99%
 
                 entity.Property(e => e.BloodGlucose)
-                      .HasPrecision(5, 2);
+                      .HasPrecision(5, 2); // Hasta 999.99 mg/dl
 
                 entity.Property(e => e.Hemoglobin)
-                      .HasPrecision(4, 2);
+                      .HasPrecision(4, 2); // Hasta 99.99 g/dl
             });
-
             modelBuilder.Entity<SportsActivitiesHistory>(entity =>
             {
                 entity.ToTable("SportsActivitiesHistory");

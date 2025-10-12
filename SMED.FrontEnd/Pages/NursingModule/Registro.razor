@@ -450,7 +450,7 @@
         {
             mc.CareDate.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
             mc.NamePatient ?? "N/A",
-            mc.NameLocation ?? "N/A", // This should show PlaceOfAttention name
+            mc.NamePlace ?? "N/A", // This should show PlaceOfAttention name
             mc.NameHealthProfessional ?? "N/A",
             mc.CareId.ToString()
         }).ToList();
@@ -459,7 +459,7 @@
         foreach (var mc in filteredMedicalCareList.Take(3)) // Log first 3 records
         {
             InvokeAsync(async () => await JS.InvokeVoidAsync("console.log",
-                $"[v0] MedicalCare Debug - ID: {mc.CareId}, NameLocation: '{mc.NameLocation}', PlaceOfAttentionId: {mc.PlaceOfAttentionId}"));
+                $"[v0] MedicalCare Debug - ID: {mc.CareId}, NamePlace: '{mc.NamePlace}', PlaceOfAttentionId: {mc.PlaceOfAttentionId}"));
         }
 
         if (table != null)

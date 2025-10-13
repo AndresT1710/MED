@@ -14,7 +14,7 @@ namespace SMED.Shared.Entity
         public DateTime? Date { get; set; }
         public string? Treatment { get; set; }
         public bool? MedicalDischarge { get; set; }
-        public string Observations { get; set; }
+        public string? Observations { get; set; }
         public int? MedicalCareId { get; set; }
 
         [ForeignKey("MedicalCareId")]

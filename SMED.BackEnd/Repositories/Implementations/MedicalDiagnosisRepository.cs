@@ -18,7 +18,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<MedicalDiagnosisDTO>> GetAllAsync()
         {
             var diagnoses = await _context.Diagnosis
-                .Include(d => d.Treatments) // ✅ Incluir tratamientos
+                .Include(d => d.Treatments)
+                .Include(d => d.DiagnosticTypeNavigation)
                 .ToListAsync();
 
             return diagnoses.Select(MapToDto).ToList();
@@ -27,7 +28,8 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<MedicalDiagnosisDTO?> GetByIdAsync(int id)
         {
             var diagnosis = await _context.Diagnosis
-                .Include(d => d.Treatments) // ✅ Incluir tratamientos
+                .Include(d => d.Treatments)
+                .Include(d => d.DiagnosticTypeNavigation)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             return diagnosis == null ? null : MapToDto(diagnosis);
@@ -49,7 +51,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             _context.Diagnosis.Add(entity);
             await _context.SaveChangesAsync();
 
+            var diagnosticType = await _context.DiagnosticTypes.FindAsync(dto.DiagnosticTypeId);
+
             dto.Id = entity.Id;
+            dto.DiagnosticTypeName = diagnosticType?.Name ?? string.Empty;
+
             return dto;
         }
 
@@ -70,6 +76,10 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.DiseaseId = dto.DiseaseId;
 
             await _context.SaveChangesAsync();
+
+            var diagnosticType = await _context.DiagnosticTypes.FindAsync(dto.DiagnosticTypeId);
+            dto.DiagnosticTypeName = diagnosticType?.Name ?? string.Empty;
+
             return dto;
         }
 
@@ -86,37 +96,36 @@ namespace SMED.BackEnd.Repositories.Implementations
             foreach (var treatment in entity.Treatments)
             {
                 _context.Indications.RemoveRange(treatment.Indications);
-                
+
                 // Eliminar tratamientos farmacológicos y no farmacológicos
                 var pharmacological = await _context.PharmacologicalTreatments
                     .Where(pt => pt.Id == treatment.Id)
                     .ToListAsync();
                 _context.PharmacologicalTreatments.RemoveRange(pharmacological);
-                
+
                 var nonPharmacological = await _context.NonPharmacologicalTreatments
                     .Where(npt => npt.Id == treatment.Id)
                     .ToListAsync();
                 _context.NonPharmacologicalTreatments.RemoveRange(nonPharmacological);
             }
-            
+
             _context.Treatments.RemoveRange(entity.Treatments);
             _context.Diagnosis.Remove(entity);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // ✅ Método para obtener diagnósticos por MedicalCareId
         public async Task<List<MedicalDiagnosisDTO>> GetByMedicalCareIdAsync(int medicalCareId)
         {
             var diagnoses = await _context.Diagnosis
                 .Include(d => d.Treatments)
+                .Include(d => d.DiagnosticTypeNavigation)
                 .Where(d => d.MedicalCareId == medicalCareId)
                 .ToListAsync();
 
             return diagnoses.Select(MapToDto).ToList();
         }
 
-        // ✅ Método adicional para asignar tratamientos
         public async Task<bool> AssignTreatmentsAsync(int diagnosisId, List<int> treatmentIds)
         {
             var diagnosis = await _context.Diagnosis
@@ -129,7 +138,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Where(t => treatmentIds.Contains(t.Id))
                 .ToListAsync();
 
-            // Limpiar tratamientos existentes y agregar los nuevos
             diagnosis.Treatments.Clear();
             foreach (var treatment in treatments)
             {
@@ -140,13 +148,13 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // ✅ Mapeo con tratamientos
         private static MedicalDiagnosisDTO MapToDto(MedicalDiagnosis diagnosis) => new MedicalDiagnosisDTO
         {
             Id = diagnosis.Id,
             Cie10 = diagnosis.Cie10,
             Denomination = diagnosis.Denomination,
             DiagnosticTypeId = diagnosis.DiagnosticTypeId,
+            DiagnosticTypeName = diagnosis.DiagnosticTypeNavigation?.Name ?? string.Empty,
             Recurrence = diagnosis.Recurrence,
             DiagnosisMotivation = diagnosis.DiagnosisMotivation,
             MedicalCareId = diagnosis.MedicalCareId,

@@ -13,7 +13,7 @@ namespace SMED.Shared.Entity
         public DateTime? DateOfReferral { get; set; }
         public string Description { get; set; } = null!;
 
-        public int MedicalCareId { get; set; }  // FK a MedicalCare
+        public int MedicalCareId { get; set; }
 
         [ForeignKey("MedicalCareId")]
         [InverseProperty("MedicalReferrals")]

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SMED.Shared.Entity;
 
 namespace SMED.Shared.DTOs
 {
@@ -30,5 +31,18 @@ namespace SMED.Shared.DTOs
         public List<MedicalServiceDTO> MedicalServices { get; set; } = new();
         public List<MedicalProcedureDTO> MedicalProcedures { get; set; } = new();
         public ReasonForConsultationDTO? ReasonForConsultation { get; set; }
+        
+        //MEDICINA GENERAL
+        public List<SystemsDevicesDTO>? SystemsDevices { get; set; }
+        public List<PhysicalExamDTO>? PhysicalExams { get; set; }
+        public AdditionalDataDTO? AdditionalData { get; set; }
+        public List<MedicalDiagnosisDTO>? Diagnoses { get; set; }
+        public List<MedicalReferralDTO>? Referrals { get; set; }
+        public List<EvolutionDTO>? Evolutions { get; set; }
+        public List<ReviewSystemDevicesDTO>? ReviewSystemDevices { get; set; }
+
+        public List<PharmacologicalTreatmentDTO>? PharmacologicalTreatments { get; set; }
+        public List<NonPharmacologicalTreatmentDTO>? NonPharmacologicalTreatments { get; set; }
+        public List<IndicationsDTO>? Indications { get; set; }
     }
 }

@@ -106,5 +106,30 @@ namespace SMED.BackEnd.Controllers
                 return StatusCode(500, $"Error generando PDF de enfermería: {ex.Message}");
             }
         }
+
+        [HttpGet("medical-care/{id}")]
+        public async Task<IActionResult> GetMedicalCarePdf(int id)
+        {
+            try
+            {
+                // Obtener la atención médica completa con todos sus detalles
+                var medicalCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (medicalCare == null)
+                {
+                    return NotFound($"Atención médica con ID {id} no encontrada");
+                }
+
+                // Generar PDF específico para atención médica
+                var pdfBytes = await _pdfService.GenerateMedicalCarePdfAsync(medicalCare);
+
+                var fileName = $"Atencion_Medica_{medicalCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de atención médica: {ex.Message}");
+            }
+        }
     }
 }

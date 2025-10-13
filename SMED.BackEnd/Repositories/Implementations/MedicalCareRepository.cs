@@ -460,7 +460,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                                  (p.SecondLastName ?? ""))
                     .FirstOrDefaultAsync();
 
-                // 3) Obtener todas las colecciones por separado
+                // 3) Obtener todas las colecciones por separado - FISIOTERAPIA
                 var currentIllnesses = await _context.CurrentIllnesses
                     .Where(ci => ci.MedicalCareId == id)
                     .Select(ci => new CurrentIllnessDTO
@@ -577,6 +577,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     })
                     .ToListAsync();
 
+                // 4) Obtener datos COMUNES (VitalSigns, ReasonForConsultation)
                 var vitalSigns = await _context.VitalSigns
                     .Where(vs => vs.MedicalCareId == id)
                     .Select(vs => new VitalSignsDTO
@@ -608,7 +609,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     })
                     .FirstOrDefaultAsync();
 
-                // 4) Obtener MedicalServices con consultas separadas (CORREGIDO)
+                // 5) Obtener MedicalServices con consultas separadas
                 var medicalServicesData = await _context.MedicalServices
                     .Where(ms => ms.CareId == id)
                     .Select(ms => new
@@ -668,7 +669,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                     };
                 }).ToList();
 
-                // 5) Obtener MedicalProcedures con consultas separadas
+                // 6) Obtener MedicalProcedures con consultas separadas
                 var medicalProceduresData = await _context.MedicalProcedures
                     .Where(mp => mp.CareId == id)
                     .Select(mp => new
@@ -685,13 +686,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                     })
                     .ToListAsync();
 
-                // Obtener los IDs necesarios para las relaciones
                 var procedureIds = medicalProceduresData.Select(mp => mp.SpecificProcedureId).Distinct().ToList();
                 var healthProfessionalIds = medicalProceduresData.Select(mp => mp.HealthProfessionalId).Distinct().ToList();
                 var treatingPhysicianIds = medicalProceduresData.Where(mp => mp.TreatingPhysicianId.HasValue).Select(mp => mp.TreatingPhysicianId.Value).Distinct().ToList();
                 var locationIds = medicalProceduresData.Where(mp => mp.LocationId.HasValue).Select(mp => mp.LocationId.Value).Distinct().ToList();
 
-                // Cargar datos relacionados
                 var procedures = await _context.Procedures
                     .Where(p => procedureIds.Contains(p.Id))
                     .Include(p => p.TypeOfProcedure)
@@ -711,7 +710,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     .Where(l => locationIds.Contains(l.Id))
                     .ToDictionaryAsync(l => l.Id);
 
-                // Construir el DTO
                 var medicalProcedures = medicalProceduresData.Select(mp =>
                 {
                     var procedure = procedures.ContainsKey(mp.SpecificProcedureId) ? procedures[mp.SpecificProcedureId] : null;
@@ -753,7 +751,196 @@ namespace SMED.BackEnd.Repositories.Implementations
                     };
                 }).ToList();
 
-                // 6) Crear DTO final
+                // 7) Obtener ReviewSystemDevices (Aparatos y Sistemas) - MEDICINA GENERAL
+                var reviewSystemDevices = await _context.ReviewSystemDevices
+                    .Where(rsd => rsd.MedicalCareId == id)
+                    .Select(rsd => new ReviewSystemDevicesDTO
+                    {
+                        Id = rsd.Id,
+                        State = rsd.State,
+                        Observations = rsd.Observations,
+                        SystemsDevicesId = rsd.SystemsDevicesId,
+                        SystemName = rsd.SystemsDevices != null ? rsd.SystemsDevices.Name : null,
+                        MedicalCareId = rsd.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] ReviewSystemDevices cargados: {reviewSystemDevices.Count}");
+
+                // <CHANGE> 8) Obtener PhysicalExams con nombres de región y evidencia patológica
+                var physicalExamsData = await _context.PhysicalExams
+                    .Where(pe => pe.MedicalCareId == id)
+                    .Select(pe => new
+                    {
+                        pe.PhysicalExamId, // <CHANGE> Corregido: usar PhysicalExamId en lugar de Id
+                        pe.RegionId,
+                        pe.PathologicalEvidenceId,
+                        pe.Observation,
+                        pe.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                var regionIds = physicalExamsData.Select(pe => pe.RegionId).Distinct().ToList();
+                var pathologicalEvidenceIds = physicalExamsData.Select(pe => pe.PathologicalEvidenceId).Distinct().ToList();
+
+                var regions = await _context.Regions
+                    .Where(r => regionIds.Contains(r.Id))
+                    .ToDictionaryAsync(r => r.Id, r => r.Name);
+
+                var pathologicalEvidences = await _context.PathologicalEvidences
+                    .Where(pe => pathologicalEvidenceIds.Contains(pe.Id))
+                    .ToDictionaryAsync(pe => pe.Id, pe => pe.Name);
+
+                var physicalExams = physicalExamsData.Select(pe => new PhysicalExamDTO
+                {
+                    PhysicalExamId = pe.PhysicalExamId, // <CHANGE> Corregido: usar PhysicalExamId
+                    RegionId = pe.RegionId,
+                    RegionName = regions.ContainsKey(pe.RegionId) ? regions[pe.RegionId] : null,
+                    PathologicalEvidenceId = pe.PathologicalEvidenceId,
+                    PathologicalEvidenceName = pathologicalEvidences.ContainsKey(pe.PathologicalEvidenceId)
+                        ? pathologicalEvidences[pe.PathologicalEvidenceId] : null,
+                    Observation = pe.Observation,
+                    MedicalCareId = pe.MedicalCareId
+                }).ToList();
+
+                Console.WriteLine($"[DEBUG] PhysicalExams cargados: {physicalExams.Count}");
+
+                // <CHANGE> 9) Obtener AdditionalData
+                var additionalData = await _context.AdditionalData
+                    .Where(ad => ad.MedicalCareId == id)
+                    .Select(ad => new AdditionalDataDTO
+                    {
+                        AdditionalDataId = ad.AdditionalDataId,
+                        Observacion = ad.Observacion,
+                        MedicalCareId = ad.MedicalCareId
+                    })
+                    .FirstOrDefaultAsync();
+
+                Console.WriteLine($"[DEBUG] AdditionalData: {additionalData != null}");
+
+                // <CHANGE> 10) Obtener Diagnoses (MedicalDiagnosis)
+                var diagnosesData = await _context.Diagnosis
+                    .Where(d => d.MedicalCareId == id)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.Cie10,
+                        d.Denomination,
+                        d.DiagnosticTypeId,
+                        d.Recurrence,
+                        d.DiagnosisMotivation,
+                        d.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                var diagnosticTypeIds = diagnosesData.Select(d => d.DiagnosticTypeId).Distinct().ToList();
+                var diagnosticTypes = await _context.DiagnosticTypes
+                    .Where(dt => diagnosticTypeIds.Contains(dt.Id))
+                    .ToDictionaryAsync(dt => dt.Id, dt => dt.Name);
+
+                var diagnoses = diagnosesData.Select(d => new MedicalDiagnosisDTO
+                {
+                    Id = d.Id,
+                    Cie10 = d.Cie10,
+                    Denomination = d.Denomination,
+                    DiagnosticTypeId = d.DiagnosticTypeId,
+                    DiagnosticTypeName = diagnosticTypes.ContainsKey(d.DiagnosticTypeId)
+                        ? diagnosticTypes[d.DiagnosticTypeId] : null,
+                    Recurrence = d.Recurrence,
+                    DiagnosisMotivation = d.DiagnosisMotivation,
+                    MedicalCareId = d.MedicalCareId
+                }).ToList();
+
+                Console.WriteLine($"[DEBUG] Diagnoses cargados: {diagnoses.Count}");
+
+                // <CHANGE> 11) Obtener Treatments y sus tipos (Pharmacological, NonPharmacological, Indications)
+                var diagnosisIds = diagnoses.Select(d => d.Id).ToList();
+
+                var treatmentsData = await _context.Treatments
+                    .Where(t => diagnosisIds.Contains(t.MedicalDiagnosisId)) // <CHANGE> Corregido: usar MedicalDiagnosisId
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.MedicalDiagnosisId
+                    })
+                    .ToListAsync();
+
+                var treatmentIds = treatmentsData.Select(t => t.Id).ToList();
+
+                // Pharmacological Treatments
+                var pharmacologicalTreatments = await _context.PharmacologicalTreatments
+                    .Where(pt => treatmentIds.Contains(pt.Id))
+                    .Join(_context.Medicines,
+                        pt => pt.MedicineId,
+                        m => m.Id,
+                        (pt, m) => new PharmacologicalTreatmentDTO
+                        {
+                            Id = pt.Id,
+                            MedicineId = pt.MedicineId,
+                            MedicineName = m.Name,
+                            Dose = pt.Dose,
+                            Frequency = pt.Frequency,
+                            Duration = pt.Duration,
+                            ViaAdmission = pt.ViaAdmission
+                        })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] PharmacologicalTreatments cargados: {pharmacologicalTreatments.Count}");
+
+                // Non-Pharmacological Treatments
+                var nonPharmacologicalTreatments = await _context.NonPharmacologicalTreatments
+                    .Where(npt => treatmentIds.Contains(npt.Id))
+                    .Select(npt => new NonPharmacologicalTreatmentDTO
+                    {
+                        Id = npt.Id,
+                        Description = npt.Description
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] NonPharmacologicalTreatments cargados: {nonPharmacologicalTreatments.Count}");
+
+                // Indications
+                var indications = await _context.Indications
+                    .Where(i => treatmentIds.Contains(i.TreatmentId))
+                    .Select(i => new IndicationsDTO
+                    {
+                        Id = i.Id,
+                        Description = i.Description,
+                        TreatmentId = i.TreatmentId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] Indications cargadas: {indications.Count}");
+
+                // <CHANGE> 12) Obtener MedicalReferrals (Derivaciones)
+                var referrals = await _context.MedicalReferrals
+                    .Where(mr => mr.MedicalCareId == id)
+                    .Select(mr => new MedicalReferralDTO
+                    {
+                        Id = mr.Id,
+                        DateOfReferral = mr.DateOfReferral,
+                        Description = mr.Description,
+                        MedicalCareId = mr.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] Referrals cargados: {referrals.Count}");
+
+                // <CHANGE> 13) Obtener Evolutions
+                var evolutions = await _context.Evolutions
+                    .Where(e => e.MedicalCareId == id)
+                    .Select(e => new EvolutionDTO
+                    {
+                        Id = e.Id,
+                        Description = e.Description,
+                        Percentage = e.Percentage,
+                        MedicalCareId = e.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] Evolutions cargadas: {evolutions.Count}");
+
+                // <CHANGE> 14) Crear DTO final - AHORA con todas las variables ya declaradas
                 var dto = new MedicalCareDTO
                 {
                     CareId = medicalCareQuery.CareId,
@@ -766,6 +953,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                     HealthProfessionalId = medicalCareQuery.HealthProfessionalId,
                     NameHealthProfessional = professionalName?.Trim() ?? "Sin profesional",
                     CareDate = medicalCareQuery.CareDate,
+
+                    // Fisioterapia
                     CurrentIllnesses = currentIllnesses,
                     PhysiotherapyDiagnostics = physiotherapyDiagnostics,
                     OsteoarticularEvaluations = osteoarticularEvaluations,
@@ -775,16 +964,32 @@ namespace SMED.BackEnd.Repositories.Implementations
                     SpecialTests = specialTests,
                     PainScales = painScales,
                     Sessions = sessions,
+
+                    // Común
                     VitalSigns = vitalSigns,
                     ReasonForConsultation = reasonForConsultation,
                     MedicalServices = medicalServices,
-                    MedicalProcedures = medicalProcedures
+                    MedicalProcedures = medicalProcedures,
+
+                    // Medicina General
+                    ReviewSystemDevices = reviewSystemDevices,
+                    PhysicalExams = physicalExams,
+                    AdditionalData = additionalData,
+                    Diagnoses = diagnoses,
+                    PharmacologicalTreatments = pharmacologicalTreatments,
+                    NonPharmacologicalTreatments = nonPharmacologicalTreatments,
+                    Indications = indications,
+                    Referrals = referrals,
+                    Evolutions = evolutions
                 };
 
                 Console.WriteLine($"[DEBUG] DTO creado exitosamente para CareId: {id}");
                 Console.WriteLine($"[DEBUG] Patient: {dto.NamePatient}, Professional: {dto.NameHealthProfessional}");
                 Console.WriteLine($"[DEBUG] VitalSigns: {dto.VitalSigns != null}, ReasonForConsultation: {dto.ReasonForConsultation != null}");
                 Console.WriteLine($"[DEBUG] MedicalServices: {dto.MedicalServices.Count}, MedicalProcedures: {dto.MedicalProcedures.Count}");
+                Console.WriteLine($"[DEBUG] ReviewSystemDevices: {dto.ReviewSystemDevices?.Count ?? 0}, PhysicalExams: {dto.PhysicalExams?.Count ?? 0}");
+                Console.WriteLine($"[DEBUG] Diagnoses: {dto.Diagnoses?.Count ?? 0}, Treatments: Pharma={dto.PharmacologicalTreatments?.Count ?? 0}, NonPharma={dto.NonPharmacologicalTreatments?.Count ?? 0}");
+                Console.WriteLine($"[DEBUG] Referrals: {dto.Referrals?.Count ?? 0}, Evolutions: {dto.Evolutions?.Count ?? 0}");
 
                 return dto;
             }

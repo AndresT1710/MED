@@ -1601,5 +1601,613 @@ namespace SMED.BackEnd.Services
             };
         }
 
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // MEDICAL CARE PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+
+        public async Task<byte[]> GenerateMedicalCarePdfAsync(MedicalCareDTO medicalCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                // Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                AddHeader(document, headerFont, universityRed, universityWhite);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN MÉDICA", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN GENERAL =====
+                AddMedicalCareInfoSection(document, medicalCare, titleFont, labelFont, textFont, lightGray);
+
+                // ===== MOTIVO DE CONSULTA =====
+                if (medicalCare.ReasonForConsultation != null)
+                {
+                    AddReasonForConsultationSection(document, medicalCare, titleFont, textFont, lightGray);
+                }
+
+                // ===== APARATOS Y SISTEMAS =====
+                if (medicalCare.ReviewSystemDevices != null && medicalCare.ReviewSystemDevices.Any())
+                {
+                    AddSystemsDevicesSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== EXAMEN FÍSICO =====
+                if (medicalCare.PhysicalExams != null && medicalCare.PhysicalExams.Any())
+                {
+                    AddPhysicalExamSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== DATOS ADICIONALES =====
+                if (medicalCare.AdditionalData != null)
+                {
+                    AddAdditionalDataSection(document, medicalCare, titleFont, textFont, lightGray);
+                }
+
+                // ===== DIAGNÓSTICOS =====
+                if (medicalCare.Diagnoses != null && medicalCare.Diagnoses.Any())
+                {
+                    AddDiagnosesSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== TRATAMIENTOS =====
+                AddTreatmentsSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== PROCEDIMIENTOS MÉDICOS =====
+                if (medicalCare.MedicalProcedures != null && medicalCare.MedicalProcedures.Any())
+                {
+                    AddMedicalProceduresSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== DERIVACIONES =====
+                if (medicalCare.Referrals != null && medicalCare.Referrals.Any())
+                {
+                    AddReferralsSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== EVOLUCIONES =====
+                if (medicalCare.Evolutions != null && medicalCare.Evolutions.Any())
+                {
+                    AddEvolutionsSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== SERVICIOS MÉDICOS =====
+                if (medicalCare.MedicalServices != null && medicalCare.MedicalServices.Any())
+                {
+                    AddMedicalServicesSection(document, medicalCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+                }
+
+                // ===== RESUMEN DE ATENCIÓN =====
+                AddMedicalCareSummarySection(document, medicalCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de atención médica: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        // ===== MÉTODOS AUXILIARES PARA MEDICAL CARE PDF =====
+
+        private void AddHeader(Document document, Font headerFont, BaseColor universityRed, BaseColor universityWhite)
+        {
+            var headerTable = new PdfPTable(3)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+            // Celda para el logo (izquierda)
+            var logoCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE,
+                Padding = 8,
+                BackgroundColor = universityRed
+            };
+
+            // Cargar logo
+            try
+            {
+                var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                if (File.Exists(logoPath))
+                {
+                    var logo = Image.GetInstance(logoPath);
+                    logo.ScaleToFit(70, 70);
+                    logo.Alignment = Image.ALIGN_CENTER;
+                    logoCell.AddElement(logo);
+                }
+                else
+                {
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando logo: {ex.Message}");
+                var fallbackLogo = new Paragraph("UTA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                logoCell.AddElement(fallbackLogo);
+            }
+
+            var textCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE,
+                Padding = 10,
+                BackgroundColor = universityRed
+            };
+
+            var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+            {
+                Alignment = Element.ALIGN_CENTER
+            };
+            var systemName = new Paragraph("SISTEMA MÉDICO - ATENCIÓN MÉDICA",
+                FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+            {
+                SpacingBefore = 5f,
+                Alignment = Element.ALIGN_CENTER
+            };
+
+            textCell.AddElement(universityName);
+            textCell.AddElement(systemName);
+
+            var emptyCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                BackgroundColor = universityRed
+            };
+
+            headerTable.AddCell(logoCell);
+            headerTable.AddCell(textCell);
+            headerTable.AddCell(emptyCell);
+
+            document.Add(headerTable);
+        }
+
+        private void AddMedicalCareInfoSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN GENERAL", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", medicalCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", medicalCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", medicalCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", medicalCare.Area ?? "Medicina General", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", medicalCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Profesional:", medicalCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", medicalCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+        private void AddSystemsDevicesSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            // CORREGIR: Usar ReviewSystemDevices en lugar de SystemsDevices
+            if (medicalCare.ReviewSystemDevices != null && medicalCare.ReviewSystemDevices.Any())
+            {
+                var sectionTitle = new Paragraph($"APARATOS Y SISTEMAS ({medicalCare.ReviewSystemDevices.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var systemsTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                systemsTable.SetWidths(new float[] { 35, 20, 45 });
+
+                // Encabezados
+                AddTableHeaderCell(systemsTable, "SISTEMA/APARATO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(systemsTable, "ESTADO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(systemsTable, "OBSERVACIONES", tableHeaderFont, universityRed);
+
+                // Iteramos las revisiones - CORREGIR: usar ReviewSystemDevices
+                foreach (var review in medicalCare.ReviewSystemDevices)
+                {
+                    AddTableCell(systemsTable, review.SystemName ?? "N/A", textFont);
+                    AddTableCell(systemsTable, review.State ?? "N/A", textFont);
+                    AddTableCell(systemsTable, review.Observations ?? "N/A", textFont);
+                }
+
+                document.Add(systemsTable);
+            }
+            else
+            {
+                // Opcional: Mostrar mensaje si no hay datos
+                var noDataParagraph = new Paragraph("APARATOS Y SISTEMAS: No se registraron datos", textFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(noDataParagraph);
+            }
+        }
+
+
+        private void AddPhysicalExamSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            var sectionTitle = new Paragraph($"EXAMEN FÍSICO ({medicalCare.PhysicalExams.Count})", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var examTable = new PdfPTable(3)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            examTable.SetWidths(new float[] { 30, 35, 35 });
+
+            // Encabezados
+            AddTableHeaderCell(examTable, "REGIÓN", tableHeaderFont, universityRed);
+            AddTableHeaderCell(examTable, "EVIDENCIA PATOLÓGICA", tableHeaderFont, universityRed);
+            AddTableHeaderCell(examTable, "OBSERVACIÓN", tableHeaderFont, universityRed);
+
+            foreach (var exam in medicalCare.PhysicalExams)
+            {
+                AddTableCell(examTable, exam.RegionName ?? "N/A", textFont);
+                AddTableCell(examTable, exam.PathologicalEvidenceName ?? "N/A", textFont);
+                AddTableCell(examTable, exam.Observation ?? "N/A", textFont);
+            }
+
+            document.Add(examTable);
+        }
+
+        private void AddAdditionalDataSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (!string.IsNullOrWhiteSpace(medicalCare.AdditionalData?.Observacion))
+            {
+                var sectionTitle = new Paragraph("DATOS ADICIONALES", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var dataTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var dataCell = new PdfPCell(new Phrase(medicalCare.AdditionalData.Observacion, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                dataTable.AddCell(dataCell);
+
+                document.Add(dataTable);
+            }
+        }
+
+        private void AddDiagnosesSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            var sectionTitle = new Paragraph($"DIAGNÓSTICOS ({medicalCare.Diagnoses.Count})", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var diagnosesTable = new PdfPTable(5)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            diagnosesTable.SetWidths(new float[] { 15, 30, 20, 15, 20 });
+
+            // Encabezados
+            AddTableHeaderCell(diagnosesTable, "CIE10", tableHeaderFont, universityRed);
+            AddTableHeaderCell(diagnosesTable, "DENOMINACIÓN", tableHeaderFont, universityRed);
+            AddTableHeaderCell(diagnosesTable, "TIPO", tableHeaderFont, universityRed);
+            AddTableHeaderCell(diagnosesTable, "RECURRENCIA", tableHeaderFont, universityRed);
+            AddTableHeaderCell(diagnosesTable, "MOTIVACIÓN", tableHeaderFont, universityRed);
+
+            foreach (var diagnosis in medicalCare.Diagnoses)
+            {
+                AddTableCell(diagnosesTable, diagnosis.Cie10 ?? "N/A", textFont);
+                AddTableCell(diagnosesTable, diagnosis.Denomination ?? "N/A", textFont);
+                AddTableCell(diagnosesTable, diagnosis.DiagnosticTypeName ?? "N/A", textFont);
+                AddTableCell(diagnosesTable, diagnosis.Recurrence ?? "N/A", textFont);
+                AddTableCell(diagnosesTable, diagnosis.DiagnosisMotivation ?? "N/A", textFont);
+            }
+
+            document.Add(diagnosesTable);
+        }
+
+        private void AddTreatmentsSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            BaseColor darkGray = new BaseColor(80, 80, 80);
+
+
+            bool hasTreatments = (medicalCare.PharmacologicalTreatments != null && medicalCare.PharmacologicalTreatments.Any()) ||
+                                 (medicalCare.NonPharmacologicalTreatments != null && medicalCare.NonPharmacologicalTreatments.Any()) ||
+                                 (medicalCare.Indications != null && medicalCare.Indications.Any());
+
+            if (!hasTreatments) return;
+
+            var sectionTitle = new Paragraph("TRATAMIENTOS", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            // Tratamientos Farmacológicos
+            if (medicalCare.PharmacologicalTreatments != null && medicalCare.PharmacologicalTreatments.Any())
+            {
+                var pharmaTitle = new Paragraph("Tratamiento Farmacológico", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, darkGray))
+                {
+                    SpacingBefore = 5f,
+                    SpacingAfter = 8f
+                };
+                document.Add(pharmaTitle);
+
+                var pharmaTable = new PdfPTable(5)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 15f
+                };
+                pharmaTable.SetWidths(new float[] { 25, 15, 20, 20, 20 });
+
+                AddTableHeaderCell(pharmaTable, "MEDICAMENTO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(pharmaTable, "DOSIS", tableHeaderFont, universityRed);
+                AddTableHeaderCell(pharmaTable, "FRECUENCIA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(pharmaTable, "DURACIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(pharmaTable, "VÍA", tableHeaderFont, universityRed);
+
+                foreach (var treatment in medicalCare.PharmacologicalTreatments)
+                {
+                    AddTableCell(pharmaTable, treatment.MedicineName ?? "N/A", textFont);
+                    AddTableCell(pharmaTable, treatment.Dose.ToString(), textFont);
+                    AddTableCell(pharmaTable, treatment.Frequency ?? "N/A", textFont);
+                    AddTableCell(pharmaTable, treatment.Duration ?? "N/A", textFont);
+                    AddTableCell(pharmaTable, treatment.ViaAdmission ?? "N/A", textFont);
+                }
+
+                document.Add(pharmaTable);
+            }
+
+            // Tratamientos No Farmacológicos
+            if (medicalCare.NonPharmacologicalTreatments != null && medicalCare.NonPharmacologicalTreatments.Any())
+            {
+                var nonPharmaTitle = new Paragraph("Tratamiento No Farmacológico", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, darkGray))
+                {
+                    SpacingBefore = 5f,
+                    SpacingAfter = 8f
+                };
+                document.Add(nonPharmaTitle);
+
+                foreach (var treatment in medicalCare.NonPharmacologicalTreatments)
+                {
+                    var treatmentTable = new PdfPTable(1)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 5f
+                    };
+
+                    var treatmentCell = new PdfPCell(new Phrase(treatment.Description ?? "N/A", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 8,
+                        BackgroundColor = new BaseColor(248, 249, 250)
+                    };
+                    treatmentTable.AddCell(treatmentCell);
+                    document.Add(treatmentTable);
+                }
+
+                document.Add(new Paragraph(" ") { SpacingAfter = 10f });
+            }
+
+            // Indicaciones
+            if (medicalCare.Indications != null && medicalCare.Indications.Any())
+            {
+                var indicationsTitle = new Paragraph("Indicaciones", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, darkGray))
+                {
+                    SpacingBefore = 5f,
+                    SpacingAfter = 8f
+                };
+                document.Add(indicationsTitle);
+
+                foreach (var indication in medicalCare.Indications)
+                {
+                    var indicationTable = new PdfPTable(1)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 5f
+                    };
+
+                    var indicationCell = new PdfPCell(new Phrase(indication.Description ?? "N/A", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 8,
+                        BackgroundColor = new BaseColor(248, 249, 250)
+                    };
+                    indicationTable.AddCell(indicationCell);
+                    document.Add(indicationTable);
+                }
+            }
+        }
+
+        private void AddReferralsSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            var sectionTitle = new Paragraph($"DERIVACIONES ({medicalCare.Referrals.Count})", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var referralsTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            referralsTable.SetWidths(new float[] { 30, 70 });
+
+            AddTableHeaderCell(referralsTable, "FECHA DE DERIVACIÓN", tableHeaderFont, universityRed);
+            AddTableHeaderCell(referralsTable, "MOTIVO", tableHeaderFont, universityRed);
+
+            foreach (var referral in medicalCare.Referrals)
+            {
+                AddTableCell(referralsTable, referral.DateOfReferral?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                AddTableCell(referralsTable, referral.Description ?? "N/A", textFont);
+            }
+
+            document.Add(referralsTable);
+        }
+
+        private void AddEvolutionsSection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            var sectionTitle = new Paragraph($"EVOLUCIONES ({medicalCare.Evolutions.Count})", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var evolutionsTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            evolutionsTable.SetWidths(new float[] { 70, 30 });
+
+            AddTableHeaderCell(evolutionsTable, "OBSERVACIÓN", tableHeaderFont, universityRed);
+            AddTableHeaderCell(evolutionsTable, "% MEJORA", tableHeaderFont, universityRed);
+
+            foreach (var evolution in medicalCare.Evolutions)
+            {
+                AddTableCell(evolutionsTable, evolution.Description ?? "N/A", textFont);
+                AddTableCell(evolutionsTable, $"{evolution.Percentage}%", textFont);
+            }
+
+            document.Add(evolutionsTable);
+        }
+
+        private void AddMedicalCareSummarySection(Document document, MedicalCareDTO medicalCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(5)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 20, 20, 20, 20, 20 });
+
+            // Contar elementos
+            var systemsCount = medicalCare.ReviewSystemDevices?.Count ?? 0;
+            var examsCount = medicalCare.PhysicalExams?.Count ?? 0;
+            var diagnosesCount = medicalCare.Diagnoses?.Count ?? 0;
+            var proceduresCount = medicalCare.MedicalProcedures?.Count ?? 0;
+            var evolutionsCount = medicalCare.Evolutions?.Count ?? 0;
+
+            AddSummaryCard(summaryTable, "SISTEMAS", systemsCount.ToString(), universityRed, textFont);
+            AddSummaryCard(summaryTable, "EXÁMENES", examsCount.ToString(), universityRed, textFont);
+            AddSummaryCard(summaryTable, "DIAGNÓSTICOS", diagnosesCount.ToString(), universityRed, textFont);
+            AddSummaryCard(summaryTable, "PROCEDIMIENTOS", proceduresCount.ToString(), universityRed, textFont);
+            AddSummaryCard(summaryTable, "EVOLUCIONES", evolutionsCount.ToString(), universityRed, textFont);
+
+            document.Add(summaryTable);
+        }
+
     }
 }

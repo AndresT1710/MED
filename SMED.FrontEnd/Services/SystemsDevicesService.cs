@@ -30,5 +30,17 @@ namespace SMED.FrontEnd.Services
             var systems = await GetAllAsync();
             return systems.FirstOrDefault(s => s.Id == id)?.Name ?? "Sistema no encontrado";
         }
+
+        public async Task<SystemsDevicesDTO?> GetByIdAsync(int id)
+        {
+            var response = await _httpClient.GetAsync($"api/SystemsDevices/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<SystemsDevicesDTO>(json, _jsonOptions);
+            }
+            return null;
+        }
+
     }
 }

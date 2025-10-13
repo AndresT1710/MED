@@ -4,14 +4,41 @@
 @inject VitalSignsService VitalSignsService
 @inject MedicalServiceService MedicalServiceService
 @inject MedicalProcedureService MedicalProcedureService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject ReviewSystemDevicesService ReviewSystemDevicesService
+@inject PhysicalExamService PhysicalExamService
+@inject AdditionalDataService AdditionalDataService
+@inject MedicalDiagnosisService MedicalDiagnosisService
+@inject PharmacologicalTreatmentService PharmacologicalTreatmentService
+@inject NonPharmacologicalTreatmentService NonPharmacologicalTreatmentService
+@inject IndicationsService IndicationsService
+@inject EvolutionService EvolutionService
+@inject MedicalReferralService MedicalReferralService
+@inject SystemsDevicesService SystemsDevicesService
+@inject RegionService RegionService
+@inject PathologicalEvidenceService PathologicalEvidenceService
+@inject DiagnosticTypeService DiagnosticTypeService
+@inject MedicineService MedicineService
+@inject LocationService LocationService
+@inject MedicalCareService MedicalCareService
 @inject IJSRuntime JS
 
 <div class="medical-care-detail">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención Médica</h4>
+                <div>
+                    <ImprimirPdf Tipo="medical-care" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row">
         <!-- Información básica -->
         <div class="col-12">
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
                 </div>
                 <div class="card-body">
@@ -22,45 +49,358 @@
                             <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "N/A")</p>
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "Medicina General")</p>
                             <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
                             <p><strong>Profesional:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Signos Vitales -->
-        @if (vitalSigns != null)
+        <!-- Motivo de Consulta -->
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+       
+        <!-- Aparatos y Sistemas -->
+        @if (systemsList.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-lungs me-2"></i>Aparatos y Sistemas (@systemsList.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Sistema/Aparato</th>
+                                        <th>Estado</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var system in systemsList)
+                                    {
+                                        <tr>
+                                            <td>@system.SystemName</td>
+                                            <td>@(system.State ?? "N/A")</td>
+                                            <td>@(system.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Examen Físico -->
+        @if (physicalExams.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Examen Físico (@physicalExams.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Región</th>
+                                        <th>Evidencia Patológica</th>
+                                        <th>Observación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var exam in physicalExams)
+                                    {
+                                        <tr>
+                                            <td>@exam.RegionName</td>
+                                            <td>@exam.PathologicalEvidenceName</td>
+                                            <td>@(exam.Observation ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Datos Adicionales -->
+        @if (additionalData != null && !string.IsNullOrWhiteSpace(additionalData.Observacion))
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Datos Adicionales</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@additionalData.Observacion</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Procedimientos Médicos -->
+        @if (medicalProcedures.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-procedures me-2"></i>Procedimientos Médicos (@medicalProcedures.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Procedimiento</th>
+                                        <th>Departamento</th>
+                                        <th>Personal de Salud</th>
+                                        <th>Médico Tratante</th>
+                                        <th>Estado</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var procedure in medicalProcedures)
+                                    {
+                                        <tr>
+                                            <td>@procedure.ProcedureDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@(procedure.TypeOfProcedureName ?? "N/A")</td>
+                                            <td>@(procedure.SpecificProcedureName ?? "N/A")</td>
+                                            <td>@(procedure.LocationName ?? "N/A")</td>
+                                            <td>@(procedure.HealthProfessionalName ?? "N/A")</td>
+                                            <td>@(procedure.TreatingPhysicianName ?? "N/A")</td>
+                                            <td>
+                                                <span class="badge @GetProcedureStatusBadgeClass(procedure.Status)">
+                                                    @(procedure.Status ?? "N/A")
+                                                </span>
+                                            </td>
+                                            <td>@(procedure.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Diagnósticos -->
+        @if (diagnoses.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-diagnoses me-2"></i>Diagnósticos (@diagnoses.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>CIE10</th>
+                                        <th>Denominación</th>
+                                        <th>Tipo</th>
+                                        <th>Recurrencia</th>
+                                        <th>Motivación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var diagnosis in diagnoses)
+                                    {
+                                        <tr>
+                                            <td>@diagnosis.Cie10</td>
+                                            <td>@diagnosis.Denomination</td>
+                                            <td>@diagnosis.DiagnosticTypeName</td>
+                                            <td>@(diagnosis.Recurrence ?? "N/A")</td>
+                                            <td>@(diagnosis.DiagnosisMotivation ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Tratamientos -->
+        @if (pharmacologicalTreatments.Any() || nonPharmacologicalTreatments.Any() || indications.Any())
         {
             <div class="col-12">
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>Signos Vitales</h5>
+                        <h5 class="mb-0"><i class="fas fa-pills me-2"></i>Tratamientos</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <p><strong>Peso:</strong> @(vitalSigns.Weight?.ToString("F1") ?? "N/A") kg</p>
-                                <p><strong>Talla:</strong> @(vitalSigns.Height?.ToString("F1") ?? "N/A") cm</p>
-                                <p><strong>IMC:</strong> @(vitalSigns.Icm?.ToString("F1") ?? "N/A")</p>
+                        <!-- Tratamientos Farmacológicos -->
+                        @if (pharmacologicalTreatments.Any())
+                        {
+                            <div class="mb-4">
+                                <h6 class="border-bottom pb-2">Tratamiento Farmacológico</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Medicamento</th>
+                                                <th>Dosis</th>
+                                                <th>Frecuencia</th>
+                                                <th>Duración</th>
+                                                <th>Vía de Administración</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var treatment in pharmacologicalTreatments)
+                                            {
+                                                <tr>
+                                                    <td>@treatment.MedicineName</td>
+                                                    <td>@treatment.Dose</td>
+                                                    <td>@treatment.Frequency</td>
+                                                    <td>@treatment.Duration</td>
+                                                    <td>@treatment.ViaAdmission</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <p><strong>Presión Arterial:</strong> @(vitalSigns.BloodPressure ?? "N/A")</p>
-                                <p><strong>Temperatura:</strong> @(vitalSigns.Temperature?.ToString("F1") ?? "N/A") °C</p>
-                                <p><strong>PAM:</strong> @(vitalSigns.MeanArterialPressure?.ToString("F1") ?? "N/A")</p>
+                        }
+
+                        <!-- Tratamientos No Farmacológicos -->
+                        @if (nonPharmacologicalTreatments.Any())
+                        {
+                            <div class="mb-4">
+                                <h6 class="border-bottom pb-2">Tratamiento No Farmacológico</h6>
+                                @foreach (var treatment in nonPharmacologicalTreatments)
+                                {
+                                    <div class="card bg-light mb-2">
+                                        <div class="card-body">
+                                            <p class="mb-0">@treatment.Description</p>
+                                        </div>
+                                    </div>
+                                }
                             </div>
-                            <div class="col-md-3">
-                                <p><strong>FC:</strong> @(vitalSigns.HeartRate?.ToString() ?? "N/A") lpm</p>
-                                <p><strong>FR:</strong> @(vitalSigns.RespiratoryRate?.ToString() ?? "N/A") rpm</p>
-                                <p><strong>SatO2:</strong> @(vitalSigns.OxygenSaturation?.ToString("F1") ?? "N/A") %</p>
+                        }
+
+                        <!-- Indicaciones -->
+                        @if (indications.Any())
+                        {
+                            <div class="mb-4">
+                                <h6 class="border-bottom pb-2">Indicaciones</h6>
+                                @foreach (var indication in indications)
+                                {
+                                    <div class="card bg-light mb-2">
+                                        <div class="card-body">
+                                            <p class="mb-0">@indication.Description</p>
+                                        </div>
+                                    </div>
+                                }
                             </div>
-                            <div class="col-md-3">
-                                <p><strong>Glucosa:</strong> @(vitalSigns.BloodGlucose?.ToString("F1") ?? "N/A") mg/dl</p>
-                                <p><strong>Hemoglobina:</strong> @(vitalSigns.Hemoglobin?.ToString("F1") ?? "N/A") g/dl</p>
-                                <p><strong>P. Abdominal:</strong> @(vitalSigns.AbdominalCircumference?.ToString("F1") ?? "N/A") cm</p>
-                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Derivaciones -->
+        @if (referrals.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-share me-2"></i>Derivaciones (@referrals.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha de Derivación</th>
+                                        <th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var referral in referrals)
+                                    {
+                                        <tr>
+                                            <td>@referral.DateOfReferral?.ToString("dd/MM/yyyy")</td>
+                                            <td>@referral.Description</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Evoluciones -->
+        @if (evolutions.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Evoluciones (@evolutions.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Observación</th>
+                                        <th>Porcentaje de Mejora</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evolution in evolutions)
+                                    {
+                                        <tr>
+                                            <td>@evolution.Description</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar @GetProgressBarClass((decimal)evolution.Percentage)"
+                                                         role="progressbar"
+                                                         style="width: @GetPercentageWidth((decimal)evolution.Percentage)%"
+                                                         aria-valuenow="@evolution.Percentage"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                        @evolution.Percentage%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -72,7 +412,7 @@
         {
             <div class="col-12">
                 <div class="card mb-4">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header bg-warning text-dark">
                         <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Servicios Médicos (@medicalServices.Count)</h5>
                     </div>
                     <div class="card-body">
@@ -85,6 +425,7 @@
                                         <th>Diagnóstico</th>
                                         <th>Observaciones</th>
                                         <th>Recomendaciones</th>
+                                        <th>Profesional</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -96,6 +437,7 @@
                                             <td>@(service.Diagnosis ?? "N/A")</td>
                                             <td>@(service.Observations ?? "N/A")</td>
                                             <td>@(service.Recommendations ?? "N/A")</td>
+                                            <td>@(service.HealthProfessionalName ?? "N/A")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -106,53 +448,65 @@
             </div>
         }
 
-        <!-- Procedimientos Médicos -->
-        @if (medicalProcedures.Any())
-        {
-            <div class="col-12">
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-procedures me-2"></i>Procedimientos Médicos (@medicalProcedures.Count)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Tipo</th>
-                                        <th>Procedimiento</th>
-                                        <th>Personal de Salud</th>
-                                        <th>Médico Tratante</th>
-                                        <th>Observaciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var procedure in medicalProcedures)
-                                    {
-                                        <tr>
-                                            <td>@procedure.ProcedureDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                            <td>@(procedure.TypeOfProcedureName ?? "N/A")</td>
-                                            <td>@(procedure.SpecificProcedureName ?? "N/A")</td>
-                                            <td>@(procedure.HealthProfessionalName ?? "N/A")</td>
-                                            <td>@(procedure.TreatingPhysicianName ?? "N/A")</td>
-                                            <td>@(procedure.Observations ?? "N/A")</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+        <!-- Resumen de Atención -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Resumen de Atención</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Sistemas</h6>
+                                    <p class="card-text display-6">@systemsList.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Exámenes</h6>
+                                    <p class="card-text display-6">@physicalExams.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Diagnósticos</h6>
+                                    <p class="card-text display-6">@diagnoses.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Procedimientos</h6>
+                                    <p class="card-text display-6">@medicalProcedures.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Evoluciones</h6>
+                                    <p class="card-text display-6">@evolutions.Count</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        }
+        </div>
 
-        @if (vitalSigns == null && !medicalServices.Any() && !medicalProcedures.Any())
+        @if (IsEmpty())
         {
             <div class="col-12">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    Esta atención médica no tiene signos vitales, servicios o procedimientos registrados.
+                    Esta atención médica no tiene datos registrados.
                 </div>
             </div>
         }
@@ -162,9 +516,18 @@
 @code {
     [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
 
-    private VitalSignsDTO? vitalSigns;
+    private ReasonForConsultationDTO? reasonForConsultation;
     private List<MedicalServiceDTO> medicalServices = new();
     private List<MedicalProcedureDTO> medicalProcedures = new();
+    private List<ReviewSystemDevicesDTO> systemsList = new();
+    private List<PhysicalExamDTO> physicalExams = new();
+    private AdditionalDataDTO? additionalData;
+    private List<MedicalDiagnosisDTO> diagnoses = new();
+    private List<PharmacologicalTreatmentDTO> pharmacologicalTreatments = new();
+    private List<NonPharmacologicalTreatmentDTO> nonPharmacologicalTreatments = new();
+    private List<IndicationsDTO> indications = new();
+    private List<MedicalReferralDTO> referrals = new();
+    private List<EvolutionDTO> evolutions = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -188,9 +551,9 @@
 
         try
         {
-            // Cargar signos vitales
-            var allVitalSigns = await VitalSignsService.GetAllAsync();
-            vitalSigns = allVitalSigns?.FirstOrDefault(vs => vs.MedicalCareId == MedicalCare.CareId);
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
 
             // Cargar servicios médicos
             medicalServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<MedicalServiceDTO>();
@@ -199,11 +562,191 @@
             var allProcedures = await MedicalProcedureService.GetAllAsync();
             medicalProcedures = allProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
+            // Cargar sistemas y aparatos
+            systemsList = await ReviewSystemDevicesService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+            await LoadSystemNames();
+
+            // Cargar exámenes físicos
+            physicalExams = await PhysicalExamService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+            await LoadPhysicalExamNames();
+
+            // Cargar datos adicionales
+            var additionalDataList = await AdditionalDataService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+            additionalData = additionalDataList?.FirstOrDefault();
+
+            // Cargar diagnósticos
+            diagnoses = await MedicalDiagnosisService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+            await LoadDiagnosisNames();
+
+            // Cargar tratamientos
+            await LoadTreatments();
+
+            // Cargar derivaciones
+            referrals = await MedicalReferralService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+
+            // Cargar evoluciones
+            evolutions = await EvolutionService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+
             StateHasChanged();
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading medical care details: {ex.Message}");
         }
+    }
+
+    private async Task LoadSystemNames()
+    {
+        foreach (var system in systemsList)
+        {
+            try
+            {
+                var systemData = await SystemsDevicesService.GetByIdAsync(system.SystemsDevicesId);
+                system.SystemName = systemData?.Name ?? "Sistema no encontrado";
+            }
+            catch (Exception ex)
+            {
+                system.SystemName = "Error al cargar";
+                await JS.InvokeVoidAsync("console.error", $"Error loading system name: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task LoadPhysicalExamNames()
+    {
+        foreach (var exam in physicalExams)
+        {
+            try
+            {
+                var region = await RegionService.GetByIdAsync(exam.RegionId);
+                exam.RegionName = region?.Name ?? "Región no encontrada";
+
+                var evidence = await PathologicalEvidenceService.GetByIdAsync(exam.PathologicalEvidenceId);
+                exam.PathologicalEvidenceName = evidence?.Name ?? "Evidencia no encontrada";
+            }
+            catch (Exception ex)
+            {
+                exam.RegionName = "Error al cargar";
+                exam.PathologicalEvidenceName = "Error al cargar";
+                await JS.InvokeVoidAsync("console.error", $"Error loading physical exam names: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task LoadDiagnosisNames()
+    {
+        foreach (var diagnosis in diagnoses)
+        {
+            try
+            {
+                var diagnosticType = await DiagnosticTypeService.GetByIdAsync(diagnosis.DiagnosticTypeId);
+                diagnosis.DiagnosticTypeName = diagnosticType?.Name ?? "Tipo no encontrado";
+            }
+            catch (Exception ex)
+            {
+                diagnosis.DiagnosticTypeName = "Error al cargar";
+                await JS.InvokeVoidAsync("console.error", $"Error loading diagnosis name: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task LoadTreatments()
+    {
+        try
+        {
+            // Cargar tratamientos farmacológicos para todos los diagnósticos
+            pharmacologicalTreatments = new List<PharmacologicalTreatmentDTO>();
+            foreach (var diagnosis in diagnoses)
+            {
+                var pharmaTreatments = await PharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (pharmaTreatments != null)
+                {
+                    foreach (var treatment in pharmaTreatments)
+                    {
+                        try
+                        {
+                            var medicine = await MedicineService.GetByIdAsync(treatment.MedicineId);
+                            treatment.MedicineName = medicine?.Name ?? "Medicamento no encontrado";
+                        }
+                        catch (Exception ex)
+                        {
+                            treatment.MedicineName = "Error al cargar";
+                            await JS.InvokeVoidAsync("console.error", $"Error loading medicine name: {ex.Message}");
+                        }
+                    }
+                    pharmacologicalTreatments.AddRange(pharmaTreatments);
+                }
+            }
+
+            // Cargar tratamientos no farmacológicos
+            nonPharmacologicalTreatments = new List<NonPharmacologicalTreatmentDTO>();
+            foreach (var diagnosis in diagnoses)
+            {
+                var nonPharmaTreatments = await NonPharmacologicalTreatmentService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (nonPharmaTreatments != null)
+                {
+                    nonPharmacologicalTreatments.AddRange(nonPharmaTreatments);
+                }
+            }
+
+            // Cargar indicaciones
+            indications = new List<IndicationsDTO>();
+            foreach (var diagnosis in diagnoses)
+            {
+                var indication = await IndicationsService.GetByMedicalDiagnosisIdAsync(diagnosis.Id);
+                if (indication != null)
+                {
+                    indications.Add(indication);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading treatments: {ex.Message}");
+        }
+    }
+
+    private string GetProcedureStatusBadgeClass(string? status)
+    {
+        return status?.ToLower() switch
+        {
+            "realizado" => "bg-success",
+            "pendiente" => "bg-warning",
+            "cancelado" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetProgressBarClass(decimal percentage)
+    {
+        return percentage switch
+        {
+            >= 80 => "bg-success",
+            >= 50 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+
+    private decimal GetPercentageWidth(decimal percentage)
+    {
+        // Convertir decimal a decimal (sin cambios, solo para asegurar el tipo)
+        return percentage;
+    }
+
+    private bool IsEmpty()
+    {
+        return 
+               !medicalServices.Any() &&
+               !medicalProcedures.Any() &&
+               reasonForConsultation == null &&
+               !systemsList.Any() &&
+               !physicalExams.Any() &&
+               additionalData == null &&
+               !diagnoses.Any() &&
+               !pharmacologicalTreatments.Any() &&
+               !nonPharmacologicalTreatments.Any() &&
+               !indications.Any() &&
+               !referrals.Any() &&
+               !evolutions.Any();
     }
 }

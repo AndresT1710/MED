@@ -12,6 +12,7 @@ namespace SMED.Shared.DTOs
         public string Cie10 { get; set; } = null!;
         public string Denomination { get; set; } = null!;
         public int DiagnosticTypeId { get; set; }
+        public string? DiagnosticTypeName { get; set; } = null!;
         public string Recurrence { get; set; } = null!;
         public string DiagnosisMotivation { get; set; } = null!;
         public int MedicalCareId { get; set; }

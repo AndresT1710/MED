@@ -137,10 +137,30 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<MedicalCareDTO>> GetNursingCareAsync()
         {
-            // Primero obtenemos solo los IDs y datos básicos
-            var medicalCaresData = await _context.MedicalCares
+            try
+            {
+                // Primero obtenemos el LocationId para enfermería por nombre
+                var nursingLocationIds = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => l.Name.ToLower().Contains("enfermería") ||
+                               l.Name.ToLower().Contains("enfermeria") ||
+                               l.Name.ToLower().Contains("nursing"))
+                    .Select(l => l.Id)
+                    .ToListAsync();
+
+                Console.WriteLine($"[BACKEND DEBUG GetNursing] LocationIds encontrados: {string.Join(", ", nursingLocationIds)}");
+
+                if (!nursingLocationIds.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetNursing] No se encontró ubicación de enfermería");
+                    return new List<MedicalCareDTO>();
+                }
+
+
+                // Primero obtenemos solo los IDs y datos básicos
+                var medicalCaresData = await _context.MedicalCares
                 .AsNoTracking()
-                .Where(m => m.LocationId == 1) // LocationId = 1 es "Enfermería"
+                .Where(m => nursingLocationIds.Contains(m.LocationId)) // LocationId = 1 es "Enfermería"
                 .OrderByDescending(m => m.CareDate)
                 .Select(m => new
                 {
@@ -153,126 +173,131 @@ namespace SMED.BackEnd.Repositories.Implementations
                 })
                 .ToListAsync();
 
-            Console.WriteLine($"[BACKEND DEBUG GetNursing] Total registros obtenidos: {medicalCaresData.Count}");
+                Console.WriteLine($"[BACKEND DEBUG GetNursing] Total registros obtenidos: {medicalCaresData.Count}");
 
-            if (!medicalCaresData.Any())
+                if (!medicalCaresData.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetNursing] No se encontraron registros de Enfermería");
+                    return new List<MedicalCareDTO>();
+                }
+
+                // Obtener los IDs únicos para las consultas
+                var locationIds = medicalCaresData.Select(m => m.LocationId).Distinct().ToList();
+                var placeOfAttentionIds = medicalCaresData.Select(m => m.PlaceOfAttentionId).Distinct().ToList();
+                var patientIds = medicalCaresData.Select(m => m.PatientId).Distinct().ToList();
+                var healthProfessionalIds = medicalCaresData.Select(m => m.HealthProfessionalId).Distinct().ToList();
+
+                // Cargar Locations en un diccionario
+                var locations = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => locationIds.Contains(l.Id))
+                    .ToDictionaryAsync(l => l.Id, l => l.Name);
+
+                // Cargar PlaceOfAttentions en un diccionario
+                var placeOfAttentions = await _context.PlaceOfAttentions
+                    .AsNoTracking()
+                    .Where(p => placeOfAttentionIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+                Console.WriteLine($"[BACKEND DEBUG GetNursing] PlaceOfAttentions cargados desde BD:");
+                foreach (var place in placeOfAttentions)
+                {
+                    Console.WriteLine($"[BACKEND DEBUG GetNursing] Id: {place.Key}, Name: {place.Value}");
+                }
+
+                // Cargar Patients
+                var patients = await _context.Patients
+                    .AsNoTracking()
+                    .Where(p => patientIds.Contains(p.PersonId))
+                    .ToListAsync();
+
+                var patientPersonIds = patients.Select(p => p.PersonId).ToList();
+                var patientPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => patientPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var patientNames = patients
+                    .Join(patientPersons,
+                        patient => patient.PersonId,
+                        person => person.Id,
+                        (patient, person) => new
+                        {
+                            PersonId = patient.PersonId,
+                            FullName = string.Join(" ", new[] {
+                            person.FirstName,
+                            person.MiddleName,
+                            person.LastName,
+                            person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(p => p.PersonId, p => p.FullName);
+
+                // Cargar HealthProfessionals
+                var healthProfessionals = await _context.HealthProfessionals
+                    .AsNoTracking()
+                    .Where(hp => healthProfessionalIds.Contains(hp.HealthProfessionalId))
+                    .ToListAsync();
+
+                var hpPersonIds = healthProfessionals.Select(hp => hp.HealthProfessionalId).ToList();
+                var hpPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => hpPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var healthProfessionalNames = healthProfessionals
+                    .Join(hpPersons,
+                        hp => hp.HealthProfessionalId,
+                        person => person.Id,
+                        (hp, person) => new
+                        {
+                            HealthProfessionalId = hp.HealthProfessionalId,
+                            FullName = string.Join(" ", new[] {
+                            person.FirstName,
+                            person.MiddleName,
+                            person.LastName,
+                            person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(hp => hp.HealthProfessionalId, hp => hp.FullName);
+
+                // Construir el resultado final
+                var result = medicalCaresData.Select(m =>
+                {
+                    var placeName = placeOfAttentions.ContainsKey(m.PlaceOfAttentionId)
+                        ? placeOfAttentions[m.PlaceOfAttentionId]
+                        : "Sin ubicación";
+
+                    Console.WriteLine($"[BACKEND DEBUG GetNursing] CareId: {m.CareId}, " +
+                                    $"PlaceOfAttentionId: {m.PlaceOfAttentionId}, " +
+                                    $"PlaceName from Dictionary: {placeName}");
+
+                    return new MedicalCareDTO
+                    {
+                        CareId = m.CareId,
+                        LocationId = m.LocationId,
+                        PlaceOfAttentionId = m.PlaceOfAttentionId,
+                        Area = locations.ContainsKey(m.LocationId) ? locations[m.LocationId] : "Sin área",
+                        NamePlace = placeName,
+                        NamePatient = patientNames.ContainsKey(m.PatientId) ? patientNames[m.PatientId] : string.Empty,
+                        PatientId = m.PatientId,
+                        HealthProfessionalId = m.HealthProfessionalId,
+                        NameHealthProfessional = healthProfessionalNames.ContainsKey(m.HealthProfessionalId)
+                            ? healthProfessionalNames[m.HealthProfessionalId]
+                            : string.Empty,
+                        CareDate = m.CareDate
+                    };
+                }).ToList();
+
+                Console.WriteLine($"[BACKEND DEBUG GetNursing] Total DTOs creados: {result.Count}");
+                return result;
+            }
+            catch (Exception ex)
             {
-                Console.WriteLine("[BACKEND DEBUG GetNursing] No se encontraron registros de Enfermería");
+                Console.WriteLine($"[BACKEND ERROR GetNursing] Error: {ex.Message}");
                 return new List<MedicalCareDTO>();
             }
-
-            // Obtener los IDs únicos para las consultas
-            var locationIds = medicalCaresData.Select(m => m.LocationId).Distinct().ToList();
-            var placeOfAttentionIds = medicalCaresData.Select(m => m.PlaceOfAttentionId).Distinct().ToList();
-            var patientIds = medicalCaresData.Select(m => m.PatientId).Distinct().ToList();
-            var healthProfessionalIds = medicalCaresData.Select(m => m.HealthProfessionalId).Distinct().ToList();
-
-            // Cargar Locations en un diccionario
-            var locations = await _context.Locations
-                .AsNoTracking()
-                .Where(l => locationIds.Contains(l.Id))
-                .ToDictionaryAsync(l => l.Id, l => l.Name);
-
-            // Cargar PlaceOfAttentions en un diccionario
-            var placeOfAttentions = await _context.PlaceOfAttentions
-                .AsNoTracking()
-                .Where(p => placeOfAttentionIds.Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id, p => p.Name);
-
-            Console.WriteLine($"[BACKEND DEBUG GetNursing] PlaceOfAttentions cargados desde BD:");
-            foreach (var place in placeOfAttentions)
-            {
-                Console.WriteLine($"[BACKEND DEBUG GetNursing] Id: {place.Key}, Name: {place.Value}");
-            }
-
-            // Cargar Patients
-            var patients = await _context.Patients
-                .AsNoTracking()
-                .Where(p => patientIds.Contains(p.PersonId))
-                .ToListAsync();
-
-            var patientPersonIds = patients.Select(p => p.PersonId).ToList();
-            var patientPersons = await _context.Persons
-                .AsNoTracking()
-                .Where(p => patientPersonIds.Contains(p.Id))
-                .ToListAsync();
-
-            var patientNames = patients
-                .Join(patientPersons,
-                    patient => patient.PersonId,
-                    person => person.Id,
-                    (patient, person) => new
-                    {
-                        PersonId = patient.PersonId,
-                        FullName = string.Join(" ", new[] {
-                            person.FirstName,
-                            person.MiddleName,
-                            person.LastName,
-                            person.SecondLastName
-                        }.Where(n => !string.IsNullOrWhiteSpace(n)))
-                    })
-                .ToDictionary(p => p.PersonId, p => p.FullName);
-
-            // Cargar HealthProfessionals
-            var healthProfessionals = await _context.HealthProfessionals
-                .AsNoTracking()
-                .Where(hp => healthProfessionalIds.Contains(hp.HealthProfessionalId))
-                .ToListAsync();
-
-            var hpPersonIds = healthProfessionals.Select(hp => hp.HealthProfessionalId).ToList();
-            var hpPersons = await _context.Persons
-                .AsNoTracking()
-                .Where(p => hpPersonIds.Contains(p.Id))
-                .ToListAsync();
-
-            var healthProfessionalNames = healthProfessionals
-                .Join(hpPersons,
-                    hp => hp.HealthProfessionalId,
-                    person => person.Id,
-                    (hp, person) => new
-                    {
-                        HealthProfessionalId = hp.HealthProfessionalId,
-                        FullName = string.Join(" ", new[] {
-                            person.FirstName,
-                            person.MiddleName,
-                            person.LastName,
-                            person.SecondLastName
-                        }.Where(n => !string.IsNullOrWhiteSpace(n)))
-                    })
-                .ToDictionary(hp => hp.HealthProfessionalId, hp => hp.FullName);
-
-            // Construir el resultado final
-            var result = medicalCaresData.Select(m =>
-            {
-                var placeName = placeOfAttentions.ContainsKey(m.PlaceOfAttentionId)
-                    ? placeOfAttentions[m.PlaceOfAttentionId]
-                    : "Sin ubicación";
-
-                Console.WriteLine($"[BACKEND DEBUG GetNursing] CareId: {m.CareId}, " +
-                                $"PlaceOfAttentionId: {m.PlaceOfAttentionId}, " +
-                                $"PlaceName from Dictionary: {placeName}");
-
-                return new MedicalCareDTO
-                {
-                    CareId = m.CareId,
-                    LocationId = m.LocationId,
-                    PlaceOfAttentionId = m.PlaceOfAttentionId,
-                    Area = locations.ContainsKey(m.LocationId) ? locations[m.LocationId] : "Sin área",
-                    NamePlace = placeName,
-                    NamePatient = patientNames.ContainsKey(m.PatientId) ? patientNames[m.PatientId] : string.Empty,
-                    PatientId = m.PatientId,
-                    HealthProfessionalId = m.HealthProfessionalId,
-                    NameHealthProfessional = healthProfessionalNames.ContainsKey(m.HealthProfessionalId)
-                        ? healthProfessionalNames[m.HealthProfessionalId]
-                        : string.Empty,
-                    CareDate = m.CareDate
-                };
-            }).ToList();
-
-            Console.WriteLine($"[BACKEND DEBUG GetNursing] Total DTOs creados: {result.Count}");
-            return result;
         }
-
         public async Task<List<MedicalCareDTO>> GetByAreaAndDateAsync(string area, DateTime? date = null)
         {
             var query = _context.MedicalCares
@@ -1161,60 +1186,164 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<MedicalCareDTO>> GetPhysiotherapyCareAsync()
         {
-            var allCares = await _context.MedicalCares
-                .AsNoTracking()
-                .Include(m => m.LocationNavigation)
-                .Include(m => m.PlaceOfAttentionNavigation)
-                .Include(m => m.Patient)
-                    .ThenInclude(p => p.PersonNavigation)
-                .Include(m => m.HealthProfessional)
-                    .ThenInclude(h => h.PersonNavigation)
-                .ToListAsync();
-
-            Console.WriteLine($"[DEBUG] Total MedicalCares en BD: {allCares.Count}");
-
-            foreach (var care in allCares)
+            try
             {
-                var locationName = care.LocationNavigation?.Name ?? "NULL";
-                Console.WriteLine($"[DEBUG] CareId: {care.CareId}, LocationId: {care.LocationId}, LocationName: {locationName}");
+                // Primero obtenemos el LocationId para fisioterapia por nombre
+                var physioLocationIds = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => l.Name.ToLower().Contains("fisioterapia") ||
+                               l.Name.ToLower().Contains("fisio"))
+                    .Select(l => l.Id)
+                    .ToListAsync();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] LocationIds encontrados: {string.Join(", ", physioLocationIds)}");
+
+                if (!physioLocationIds.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetPhysiotherapy] No se encontró ubicación de fisioterapia");
+                    return new List<MedicalCareDTO>();
+                }
+
+                // Obtenemos solo los IDs y datos básicos
+                var medicalCaresData = await _context.MedicalCares
+                    .AsNoTracking()
+                    .Where(m => physioLocationIds.Contains(m.LocationId))
+                    .OrderByDescending(m => m.CareDate)
+                    .Select(m => new
+                    {
+                        m.CareId,
+                        m.LocationId,
+                        m.PlaceOfAttentionId,
+                        m.PatientId,
+                        m.HealthProfessionalId,
+                        m.CareDate
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] Total registros obtenidos: {medicalCaresData.Count}");
+
+                if (!medicalCaresData.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetPhysiotherapy] No se encontraron registros de Fisioterapia");
+                    return new List<MedicalCareDTO>();
+                }
+
+                // Obtener los IDs únicos para las consultas
+                var locationIds = medicalCaresData.Select(m => m.LocationId).Distinct().ToList();
+                var placeOfAttentionIds = medicalCaresData.Select(m => m.PlaceOfAttentionId).Distinct().ToList();
+                var patientIds = medicalCaresData.Select(m => m.PatientId).Distinct().ToList();
+                var healthProfessionalIds = medicalCaresData.Select(m => m.HealthProfessionalId).Distinct().ToList();
+
+                // Cargar Locations en un diccionario
+                var locations = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => locationIds.Contains(l.Id))
+                    .ToDictionaryAsync(l => l.Id, l => l.Name);
+
+                // Cargar PlaceOfAttentions en un diccionario
+                var placeOfAttentions = await _context.PlaceOfAttentions
+                    .AsNoTracking()
+                    .Where(p => placeOfAttentionIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+                Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] PlaceOfAttentions cargados desde BD:");
+                foreach (var place in placeOfAttentions)
+                {
+                    Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] Id: {place.Key}, Name: {place.Value}");
+                }
+
+                // Cargar Patients
+                var patients = await _context.Patients
+                    .AsNoTracking()
+                    .Where(p => patientIds.Contains(p.PersonId))
+                    .ToListAsync();
+
+                var patientPersonIds = patients.Select(p => p.PersonId).ToList();
+                var patientPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => patientPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var patientNames = patients
+                    .Join(patientPersons,
+                        patient => patient.PersonId,
+                        person => person.Id,
+                        (patient, person) => new
+                        {
+                            PersonId = patient.PersonId,
+                            FullName = string.Join(" ", new[] {
+                        person.FirstName,
+                        person.MiddleName,
+                        person.LastName,
+                        person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(p => p.PersonId, p => p.FullName);
+
+                // Cargar HealthProfessionals
+                var healthProfessionals = await _context.HealthProfessionals
+                    .AsNoTracking()
+                    .Where(hp => healthProfessionalIds.Contains(hp.HealthProfessionalId))
+                    .ToListAsync();
+
+                var hpPersonIds = healthProfessionals.Select(hp => hp.HealthProfessionalId).ToList();
+                var hpPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => hpPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var healthProfessionalNames = healthProfessionals
+                    .Join(hpPersons,
+                        hp => hp.HealthProfessionalId,
+                        person => person.Id,
+                        (hp, person) => new
+                        {
+                            HealthProfessionalId = hp.HealthProfessionalId,
+                            FullName = string.Join(" ", new[] {
+                        person.FirstName,
+                        person.MiddleName,
+                        person.LastName,
+                        person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(hp => hp.HealthProfessionalId, hp => hp.FullName);
+
+                // Construir el resultado final
+                var result = medicalCaresData.Select(m =>
+                {
+                    var placeName = placeOfAttentions.ContainsKey(m.PlaceOfAttentionId)
+                        ? placeOfAttentions[m.PlaceOfAttentionId]
+                        : "Sin ubicación";
+
+                    Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] CareId: {m.CareId}, " +
+                                    $"PlaceOfAttentionId: {m.PlaceOfAttentionId}, " +
+                                    $"PlaceName from Dictionary: {placeName}");
+
+                    return new MedicalCareDTO
+                    {
+                        CareId = m.CareId,
+                        LocationId = m.LocationId,
+                        PlaceOfAttentionId = m.PlaceOfAttentionId,
+                        Area = locations.ContainsKey(m.LocationId) ? locations[m.LocationId] : "Sin área",
+                        NamePlace = placeName,
+                        NamePatient = patientNames.ContainsKey(m.PatientId) ? patientNames[m.PatientId] : string.Empty,
+                        PatientId = m.PatientId,
+                        HealthProfessionalId = m.HealthProfessionalId,
+                        NameHealthProfessional = healthProfessionalNames.ContainsKey(m.HealthProfessionalId)
+                            ? healthProfessionalNames[m.HealthProfessionalId]
+                            : string.Empty,
+                        CareDate = m.CareDate
+                    };
+                }).ToList();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPhysiotherapy] Total DTOs creados: {result.Count}");
+                return result;
             }
-
-            var medicalCares = allCares
-                .Where(m => m.LocationNavigation != null &&
-                           (m.LocationNavigation.Name.ToLower() == "fisioterapia" ||
-                            m.LocationNavigation.Name.ToLower().Contains("fisio")))
-                .OrderByDescending(m => m.CareDate)
-                .ToList();
-
-            Console.WriteLine($"[DEBUG] MedicalCares de fisioterapia filtrados: {medicalCares.Count}");
-
-            return medicalCares.Select(m => new MedicalCareDTO
+            catch (Exception ex)
             {
-                CareId = m.CareId,
-                LocationId = m.LocationId,
-                PlaceOfAttentionId = m.PlaceOfAttentionId,
-                Area = m.LocationNavigation?.Name,
-                NamePlace = m.PlaceOfAttentionNavigation?.Name,
-                NamePatient = m.Patient?.PersonNavigation != null
-                    ? string.Join(" ", new[] {
-                        m.Patient.PersonNavigation.FirstName,
-                        m.Patient.PersonNavigation.MiddleName,
-                        m.Patient.PersonNavigation.LastName,
-                        m.Patient.PersonNavigation.SecondLastName
-                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
-                    : string.Empty,
-                PatientId = m.PatientId,
-                HealthProfessionalId = m.HealthProfessionalId,
-                NameHealthProfessional = m.HealthProfessional?.PersonNavigation != null
-                    ? string.Join(" ", new[] {
-                        m.HealthProfessional.PersonNavigation.FirstName,
-                        m.HealthProfessional.PersonNavigation.MiddleName,
-                        m.HealthProfessional.PersonNavigation.LastName,
-                        m.HealthProfessional.PersonNavigation.SecondLastName
-                    }.Where(n => !string.IsNullOrWhiteSpace(n)))
-                    : string.Empty,
-                CareDate = m.CareDate
-            }).ToList();
+                Console.WriteLine($"[BACKEND ERROR GetPhysiotherapy] Error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<List<MedicalCareDTO>> GetByPatientDocumentAsync(string documentNumber)

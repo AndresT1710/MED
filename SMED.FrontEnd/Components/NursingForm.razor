@@ -522,58 +522,119 @@
                         <i class="fas fa-stethoscope me-2"></i>Servicios Médicos
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
-                    <button class="btn btn-sm btn-primary" @onclick="AgregarServicio">
-                        <i class="fas fa-plus me-1"></i>Agregar Servicio
-                    </button>
                 </div>
                 <div class="card-body">
                     @if (selectedPatientId > 0)
                     {
-                        @if (serviciosList.Any())
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Tipo</th>
-                                            <th>Diagnóstico</th>
-                                            <th>Observaciones</th>
-                                            <th width="120">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var servicio in serviciosList)
-                                        {
-                                            <tr>
-                                                <td>@servicio.ServiceDate?.ToString("dd/MM/yyyy")</td>
-                                                <td>@servicio.ServiceType</td>
-                                                <td>@(string.IsNullOrEmpty(servicio.Diagnosis) ? "N/A" : servicio.Diagnosis)</td>
-                                                <td>@(string.IsNullOrEmpty(servicio.Observations) ? "N/A" : (servicio.Observations.Length > 50 ? servicio.Observations.Substring(0, 50) + "..." : servicio.Observations))</td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => EditarServicio(servicio)" title="Editar">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarServicio(servicio)" title="Eliminar">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-4">
-                                <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No hay servicios agregados</p>
-                                <button class="btn btn-primary" @onclick="AgregarServicio">
-                                    <i class="fas fa-plus me-2"></i>Agregar Primer Servicio
-                                </button>
-                            </div>
-                        }
+                        <EditableTable Title="Servicios Médicos"
+                                       ColumnHeaders="@serviceColumnHeaders"
+                                       Rows="@serviceRows"
+                                       RowIds="@serviceRowIds"
+                                       EmptyMessage="No hay servicios agregados"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este servicio?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddServiceRequested"
+                                       OnEditRequested="@OnEditServiceRequested"
+                                       OnDeleteRequested="@OnDeleteServiceRequested"
+                                       OnSaveRequested="@OnSaveServiceRequested"
+                                       IsValidForm="@IsServiceFormValid">
+                            <EditModalContent>
+                                @if (currentService != null)
+                                {
+                                    <div class="row g-3">
+                                        <!-- Fecha del Servicio -->
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Fecha del Servicio <span class="text-danger">*</span></label>
+                                            <input type="datetime-local"
+                                                   class="form-control @(serviceErrors.ContainsKey("ServiceDate") ? "is-invalid" : "")"
+                                                   @bind="currentService.ServiceDate" />
+                                            @if (serviceErrors.ContainsKey("ServiceDate"))
+                                            {
+                                                <div class="invalid-feedback">@serviceErrors["ServiceDate"]</div>
+                                            }
+                                        </div>
+
+                                        <!-- Tipo de Servicio -->
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Tipo de Servicio <span class="text-danger">*</span></label>
+                                            <select class="form-select @(serviceErrors.ContainsKey("ServiceType") ? "is-invalid" : "")"
+                                                    @bind="currentService.ServiceType">
+                                                <option value="">Seleccione un tipo</option>
+                                                @foreach (var serviceType in availableServiceTypes)
+                                                {
+                                                    <option value="@serviceType.Name">@serviceType.Name</option>
+                                                }
+                                            </select>
+                                            @if (serviceErrors.ContainsKey("ServiceType"))
+                                            {
+                                                <div class="invalid-feedback">@serviceErrors["ServiceType"]</div>
+                                            }
+                                        </div>
+
+                                        <!-- Diagnóstico -->
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Diagnóstico</label>
+                                            <textarea class="form-control"
+                                                      @bind="currentService.Diagnosis"
+                                                      rows="2"
+                                                      maxlength="500"
+                                                      placeholder="Diagnóstico principal..."
+                                                      style="resize: vertical; max-height: 100px;"></textarea>
+                                            <small class="form-text text-muted">
+                                                Máximo 500 caracteres. Restantes: @(500 - (currentService.Diagnosis?.Length ?? 0))
+                                            </small>
+                                        </div>
+
+                                        <!-- Observaciones -->
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Observaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="currentService.Observations"
+                                                      rows="3"
+                                                      maxlength="1000"
+                                                      placeholder="Observaciones adicionales sobre el servicio..."
+                                                      style="resize: vertical; max-height: 150px;"></textarea>
+                                            <small class="form-text text-muted">
+                                                Máximo 1000 caracteres. Restantes: @(1000 - (currentService.Observations?.Length ?? 0))
+                                            </small>
+                                        </div>
+
+                                        <!-- Recomendaciones -->
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Recomendaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="currentService.Recommendations"
+                                                      rows="2"
+                                                      maxlength="500"
+                                                      placeholder="Recomendaciones para el paciente..."
+                                                      style="resize: vertical; max-height: 100px;"></textarea>
+                                            <small class="form-text text-muted">
+                                                Máximo 500 caracteres. Restantes: @(500 - (currentService.Recommendations?.Length ?? 0))
+                                            </small>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(serviceFormError))
+                                    {
+                                        <div class="alert alert-danger mt-3">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            @serviceFormError
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="mt-2">Cargando datos del servicio...</p>
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
 
                         <div class="d-flex justify-content-between mt-4">
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("vitals"))">
@@ -748,27 +809,7 @@
     </div>
 </div>
 
-<!-- Modal para Servicio -->
-@if (showServiceModal)
-{
-    <div class="modal-backdrop fade show"></div>
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-stethoscope me-2"></i>
-                        @(currentService?.ServiceId > 0 ? "Editar" : "Agregar") Servicio
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CerrarModalServicio"></button>
-                </div>
-                <div class="modal-body">
-                    <ServiceForm Service="currentService" OnSaved="OnServiceSaved" OnCancel="CerrarModalServicio" />
-                </div>
-            </div>
-        </div>
-    </div>
-}
+
 
 @code {
     [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
@@ -848,6 +889,14 @@
     private string? procedureFormError;
 
 
+    // Variables para Services
+    private List<string> serviceColumnHeaders = new() { "Fecha", "Tipo", "Diagnóstico", "Observaciones" };
+    private List<List<string>> serviceRows = new();
+    private List<int> serviceRowIds = new();
+    private Dictionary<string, string> serviceErrors = new();
+    private string? serviceFormError;
+    private List<TypeOfServiceDTO> availableServiceTypes = new();
+
 
 
     // Para edición
@@ -864,7 +913,6 @@
     private List<List<string>> procedureRows = new();
     private List<int> procedureRowIds = new();
 
-    //Location
     //Location
     private async Task LoadEnfermeriaLocationId()
     {
@@ -900,7 +948,8 @@
         await AssignCurrentProfessional();
         await ObtenerProfesionalLogueado();
 
-
+        //SERVICIos
+        await LoadAvailableServiceTypes();
 
         // CARGAR DATOS DE PROCEDIMIENTOS (AÑADIR ESTO)
         await LoadAvailableTypesOfProcedures();
@@ -1001,6 +1050,218 @@
                 "[MedicalCare] Error assigning professional:", ex.Message);
         }
     }
+
+    //SERVICIOS
+    private async Task LoadAvailableServiceTypes()
+    {
+        try
+        {
+            availableServiceTypes = await TypeOfServiceService.GetAllAsync() ?? new();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading service types:", ex.Message);
+        }
+    }
+
+    private bool IsServiceFormValid()
+    {
+        return ValidateServiceForm();
+    }
+
+    private bool ValidateServiceForm()
+    {
+        serviceErrors.Clear();
+        serviceFormError = "";
+
+        if (currentService?.ServiceDate == default)
+        {
+            serviceErrors["ServiceDate"] = "Debe seleccionar una fecha";
+        }
+
+        if (string.IsNullOrWhiteSpace(currentService?.ServiceType))
+        {
+            serviceErrors["ServiceType"] = "Debe seleccionar un tipo de servicio";
+        }
+
+        return serviceErrors.Count == 0;
+    }
+
+    private async Task OnAddServiceRequested()
+    {
+        if (createdCareId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente.");
+            return;
+        }
+
+        ClearServiceForm();
+
+        currentService = new MedicalServiceDTO
+            {
+                ServiceId = 0,
+                PatientId = selectedPatientId,
+                HealthProfessionalId = selectedHealthProfessionalId,
+                CareId = createdCareId.Value,
+                ServiceDate = DateTime.Now
+            };
+
+        StateHasChanged();
+    }
+
+    private async Task OnEditServiceRequested(int serviceId)
+    {
+        try
+        {
+            currentService = null;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(50);
+
+            var service = serviciosList.FirstOrDefault(s => s.ServiceId == serviceId);
+            if (service != null)
+            {
+                currentService = new MedicalServiceDTO
+                    {
+                        ServiceId = service.ServiceId,
+                        PatientId = service.PatientId,
+                        HealthProfessionalId = service.HealthProfessionalId,
+                        CareId = service.CareId,
+                        ServiceDate = service.ServiceDate,
+                        ServiceType = service.ServiceType,
+                        Diagnosis = service.Diagnosis,
+                        Observations = service.Observations,
+                        Recommendations = service.Recommendations
+                    };
+
+                serviceErrors.Clear();
+                serviceFormError = "";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error in OnEditServiceRequested:", ex.Message);
+            serviceFormError = $"Error al cargar el servicio: {ex.Message}";
+        }
+    }
+    private async Task OnDeleteServiceRequested(int serviceId)
+    {
+        var service = serviciosList.FirstOrDefault(s => s.ServiceId == serviceId);
+        if (service == null) return;
+
+        try
+        {
+            var deleteResult = await MedicalServiceService.DeleteAsync(service.ServiceId);
+            if (deleteResult.Success)
+            {
+                serviciosList.Remove(service);
+                await UpdateServiceTableData();
+                await JS.InvokeVoidAsync("alert", "Servicio eliminado exitosamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar servicio: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveServiceRequested()
+    {
+        if (!ValidateServiceForm())
+        {
+            return;
+        }
+
+        try
+        {
+            // Asegurar IDs correctos
+            currentService.PatientId = selectedPatientId;
+            currentService.HealthProfessionalId = selectedHealthProfessionalId;
+            currentService.CareId = createdCareId.Value;
+
+            MedicalServiceDTO savedService;
+
+            if (currentService.ServiceId > 0)
+            {
+                var updateResult = await MedicalServiceService.UpdateAsync(currentService);
+                if (!updateResult.Success)
+                {
+                    serviceFormError = $"Error al actualizar: {updateResult.Error}";
+                    return;
+                }
+                savedService = updateResult.Data;
+            }
+            else
+            {
+                var createResult = await MedicalServiceService.CreateAsync(currentService);
+                if (!createResult.Success)
+                {
+                    serviceFormError = $"Error al crear: {createResult.Error}";
+                    return;
+                }
+                savedService = createResult.Data;
+            }
+
+            // Recargar servicios desde la base de datos
+            await LoadServices();
+
+            await JS.InvokeVoidAsync("alert", "Servicio guardado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            serviceFormError = $"Error al guardar servicio: {ex.Message}";
+            await JS.InvokeVoidAsync("console.error", "Error saving service:", ex.Message);
+        }
+    }
+
+    private void ClearServiceForm()
+    {
+        currentService = null;
+        serviceErrors.Clear();
+        serviceFormError = "";
+    }
+
+    private async Task UpdateServiceTableData()
+    {
+        serviceRows.Clear();
+        serviceRowIds.Clear();
+
+        foreach (var servicio in serviciosList)
+        {
+            var row = new List<string>
+        {
+            servicio.ServiceDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
+            servicio.ServiceType ?? "Sin especificar",
+            servicio.Diagnosis ?? "N/A",
+            servicio.Observations?.Length > 50 ?
+                servicio.Observations.Substring(0, 50) + "..." :
+                servicio.Observations ?? "N/A"
+        };
+
+            serviceRows.Add(row);
+            serviceRowIds.Add(servicio.ServiceId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadServices()
+    {
+        if (createdCareId.HasValue)
+        {
+            var existingServices = await MedicalServiceService.GetByCareIdAsync(createdCareId.Value);
+            serviciosList = existingServices ?? new List<MedicalServiceDTO>();
+            await UpdateServiceTableData();
+        }
+    }
+
+
+
 
 
     // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
@@ -1380,18 +1641,22 @@
         if (MedicalCare == null) return;
 
         selectedPatientId = MedicalCare.PatientId;
-        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId; // ← Asignar el ID existente
+        selectedHealthProfessionalId = MedicalCare.HealthProfessionalId;
         lugarSeleccionada = MedicalCare.PlaceOfAttentionId.ToString() ?? "";
         selectedHistoryNumber = MedicalCare.NamePatient ?? "";
         currentMedicalCareId = MedicalCare.CareId;
         createdCareId = MedicalCare.CareId;
 
-        // Si es modo edición, mantener el profesional asignado originalmente
-        // pero podrías querer mostrar quién fue el profesional original
+        // Cargar servicios existentes
+        if (createdCareId.HasValue)
+        {
+            await LoadServices();
+
+        }
+
         await JS.InvokeVoidAsync("console.log", "[v0] Editing existing care with professional:",
             MedicalCare.HealthProfessionalId);
 
-        // Resto del código sin cambios...
         var existingReasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
         existingReasonForConsultation = existingReasons?.FirstOrDefault();
         if (existingReasonForConsultation != null)
@@ -1482,77 +1747,71 @@
     }
 
     // Métodos para servicios
-    private async Task AgregarServicio()
+   
+    private async Task OnServiceSaved(MedicalServiceDTO servicio)
     {
-        if (!IsPatientTabComplete())
+        try
         {
-            await JS.InvokeVoidAsync("alert", "Debe completar la información del paciente antes de agregar servicios.");
-            return;
-        }
+            // Asegurar que el servicio tenga todos los datos necesarios
+            servicio.PatientId = selectedPatientId;
+            servicio.HealthProfessionalId = selectedHealthProfessionalId;
+            servicio.CareId = createdCareId.Value;
 
-        currentService = new MedicalServiceDTO
+            MedicalServiceDTO savedService;
+
+            if (servicio.ServiceId > 0)
             {
-                ServiceId = 0,
-                PatientId = selectedPatientId,
-                ServiceDate = DateTime.Now,
-                HealthProfessionalId = selectedHealthProfessionalId
-            };
-        showServiceModal = true;
-        StateHasChanged();
-    }
-
-    private async Task EditarServicio(MedicalServiceDTO servicio)
-    {
-        await JS.InvokeVoidAsync("console.log", $"Editando servicio: {servicio.ServiceId}");
-        currentService = new MedicalServiceDTO
+                // Actualizar servicio existente - AHORA USA LA NUEVA FIRMA
+                var updateResult = await MedicalServiceService.UpdateAsync(servicio);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar servicio: {updateResult.Error}");
+                    return;
+                }
+                savedService = updateResult.Data; // ← AHORA Data ESTÁ DISPONIBLE
+            }
+            else
             {
-                ServiceId = servicio.ServiceId,
-                PatientId = servicio.PatientId,
-                HealthProfessionalId = servicio.HealthProfessionalId,
-                CareId = servicio.CareId,
-                ServiceDate = servicio.ServiceDate,
-                ServiceType = servicio.ServiceType,
-                Diagnosis = servicio.Diagnosis,
-                Observations = servicio.Observations,
-                Recommendations = servicio.Recommendations
-            };
-        showServiceModal = true;
-        StateHasChanged();
-    }
+                // Crear nuevo servicio
+                var createResult = await MedicalServiceService.CreateAsync(servicio);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear servicio: {createResult.Error}");
+                    return;
+                }
+                savedService = createResult.Data;
+            }
 
-    private async Task EliminarServicio(MedicalServiceDTO servicio)
-    {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Está seguro de eliminar el servicio de {servicio.ServiceType}?");
-        if (confirmed)
-        {
-            serviciosList.Remove(servicio);
+            // Validar que tenemos el servicio guardado
+            if (savedService == null)
+            {
+                await JS.InvokeVoidAsync("alert", "Error: No se pudo obtener el servicio guardado.");
+                return;
+            }
+
+            // Actualizar la lista local
+            var existing = serviciosList.FirstOrDefault(s => s.ServiceId == savedService.ServiceId);
+            if (existing != null)
+            {
+                var index = serviciosList.IndexOf(existing);
+                serviciosList[index] = savedService;
+            }
+            else
+            {
+                serviciosList.Add(savedService);
+            }
+
             StateHasChanged();
+
+            await JS.InvokeVoidAsync("console.log", "Servicio guardado exitosamente:", savedService);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error al guardar servicio:", ex);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar servicio: {ex.Message}");
         }
     }
 
-    private void OnServiceSaved(MedicalServiceDTO servicio)
-    {
-        var existing = serviciosList.FirstOrDefault(s => s.ServiceId == servicio.ServiceId);
-        if (existing != null)
-        {
-            var index = serviciosList.IndexOf(existing);
-            serviciosList[index] = servicio;
-        }
-        else
-        {
-            serviciosList.Add(servicio);
-        }
-        CerrarModalServicio();
-        StateHasChanged();
-    }
-
-    private void CerrarModalServicio()
-    {
-        showServiceModal = false;
-        currentService = null;
-        StateHasChanged();
-    }
 
     //Procedimientos
 

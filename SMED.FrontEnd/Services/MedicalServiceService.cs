@@ -102,23 +102,26 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        public async Task<(bool Success, string Error)> UpdateAsync(MedicalServiceDTO dto)
+        // CORREGIDO: Ahora retorna el objeto actualizado
+        public async Task<(bool Success, MedicalServiceDTO? Data, string Error)> UpdateAsync(MedicalServiceDTO dto)
         {
             try
             {
                 var response = await _httpClient.PutAsJsonAsync($"api/MedicalService/{dto.ServiceId}", dto);
                 if (response.IsSuccessStatusCode)
                 {
-                    return (true, string.Empty);
+                    // Leer el objeto actualizado de la respuesta
+                    var updated = await response.Content.ReadFromJsonAsync<MedicalServiceDTO>();
+                    return (true, updated, string.Empty);
                 }
 
                 var error = await response.Content.ReadAsStringAsync();
-                return (false, error);
+                return (false, null, error);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar servicio médico");
-                return (false, ex.Message);
+                return (false, null, ex.Message);
             }
         }
 
@@ -142,5 +145,4 @@ namespace SMED.FrontEnd.Services
             }
         }
     }
-
 }

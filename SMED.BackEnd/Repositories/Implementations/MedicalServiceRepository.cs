@@ -20,6 +20,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.MedicalServices
                 .Include(ms => ms.HealthProfessional)
                     .ThenInclude(hp => hp.PersonNavigation)
+                .Include(ms => ms.MedicalCare) // ← Añade esta inclusión
                 .ToListAsync();
 
             return entities.Select(MapToDto).ToList();
@@ -30,6 +31,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.MedicalServices
                 .Include(ms => ms.HealthProfessional)
                     .ThenInclude(hp => hp.PersonNavigation)
+                .Include(ms => ms.MedicalCare) // ← Añade esta inclusión
                 .FirstOrDefaultAsync(ms => ms.ServiceId == id);
 
             return entity != null ? MapToDto(entity) : null;
@@ -38,13 +40,30 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<MedicalServiceDTO> AddAsync(MedicalServiceDTO dto)
         {
             var entity = MapToEntity(dto);
+
+            // Asegurar que CareId se asigne correctamente
+            if (dto.CareId.HasValue && dto.CareId > 0)
+            {
+                // Verificar que el MedicalCare existe
+                var medicalCareExists = await _context.MedicalCares
+                    .AnyAsync(mc => mc.CareId == dto.CareId.Value);
+
+                if (!medicalCareExists)
+                {
+                    throw new ArgumentException($"MedicalCare con ID {dto.CareId.Value} no existe");
+                }
+
+                entity.CareId = dto.CareId.Value;
+            }
+
             _context.MedicalServices.Add(entity);
             await _context.SaveChangesAsync();
 
-            // Recargar la entidad con las relaciones para obtener el nombre
+            // Recargar la entidad con las relaciones
             var savedEntity = await _context.MedicalServices
                 .Include(ms => ms.HealthProfessional)
                     .ThenInclude(hp => hp.PersonNavigation)
+                .Include(ms => ms.MedicalCare)
                 .FirstOrDefaultAsync(ms => ms.ServiceId == entity.ServiceId);
 
             return MapToDto(savedEntity!);
@@ -55,10 +74,12 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.MedicalServices
                 .Include(ms => ms.HealthProfessional)
                     .ThenInclude(hp => hp.PersonNavigation)
+                .Include(ms => ms.MedicalCare)
                 .FirstOrDefaultAsync(ms => ms.ServiceId == dto.ServiceId);
 
             if (entity == null) return null;
 
+            // Actualizar propiedades
             entity.CareId = dto.CareId;
             entity.ServiceDate = dto.ServiceDate;
             entity.ServiceType = dto.ServiceType;
@@ -124,6 +145,19 @@ namespace SMED.BackEnd.Repositories.Implementations
             var person = healthProfessional.PersonNavigation;
             var names = new List<string> { person.FirstName, person.MiddleName, person.LastName, person.SecondLastName };
             return string.Join(" ", names.Where(name => !string.IsNullOrEmpty(name)));
+        }
+
+        // Método adicional para obtener servicios por CareId
+        public async Task<List<MedicalServiceDTO>> GetByCareIdAsync(int careId)
+        {
+            var entities = await _context.MedicalServices
+                .Include(ms => ms.HealthProfessional)
+                    .ThenInclude(hp => hp.PersonNavigation)
+                .Include(ms => ms.MedicalCare)
+                .Where(ms => ms.CareId == careId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
         }
     }
 }

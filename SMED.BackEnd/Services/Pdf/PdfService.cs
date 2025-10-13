@@ -1479,6 +1479,7 @@ namespace SMED.BackEnd.Services
             }
         }
 
+
         private void AddSummarySection(Document document, MedicalCareDTO nursingCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
         {
             var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN", titleFont)
@@ -1495,24 +1496,50 @@ namespace SMED.BackEnd.Services
             };
             summaryTable.SetWidths(new float[] { 33, 34, 33 });
 
-            // Contar elementos
-            var hasVitalSigns = nursingCare.VitalSigns != null;
+            var hasVitalSigns = HasValidVitalSigns(nursingCare.VitalSigns);
             var servicesCount = nursingCare.MedicalServices?.Count ?? 0;
             var proceduresCount = nursingCare.MedicalProcedures?.Count ?? 0;
+            var hasServices = servicesCount > 0;
+            var hasProcedures = proceduresCount > 0;
 
-            // Tarjeta de Signos Vitales
-            AddSummaryCard(summaryTable, "SIGNOS VITALES", hasVitalSigns ? "✓" : "—", universityRed, textFont);
+            Console.WriteLine($"DEBUG - hasVitalSigns: {hasVitalSigns}");
 
-            // Tarjeta de Servicios
-            AddSummaryCard(summaryTable, "SERVICIOS MÉDICOS", servicesCount.ToString(), universityRed, textFont);
+            // SOLUCIÓN: Usar caracteres ASCII simples que siempre funcionan
+            var vitalSignsValue = hasVitalSigns ? "SI" : "NO";
+            // O alternativamente: 
+            // var vitalSignsValue = hasVitalSigns ? "[X]" : "[ ]";
+            // var vitalSignsValue = hasVitalSigns ? "CON" : "SIN";
 
-            // Tarjeta de Procedimientos
-            AddSummaryCard(summaryTable, "PROCEDIMIENTOS", proceduresCount.ToString(), universityRed, textFont);
+            Console.WriteLine($"DEBUG - vitalSignsValue: {vitalSignsValue}");
+
+            AddSummaryCard(summaryTable, "SIGNOS VITALES", vitalSignsValue, universityRed, textFont, hasVitalSigns);
+            AddSummaryCard(summaryTable, "SERVICIOS MÉDICOS", servicesCount.ToString(), universityRed, textFont, hasServices);
+            AddSummaryCard(summaryTable, "PROCEDIMIENTOS", proceduresCount.ToString(), universityRed, textFont, hasProcedures);
 
             document.Add(summaryTable);
+            Console.WriteLine("DEBUG - Tabla de resumen agregada al documento");
         }
 
         // Métodos auxiliares específicos para Nursing PDF
+        private bool HasValidVitalSigns(VitalSignsDTO vitalSigns)
+        {
+            if (vitalSigns == null)
+                return false;
+
+            // Verificar si al menos un campo de signos vitales tiene valor
+            return vitalSigns.Weight.HasValue ||
+                   vitalSigns.Height.HasValue ||
+                   vitalSigns.Icm.HasValue ||
+                   !string.IsNullOrEmpty(vitalSigns.BloodPressure) ||
+                   vitalSigns.Temperature.HasValue ||
+                   vitalSigns.MeanArterialPressure.HasValue ||
+                   vitalSigns.HeartRate.HasValue ||
+                   vitalSigns.RespiratoryRate.HasValue ||
+                   vitalSigns.OxygenSaturation.HasValue ||
+                   vitalSigns.BloodGlucose.HasValue ||
+                   vitalSigns.Hemoglobin.HasValue ||
+                   vitalSigns.AbdominalCircumference.HasValue;
+        }
         private void AddVitalSignCell(PdfPTable table, string title, string value, Font titleFont, Font valueFont, BaseColor headerColor)
         {
             // Celda de título
@@ -1563,32 +1590,60 @@ namespace SMED.BackEnd.Services
             table.AddCell(cell);
         }
 
-        private void AddSummaryCard(PdfPTable table, string title, string value, BaseColor color, Font textFont)
+        private void AddSummaryCard(PdfPTable table, string title, string value, BaseColor color, Font textFont, bool hasData = true)
         {
-            var cardCell = new PdfPCell()
+            try
             {
-                Border = Rectangle.BOX,
-                BorderColor = BaseColor.LightGray,
-                Padding = 15,
-                HorizontalAlignment = Element.ALIGN_CENTER,
-                BackgroundColor = new BaseColor(248, 249, 250) // Color gris claro similar a bg-light
-            };
+                Console.WriteLine($"DEBUG - AddSummaryCard: title='{title}', value='{value}', hasData={hasData}");
 
-            var titleParagraph = new Paragraph(title, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, color))
+                var cardCell = new PdfPCell()
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = BaseColor.LightGray,
+                    Padding = 15,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE, // Añadir esta línea
+                    BackgroundColor = hasData ? new BaseColor(248, 249, 250) : new BaseColor(233, 236, 239)
+                };
+
+                // SOLUCIÓN: Usar una fuente que soporte Unicode y caracteres especiales
+                var titleFontStyle = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, hasData ? color : BaseColor.Gray);
+
+                // Para el valor, usar una fuente que soporte caracteres especiales
+                BaseFont baseFont = BaseFont.CreateFont(BaseFont.HELVETICA_BOLD, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+                var valueFontStyle = new Font(baseFont, 16, Font.BOLD, hasData ? BaseColor.Black : BaseColor.Gray);
+
+                var titleParagraph = new Paragraph(title, titleFontStyle)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                var valueParagraph = new Paragraph(value, valueFontStyle)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingBefore = 8f // Aumentar espacio
+                };
+
+                cardCell.AddElement(titleParagraph);
+                cardCell.AddElement(valueParagraph);
+
+                Console.WriteLine($"DEBUG - Celda creada para: {title}");
+                table.AddCell(cardCell);
+            }
+            catch (Exception ex)
             {
-                Alignment = Element.ALIGN_CENTER
-            };
-
-            var valueParagraph = new Paragraph(value, FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.Black))
-            {
-                Alignment = Element.ALIGN_CENTER,
-                SpacingBefore = 5f
-            };
-
-            cardCell.AddElement(titleParagraph);
-            cardCell.AddElement(valueParagraph);
-            table.AddCell(cardCell);
+                Console.WriteLine($"ERROR en AddSummaryCard: {ex.Message}");
+                // Agregar una celda de fallback
+                var fallbackCell = new PdfPCell(new Phrase($"{title}: {value}", textFont))
+                {
+                    Border = Rectangle.BOX,
+                    Padding = 10,
+                    HorizontalAlignment = Element.ALIGN_CENTER
+                };
+                table.AddCell(fallbackCell);
+            }
         }
+
 
         private BaseColor GetStatusColor(string status)
         {

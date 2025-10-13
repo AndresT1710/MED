@@ -18,7 +18,7 @@ namespace SMED.Shared.DTOs
 
         public int PatientId { get; set; }
         public int HealthProfessionalId { get; set; }
-        public string HealthProfessionalName { get; set; }
+        public string? HealthProfessionalName { get; set; }
     }
 
 }

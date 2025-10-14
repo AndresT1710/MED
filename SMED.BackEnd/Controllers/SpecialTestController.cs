@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,10 +10,14 @@ namespace SMED.BackEnd.Controllers
     public class SpecialTestController : ControllerBase
     {
         private readonly IRepository<SpecialTestDTO, int> _repository;
+        private readonly SpecialTestRepository _specialTestRepository;
 
-        public SpecialTestController(IRepository<SpecialTestDTO, int> repository)
+        public SpecialTestController(
+            IRepository<SpecialTestDTO, int> repository,
+            SpecialTestRepository specialTestRepository)
         {
             _repository = repository;
+            _specialTestRepository = specialTestRepository;
         }
 
         [HttpGet]
@@ -46,6 +51,13 @@ namespace SMED.BackEnd.Controllers
         {
             var deleted = await _repository.DeleteAsync(id);
             return !deleted ? NotFound() : NoContent();
+        }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<SpecialTestDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _specialTestRepository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
         }
     }
 }

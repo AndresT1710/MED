@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<NeuromuscularEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<NeuromuscularEvaluationDTO>>($"api/NeuromuscularEvaluation/ByCare/{medicalCareId}")
+                    ?? new List<NeuromuscularEvaluationDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener evaluaciones neuromusculares por CareId: {MedicalCareId}", medicalCareId);
+                return new List<NeuromuscularEvaluationDTO>();
+            }
+        }
     }
 }

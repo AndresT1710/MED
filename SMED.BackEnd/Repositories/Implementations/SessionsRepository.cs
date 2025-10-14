@@ -67,6 +67,17 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        public async Task<List<SessionsDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.Sessions
+                .Where(s => s.MedicalCareId == medicalCareId)
+                .OrderByDescending(s => s.Date) 
+                .ThenByDescending(s => s.SessionsId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
         // =========================
         // 🔹 Mapeos
         // =========================

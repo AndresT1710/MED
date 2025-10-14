@@ -3018,25 +3018,34 @@
     private async Task GuardarDatosPaciente()
     {
         isSaving = true;
+        showValidationErrors = true;
+
         try
         {
+            await JS.InvokeVoidAsync("console.log", "🟡 Iniciando guardado de datos del paciente...");
+
+            // Validaciones completas
             if (!IsPatientTabComplete())
             {
-                showValidationErrors = true;
                 await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                await JS.InvokeVoidAsync("console.error", "❌ Validación fallida - Campos obligatorios incompletos");
                 return;
             }
 
             if (selectedHealthProfessionalId <= 0)
             {
                 await JS.InvokeVoidAsync("alert", "No se pudo identificar al fisioterapeuta. Por favor, contacte con soporte.");
+                await JS.InvokeVoidAsync("console.error", "❌ HealthProfessionalId no válido");
                 return;
             }
 
             MedicalCareDTO medicalCareResult;
 
+            // 1. CREAR O ACTUALIZAR MEDICAL CARE
             if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
             {
+                await JS.InvokeVoidAsync("console.log", "📝 Modo edición - Actualizando MedicalCare existente");
+
                 MedicalCare.LocationId = fisioterapiaLocationId;
                 MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
                 MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
@@ -3045,65 +3054,144 @@
                 if (!updateResult.Success)
                 {
                     await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    await JS.InvokeVoidAsync("console.error", $"❌ Error actualizando MedicalCare: {updateResult.Error}");
                     return;
                 }
 
                 medicalCareResult = MedicalCare;
                 currentMedicalCareId = MedicalCare.CareId;
+                await JS.InvokeVoidAsync("console.log", $"✅ MedicalCare actualizado - ID: {currentMedicalCareId}");
             }
             else
             {
+                await JS.InvokeVoidAsync("console.log", "🆕 Modo creación - Creando nuevo MedicalCare");
+
                 var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = selectedHealthProfessionalId,
-                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                    LocationId = fisioterapiaLocationId,
-                    CareDate = DateTime.Now
-                };
+                    {
+                        PatientId = selectedPatientId,
+                        HealthProfessionalId = selectedHealthProfessionalId,
+                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                        LocationId = fisioterapiaLocationId,
+                        CareDate = DateTime.Now
+                    };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
                 {
                     await JS.InvokeVoidAsync("alert", $"Error al crear la atención de fisioterapia: {result.Error}");
+                    await JS.InvokeVoidAsync("console.error", $"❌ Error creando MedicalCare: {result.Error}");
                     return;
                 }
 
                 medicalCareResult = result.Data;
-                currentMedicalCareId = medicalCareResult.CareId;
+                currentMedicalCareId = medicalCareResult?.CareId ?? 0;
                 isEditMode = true;
                 MedicalCare = medicalCareResult;
+
+                await JS.InvokeVoidAsync("console.log", $"✅ MedicalCare creado - ID: {currentMedicalCareId}");
             }
 
+            // 2. VALIDAR QUE TENEMOS UN MEDICAL CARE ID VÁLIDO
+            if (currentMedicalCareId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "Error crítico: No se pudo obtener un ID válido para la atención médica.");
+                await JS.InvokeVoidAsync("console.error", "❌ MedicalCareId no válido después de guardar");
+                return;
+            }
+
+            // 3. CREAR O ACTUALIZAR REASON FOR CONSULTATION
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
+                await JS.InvokeVoidAsync("console.log", "💬 Procesando ReasonForConsultation...");
+
                 var reasonDto = new ReasonForConsultationDTO
-                {
-                    Id = existingReasonForConsultation?.Id ?? 0,
-                    Description = motivoConsulta.Trim(),
-                    MedicalCareId = currentMedicalCareId
+                    {
+                        Id = existingReasonForConsultation?.Id ?? 0,
+                        Description = motivoConsulta.Trim(),
+                        MedicalCareId = currentMedicalCareId
                 };
+
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
-                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                    // MODO ACTUALIZACIÓN
+                    await JS.InvokeVoidAsync("console.log", "🔄 Actualizando ReasonForConsultation existente");
+
+                    var updateResult = await ReasonForConsultationService.UpdateAsync(reasonDto);
+                    if (!updateResult.Success)
+                    {
+                        await JS.InvokeVoidAsync("alert", $"Error al actualizar el motivo de consulta: {updateResult.Error}");
+                        await JS.InvokeVoidAsync("console.error", $"❌ Error actualizando ReasonForConsultation: {updateResult.Error}");
+                        return;
+                    }
+                    await JS.InvokeVoidAsync("console.log", "✅ ReasonForConsultation actualizado");
                 }
                 else
                 {
-                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                    // MODO CREACIÓN
+                    await JS.InvokeVoidAsync("console.log", "🆕 Creando nuevo ReasonForConsultation");
+
+                    var createResult = await ReasonForConsultationService.CreateAsync(reasonDto);
+                    if (!createResult.Success)
+                    {
+                        await JS.InvokeVoidAsync("alert", $"Error al crear el motivo de consulta: {createResult.Error}");
+                        await JS.InvokeVoidAsync("console.error", $"❌ Error creando ReasonForConsultation: {createResult.Error}");
+                        return;
+                    }
+
+                    // Actualizar la referencia local con el nuevo registro creado
+                    if (createResult.Data != null)
+                    {
+                        existingReasonForConsultation = createResult.Data;
+                        await JS.InvokeVoidAsync("console.log", $"✅ ReasonForConsultation creado - ID: {createResult.Data.Id}");
+                    }
+                    else
+                    {
+                        await JS.InvokeVoidAsync("console.warn", "⚠️ ReasonForConsultation creado pero no se recibió data de respuesta");
+                    }
                 }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ Motivo de consulta vacío - No se guardará ReasonForConsultation");
+            }
+
+            // 4. VERIFICAR QUE SE GUARDÓ CORRECTAMENTE
+            await JS.InvokeVoidAsync("console.log", "🔍 Verificando guardado...");
+
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(currentMedicalCareId);
+            if (reasons != null && reasons.Any())
+            {
+                await JS.InvokeVoidAsync("console.log", $"✅ Verificación exitosa - Se encontraron {reasons.Count} motivos de consulta");
+                existingReasonForConsultation = reasons.First();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se encontraron motivos de consulta después de guardar");
             }
 
             await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con la evaluación del paciente.");
+            showValidationErrors = false;
+
+            await JS.InvokeVoidAsync("console.log", "🎉 Guardado completado exitosamente");
+
+            // Forzar actualización de la UI
+            StateHasChanged();
+        }
+        catch (FormatException ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Error de formato en los datos. Verifique que todos los campos tengan valores válidos.");
+            await JS.InvokeVoidAsync("console.error", $"❌ Error de formato: {ex.Message}");
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
-            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al guardar: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"❌ Error inesperado: {ex.Message}", ex);
         }
         finally
         {
             isSaving = false;
+            StateHasChanged();
         }
     }
 

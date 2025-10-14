@@ -12,6 +12,7 @@ namespace SMED.Shared.DTOs
         public string? Test { get; set; }
         public string? Observations { get; set; }
         public int ResultTypeId { get; set; }
+        public string? ResultTypeName { get; set; }
         public int MedicalCareId { get; set; }
     }
 

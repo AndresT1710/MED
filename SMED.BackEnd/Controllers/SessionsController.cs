@@ -66,5 +66,12 @@ namespace SMED.BackEnd.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<SessionsDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _repository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
+        }
     }
 }

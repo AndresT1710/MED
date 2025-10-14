@@ -3,6 +3,9 @@ using SMED.BackEnd.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SMED.BackEnd.Repositories.Implementations
 {
@@ -15,26 +18,46 @@ namespace SMED.BackEnd.Repositories.Implementations
             _context = context;
         }
 
+        // ====================================
+        // 🔹 GET ALL
+        // ====================================
         public async Task<List<PosturalEvaluationDTO>> GetAllAsync()
         {
-            var entities = await _context.PosturalEvaluations.ToListAsync();
+            var entities = await _context.PosturalEvaluations
+                .Include(x => x.View)
+                .ToListAsync();
+
             return entities.Select(MapToDto).ToList();
         }
 
+        // ====================================
+        // 🔹 GET BY ID
+        // ====================================
         public async Task<PosturalEvaluationDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.PosturalEvaluations.FindAsync(id);
+            var entity = await _context.PosturalEvaluations
+                .Include(x => x.View)
+                .FirstOrDefaultAsync(x => x.PosturalEvaluationId == id);
+
             return entity != null ? MapToDto(entity) : null;
         }
 
+        // ====================================
+        // 🔹 ADD
+        // ====================================
         public async Task<PosturalEvaluationDTO> AddAsync(PosturalEvaluationDTO dto)
         {
             var entity = MapToEntity(dto);
             _context.PosturalEvaluations.Add(entity);
             await _context.SaveChangesAsync();
-            return MapToDto(entity);
+
+            // Retorna con nombre de View incluido
+            return await GetByIdAsync(entity.PosturalEvaluationId) ?? MapToDto(entity);
         }
 
+        // ====================================
+        // 🔹 UPDATE
+        // ====================================
         public async Task<PosturalEvaluationDTO?> UpdateAsync(PosturalEvaluationDTO dto)
         {
             var entity = await _context.PosturalEvaluations.FindAsync(dto.PosturalEvaluationId);
@@ -47,9 +70,14 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.ViewId = dto.ViewId;
 
             await _context.SaveChangesAsync();
-            return MapToDto(entity);
+
+            // Retorna el DTO actualizado con relaciones
+            return await GetByIdAsync(entity.PosturalEvaluationId);
         }
 
+        // ====================================
+        // 🔹 DELETE
+        // ====================================
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.PosturalEvaluations.FindAsync(id);
@@ -60,25 +88,48 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // Mapping
-        private PosturalEvaluationDTO MapToDto(PosturalEvaluation entity) => new PosturalEvaluationDTO
+        public async Task<List<PosturalEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
         {
-            PosturalEvaluationId = entity.PosturalEvaluationId,
-            Observation = entity.Observation,
-            Grade = entity.Grade,
-            BodyAlignment = entity.BodyAlignment,
-            MedicalCareId = entity.MedicalCareId,
-            ViewId = entity.ViewId
-        };
+            var entities = await _context.PosturalEvaluations
+                .Include(x => x.View)
+                .Where(x => x.MedicalCareId == medicalCareId)
+                .OrderByDescending(x => x.PosturalEvaluationId)
+                .ToListAsync();
 
-        private PosturalEvaluation MapToEntity(PosturalEvaluationDTO dto) => new PosturalEvaluation
+            return entities.Select(MapToDto).ToList();
+        }
+
+        // ====================================
+        // 🔹 MAPEO ENTITY → DTO
+        // ====================================
+        private PosturalEvaluationDTO MapToDto(PosturalEvaluation entity)
         {
-            PosturalEvaluationId = dto.PosturalEvaluationId,
-            Observation = dto.Observation,
-            Grade = dto.Grade,
-            BodyAlignment = dto.BodyAlignment,
-            MedicalCareId = dto.MedicalCareId,
-            ViewId = dto.ViewId
-        };
+            return new PosturalEvaluationDTO
+            {
+                PosturalEvaluationId = entity.PosturalEvaluationId,
+                Observation = entity.Observation,
+                Grade = entity.Grade,
+                BodyAlignment = entity.BodyAlignment,
+                MedicalCareId = entity.MedicalCareId,
+                ViewId = entity.ViewId,
+                ViewName = entity.View?.Name
+            };
+        }
+
+        // ====================================
+        // 🔹 MAPEO DTO → ENTITY
+        // ====================================
+        private PosturalEvaluation MapToEntity(PosturalEvaluationDTO dto)
+        {
+            return new PosturalEvaluation
+            {
+                PosturalEvaluationId = dto.PosturalEvaluationId,
+                Observation = dto.Observation,
+                Grade = dto.Grade,
+                BodyAlignment = dto.BodyAlignment,
+                MedicalCareId = dto.MedicalCareId,
+                ViewId = dto.ViewId
+            };
+        }
     }
 }

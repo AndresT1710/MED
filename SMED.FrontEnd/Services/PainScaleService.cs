@@ -90,5 +90,18 @@ namespace SMED.FrontEnd.Services
                 return false;
             }
         }
+
+        public async Task<List<PainScaleDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<PainScaleDTO>>($"api/PainScale/ByCare/{medicalCareId}")
+                    ?? new List<PainScaleDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<PainScaleDTO>();
+            }
+        }
     }
 }

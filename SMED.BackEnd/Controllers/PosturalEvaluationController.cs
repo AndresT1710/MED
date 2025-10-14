@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,10 +10,14 @@ namespace SMED.BackEnd.Controllers
     public class PosturalEvaluationController : ControllerBase
     {
         private readonly IRepository<PosturalEvaluationDTO, int> _repository;
+        private readonly PosturalEvaluationRepository _posturalRepository;
 
-        public PosturalEvaluationController(IRepository<PosturalEvaluationDTO, int> repository)
+        public PosturalEvaluationController(
+            IRepository<PosturalEvaluationDTO, int> repository,
+            PosturalEvaluationRepository posturalRepository)
         {
             _repository = repository;
+            _posturalRepository = posturalRepository;
         }
 
         [HttpGet]
@@ -46,6 +51,13 @@ namespace SMED.BackEnd.Controllers
         {
             var deleted = await _repository.DeleteAsync(id);
             return !deleted ? NotFound() : NoContent();
+        }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<PosturalEvaluationDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _posturalRepository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
         }
     }
 }

@@ -108,6 +108,20 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<SkinEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<SkinEvaluationDTO>>($"api/SkinEvaluation/ByCare/{medicalCareId}")
+                    ?? new List<SkinEvaluationDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener evaluaciones de piel por CareId: {MedicalCareId}", medicalCareId);
+                return new List<SkinEvaluationDTO>();
+            }
+        }
+
         public async Task<(bool Success, string Error)> DeleteAsync(int id)
         {
             try

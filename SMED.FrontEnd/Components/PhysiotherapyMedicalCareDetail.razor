@@ -1,0 +1,620 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject CurrentIllnessService CurrentIllnessService
+@inject PainScaleService PainScaleService
+@inject SkinEvaluationService SkinEvaluationService
+@inject OsteoarticularEvaluationService OsteoarticularEvaluationService
+@inject MedicalEvaluationService MedicalEvaluationService
+@inject NeuromuscularEvaluationService NeuromuscularService
+@inject PosturalEvaluationService PosturalEvaluationService
+@inject SpecialTestService SpecialTestService
+@inject ComplementaryExamsService ComplementaryExamsService
+@inject SessionsService SessionsService
+@inject IJSRuntime JS
+
+<div class="physiotherapy-care-detail">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención de Fisioterapia</h4>
+                <div>
+                    <ImprimirPdf Tipo="physiotherapy" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Atención:</strong> @MedicalCare?.CareId</p>
+                            <p><strong>Paciente:</strong> @MedicalCare?.NamePatient</p>
+                            <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "Fisioterapia")</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
+                            <p><strong>Profesional:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (currentIllness != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Enfermedad Actual</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Tiempo de Evolución:</strong> @(currentIllness.EvolutionTime ?? "N/A")</p>
+                                <p><strong>Localización:</strong> @(currentIllness.Localization ?? "N/A")</p>
+                                <p><strong>Intensidad:</strong> @(currentIllness.Intensity ?? "N/A")</p>
+                                <p><strong>Factores Agravantes:</strong> @(currentIllness.AggravatingFactors ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Factores Atenuantes:</strong> @(currentIllness.MitigatingFactors ?? "N/A")</p>
+                                <p><strong>Dolor Nocturno:</strong> @(currentIllness.NocturnalPain ?? "N/A")</p>
+                                <p><strong>Debilidad:</strong> @(currentIllness.Weakness ?? "N/A")</p>
+                                <p><strong>Parestesias:</strong> @(currentIllness.Paresthesias ?? "N/A")</p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(currentIllness.ComplementaryExams))
+                        {
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <p><strong>Exámenes Complementarios:</strong> @currentIllness.ComplementaryExams</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (painScales.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-thermometer-half me-2"></i>Escala de Dolor (@painScales.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Momento del Dolor</th>
+                                        <th>Actividad</th>
+                                        <th>Escala de Intensidad</th>
+                                        <th>Observación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var painScale in painScales)
+                                    {
+                                        <tr>
+                                            <td>@(painScale.PainMomentName ?? "N/A")</td>
+                                            <td>@(painScale.ActionName ?? "N/A")</td>
+                                            <td>@(painScale.ScaleDescription ?? "N/A")</td>
+                                            <td>@(painScale.Observation ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (skinEvaluations.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-hand-paper me-2"></i>Evaluación de Piel (@skinEvaluations.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Color</th>
+                                        <th>Edema</th>
+                                        <th>Estado</th>
+                                        <th>Tumefacción</th>
+                                        <th>Fecha de Evaluación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var skin in skinEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@(skin.ColorName ?? "N/A")</td>
+                                            <td>@(skin.EdemaName ?? "N/A")</td>
+                                            <td>@(skin.StatusName ?? "N/A")</td>
+                                            <td>@(skin.SwellingName ?? "N/A")</td>
+                                            <td>@(skin.EvaluationDate?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (osteoarticularEvaluations.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-bone me-2"></i>Evaluación Osteoarticular (@osteoarticularEvaluations.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Estado Articular</th>
+                                        <th>Amplitud Articular</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var osteo in osteoarticularEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@(osteo.JointConditionName ?? "N/A")</td>
+                                            <td>@(osteo.JointRangeOfMotionName ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (medicalEvaluations.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-dumbbell me-2"></i>Evaluación Articular/Muscular (@medicalEvaluations.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo de Valoración</th>
+                                        <th>Posición Corporal</th>
+                                        <th>Ubicación</th>
+                                        <th>Descripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evaluation in medicalEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@(evaluation.TypeOfMedicalEvaluationName ?? "N/A")</td>
+                                            <td>@(evaluation.MedicalEvaluationPositionName ?? "N/A")</td>
+                                            <td>@(evaluation.MedicalEvaluationMembersName ?? "N/A")</td>
+                                            <td>@(evaluation.Description ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (neuromuscularEvaluations.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Evaluación Neuromuscular (@neuromuscularEvaluations.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tono</th>
+                                        <th>Trofismo</th>
+                                        <th>Fuerza</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var neuro in neuromuscularEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@(neuro.ShadeName ?? "N/A")</td>
+                                            <td>@(neuro.TrophismName ?? "N/A")</td>
+                                            <td>@(neuro.StrengthName ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (posturalEvaluations.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-walking me-2"></i>Evaluación Postural (@posturalEvaluations.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Vista</th>
+                                        <th>Grado (%)</th>
+                                        <th>Alineación Corporal</th>
+                                        <th>Observación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var postural in posturalEvaluations)
+                                    {
+                                        <tr>
+                                            <td>@(postural.ViewName ?? "N/A")</td>
+                                            <td>@(postural.Grade.ToString() ?? "N/A")</td>
+                                            <td>@(postural.BodyAlignment ?? "N/A")</td>
+                                            <td>@(postural.Observation ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (specialTests.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Pruebas Especiales (@specialTests.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre de la Prueba</th>
+                                        <th>Tipo de Resultado</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var test in specialTests)
+                                    {
+                                        <tr>
+                                            <td>@(test.Test ?? "N/A")</td>
+                                            <td>
+                                                <span class="badge @GetResultBadgeClass(test.ResultTypeName)">
+                                                    @(test.ResultTypeName ?? "N/A")
+                                                </span>
+                                            </td>
+                                            <td>@(test.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (complementaryExams.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Exámenes Complementarios (@complementaryExams.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre del Examen</th>
+                                        <th>Fecha</th>
+                                        <th>Descripción</th>
+                                        <th>Documento</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var exam in complementaryExams)
+                                    {
+                                        <tr>
+                                            <td>@(exam.Exam ?? "N/A")</td>
+                                            <td>@(exam.ExamDate.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                            <td>@(exam.Descriptions ?? "N/A")</td>
+                                            <td>
+                                                @if (!string.IsNullOrWhiteSpace(exam.PdfLink))
+                                                {
+                                                    <a href="@exam.PdfLink" target="_blank" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-file-pdf me-1"></i>Ver PDF
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin documento</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (sessions.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Sesiones de Fisioterapia (@sessions.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Descripción</th>
+                                        <th>Tratamiento</th>
+                                        <th>Alta Médica</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var session in sessions)
+                                    {
+                                        <tr>
+                                            <td>@(session.Date?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                            <td>@(session.Description ?? "N/A")</td>
+                                            <td>@(session.Treatment ?? "N/A")</td>
+                                            <td>
+                                                <span class="badge @((session.MedicalDischarge ?? false) ? "bg-success" : "bg-secondary")">
+                                                    @((session.MedicalDischarge ?? false) ? "Sí" : "No")
+                                                </span>
+                                            </td>
+                                            <td>@(session.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resumen de Atención de Fisioterapia</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Enfermedad Actual</h6>
+                                    <p class="card-text display-6">@(currentIllness != null ? "✓" : "—")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Escalas de Dolor</h6>
+                                    <p class="card-text display-6">@painScales.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Evaluaciones</h6>
+                                    <p class="card-text display-6">@GetTotalEvaluations()</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Sesiones</h6>
+                                    <p class="card-text display-6">@sessions.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!HasAnyData())
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta atención de fisioterapia no tiene datos adicionales registrados más allá de la información básica.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+
+    private ReasonForConsultationDTO? reasonForConsultation;
+    private CurrentIllnessDTO? currentIllness;
+    private List<PainScaleDTO> painScales = new();
+    private List<SkinEvaluationDTO> skinEvaluations = new();
+    private List<OsteoarticularEvaluationDTO> osteoarticularEvaluations = new();
+    private List<MedicalEvaluationDTO> medicalEvaluations = new();
+    private List<NeuromuscularEvaluationDTO> neuromuscularEvaluations = new();
+    private List<PosturalEvaluationDTO> posturalEvaluations = new();
+    private List<SpecialTestDTO> specialTests = new();
+    private List<ComplementaryExamsDTO> complementaryExams = new();
+    private List<SessionsDTO> sessions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    private async Task LoadDetails()
+    {
+        if (MedicalCare == null) return;
+
+        try
+        {
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
+
+            // Cargar enfermedad actual
+            var illnesses = await CurrentIllnessService.GetByCareIdAsync(MedicalCare.CareId);
+            currentIllness = illnesses?.FirstOrDefault();
+
+            // Cargar escalas de dolor
+            painScales = await PainScaleService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<PainScaleDTO>();
+
+            // Cargar evaluaciones de piel
+            skinEvaluations = await SkinEvaluationService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<SkinEvaluationDTO>();
+
+            // Cargar evaluaciones osteoarticulares
+            osteoarticularEvaluations = await OsteoarticularEvaluationService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<OsteoarticularEvaluationDTO>();
+
+            // Cargar evaluaciones médicas (articular/muscular)
+            medicalEvaluations = await MedicalEvaluationService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<MedicalEvaluationDTO>();
+
+            // Cargar evaluaciones neuromusculares
+            neuromuscularEvaluations = await NeuromuscularService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<NeuromuscularEvaluationDTO>();
+
+            // Cargar evaluaciones posturales
+            posturalEvaluations = await PosturalEvaluationService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<PosturalEvaluationDTO>();
+
+            // Cargar pruebas especiales
+            specialTests = await SpecialTestService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<SpecialTestDTO>();
+
+            // Cargar exámenes complementarios
+            complementaryExams = await ComplementaryExamsService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<ComplementaryExamsDTO>();
+
+            // Cargar sesiones
+            sessions = await SessionsService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<SessionsDTO>();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading physiotherapy care details: {ex.Message}");
+        }
+    }
+
+    private string GetResultBadgeClass(string? resultType)
+    {
+        if (string.IsNullOrWhiteSpace(resultType)) return "bg-secondary";
+
+        return resultType.ToLower() switch
+        {
+            "positivo" => "bg-danger",
+            "negativo" => "bg-success",
+            "normal" => "bg-success",
+            "anormal" => "bg-warning",
+            _ => "bg-info"
+        };
+    }
+
+    private int GetTotalEvaluations()
+    {
+        return skinEvaluations.Count +
+               osteoarticularEvaluations.Count +
+               medicalEvaluations.Count +
+               neuromuscularEvaluations.Count +
+               posturalEvaluations.Count +
+               specialTests.Count +
+               complementaryExams.Count;
+    }
+
+    private bool HasAnyData()
+    {
+        return reasonForConsultation != null ||
+               currentIllness != null ||
+               painScales.Any() ||
+               skinEvaluations.Any() ||
+               osteoarticularEvaluations.Any() ||
+               medicalEvaluations.Any() ||
+               neuromuscularEvaluations.Any() ||
+               posturalEvaluations.Any() ||
+               specialTests.Any() ||
+               complementaryExams.Any() ||
+               sessions.Any();
+    }
+}

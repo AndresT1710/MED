@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<SessionsDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<SessionsDTO>>($"api/Sessions/ByCare/{medicalCareId}")
+                    ?? new List<SessionsDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener sesiones por CareId: {MedicalCareId}", medicalCareId);
+                return new List<SessionsDTO>();
+            }
+        }
     }
 }

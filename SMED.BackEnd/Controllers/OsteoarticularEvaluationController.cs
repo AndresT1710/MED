@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,12 +10,15 @@ namespace SMED.BackEnd.Controllers
     public class OsteoarticularEvaluationController : ControllerBase
     {
         private readonly IRepository<OsteoarticularEvaluationDTO, int> _repository;
+        private readonly OsteoarticularEvaluationRepository _osteoarticularRepository;
 
-        public OsteoarticularEvaluationController(IRepository<OsteoarticularEvaluationDTO, int> repository)
+        public OsteoarticularEvaluationController(
+            IRepository<OsteoarticularEvaluationDTO, int> repository,
+            OsteoarticularEvaluationRepository osteoarticularRepository)
         {
             _repository = repository;
+            _osteoarticularRepository = osteoarticularRepository;
         }
-
         // GET: api/OsteoarticularEvaluation
         [HttpGet]
         public async Task<ActionResult<IEnumerable<OsteoarticularEvaluationDTO>>> GetAll()
@@ -65,6 +69,13 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<OsteoarticularEvaluationDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _osteoarticularRepository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
         }
     }
 }

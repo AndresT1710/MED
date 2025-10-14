@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<OsteoarticularEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<OsteoarticularEvaluationDTO>>($"api/OsteoarticularEvaluation/ByCare/{medicalCareId}")
+                    ?? new List<OsteoarticularEvaluationDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener evaluaciones osteoarticulares por CareId: {MedicalCareId}", medicalCareId);
+                return new List<OsteoarticularEvaluationDTO>();
+            }
+        }
     }
 }

@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<SpecialTestDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<SpecialTestDTO>>($"api/SpecialTest/ByCare/{medicalCareId}")
+                    ?? new List<SpecialTestDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener pruebas especiales por CareId: {MedicalCareId}", medicalCareId);
+                return new List<SpecialTestDTO>();
+            }
+        }
     }
 }

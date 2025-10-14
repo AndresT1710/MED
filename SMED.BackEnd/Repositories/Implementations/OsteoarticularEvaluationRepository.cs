@@ -3,6 +3,9 @@ using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SMED.BackEnd.Repositories.Implementations
 {
@@ -15,26 +18,51 @@ namespace SMED.BackEnd.Repositories.Implementations
             _context = context;
         }
 
+        // ===========================================
+        // 🔹 Obtener todas las evaluaciones osteoarticulares
+        // ===========================================
         public async Task<List<OsteoarticularEvaluationDTO>> GetAllAsync()
         {
-            var entities = await _context.OsteoarticularEvaluations.ToListAsync();
+            var entities = await _context.OsteoarticularEvaluations
+                .Include(o => o.JointCondition)
+                .Include(o => o.JointRangeOfMotion)
+                .ToListAsync();
+
             return entities.Select(MapToDto).ToList();
         }
 
+        // ===========================================
+        // 🔹 Obtener una evaluación por ID
+        // ===========================================
         public async Task<OsteoarticularEvaluationDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.OsteoarticularEvaluations.FindAsync(id);
+            var entity = await _context.OsteoarticularEvaluations
+                .Include(o => o.JointCondition)
+                .Include(o => o.JointRangeOfMotion)
+                .FirstOrDefaultAsync(o => o.OsteoarticularEvaluationId == id);
+
             return entity != null ? MapToDto(entity) : null;
         }
 
+        // ===========================================
+        // 🔹 Agregar una nueva evaluación
+        // ===========================================
         public async Task<OsteoarticularEvaluationDTO> AddAsync(OsteoarticularEvaluationDTO dto)
         {
             var entity = MapToEntity(dto);
             _context.OsteoarticularEvaluations.Add(entity);
             await _context.SaveChangesAsync();
+
+            // Cargar relaciones
+            await _context.Entry(entity).Reference(o => o.JointCondition).LoadAsync();
+            await _context.Entry(entity).Reference(o => o.JointRangeOfMotion).LoadAsync();
+
             return MapToDto(entity);
         }
 
+        // ===========================================
+        // 🔹 Actualizar una evaluación existente
+        // ===========================================
         public async Task<OsteoarticularEvaluationDTO?> UpdateAsync(OsteoarticularEvaluationDTO dto)
         {
             var entity = await _context.OsteoarticularEvaluations.FindAsync(dto.OsteoarticularEvaluationId);
@@ -45,9 +73,17 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.MedicalCareId = dto.MedicalCareId;
 
             await _context.SaveChangesAsync();
+
+            // Recargar relaciones para reflejar nombres actualizados
+            await _context.Entry(entity).Reference(o => o.JointCondition).LoadAsync();
+            await _context.Entry(entity).Reference(o => o.JointRangeOfMotion).LoadAsync();
+
             return MapToDto(entity);
         }
 
+        // ===========================================
+        // 🔹 Eliminar una evaluación
+        // ===========================================
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.OsteoarticularEvaluations.FindAsync(id);
@@ -58,16 +94,29 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        // =========================
-        // 🔹 Mapeos
-        // =========================
+        public async Task<List<OsteoarticularEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.OsteoarticularEvaluations
+                .Include(o => o.JointCondition)
+                .Include(o => o.JointRangeOfMotion)
+                .Where(o => o.MedicalCareId == medicalCareId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
+        // ===========================================
+        // 🔹 Mapeos DTO ↔ Entity
+        // ===========================================
         private OsteoarticularEvaluationDTO MapToDto(OsteoarticularEvaluation entity)
         {
             return new OsteoarticularEvaluationDTO
             {
                 OsteoarticularEvaluationId = entity.OsteoarticularEvaluationId,
                 JointConditionId = entity.JointConditionId,
+                JointConditionName = entity.JointCondition?.Name ?? "No registrado",
                 JointRangeOfMotionId = entity.JointRangeOfMotionId,
+                JointRangeOfMotionName = entity.JointRangeOfMotion?.Name ?? "No registrado",
                 MedicalCareId = entity.MedicalCareId
             };
         }

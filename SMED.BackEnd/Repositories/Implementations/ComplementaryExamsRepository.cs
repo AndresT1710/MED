@@ -66,6 +66,18 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+
+        public async Task<List<ComplementaryExamsDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.ComplementaryExams
+                .Where(c => c.MedicalCareId == medicalCareId)
+                .OrderByDescending(c => c.ExamDate)
+                .ThenByDescending(c => c.ComplementaryExamsId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
         // =========================
         // 🔹 Mapeos
         // =========================

@@ -90,5 +90,18 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<CurrentIllnessDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<CurrentIllnessDTO>>($"api/CurrentIllness/ByCare/{medicalCareId}")
+                    ?? new List<CurrentIllnessDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<CurrentIllnessDTO>();
+            }
+        }
+
     }
 }

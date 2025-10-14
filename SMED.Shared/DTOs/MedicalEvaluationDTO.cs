@@ -12,7 +12,10 @@ namespace SMED.Shared.DTOs
         public string? Description { get; set; }
         public int? MedicalCareId { get; set; }
         public int? TypeOfMedicalEvaluationId { get; set; }
+        public string? TypeOfMedicalEvaluationName { get; set; }
         public int? MedicalEvaluationPositionId { get; set; }
+        public string? MedicalEvaluationPositionName { get; set; }
         public int? MedicalEvaluationMembersId { get; set; }
+        public string? MedicalEvaluationMembersName { get; set; }
     }
 }

@@ -60,14 +60,30 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        public async Task<List<PainScaleDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.PainScales
+                .Include(ps => ps.Action)
+                .Include(ps => ps.Scale)
+                .Include(ps => ps.PainMoment)
+                .Where(ps => ps.MedicalCareId == medicalCareId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
         // Mapping
         private PainScaleDTO MapToDto(PainScale entity) => new PainScaleDTO
         {
             PainScaleId = entity.PainScaleId,
             Observation = entity.Observation,
             ActionId = entity.ActionId,
+            ActionName = entity.Action?.Name,
             ScaleId = entity.ScaleId,
+            ScaleValue = entity.Scale?.Value,
+            ScaleDescription = entity.Scale?.Description,
             PainMomentId = entity.PainMomentId,
+            PainMomentName = entity.PainMoment?.Name,
             MedicalCareId = entity.MedicalCareId
         };
 
@@ -80,5 +96,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             PainMomentId = dto.PainMomentId,
             MedicalCareId = dto.MedicalCareId
         };
+
     }
 }

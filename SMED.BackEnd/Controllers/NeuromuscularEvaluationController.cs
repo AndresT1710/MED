@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,10 +10,14 @@ namespace SMED.BackEnd.Controllers
     public class NeuromuscularEvaluationController : ControllerBase
     {
         private readonly IRepository<NeuromuscularEvaluationDTO, int> _repository;
+        private readonly NeuromuscularEvaluationRepository _neuromuscularRepository;
 
-        public NeuromuscularEvaluationController(IRepository<NeuromuscularEvaluationDTO, int> repository)
+        public NeuromuscularEvaluationController(
+            IRepository<NeuromuscularEvaluationDTO, int> repository,
+            NeuromuscularEvaluationRepository neuromuscularRepository)
         {
             _repository = repository;
+            _neuromuscularRepository = neuromuscularRepository;
         }
 
         // GET: api/NeuromuscularEvaluation
@@ -65,6 +70,13 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<NeuromuscularEvaluationDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _neuromuscularRepository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
         }
     }
 }

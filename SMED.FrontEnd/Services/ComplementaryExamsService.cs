@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<ComplementaryExamsDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<ComplementaryExamsDTO>>($"api/ComplementaryExams/ByCare/{medicalCareId}")
+                    ?? new List<ComplementaryExamsDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener exámenes complementarios por CareId: {MedicalCareId}", medicalCareId);
+                return new List<ComplementaryExamsDTO>();
+            }
+        }
     }
 }

@@ -10,7 +10,9 @@ namespace SMED.Shared.DTOs
     {
         public int OsteoarticularEvaluationId { get; set; }
         public int? JointConditionId { get; set; }
+        public string? JointConditionName { get; set; }
         public int? JointRangeOfMotionId { get; set; }
+        public string? JointRangeOfMotionName { get; set; }
         public int? MedicalCareId { get; set; }
     }
 }

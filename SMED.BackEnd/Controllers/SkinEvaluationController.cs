@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,10 +10,14 @@ namespace SMED.BackEnd.Controllers
     public class SkinEvaluationController : ControllerBase
     {
         private readonly IRepository<SkinEvaluationDTO, int> _repository;
+        private readonly SkinEvaluationRepository _skinEvaluationRepository;
 
-        public SkinEvaluationController(IRepository<SkinEvaluationDTO, int> repository)
+        public SkinEvaluationController(
+            IRepository<SkinEvaluationDTO, int> repository,
+            SkinEvaluationRepository skinEvaluationRepository)
         {
             _repository = repository;
+            _skinEvaluationRepository = skinEvaluationRepository;
         }
 
         // GET: api/SkinEvaluation
@@ -54,6 +59,13 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return Ok(updated);
+        }
+
+        [HttpGet("ByCare/{medicalCareId}")]
+        public async Task<ActionResult<List<SkinEvaluationDTO>>> GetByCareId(int medicalCareId)
+        {
+            var result = await _skinEvaluationRepository.GetByCareIdAsync(medicalCareId);
+            return Ok(result);
         }
 
         // DELETE: api/SkinEvaluation/5

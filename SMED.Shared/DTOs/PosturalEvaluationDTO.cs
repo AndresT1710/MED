@@ -14,5 +14,6 @@ namespace SMED.Shared.DTOs
         public string? BodyAlignment { get; set; }
         public int? MedicalCareId { get; set; }
         public int? ViewId { get; set; }
+        public string? ViewName { get; set; }
     }
 }

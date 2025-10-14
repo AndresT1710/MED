@@ -51,17 +51,37 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        public async Task<List<ReasonForConsultationDTO>?> GetByCareIdAsync(int careId)
+        public async Task<List<ReasonForConsultationDTO>> GetByCareIdAsync(int medicalCareId)
         {
             try
             {
-                var allReasons = await GetAllAsync();
-                return allReasons?.Where(r => r.MedicalCareId == careId).ToList();
+                var response = await _httpClient.GetAsync($"api/ReasonForConsultation/ByCare/{medicalCareId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<ReasonForConsultationDTO>>()
+                        ?? new List<ReasonForConsultationDTO>();
+                }
+
+                _logger.LogWarning("Error al obtener motivos de consulta por CareId: {StatusCode}", response.StatusCode);
+                return new List<ReasonForConsultationDTO>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener motivos de consulta por CareId: {CareId}", careId);
+                _logger.LogError(ex, "Error al obtener motivos de consulta por CareId: {MedicalCareId}", medicalCareId);
                 return new List<ReasonForConsultationDTO>();
+            }
+        }
+
+        public async Task<ReasonForConsultationDTO?> GetFirstByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<ReasonForConsultationDTO>($"api/ReasonForConsultation/ByCare/{medicalCareId}/First");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el primer motivo de consulta por CareId: {MedicalCareId}", medicalCareId);
+                return null;
             }
         }
 
@@ -69,19 +89,36 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
+                // Validaciones básicas
+                if (dto == null)
+                    return (false, null, "El DTO no puede ser nulo");
+
+                if (string.IsNullOrWhiteSpace(dto.Description))
+                    return (false, null, "La descripción es requerida");
+
+                if (dto.MedicalCareId <= 0)
+                    return (false, null, "MedicalCareId no válido");
+
                 var response = await _httpClient.PostAsJsonAsync("api/ReasonForConsultation", dto);
+
                 if (response.IsSuccessStatusCode)
                 {
                     var created = await response.Content.ReadFromJsonAsync<ReasonForConsultationDTO>();
                     return (true, created, string.Empty);
                 }
-                var error = await response.Content.ReadAsStringAsync();
-                return (false, null, error);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return (false, null, $"Error de validación: {error}");
+                }
+
+                return (false, null, $"Error del servidor: {response.StatusCode}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear motivo de consulta");
-                return (false, null, ex.Message);
+                return (false, null, $"Error de conexión: {ex.Message}");
             }
         }
 

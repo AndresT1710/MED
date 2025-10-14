@@ -124,5 +124,19 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<PosturalEvaluationDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<PosturalEvaluationDTO>>($"api/PosturalEvaluation/ByCare/{medicalCareId}")
+                    ?? new List<PosturalEvaluationDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener evaluaciones posturales por CareId: {MedicalCareId}", medicalCareId);
+                return new List<PosturalEvaluationDTO>();
+            }
+        }
     }
 }

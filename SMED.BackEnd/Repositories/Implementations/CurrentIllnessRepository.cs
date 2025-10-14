@@ -71,6 +71,14 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             return entity != null ? MapToDto(entity) : null;
         }
+        public async Task<List<CurrentIllnessDTO>> GetByCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.CurrentIllnesses
+                .Where(ci => ci.MedicalCareId == medicalCareId)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
 
 
         // =========================

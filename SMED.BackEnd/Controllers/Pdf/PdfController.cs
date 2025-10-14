@@ -14,17 +14,50 @@ namespace SMED.BackEnd.Controllers
         private readonly PersonRepository _personRepository;
         private readonly ClinicalHistoryRepository _clinicalHistoryRepository;
         private readonly MedicalCareRepository _medicalCareRepository;
+        private readonly ReasonForConsultationRepository _reasonForConsultationService;
+        private readonly CurrentIllnessRepository _currentIllnessService;
+        private readonly PainScaleRepository _painScaleService;
+        private readonly SkinEvaluationRepository _skinEvaluationService;
+        private readonly OsteoarticularEvaluationRepository _osteoarticularEvaluationService;
+        private readonly MedicalEvaluationRepository _medicalEvaluationService;
+        private readonly NeuromuscularEvaluationRepository _neuromuscularEvaluationService;
+        private readonly PosturalEvaluationRepository _posturalEvaluationService;
+        private readonly SpecialTestRepository _specialTestService;
+        private readonly ComplementaryExamsRepository _complementaryExamsService;
+        private readonly SessionsRepository _sessionsService;
 
         public PdfController(
             PdfService pdfService,
             PersonRepository personRepository,
             ClinicalHistoryRepository clinicalHistoryRepository,
-            MedicalCareRepository medicalCareRepository)
+            MedicalCareRepository medicalCareRepository,
+            ReasonForConsultationRepository reasonForConsultationService,
+            CurrentIllnessRepository currentIllnessService,
+            PainScaleRepository painScaleService,
+            SkinEvaluationRepository skinEvaluationService,
+            OsteoarticularEvaluationRepository osteoarticularEvaluationService,
+            MedicalEvaluationRepository medicalEvaluationService,
+            NeuromuscularEvaluationRepository neuromuscularEvaluationService,
+            PosturalEvaluationRepository posturalEvaluationService,
+            SpecialTestRepository specialTestService,
+            ComplementaryExamsRepository complementaryExamsService,
+            SessionsRepository sessionsService)
         {
             _pdfService = pdfService;
             _personRepository = personRepository;
             _clinicalHistoryRepository = clinicalHistoryRepository;
             _medicalCareRepository = medicalCareRepository;
+            _reasonForConsultationService = reasonForConsultationService;
+            _currentIllnessService = currentIllnessService;
+            _painScaleService = painScaleService;
+            _skinEvaluationService = skinEvaluationService;
+            _osteoarticularEvaluationService = osteoarticularEvaluationService;
+            _medicalEvaluationService = medicalEvaluationService;
+            _neuromuscularEvaluationService = neuromuscularEvaluationService;
+            _posturalEvaluationService = posturalEvaluationService;
+            _specialTestService = specialTestService;
+            _complementaryExamsService = complementaryExamsService;
+            _sessionsService = sessionsService;
         }
 
         [HttpGet("person/{id}")]
@@ -129,6 +162,80 @@ namespace SMED.BackEnd.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error generando PDF de atención médica: {ex.Message}");
+            }
+        }
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // PHYSIOTHERAPY PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        [HttpGet("physiotherapy/{id}")]
+        public async Task<IActionResult> GetPhysiotherapyPdf(int id)
+        {
+            try
+            {
+                // Obtener la atención de fisioterapia completa
+                var physioCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (physioCare == null)
+                {
+                    return NotFound($"Atención de fisioterapia con ID {id} no encontrada");
+                }
+
+                // Cargar datos específicos de fisioterapia
+                await LoadPhysiotherapyData(physioCare);
+
+                // Generar PDF específico para fisioterapia
+                var pdfBytes = await _pdfService.GeneratePhysiotherapyPdfAsync(physioCare);
+                var fileName = $"Atencion_Fisioterapia_{physioCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de fisioterapia: {ex.Message}");
+            }
+        }
+
+        private async Task LoadPhysiotherapyData(MedicalCareDTO physioCare)
+        {
+            try
+            {
+                // Cargar motivo de consulta
+                var reasons = await _reasonForConsultationService.GetByCareIdAsync(physioCare.CareId);
+                physioCare.ReasonForConsultation = reasons?.FirstOrDefault();
+
+                // Cargar enfermedad actual
+                var illnesses = await _currentIllnessService.GetByCareIdAsync(physioCare.CareId);
+                physioCare.CurrentIllnesses = illnesses ?? new List<CurrentIllnessDTO>();
+
+                // Cargar escalas de dolor
+                physioCare.PainScales = await _painScaleService.GetByCareIdAsync(physioCare.CareId) ?? new List<PainScaleDTO>();
+
+                // Cargar evaluaciones de piel
+                physioCare.SkinEvaluations = await _skinEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<SkinEvaluationDTO>();
+
+                // Cargar evaluaciones osteoarticulares
+                physioCare.OsteoarticularEvaluations = await _osteoarticularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<OsteoarticularEvaluationDTO>();
+
+                // Cargar evaluaciones médicas (articular/muscular)
+                physioCare.MedicalEvaluations = await _medicalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<MedicalEvaluationDTO>();
+
+                // Cargar evaluaciones neuromusculares
+                physioCare.NeuromuscularEvaluations = await _neuromuscularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<NeuromuscularEvaluationDTO>();
+
+                // Cargar evaluaciones posturales
+                physioCare.PosturalEvaluations = await _posturalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<PosturalEvaluationDTO>();
+
+                // Cargar pruebas especiales
+                physioCare.SpecialTests = await _specialTestService.GetByCareIdAsync(physioCare.CareId) ?? new List<SpecialTestDTO>();
+
+                // Cargar exámenes complementarios
+                physioCare.ComplementaryExams = await _complementaryExamsService.GetByCareIdAsync(physioCare.CareId) ?? new List<ComplementaryExamsDTO>();
+
+                // Cargar sesiones
+                physioCare.Sessions = await _sessionsService.GetByCareIdAsync(physioCare.CareId) ?? new List<SessionsDTO>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando datos de fisioterapia: {ex.Message}");
             }
         }
     }

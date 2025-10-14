@@ -31,7 +31,10 @@ namespace SMED.Shared.DTOs
         public List<MedicalServiceDTO> MedicalServices { get; set; } = new();
         public List<MedicalProcedureDTO> MedicalProcedures { get; set; } = new();
         public ReasonForConsultationDTO? ReasonForConsultation { get; set; }
-        
+        public List<MedicalEvaluationDTO>? MedicalEvaluations { get; set; }
+        public List<PosturalEvaluationDTO>? PosturalEvaluations { get; set; }
+        public List<ComplementaryExamsDTO>? ComplementaryExams { get; set; }
+
         //MEDICINA GENERAL
         public List<SystemsDevicesDTO>? SystemsDevices { get; set; }
         public List<PhysicalExamDTO>? PhysicalExams { get; set; }
@@ -44,5 +47,6 @@ namespace SMED.Shared.DTOs
         public List<PharmacologicalTreatmentDTO>? PharmacologicalTreatments { get; set; }
         public List<NonPharmacologicalTreatmentDTO>? NonPharmacologicalTreatments { get; set; }
         public List<IndicationsDTO>? Indications { get; set; }
+
     }
 }

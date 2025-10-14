@@ -2264,5 +2264,710 @@ namespace SMED.BackEnd.Services
             document.Add(summaryTable);
         }
 
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // PHYSIOTHERAPY PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+
+        public async Task<byte[]> GeneratePhysiotherapyPdfAsync(MedicalCareDTO physioCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                // Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                var headerTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+                // Celda para el logo (izquierda)
+                var logoCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 8,
+                    BackgroundColor = universityRed
+                };
+
+                // Cargar logo
+                try
+                {
+                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                    if (File.Exists(logoPath))
+                    {
+                        var logo = Image.GetInstance(logoPath);
+                        logo.ScaleToFit(70, 70);
+                        logo.Alignment = Image.ALIGN_CENTER;
+                        logoCell.AddElement(logo);
+                    }
+                    else
+                    {
+                        var fallbackLogo = new Paragraph("UTA",
+                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                        {
+                            Alignment = Element.ALIGN_CENTER
+                        };
+                        logoCell.AddElement(fallbackLogo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error cargando logo: {ex.Message}");
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+
+                var textCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 10,
+                    BackgroundColor = universityRed
+                };
+
+                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                var systemName = new Paragraph("SISTEMA MÉDICO - FISIOTERAPIA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+                {
+                    SpacingBefore = 5f,
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                textCell.AddElement(universityName);
+                textCell.AddElement(systemName);
+
+                var emptyCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    BackgroundColor = universityRed
+                };
+
+                headerTable.AddCell(logoCell);
+                headerTable.AddCell(textCell);
+                headerTable.AddCell(emptyCell);
+
+                document.Add(headerTable);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN DE FISIOTERAPIA", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN GENERAL =====
+                AddPhysioInfoSection(document, physioCare, titleFont, labelFont, textFont, lightGray, universityRed);
+
+                // ===== MOTIVO DE CONSULTA =====
+                AddPhysioReasonForConsultationSection(document, physioCare, titleFont, textFont, lightGray);
+
+                // ===== ENFERMEDAD ACTUAL =====
+                AddCurrentIllnessSection(document, physioCare, titleFont, labelFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== ESCALAS DE DOLOR =====
+                AddPainScalesSection(document, physioCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== EVALUACIONES =====
+                AddEvaluationsSection(document, physioCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== PRUEBAS ESPECIALES =====
+                AddSpecialTestsSection(document, physioCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== EXÁMENES COMPLEMENTARIOS =====
+                AddComplementaryExamsSection(document, physioCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== SESIONES DE FISIOTERAPIA =====
+                AddPhysioSessionsSection(document, physioCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== RESUMEN DE ATENCIÓN =====
+                AddPhysioSummarySection(document, physioCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de fisioterapia: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private void AddPhysioInfoSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityBlue)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN GENERAL", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", physioCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", physioCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", physioCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", physioCare.Area ?? "Fisioterapia", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", physioCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Profesional:", physioCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", physioCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+        private void AddPhysioReasonForConsultationSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (physioCare.ReasonForConsultation != null && !string.IsNullOrEmpty(physioCare.ReasonForConsultation.Description))
+            {
+                var sectionTitle = new Paragraph("MOTIVO DE CONSULTA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var reasonTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var reasonCell = new PdfPCell(new Phrase(physioCare.ReasonForConsultation.Description, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                reasonTable.AddCell(reasonCell);
+
+                document.Add(reasonTable);
+            }
+        }
+
+
+        private void AddCurrentIllnessSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            if (physioCare.CurrentIllnesses != null && physioCare.CurrentIllnesses.Any())
+            {
+                var sectionTitle = new Paragraph("ENFERMEDAD ACTUAL", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                foreach (var illness in physioCare.CurrentIllnesses)
+                {
+                    var illnessTable = new PdfPTable(2)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 20f
+                    };
+                    illnessTable.SetWidths(new float[] { 50, 50 });
+
+                    AddTableRow(illnessTable, "Tiempo de Evolución:", illness.EvolutionTime ?? "N/A", labelFont, textFont, lightGray);
+                    AddTableRow(illnessTable, "Localización:", illness.Localization ?? "N/A", labelFont, textFont);
+                    AddTableRow(illnessTable, "Intensidad:", illness.Intensity ?? "N/A", labelFont, textFont, lightGray);
+                    AddTableRow(illnessTable, "Factores Agravantes:", illness.AggravatingFactors ?? "N/A", labelFont, textFont);
+                    AddTableRow(illnessTable, "Factores Atenuantes:", illness.MitigatingFactors ?? "N/A", labelFont, textFont, lightGray);
+                    AddTableRow(illnessTable, "Dolor Nocturno:", illness.NocturnalPain ?? "N/A", labelFont, textFont);
+                    AddTableRow(illnessTable, "Debilidad:", illness.Weakness ?? "N/A", labelFont, textFont, lightGray);
+                    AddTableRow(illnessTable, "Parestesias:", illness.Paresthesias ?? "N/A", labelFont, textFont);
+
+                    if (!string.IsNullOrWhiteSpace(illness.ComplementaryExams))
+                    {
+                        AddTableRow(illnessTable, "Exámenes Complementarios:", illness.ComplementaryExams, labelFont, textFont, lightGray);
+                    }
+
+                    document.Add(illnessTable);
+                }
+            }
+
+        }
+
+        private void AddPainScalesSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            if (physioCare.PainScales != null && physioCare.PainScales.Any())
+            {
+                var sectionTitle = new Paragraph($"ESCALAS DE DOLOR ({physioCare.PainScales.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var painTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                painTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(painTable, "MOMENTO DEL DOLOR", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(painTable, "ACTIVIDAD", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(painTable, "ESCALA DE INTENSIDAD", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(painTable, "OBSERVACIÓN", tableHeaderFont, universityBlue);
+
+                foreach (var pain in physioCare.PainScales)
+                {
+                    AddTableCell(painTable, pain.PainMomentName ?? "N/A", textFont);
+                    AddTableCell(painTable, pain.ActionName ?? "N/A", textFont);
+                    AddTableCell(painTable, pain.ScaleDescription ?? "N/A", textFont);
+                    AddTableCell(painTable, pain.Observation ?? "N/A", textFont);
+                }
+
+                document.Add(painTable);
+            }
+        }
+
+        private void AddEvaluationsSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            var hasSkinEvaluations = physioCare.SkinEvaluations?.Any() ?? false;
+            var hasOsteoarticularEvaluations = physioCare.OsteoarticularEvaluations?.Any() ?? false;
+            var hasMedicalEvaluations = physioCare.MedicalEvaluations?.Any() ?? false;
+            var hasNeuromuscularEvaluations = physioCare.NeuromuscularEvaluations?.Any() ?? false;
+            var hasPosturalEvaluations = physioCare.PosturalEvaluations?.Any() ?? false;
+
+            if (hasSkinEvaluations || hasOsteoarticularEvaluations || hasMedicalEvaluations || hasNeuromuscularEvaluations || hasPosturalEvaluations)
+            {
+                var sectionTitle = new Paragraph("EVALUACIONES FISIOTERAPÉUTICAS", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                // Evaluaciones de Piel
+                if (hasSkinEvaluations)
+                {
+                    var skinTitle = new Paragraph($"Evaluación de Piel ({physioCare.SkinEvaluations.Count})",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, universityBlue))
+                    {
+                        SpacingBefore = 10f,
+                        SpacingAfter = 5f
+                    };
+                    document.Add(skinTitle);
+
+                    var skinTable = new PdfPTable(5)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    skinTable.SetWidths(new float[] { 20, 20, 20, 20, 20 });
+
+                    AddTableHeaderCell(skinTable, "COLOR", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(skinTable, "EDEMA", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(skinTable, "ESTADO", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(skinTable, "TUMEFACCIÓN", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(skinTable, "FECHA", tableHeaderFont, universityBlue);
+
+                    foreach (var skin in physioCare.SkinEvaluations)
+                    {
+                        AddTableCell(skinTable, skin.ColorName ?? "N/A", textFont);
+                        AddTableCell(skinTable, skin.EdemaName ?? "N/A", textFont);
+                        AddTableCell(skinTable, skin.StatusName ?? "N/A", textFont);
+                        AddTableCell(skinTable, skin.SwellingName ?? "N/A", textFont);
+                        AddTableCell(skinTable, skin.EvaluationDate?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    }
+
+                    document.Add(skinTable);
+                }
+
+                // Evaluaciones Osteoarticulares
+                if (hasOsteoarticularEvaluations)
+                {
+                    var osteoTitle = new Paragraph($"Evaluación Osteoarticular ({physioCare.OsteoarticularEvaluations.Count})",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, universityBlue))
+                    {
+                        SpacingBefore = 10f,
+                        SpacingAfter = 5f
+                    };
+                    document.Add(osteoTitle);
+
+                    var osteoTable = new PdfPTable(2)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    osteoTable.SetWidths(new float[] { 50, 50 });
+
+                    AddTableHeaderCell(osteoTable, "ESTADO ARTICULAR", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(osteoTable, "AMPLITUD ARTICULAR", tableHeaderFont, universityBlue);
+
+                    foreach (var osteo in physioCare.OsteoarticularEvaluations)
+                    {
+                        AddTableCell(osteoTable, osteo.JointConditionName ?? "N/A", textFont);
+                        AddTableCell(osteoTable, osteo.JointRangeOfMotionName ?? "N/A", textFont);
+                    }
+
+                    document.Add(osteoTable);
+                }
+
+                // Evaluaciones Médicas (Articular/Muscular)
+                if (hasMedicalEvaluations)
+                {
+                    var medicalTitle = new Paragraph($"Evaluación Articular/Muscular ({physioCare.MedicalEvaluations.Count})",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, universityBlue))
+                    {
+                        SpacingBefore = 10f,
+                        SpacingAfter = 5f
+                    };
+                    document.Add(medicalTitle);
+
+                    var medicalTable = new PdfPTable(4)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    medicalTable.SetWidths(new float[] { 20, 20, 20, 40 });
+
+                    AddTableHeaderCell(medicalTable, "TIPO VALORACIÓN", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(medicalTable, "POSICIÓN CORPORAL", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(medicalTable, "UBICACIÓN", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(medicalTable, "DESCRIPCIÓN", tableHeaderFont, universityBlue);
+
+                    foreach (var evaluation in physioCare.MedicalEvaluations)
+                    {
+                        AddTableCell(medicalTable, evaluation.TypeOfMedicalEvaluationName ?? "N/A", textFont);
+                        AddTableCell(medicalTable, evaluation.MedicalEvaluationPositionName ?? "N/A", textFont);
+                        AddTableCell(medicalTable, evaluation.MedicalEvaluationMembersName ?? "N/A", textFont);
+                        AddTableCell(medicalTable, evaluation.Description ?? "N/A", textFont);
+                    }
+
+                    document.Add(medicalTable);
+                }
+
+                // Evaluaciones Neuromusculares
+                if (hasNeuromuscularEvaluations)
+                {
+                    var neuroTitle = new Paragraph($"Evaluación Neuromuscular ({physioCare.NeuromuscularEvaluations.Count})",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, universityBlue))
+                    {
+                        SpacingBefore = 10f,
+                        SpacingAfter = 5f
+                    };
+                    document.Add(neuroTitle);
+
+                    var neuroTable = new PdfPTable(3)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    neuroTable.SetWidths(new float[] { 33, 33, 34 });
+
+                    AddTableHeaderCell(neuroTable, "TONO", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(neuroTable, "TROFISMO", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(neuroTable, "FUERZA", tableHeaderFont, universityBlue);
+
+                    foreach (var neuro in physioCare.NeuromuscularEvaluations)
+                    {
+                        AddTableCell(neuroTable, neuro.ShadeName ?? "N/A", textFont);
+                        AddTableCell(neuroTable, neuro.TrophismName ?? "N/A", textFont);
+                        AddTableCell(neuroTable, neuro.StrengthName ?? "N/A", textFont);
+                    }
+
+                    document.Add(neuroTable);
+                }
+
+                // Evaluaciones Posturales
+                if (hasPosturalEvaluations)
+                {
+                    var posturalTitle = new Paragraph($"Evaluación Postural ({physioCare.PosturalEvaluations.Count})",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11, universityBlue))
+                    {
+                        SpacingBefore = 10f,
+                        SpacingAfter = 5f
+                    };
+                    document.Add(posturalTitle);
+
+                    var posturalTable = new PdfPTable(4)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    posturalTable.SetWidths(new float[] { 20, 15, 30, 35 });
+
+                    AddTableHeaderCell(posturalTable, "VISTA", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(posturalTable, "GRADO (%)", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(posturalTable, "ALINEACIÓN CORPORAL", tableHeaderFont, universityBlue);
+                    AddTableHeaderCell(posturalTable, "OBSERVACIÓN", tableHeaderFont, universityBlue);
+
+                    foreach (var postural in physioCare.PosturalEvaluations)
+                    {
+                        AddTableCell(posturalTable, postural.ViewName ?? "N/A", textFont);
+                        AddTableCell(posturalTable, postural.Grade.ToString() ?? "N/A", textFont);
+                        AddTableCell(posturalTable, postural.BodyAlignment ?? "N/A", textFont);
+                        AddTableCell(posturalTable, postural.Observation ?? "N/A", textFont);
+                    }
+
+                    document.Add(posturalTable);
+                }
+            }
+        }
+
+        private void AddSpecialTestsSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            if (physioCare.SpecialTests != null && physioCare.SpecialTests.Any())
+            {
+                var sectionTitle = new Paragraph($"PRUEBAS ESPECIALES ({physioCare.SpecialTests.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var testsTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                testsTable.SetWidths(new float[] { 30, 20, 50 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(testsTable, "NOMBRE DE LA PRUEBA", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(testsTable, "RESULTADO", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(testsTable, "OBSERVACIONES", tableHeaderFont, universityBlue);
+
+                foreach (var test in physioCare.SpecialTests)
+                {
+                    AddTableCell(testsTable, test.Test ?? "N/A", textFont);
+
+                    // Celda de resultado con color
+                    var resultCell = new PdfPCell(new Phrase(test.ResultTypeName ?? "N/A", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = GetTestResultColor(test.ResultTypeName)
+                    };
+                    testsTable.AddCell(resultCell);
+
+                    AddTableCell(testsTable, test.Observations ?? "N/A", textFont);
+                }
+
+                document.Add(testsTable);
+            }
+        }
+
+        private void AddComplementaryExamsSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            if (physioCare.ComplementaryExams != null && physioCare.ComplementaryExams.Any())
+            {
+                var sectionTitle = new Paragraph($"EXÁMENES COMPLEMENTARIOS ({physioCare.ComplementaryExams.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var examsTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                examsTable.SetWidths(new float[] { 25, 15, 35, 25 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(examsTable, "NOMBRE DEL EXAMEN", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(examsTable, "FECHA", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(examsTable, "DESCRIPCIÓN", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(examsTable, "DOCUMENTO", tableHeaderFont, universityBlue);
+
+                foreach (var exam in physioCare.ComplementaryExams)
+                {
+                    AddTableCell(examsTable, exam.Exam ?? "N/A", textFont);
+                    AddTableCell(examsTable, exam.ExamDate.ToString("dd/MM/yyyy"), textFont);
+                    AddTableCell(examsTable, exam.Descriptions ?? "N/A", textFont);
+
+                    // Celda de documento
+                    var docCell = new PdfPCell(new Phrase(!string.IsNullOrWhiteSpace(exam.PdfLink) ? "Disponible" : "No disponible", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = !string.IsNullOrWhiteSpace(exam.PdfLink) ? new BaseColor(220, 248, 198) : new BaseColor(255, 243, 205)
+                    };
+                    examsTable.AddCell(docCell);
+                }
+
+                document.Add(examsTable);
+            }
+        }
+
+        private void AddPhysioSessionsSection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue, Font tableHeaderFont)
+        {
+            if (physioCare.Sessions != null && physioCare.Sessions.Any())
+            {
+                var sectionTitle = new Paragraph($"SESIONES DE FISIOTERAPIA ({physioCare.Sessions.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var sessionsTable = new PdfPTable(5)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                sessionsTable.SetWidths(new float[] { 15, 25, 25, 15, 20 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(sessionsTable, "FECHA", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(sessionsTable, "DESCRIPCIÓN", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(sessionsTable, "TRATAMIENTO", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(sessionsTable, "ALTA MÉDICA", tableHeaderFont, universityBlue);
+                AddTableHeaderCell(sessionsTable, "OBSERVACIONES", tableHeaderFont, universityBlue);
+
+                foreach (var session in physioCare.Sessions)
+                {
+                    AddTableCell(sessionsTable, session.Date?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    AddTableCell(sessionsTable, session.Description ?? "N/A", textFont);
+                    AddTableCell(sessionsTable, session.Treatment ?? "N/A", textFont);
+
+                    // Celda de alta médica
+                    var dischargeCell = new PdfPCell(new Phrase((session.MedicalDischarge ?? false) ? "Sí" : "No", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = (session.MedicalDischarge ?? false) ? new BaseColor(40, 167, 69) : new BaseColor(108, 117, 125),
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
+                    dischargeCell.Phrase.Font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.White);
+                    sessionsTable.AddCell(dischargeCell);
+
+                    AddTableCell(sessionsTable, session.Observations ?? "N/A", textFont);
+                }
+
+                document.Add(sessionsTable);
+            }
+        }
+
+        private void AddPhysioSummarySection(Document document, MedicalCareDTO physioCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityBlue)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(4)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+            var hasCurrentIllness = physioCare.CurrentIllnesses != null;
+            var painScalesCount = physioCare.PainScales?.Count ?? 0;
+            var totalEvaluations = GetTotalPhysioEvaluations(physioCare);
+            var sessionsCount = physioCare.Sessions?.Count ?? 0;
+
+            AddSummaryCard(summaryTable, "ENFERMEDAD ACTUAL", hasCurrentIllness ? "SI" : "NO", universityBlue, textFont, hasCurrentIllness);
+            AddSummaryCard(summaryTable, "ESCALAS DE DOLOR", painScalesCount.ToString(), universityBlue, textFont, painScalesCount > 0);
+            AddSummaryCard(summaryTable, "EVALUACIONES", totalEvaluations.ToString(), universityBlue, textFont, totalEvaluations > 0);
+            AddSummaryCard(summaryTable, "SESIONES", sessionsCount.ToString(), universityBlue, textFont, sessionsCount > 0);
+
+            document.Add(summaryTable);
+        }
+
+
+        // Métodos auxiliares específicos para Physiotherapy PDF
+        private BaseColor GetTestResultColor(string resultType)
+        {
+            return resultType?.ToLower() switch
+            {
+                "positivo" => new BaseColor(220, 53, 69),  // Rojo
+                "negativo" => new BaseColor(40, 167, 69),  // Verde
+                "normal" => new BaseColor(40, 167, 69),    // Verde
+                "anormal" => new BaseColor(255, 193, 7),   // Amarillo
+                _ => new BaseColor(108, 117, 125)          // Gris
+            };
+        }
+        private int GetTotalPhysioEvaluations(MedicalCareDTO physioCare)
+        {
+            return (physioCare.SkinEvaluations?.Count ?? 0) +
+                   (physioCare.OsteoarticularEvaluations?.Count ?? 0) +
+                   (physioCare.MedicalEvaluations?.Count ?? 0) +
+                   (physioCare.NeuromuscularEvaluations?.Count ?? 0) +
+                   (physioCare.PosturalEvaluations?.Count ?? 0) +
+                   (physioCare.SpecialTests?.Count ?? 0) +
+                   (physioCare.ComplementaryExams?.Count ?? 0);
+        }
+
+
     }
 }

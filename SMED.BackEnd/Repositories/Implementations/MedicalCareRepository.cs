@@ -602,6 +602,125 @@ namespace SMED.BackEnd.Repositories.Implementations
                     })
                     .ToListAsync();
 
+                // <ADD> 3.1) Obtener ComplementaryExams
+                var complementaryExams = await _context.ComplementaryExams
+                    .Where(ce => ce.MedicalCareId == id)
+                    .Select(ce => new ComplementaryExamsDTO
+                    {
+                        ComplementaryExamsId = ce.ComplementaryExamsId,
+                        Exam = ce.Exam,
+                        ExamDate = ce.ExamDate,
+                        Descriptions = ce.Descriptions,
+                        PdfLink = ce.PdfLink,
+                        MedicalCareId = ce.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] ComplementaryExams cargados: {complementaryExams.Count}");
+
+                // 3.2) Obtener PosturalEvaluations
+                var posturalEvaluationsData = await _context.PosturalEvaluations
+                    .Where(pe => pe.MedicalCareId == id)
+                    .Select(pe => new
+                    {
+                        pe.PosturalEvaluationId,
+                        pe.Observation,
+                        pe.Grade,
+                        pe.BodyAlignment,
+                        pe.MedicalCareId,
+                        pe.ViewId
+                    })
+                    .ToListAsync();
+
+                var viewIds = posturalEvaluationsData
+                    .Where(pe => pe.ViewId.HasValue)
+                    .Select(pe => pe.ViewId.Value)
+                    .Distinct()
+                    .ToList();
+
+                var views = await _context.Views
+                    .Where(v => viewIds.Contains(v.ViewId))
+                    .ToDictionaryAsync(v => v.ViewId, v => v.Name);
+
+                var posturalEvaluations = posturalEvaluationsData.Select(pe => new PosturalEvaluationDTO
+                {
+                    PosturalEvaluationId = pe.PosturalEvaluationId,
+                    Observation = pe.Observation,
+                    Grade = pe.Grade,
+                    BodyAlignment = pe.BodyAlignment,
+                    MedicalCareId = pe.MedicalCareId,
+                    ViewId = pe.ViewId,
+                    ViewName = pe.ViewId.HasValue && views.ContainsKey(pe.ViewId.Value)
+                        ? views[pe.ViewId.Value] : null
+                }).ToList();
+
+                Console.WriteLine($"[DEBUG] PosturalEvaluations cargadas: {posturalEvaluations.Count}");
+
+                // 3.3) Obtener MedicalEvaluations
+                var medicalEvaluationsData = await _context.MedicalEvaluations
+                    .Where(me => me.MedicalCareId == id)
+                    .Select(me => new
+                    {
+                        me.MedicalEvaluationId,
+                        me.Description,
+                        me.MedicalCareId,
+                        me.TypeOfMedicalEvaluationId,
+                        me.MedicalEvaluationPositionId,
+                        me.MedicalEvaluationMembersId
+                    })
+                    .ToListAsync();
+
+                var typeOfMedicalEvaluationIds = medicalEvaluationsData
+                    .Where(me => me.TypeOfMedicalEvaluationId.HasValue)
+                    .Select(me => me.TypeOfMedicalEvaluationId.Value)
+                    .Distinct()
+                    .ToList();
+
+                var medicalEvaluationPositionIds = medicalEvaluationsData
+                    .Where(me => me.MedicalEvaluationPositionId.HasValue)
+                    .Select(me => me.MedicalEvaluationPositionId.Value)
+                    .Distinct()
+                    .ToList();
+
+                var medicalEvaluationMembersIds = medicalEvaluationsData
+                    .Where(me => me.MedicalEvaluationMembersId.HasValue)
+                    .Select(me => me.MedicalEvaluationMembersId.Value)
+                    .Distinct()
+                    .ToList();
+
+                var typeOfMedicalEvaluations = await _context.TypeOfMedicalEvaluations
+                    .Where(t => typeOfMedicalEvaluationIds.Contains(t.TypeOfMedicalEvaluationId))
+                    .ToDictionaryAsync(t => t.TypeOfMedicalEvaluationId, t => t.Name);
+
+                var medicalEvaluationPositions = await _context.MedicalEvaluationPositions
+                    .Where(p => medicalEvaluationPositionIds.Contains(p.MedicalEvaluationPositionId))
+                    .ToDictionaryAsync(p => p.MedicalEvaluationPositionId, p => p.Name);
+
+                var medicalEvaluationMembers = await _context.MedicalEvaluationMembers
+                    .Where(m => medicalEvaluationMembersIds.Contains(m.MedicalEvaluationMembersId))
+                    .ToDictionaryAsync(m => m.MedicalEvaluationMembersId, m => m.Name);
+
+                var medicalEvaluations = medicalEvaluationsData.Select(me => new MedicalEvaluationDTO
+                {
+                    MedicalEvaluationId = me.MedicalEvaluationId,
+                    Description = me.Description,
+                    MedicalCareId = me.MedicalCareId,
+                    TypeOfMedicalEvaluationId = me.TypeOfMedicalEvaluationId,
+                    TypeOfMedicalEvaluationName = me.TypeOfMedicalEvaluationId.HasValue &&
+                                                typeOfMedicalEvaluations.ContainsKey(me.TypeOfMedicalEvaluationId.Value)
+                        ? typeOfMedicalEvaluations[me.TypeOfMedicalEvaluationId.Value] : null,
+                    MedicalEvaluationPositionId = me.MedicalEvaluationPositionId,
+                    MedicalEvaluationPositionName = me.MedicalEvaluationPositionId.HasValue &&
+                                                  medicalEvaluationPositions.ContainsKey(me.MedicalEvaluationPositionId.Value)
+                        ? medicalEvaluationPositions[me.MedicalEvaluationPositionId.Value] : null,
+                    MedicalEvaluationMembersId = me.MedicalEvaluationMembersId,
+                    MedicalEvaluationMembersName = me.MedicalEvaluationMembersId.HasValue &&
+                                                 medicalEvaluationMembers.ContainsKey(me.MedicalEvaluationMembersId.Value)
+                        ? medicalEvaluationMembers[me.MedicalEvaluationMembersId.Value] : null
+                }).ToList();
+
+                Console.WriteLine($"[DEBUG] MedicalEvaluations cargadas: {medicalEvaluations.Count}");
+
                 // 4) Obtener datos COMUNES (VitalSigns, ReasonForConsultation)
                 var vitalSigns = await _context.VitalSigns
                     .Where(vs => vs.MedicalCareId == id)
@@ -684,10 +803,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = ms.HealthProfessionalId,
                         HealthProfessionalName = person != null
                             ? string.Join(" ", new[] {
-                        person.FirstName,
-                        person.MiddleName,
-                        person.LastName,
-                        person.SecondLastName
+                person.FirstName,
+                person.MiddleName,
+                person.LastName,
+                person.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n)))
                             : null,
                         CareId = ms.CareId
@@ -755,18 +874,18 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = mp.HealthProfessionalId,
                         HealthProfessionalName = healthProfessional?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                        healthProfessional.PersonNavigation.FirstName,
-                        healthProfessional.PersonNavigation.MiddleName,
-                        healthProfessional.PersonNavigation.LastName,
-                        healthProfessional.PersonNavigation.SecondLastName
+                healthProfessional.PersonNavigation.FirstName,
+                healthProfessional.PersonNavigation.MiddleName,
+                healthProfessional.PersonNavigation.LastName,
+                healthProfessional.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         TreatingPhysicianId = mp.TreatingPhysicianId,
                         TreatingPhysicianName = treatingPhysician?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                        treatingPhysician.PersonNavigation.FirstName,
-                        treatingPhysician.PersonNavigation.MiddleName,
-                        treatingPhysician.PersonNavigation.LastName,
-                        treatingPhysician.PersonNavigation.SecondLastName
+                treatingPhysician.PersonNavigation.FirstName,
+                treatingPhysician.PersonNavigation.MiddleName,
+                treatingPhysician.PersonNavigation.LastName,
+                treatingPhysician.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         LocationId = mp.LocationId,
                         LocationName = location?.Name,
@@ -990,6 +1109,15 @@ namespace SMED.BackEnd.Repositories.Implementations
                     PainScales = painScales,
                     Sessions = sessions,
 
+                    // Exámenes Complementarios
+                    ComplementaryExams = complementaryExams, // <ADD> Agregar ComplementaryExams al DTO
+
+                    // Evaluaciones Posturales
+                    PosturalEvaluations = posturalEvaluations,
+
+                    // Evaluaciones Médicas
+                    MedicalEvaluations = medicalEvaluations,
+
                     // Común
                     VitalSigns = vitalSigns,
                     ReasonForConsultation = reasonForConsultation,
@@ -1012,6 +1140,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Console.WriteLine($"[DEBUG] Patient: {dto.NamePatient}, Professional: {dto.NameHealthProfessional}");
                 Console.WriteLine($"[DEBUG] VitalSigns: {dto.VitalSigns != null}, ReasonForConsultation: {dto.ReasonForConsultation != null}");
                 Console.WriteLine($"[DEBUG] MedicalServices: {dto.MedicalServices.Count}, MedicalProcedures: {dto.MedicalProcedures.Count}");
+                Console.WriteLine($"[DEBUG] ComplementaryExams: {dto.ComplementaryExams?.Count ?? 0}"); // <ADD> Debug para ComplementaryExams
+                Console.WriteLine($"[DEBUG] PosturalEvaluations: {dto.PosturalEvaluations?.Count ?? 0}");
+                Console.WriteLine($"[DEBUG] MedicalEvaluations: {dto.MedicalEvaluations?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] ReviewSystemDevices: {dto.ReviewSystemDevices?.Count ?? 0}, PhysicalExams: {dto.PhysicalExams?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Diagnoses: {dto.Diagnoses?.Count ?? 0}, Treatments: Pharma={dto.PharmacologicalTreatments?.Count ?? 0}, NonPharma={dto.NonPharmacologicalTreatments?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Referrals: {dto.Referrals?.Count ?? 0}, Evolutions: {dto.Evolutions?.Count ?? 0}");

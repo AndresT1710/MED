@@ -103,6 +103,8 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<ComplementaryExams> ComplementaryExams { get; set; } = new List<ComplementaryExams>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<PosturalEvaluation> PosturalEvaluations { get; set; } = new List<PosturalEvaluation>();
 
     }
 }

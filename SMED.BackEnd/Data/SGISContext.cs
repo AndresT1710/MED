@@ -179,7 +179,8 @@ namespace SGIS.Models
         public DbSet<View> Views { get; set; }
         public DbSet<Agent> Agents { get; set; }
         public DbSet<ComplementaryExams> ComplementaryExams { get; set; }
-
+        public DbSet<EarlyStimulationSessions> EarlyStimulationSessions { get; set; }
+        public DbSet<EarlyStimulationEvolutionTest> EarlyStimulationEvolutionTests { get; set; }
 
 
 

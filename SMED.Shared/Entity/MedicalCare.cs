@@ -106,5 +106,11 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<PosturalEvaluation> PosturalEvaluations { get; set; } = new List<PosturalEvaluation>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<EarlyStimulationSessions> EarlyStimulationSessions { get; set; } = new List<EarlyStimulationSessions>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<EarlyStimulationEvolutionTest> EarlyStimulationEvolutionTests { get; set; } = new List<EarlyStimulationEvolutionTest>();
+
     }
 }

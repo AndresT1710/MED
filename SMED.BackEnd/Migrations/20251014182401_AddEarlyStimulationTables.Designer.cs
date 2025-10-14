@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251014182401_AddEarlyStimulationTables")]
+    partial class AddEarlyStimulationTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -615,23 +618,23 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int?>("Age")
                         .HasColumnType("int");
 
-                    b.Property<int?>("FineMotorSkills")
-                        .HasColumnType("int");
+                    b.Property<string>("FineMotorSkills")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("GrossMotorSkills")
-                        .HasColumnType("int");
+                    b.Property<string>("GrossMotorSkills")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("HearingAndLanguage")
-                        .HasColumnType("int");
+                    b.Property<string>("HearingAndLanguage")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("MedicalCareId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SocialPerson")
-                        .HasColumnType("int");
+                    b.Property<string>("SocialPerson")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Total")
-                        .HasColumnType("int");
+                    b.Property<string>("Total")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("TestId");
 

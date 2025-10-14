@@ -190,6 +190,11 @@ builder.Services.AddScoped<CurrentIllnessRepository>();
 builder.Services.AddScoped<ComplementaryExamsRepository>();
 builder.Services.AddScoped<IRepository<ComplementaryExamsDTO, int>, ComplementaryExamsRepository>();
 builder.Services.AddScoped<ReasonForConsultationRepository>();
+builder.Services.AddScoped<IRepository<EarlyStimulationSessionsDTO, int>, EarlyStimulationSessionsRepository>();
+builder.Services.AddScoped<EarlyStimulationSessionsRepository>();
+builder.Services.AddScoped<IRepository<EarlyStimulationEvolutionTestDTO, int>, EarlyStimulationEvolutionTestRepository>();
+builder.Services.AddScoped<EarlyStimulationEvolutionTestRepository>();
+
 
 
 //PDF

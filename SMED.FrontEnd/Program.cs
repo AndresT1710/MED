@@ -5,6 +5,7 @@ using SMED.FrontEnd.Services;
 using Blazored.LocalStorage;
 using System.Net.Http;
 using SMED.Frontend.Services;
+using SMED.Shared.Entity;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -135,6 +136,8 @@ builder.Services.AddScoped<SpecialTestService>();
 builder.Services.AddScoped<ResultTypeService>();
 builder.Services.AddScoped<ComplementaryExamsService>();
 builder.Services.AddScoped<SessionsService>();
+builder.Services.AddScoped<EarlyStimulationSessionsService>();
+builder.Services.AddScoped<EarlyStimulationEvolutionTestService>();
 
 
 builder.Services.AddLogging();

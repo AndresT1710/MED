@@ -30,7 +30,7 @@ namespace SMED.BackEnd.Services
                 using var memoryStream = new MemoryStream();
 
                 // Configurar documento A4 con márgenes
-                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
                 PdfWriter.GetInstance(document, memoryStream);
 
                 document.Open();
@@ -777,7 +777,7 @@ namespace SMED.BackEnd.Services
                 using var memoryStream = new MemoryStream();
 
                 // Configurar documento A4 con márgenes
-                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
                 PdfWriter.GetInstance(document, memoryStream);
 
                 document.Open();
@@ -1114,7 +1114,7 @@ namespace SMED.BackEnd.Services
                 using var memoryStream = new MemoryStream();
 
                 // Configurar documento A4 con márgenes
-                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
                 PdfWriter.GetInstance(document, memoryStream);
 
                 document.Open();
@@ -1667,7 +1667,7 @@ namespace SMED.BackEnd.Services
                 using var memoryStream = new MemoryStream();
 
                 // Configurar documento A4 con márgenes
-                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
                 PdfWriter.GetInstance(document, memoryStream);
 
                 document.Open();
@@ -2277,7 +2277,7 @@ namespace SMED.BackEnd.Services
                 using var memoryStream = new MemoryStream();
 
                 // Configurar documento A4 con márgenes
-                var document = new Document(PageSize.A4, 40, 40, 100, 40);
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
                 PdfWriter.GetInstance(document, memoryStream);
 
                 document.Open();

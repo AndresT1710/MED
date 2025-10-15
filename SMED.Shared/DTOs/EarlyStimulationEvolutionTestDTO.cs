@@ -10,6 +10,9 @@ namespace SMED.Shared.DTOs
     {
         public int TestId { get; set; }
         public int? Age { get; set; }
+
+        public int? Age1 { get; set; }
+
         public int? GrossMotorSkills { get; set; }
         public int? FineMotorSkills { get; set; }
         public int? HearingAndLanguage { get; set; }

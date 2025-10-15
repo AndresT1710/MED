@@ -46,8 +46,82 @@ namespace SMED.FrontEnd.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener test por ID: {Id}", id);
+                _logger.LogError(ex, "Error al obtener test de evolución por ID: {Id}", id);
                 return null;
+            }
+        }
+
+        public async Task<List<EarlyStimulationEvolutionTestDTO>?> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                var allTests = await GetAllAsync();
+                return allTests?
+                    .Where(t => t.MedicalCareId == medicalCareId)
+                    .ToList() ?? new List<EarlyStimulationEvolutionTestDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener tests por atención médica: {MedicalCareId}", medicalCareId);
+                return new List<EarlyStimulationEvolutionTestDTO>();
+            }
+        }
+
+        public async Task<(bool Success, EarlyStimulationEvolutionTestDTO? Data, string Error)> CreateAsync(EarlyStimulationEvolutionTestDTO dto)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("api/EarlyStimulationEvolutionTest", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    var created = await response.Content.ReadFromJsonAsync<EarlyStimulationEvolutionTestDTO>();
+                    return (true, created, string.Empty);
+                }
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, null, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear test de evolución");
+                return (false, null, ex.Message);
+            }
+        }
+
+        public async Task<(bool Success, string Error)> UpdateAsync(EarlyStimulationEvolutionTestDTO dto)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync($"api/EarlyStimulationEvolutionTest/{dto.TestId}", dto);
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar test de evolución");
+                return (false, ex.Message);
+            }
+        }
+
+        public async Task<(bool Success, string Error)> DeleteAsync(int id)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"api/EarlyStimulationEvolutionTest/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar test de evolución");
+                return (false, ex.Message);
             }
         }
     }

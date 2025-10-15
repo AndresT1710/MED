@@ -9,188 +9,486 @@
 @inject ReasonForConsultationService ReasonForConsultationService
 @inject LocationService LocationService
 @inject AuthorizationService AuthorizationService
+@inject EarlyStimulationSessionsService EarlyStimulationSessionsService
+@inject EarlyStimulationEvolutionTestService EarlyStimulationEvolutionTestService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
 
 <div class="early-stimulation-care-form">
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-baby me-2"></i>Nueva Atención - Estimulación Temprana
-                <span class="badge bg-danger ms-2">Obligatorio</span>
-                <span class="badge bg-info ms-2">
-                    <i class="fas fa-baby me-1"></i>Área: Estimulación Temprana
-                </span>
-            </h5>
-        </div>
-        <div class="card-body">
-            @if (!isEditMode)
-            {
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Paciente *</label>
-                    <PatientSelector @bind-Value="clinicalHistoryId"
-                                     OnPatientSelected="HandlePatientSelected" />
-                    @if (showValidationErrors && selectedPatientId <= 0)
+    <!-- Sistema de pestañas -->
+    <ul class="nav nav-tabs" id="earlyStimulationTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "representatives" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("representatives"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-users me-2"></i>Representantes
+                @if (IsRepresentativesComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "evaluation" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("evaluation"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-clipboard-check me-2"></i>Evaluación/Desarrollo
+                @if (IsEvaluationComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- Pestaña 1: Selección de Paciente -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-baby me-2"></i>Selección de Paciente - Estimulación Temprana
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <span class="badge bg-info ms-2">
+                            <i class="fas fa-baby me-1"></i>Área: Estimulación Temprana
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (!isEditMode)
                     {
-                        <div class="text-danger mt-1">
-                            <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Editando atención de estimulación temprana existente. Paciente: @selectedHistoryNumber
-                </div>
-            }
-
-            @if (selectedPatientId > 0)
-            {
-                <div class="alert alert-success mt-3">
-                    <i class="fas fa-check-circle me-2"></i>
-                    Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
-                </div>
-
-                <div class="alert alert-info mb-3">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <div>
-                            <strong>Área de Atención:</strong> Estimulación Temprana
-                            <br>
-                            <small class="text-muted">Esta atención se registrará automáticamente en el área de Estimulación Temprana.</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label class="form-label fw-bold">Lugar de Atención *</label>
-                        <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                        @bind="lugarSeleccionada">
-                            <option value="">Seleccione el lugar de Atención</option>
-                            @foreach (var lugar in lugaresAtencion)
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                                             OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
                             {
-                                <option value="@lugar.Id">@lugar.Name</option>
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
                             }
-                        </select>
-                        @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
-                        {
-                            <div class="invalid-feedback">
-                                Debe seleccionar un lugar de atención
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Motivo de la Consulta *</label>
-                    <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                    @bind="motivoConsulta"
-                    rows="3"
-                    placeholder="Describa el motivo principal de la consulta de estimulación temprana..."
-                    maxlength="500"></textarea>
-                    @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
-                    {
-                        <div class="invalid-feedback">
-                            Debe ingresar el motivo de la consulta
                         </div>
-                    }
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Especialista en Estimulación Temprana *</label>
-                    
-                    @if (profesionalCargado)
-                    {
-                        @if (profesionalLogueado != null)
-                        {
-                            <div class="alert alert-success">
-                                <i class="fas fa-user-md me-2"></i>
-                                <strong>Especialista asignado automáticamente:</strong> 
-                                @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
-                                <input type="hidden" @bind="selectedHealthProfessionalId" />
-                                <div class="mt-1">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Usted ha sido asignado automáticamente como el profesional responsable.
-                                    </small>
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>No se pudo identificar su perfil profesional.</strong>
-                                <div class="mt-2">
-                                    <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
-                                            @bind="selectedHealthProfessionalId">
-                                        <option value="0">Seleccione un especialista manualmente</option>
-                                        @foreach (var profesional in especialistasEstimulacion)
-                                        {
-                                            <option value="@profesional.HealthProfessionalId">
-                                                @profesional.FullName - @profesional.NameTypeProfessional
-                                            </option>
-                                        }
-                                    </select>
-                                </div>
-                                @if (showValidationErrors && selectedHealthProfessionalId <= 0)
-                                {
-                                    <div class="invalid-feedback d-block">
-                                        Debe seleccionar un especialista responsable
-                                    </div>
-                                }
-                            </div>
-                        }
                     }
                     else
                     {
-                        <div class="text-center">
-                            <div class="spinner-border spinner-border-sm me-2"></div>
-                            <span>Cargando información del profesional...</span>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención de estimulación temprana existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Estimulación Temprana
+                                    <br>
+                                    <small class="text-muted">Esta atención se registrará automáticamente en el área de Estimulación Temprana.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                        @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta de estimulación temprana..."
+                                      maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Especialista en Estimulación Temprana *</label>
+
+                            @if (profesionalCargado)
+                            {
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Especialista asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el profesional responsable.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                                    @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un especialista manualmente</option>
+                                                @foreach (var profesional in especialistasEstimulacion)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un especialista responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del profesional...</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
+                                    </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("representatives"))">
+                                            Continuar a Representantes <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
+            </div>
+        </div>
 
+        <!-- Pestaña 2: Representantes -->
+        <div class="tab-pane @(activeTab == "representatives" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Representantes del Paciente
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Sección de representantes - En desarrollo
+                        </div>
 
-                @if (!IsPatientTabComplete())
-                {
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Complete todos los campos obligatorios para guardar la atención.
-                    </div>
-                }
+                        <div class="row">
+                            <div class="col-md-12">
+                                <p class="text-muted">
+                                    Esta sección permitirá registrar la información de los padres, tutores o representantes legales del paciente.
+                                </p>
+                                <ul class="text-muted">
+                                    <li>Datos de contacto de los padres</li>
+                                    <li>Información del tutor legal</li>
+                                    <li>Autorizaciones y consentimientos</li>
+                                </ul>
+                            </div>
+                        </div>
 
-                <div class="d-flex justify-content-between mt-3">
-                    <div>
-                        <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
-                            <i class="fas fa-check me-2"></i>Validar Información
-                        </button>
-                    </div>
-                    <div>
-                        @if (IsPatientTabComplete())
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 3: Evaluación/Desarrollo -->
+        <div class="tab-pane @(activeTab == "evaluation" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Evaluación del Desarrollo
+                        <span class="badge bg-info ms-2">Opcional</span>
+                        @if (IsEvaluationComplete())
                         {
-                            <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                            <span class="badge bg-success ms-1">✓</span>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <!-- Sesiones de Estimulación Temprana -->
+                        <div class="mb-5">
+                            <EditableTable Title="Sesiones de Estimulación Temprana"
+                                           ColumnHeaders="@sessionsHeaders"
+                                           Rows="@sessionsRows"
+                                           RowIds="@sessionsIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarSession"
+                                           OnEditRequested="@EditarSession"
+                                           OnDeleteRequested="@EliminarSession"
+                                           OnSaveRequested="@GuardarSession"
+                                           IsValidForm="@ValidarFormularioSession">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Descripción *</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingSession.Description"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Describa la sesión de estimulación temprana..."></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha *</label>
+                                            <input type="date"
+                                                   class="form-control"
+                                                   @bind="editingSession.Date"
+                                                   @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Alta Médica *</label>
+                                            <select class="form-select" @bind="medicalDischargeValue">
+                                                <option value="0">No</option>
+                                                <option value="1">Sí</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Tratamiento *</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingSession.Treatment"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Describa el tratamiento aplicado..."></textarea>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingSession.Observations"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Ingrese observaciones adicionales..."></textarea>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
+                        </div>
+
+                        <!-- Test de Evolución -->
+                        <div class="mt-5">
+                            <EditableTable Title="Test de Evolución - Estimulación Temprana"
+                                           ColumnHeaders="@evolutionTestHeaders"
+                                           Rows="@evolutionTestRows"
+                                           RowIds="@evolutionTestIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarEvolutionTest"
+                                           OnEditRequested="@EditarEvolutionTest"
+                                           OnDeleteRequested="@EliminarEvolutionTest"
+                                           OnSaveRequested="@GuardarEvolutionTest"
+                                           IsValidForm="@ValidarFormularioEvolutionTest">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Edad Meses (De) *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.Age"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age))"
+                                                   min="0"
+                                                   max="120"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Edad Meses (A) *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.Age1"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age1))"
+                                                   min="0"
+                                                   max="120"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Motricidad Gruesa *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.GrossMotorSkills"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.GrossMotorSkills))"
+                                                   min="0"
+                                                   max="100"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Motricidad Fina *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.FineMotorSkills"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.FineMotorSkills))"
+                                                   min="0"
+                                                   max="100"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Audición y Lenguaje *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.HearingAndLanguage"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.HearingAndLanguage))"
+                                                   min="0"
+                                                   max="100"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Personal Social *</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   value="@editingEvolutionTest.SocialPerson"
+                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.SocialPerson))"
+                                                   min="0"
+                                                   max="100"
+                                                   placeholder="0" />
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Total</label>
+                                            <input type="number"
+                                                   class="form-control bg-light"
+                                                   value="@editingEvolutionTest.Total"
+                                                   disabled
+                                                   placeholder="Se calculará automáticamente" />
+                                            <small class="text-muted">Total calculado automáticamente: Suma de todos los puntajes</small>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("representatives"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="FinalizarAtencionEstimulacion" disabled="@isSaving">
                                 @if (isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Atención
+                                <i class="fas fa-check me-2"></i>Finalizar Atención
                             </button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-secondary" disabled>
-                                Complete la información obligatoria
-                            </button>
-                        }
-                    </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
                 </div>
-            }
+            </div>
         </div>
+
+
     </div>
 </div>
 
@@ -199,6 +497,10 @@
     [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
+    // Variables para pestañas
+    private string activeTab = "patient";
+
+    // Variables existentes
     private int clinicalHistoryId;
     private int selectedPatientId;
     private string selectedHistoryNumber = string.Empty;
@@ -206,21 +508,40 @@
     private string lugarSeleccionada = string.Empty;
     private string motivoConsulta = string.Empty;
     private List<HealthProfessionalDTO> especialistasEstimulacion = new();
-    private HealthProfessionalDTO? profesionalLogueado; @* ✅ NUEVA VARIABLE *@
+    private HealthProfessionalDTO? profesionalLogueado;
     private int selectedHealthProfessionalId;
     private int earlyStimulationLocationId;
     private bool isEditMode = false;
     private bool isSaving = false;
     private bool showValidationErrors = false;
-    private bool profesionalCargado = false; @* ✅ NUEVA VARIABLE *@
+    private bool profesionalCargado = false;
     private int currentMedicalCareId = 0;
     private ReasonForConsultationDTO? existingReasonForConsultation;
+
+
+
+    // Variables para Sesiones de Estimulación Temprana
+    private EarlyStimulationSessionsDTO editingSession = new EarlyStimulationSessionsDTO();
+    private List<EarlyStimulationSessionsDTO> sessions = new();
+    private List<string> sessionsHeaders = new() { "Descripción", "Fecha", "Tratamiento", "Alta Médica", "Observaciones" };
+    private List<List<string>> sessionsRows = new();
+    private List<int> sessionsIds = new();
+    private int medicalDischargeValue = 0; // 0 = No, 1 = Sí
+
+    // Variables para Test de Evolución
+    private EarlyStimulationEvolutionTestDTO editingEvolutionTest = new EarlyStimulationEvolutionTestDTO();
+    private List<EarlyStimulationEvolutionTestDTO> evolutionTests = new();
+    private List<string> evolutionTestHeaders = new() { "Edad Meses (De)", "Edad Meses (A)", "Motricidad Gruesa", "Motricidad Fina", "Audición y Lenguaje", "Personal Social", "Total" };
+    private List<List<string>> evolutionTestRows = new();
+    private List<int> evolutionTestIds = new();
+
+
 
     protected override async Task OnInitializedAsync()
     {
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
-        await ObtenerProfesionalLogueado(); @* ✅ NUEVO MÉTODO *@
+        await ObtenerProfesionalLogueado();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -228,22 +549,477 @@
             currentMedicalCareId = MedicalCare.CareId;
             selectedPatientId = MedicalCare.PatientId;
             await LoadExistingData();
+            await LoadEvaluationData();
         }
         else
         {
-            await AsignarProfesionalLogueado(); @* ✅ ASIGNAR AUTOMÁTICAMENTE EN MODO CREACIÓN *@
+            await AsignarProfesionalLogueado();
         }
     }
+
+    // ========== MÉTODOS NUEVOS PARA PESTAÑAS ==========
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta) &&
+               selectedHealthProfessionalId > 0 &&
+               earlyStimulationLocationId > 0;
+    }
+
+
+    private bool IsRepresentativesComplete()
+    {
+        // Placeholder - cambiar cuando implementes esta funcionalidad
+        return false;
+    }
+
+
+
+
+    private async Task FinalizarAtencionEstimulacion()
+    {
+        isSaving = true;
+        try
+        {
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención de estimulación temprana válida para finalizar.");
+                return;
+            }
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención de estimulación temprana finalizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+
+    //Metodos para la pestaña de evaluacion desarrollo
+    private async Task LoadEvaluationData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                await LoadSessions();
+                await LoadEvolutionTests();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading evaluation data: {ex.Message}");
+        }
+    }
+
+    // ========== MÉTODOS PARA SESIONES ==========
+
+    private async Task LoadSessions()
+    {
+        try
+        {
+            sessions = await EarlyStimulationSessionsService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<EarlyStimulationSessionsDTO>();
+            RefreshSessionsTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading sessions: {ex.Message}");
+            sessions = new List<EarlyStimulationSessionsDTO>();
+            RefreshSessionsTable();
+        }
+    }
+
+    private void RefreshSessionsTable()
+    {
+        sessionsRows.Clear();
+        sessionsIds.Clear();
+
+        foreach (var session in sessions)
+        {
+            var description = session.Description ?? "-";
+            var date = session.Date?.ToString("dd/MM/yyyy") ?? "-";
+            var treatment = session.Treatment ?? "-";
+            var medicalDischarge = session.MedicalDischarge.HasValue
+                ? (session.MedicalDischarge.Value ? "Sí" : "No")
+                : "-";
+            var observations = session.Observations ?? "-";
+
+            sessionsRows.Add(new List<string> { description, date, treatment, medicalDischarge, observations });
+            sessionsIds.Add(session.SessionsId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarSession()
+    {
+        editingSession = new EarlyStimulationSessionsDTO
+        {
+            MedicalCareId = currentMedicalCareId,
+            Date = DateTime.Today
+        };
+        medicalDischargeValue = 0; // Valor por defecto: No
+    }
+
+    private void EditarSession(int id)
+    {
+        var session = sessions.FirstOrDefault(s => s.SessionsId == id);
+        if (session != null)
+        {
+            editingSession = new EarlyStimulationSessionsDTO
+            {
+                SessionsId = session.SessionsId,
+                MedicalCareId = session.MedicalCareId,
+                Description = session.Description,
+                Date = session.Date,
+                Treatment = session.Treatment,
+                MedicalDischarge = session.MedicalDischarge,
+                Observations = session.Observations
+            };
+            medicalDischargeValue = session.MedicalDischarge.HasValue && session.MedicalDischarge.Value ? 1 : 0;
+        }
+    }
+
+    private async Task GuardarSession()
+    {
+        try
+        {
+            // Convertir el valor del dropdown a booleano
+            editingSession.MedicalDischarge = medicalDischargeValue == 1;
+
+            if (editingSession.SessionsId > 0)
+            {
+                var updateResult = await EarlyStimulationSessionsService.UpdateAsync(editingSession);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await EarlyStimulationSessionsService.CreateAsync(editingSession);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadSessions();
+            await JS.InvokeVoidAsync("alert", "Sesión guardada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarSession(int id)
+    {
+        try
+        {
+            var deleteResult = await EarlyStimulationSessionsService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadSessions();
+            await JS.InvokeVoidAsync("alert", "Sesión eliminada correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioSession()
+    {
+        return !string.IsNullOrWhiteSpace(editingSession.Description) &&
+               editingSession.Date.HasValue &&
+               !string.IsNullOrWhiteSpace(editingSession.Treatment);
+    }
+
+    // ========== MÉTODOS PARA TEST DE EVOLUCIÓN ==========
+
+    private async Task LoadEvolutionTests()
+    {
+        try
+        {
+            evolutionTests = await EarlyStimulationEvolutionTestService.GetByMedicalCareIdAsync(currentMedicalCareId) ?? new List<EarlyStimulationEvolutionTestDTO>();
+            RefreshEvolutionTestTable();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading evolution tests: {ex.Message}");
+            evolutionTests = new List<EarlyStimulationEvolutionTestDTO>();
+            RefreshEvolutionTestTable();
+        }
+    }
+
+    private void RefreshEvolutionTestTable()
+    {
+        evolutionTestRows.Clear();
+        evolutionTestIds.Clear();
+
+        foreach (var test in evolutionTests)
+        {
+            evolutionTestRows.Add(new List<string> {
+            test.Age?.ToString() ?? "-",
+            test.Age1?.ToString() ?? "-",
+            test.GrossMotorSkills?.ToString() ?? "-",
+            test.FineMotorSkills?.ToString() ?? "-",
+            test.HearingAndLanguage?.ToString() ?? "-",
+            test.SocialPerson?.ToString() ?? "-",
+            test.Total?.ToString() ?? "-"
+        });
+            evolutionTestIds.Add(test.TestId);
+        }
+
+        StateHasChanged();
+    }
+
+    private void AbrirModalAgregarEvolutionTest()
+    {
+        editingEvolutionTest = new EarlyStimulationEvolutionTestDTO
+        {
+            MedicalCareId = currentMedicalCareId,
+            Age = 0,
+            Age1 = 0,
+            GrossMotorSkills = 0,
+            FineMotorSkills = 0,
+            HearingAndLanguage = 0,
+            SocialPerson = 0,
+            Total = 0
+        };
+    }
+
+    private void EditarEvolutionTest(int id)
+    {
+        var test = evolutionTests.FirstOrDefault(t => t.TestId == id);
+        if (test != null)
+        {
+            editingEvolutionTest = new EarlyStimulationEvolutionTestDTO
+            {
+                TestId = test.TestId,
+                MedicalCareId = test.MedicalCareId,
+                Age = test.Age,
+                Age1 = test.Age1,
+                GrossMotorSkills = test.GrossMotorSkills,
+                FineMotorSkills = test.FineMotorSkills,
+                HearingAndLanguage = test.HearingAndLanguage,
+                SocialPerson = test.SocialPerson,
+                Total = test.Total
+            };
+        }
+    }
+
+    private void CalcularTotal()
+    {
+        try
+        {
+            // Usar valores por defecto si son null
+            var grossMotor = editingEvolutionTest.GrossMotorSkills.GetValueOrDefault();
+            var fineMotor = editingEvolutionTest.FineMotorSkills.GetValueOrDefault();
+            var hearingLang = editingEvolutionTest.HearingAndLanguage.GetValueOrDefault();
+            var socialPerson = editingEvolutionTest.SocialPerson.GetValueOrDefault();
+
+            // Calcular el total
+            editingEvolutionTest.Total = grossMotor + fineMotor + hearingLang + socialPerson;
+
+            // Forzar la actualización de la UI
+            StateHasChanged();
+
+            // Opcional: Log para debugging
+            Console.WriteLine($"Total calculado: {grossMotor} + {fineMotor} + {hearingLang} + {socialPerson} = {editingEvolutionTest.Total}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calculando total: {ex.Message}");
+        }
+    }
+
+    private async Task GuardarEvolutionTest()
+    {
+        try
+        {
+            // Asegurarse de que el total esté calculado
+            CalcularTotal();
+
+            if (editingEvolutionTest.TestId > 0)
+            {
+                var updateResult = await EarlyStimulationEvolutionTestService.UpdateAsync(editingEvolutionTest);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+            }
+            else
+            {
+                var createResult = await EarlyStimulationEvolutionTestService.CreateAsync(editingEvolutionTest);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+            }
+
+            await LoadEvolutionTests();
+            await JS.InvokeVoidAsync("alert", "Test de evolución guardado correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarEvolutionTest(int id)
+    {
+        try
+        {
+            var deleteResult = await EarlyStimulationEvolutionTestService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadEvolutionTests();
+            await JS.InvokeVoidAsync("alert", "Test de evolución eliminado correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioEvolutionTest()
+    {
+        return editingEvolutionTest.Age.HasValue &&
+               editingEvolutionTest.Age1.HasValue &&
+               editingEvolutionTest.GrossMotorSkills.HasValue &&
+               editingEvolutionTest.FineMotorSkills.HasValue &&
+               editingEvolutionTest.HearingAndLanguage.HasValue &&
+               editingEvolutionTest.SocialPerson.HasValue;
+    }
+
+
+    private bool IsEvaluationComplete()
+    {
+        return (sessions != null && sessions.Any()) ||
+               (evolutionTests != null && evolutionTests.Any());
+    }
+
+
+
+    private void HandleNumberInput(ChangeEventArgs e, string propertyName)
+    {
+        try
+        {
+            var value = e.Value?.ToString() ?? "0"; // Valor por defecto si es null
+
+            // Manejar campo vacío
+            if (string.IsNullOrEmpty(value) || value.Trim() == "")
+            {
+                SetPropertyValue(propertyName, 0);
+            }
+            else
+            {
+                if (int.TryParse(value, out int intValue))
+                {
+                    SetPropertyValue(propertyName, intValue);
+                }
+                else
+                {
+                    SetPropertyValue(propertyName, 0);
+                }
+            }
+
+            // Recalcular el total después de actualizar cualquier campo
+            CalcularTotal();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando input en {propertyName}: {ex.Message}");
+        }
+    }
+
+    private void SetPropertyValue(string propertyName, int value)
+    {
+        switch (propertyName)
+        {
+            case nameof(editingEvolutionTest.Age):
+                editingEvolutionTest.Age = value;
+                break;
+            case nameof(editingEvolutionTest.Age1):
+                editingEvolutionTest.Age1 = value;
+                break;
+            case nameof(editingEvolutionTest.GrossMotorSkills):
+                editingEvolutionTest.GrossMotorSkills = value;
+                break;
+            case nameof(editingEvolutionTest.FineMotorSkills):
+                editingEvolutionTest.FineMotorSkills = value;
+                break;
+            case nameof(editingEvolutionTest.HearingAndLanguage):
+                editingEvolutionTest.HearingAndLanguage = value;
+                break;
+            case nameof(editingEvolutionTest.SocialPerson):
+                editingEvolutionTest.SocialPerson = value;
+                break;
+        }
+    }
+
+
+
+
+
+
+
+    // ========== MÉTODOS EXISTENTES ==========
 
     private async Task ObtenerProfesionalLogueado()
     {
         try
         {
             profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
-            
+
             if (profesionalLogueado != null)
             {
-                await JS.InvokeVoidAsync("console.log", 
+                await JS.InvokeVoidAsync("console.log",
                     $"✅ Profesional logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
             }
             else
@@ -266,12 +1042,12 @@
         if (profesionalLogueado != null)
         {
             selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
-            await JS.InvokeVoidAsync("console.log", 
+            await JS.InvokeVoidAsync("console.log",
                 $"✅ Profesional logueado asignado automáticamente: {profesionalLogueado.FullName}");
         }
         else if (especialistasEstimulacion.Any())
         {
-            await JS.InvokeVoidAsync("console.warn", 
+            await JS.InvokeVoidAsync("console.warn",
                 "⚠️ No se encontró profesional logueado, mostrando selector manual");
         }
     }
@@ -280,7 +1056,6 @@
     {
         try
         {
-            // Obtener el ID de Estimulación Temprana dinámicamente
             var locations = await LocationService.GetAllAsync();
             var earlyStimulationLocation = locations?.FirstOrDefault(l =>
                 l.Name.Equals("Estimulación Temprana", StringComparison.OrdinalIgnoreCase));
@@ -315,9 +1090,9 @@
                             hp.NameTypeProfessional.ToLower().Contains("fisioterapeuta")))
                 .ToList() ?? new List<HealthProfessionalDTO>();
 
-            await JS.InvokeVoidAsync("console.log", 
+            await JS.InvokeVoidAsync("console.log",
                 $"Se encontraron {especialistasEstimulacion.Count} especialistas en estimulación temprana");
-                
+
         }
         catch (Exception ex)
         {
@@ -337,7 +1112,6 @@
                     lugarSeleccionada = medicalCare.PlaceOfAttentionId.ToString();
                     selectedHealthProfessionalId = medicalCare.HealthProfessionalId;
 
-                    // Cargar motivo de consulta existente
                     var reasons = await ReasonForConsultationService.GetByCareIdAsync(currentMedicalCareId);
                     existingReasonForConsultation = reasons?.FirstOrDefault();
                     if (existingReasonForConsultation != null)
@@ -351,6 +1125,17 @@
         {
             await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
         }
+
+        try
+        {
+            await LoadSessions();
+            await LoadEvolutionTests();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading evaluation data in LoadExistingData: {ex.Message}");
+        }
+
     }
 
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
@@ -364,15 +1149,6 @@
         }
         StateHasChanged();
         return Task.CompletedTask;
-    }
-
-    private bool IsPatientTabComplete()
-    {
-        return selectedPatientId > 0 &&
-               !string.IsNullOrEmpty(lugarSeleccionada) &&
-               !string.IsNullOrWhiteSpace(motivoConsulta) &&
-               selectedHealthProfessionalId > 0 &&
-               earlyStimulationLocationId > 0;
     }
 
     private void ValidateAndShowErrors()
@@ -426,13 +1202,13 @@
             else
             {
                 var medicalCareDto = new MedicalCareDTO
-                    {
-                        PatientId = selectedPatientId,
-                        HealthProfessionalId = selectedHealthProfessionalId,
-                        PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                        LocationId = earlyStimulationLocationId,
-                        CareDate = DateTime.Now
-                    };
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = selectedHealthProfessionalId,
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = earlyStimulationLocationId,
+                    CareDate = DateTime.Now
+                };
 
                 var result = await MedicalCareService.CreateAsync(medicalCareDto);
                 if (!result.Success)
@@ -450,11 +1226,11 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                    {
-                        Id = existingReasonForConsultation?.Id ?? 0,
-                        Description = motivoConsulta.Trim(),
-                        MedicalCareId = currentMedicalCareId
-                    };
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
 
                 if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
                 {
@@ -466,8 +1242,9 @@
                 }
             }
 
-            await OnSaved.InvokeAsync(medicalCareResult);
-            await JS.InvokeVoidAsync("alert", "Atención de estimulación temprana guardada correctamente.");
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con las siguientes pestañas.");
+            showValidationErrors = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {

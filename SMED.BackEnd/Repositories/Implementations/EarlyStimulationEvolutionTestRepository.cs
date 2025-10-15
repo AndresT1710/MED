@@ -41,6 +41,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             if (entity == null) return null;
 
             entity.Age = dto.Age;
+            entity.Age1 = dto.Age1;
             entity.GrossMotorSkills = dto.GrossMotorSkills;
             entity.FineMotorSkills = dto.FineMotorSkills;
             entity.HearingAndLanguage = dto.HearingAndLanguage;
@@ -67,6 +68,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             TestId = entity.TestId,
             Age = entity.Age,
+            Age1 = entity.Age1,
             GrossMotorSkills = entity.GrossMotorSkills,
             FineMotorSkills = entity.FineMotorSkills,
             HearingAndLanguage = entity.HearingAndLanguage,
@@ -79,6 +81,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         {
             TestId = dto.TestId,
             Age = dto.Age,
+            Age1 = dto.Age1,
             GrossMotorSkills = dto.GrossMotorSkills,
             FineMotorSkills = dto.FineMotorSkills,
             HearingAndLanguage = dto.HearingAndLanguage,

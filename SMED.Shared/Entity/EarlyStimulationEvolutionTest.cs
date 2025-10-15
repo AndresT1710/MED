@@ -16,6 +16,8 @@ namespace SMED.Shared.Entity
 
         public int? Age { get; set; }
 
+        public int? Age1 { get; set; }
+
         public int? GrossMotorSkills { get; set; }
 
         public int? FineMotorSkills { get; set; }

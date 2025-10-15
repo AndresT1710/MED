@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251015032341_modificacionBD02")]
+    partial class modificacionBD02
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -173,6 +176,7 @@ namespace SMED.BackEnd.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("GenderId")
@@ -182,6 +186,7 @@ namespace SMED.BackEnd.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("MaritalStatusId")
@@ -611,9 +616,6 @@ namespace SMED.BackEnd.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TestId"));
 
                     b.Property<int?>("Age")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Age1")
                         .HasColumnType("int");
 
                     b.Property<int?>("FineMotorSkills")

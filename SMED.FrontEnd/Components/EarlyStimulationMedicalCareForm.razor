@@ -11,6 +11,10 @@
 @inject AuthorizationService AuthorizationService
 @inject EarlyStimulationSessionsService EarlyStimulationSessionsService
 @inject EarlyStimulationEvolutionTestService EarlyStimulationEvolutionTestService
+@inject AgentService AgentService
+@inject DocumentTypeService DocumentTypeService
+@inject GenderService GenderService
+@inject MaritalStatusService MaritalStatusService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -261,22 +265,104 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Sección de representantes - En desarrollo
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <p class="text-muted">
-                                    Esta sección permitirá registrar la información de los padres, tutores o representantes legales del paciente.
-                                </p>
-                                <ul class="text-muted">
-                                    <li>Datos de contacto de los padres</li>
-                                    <li>Información del tutor legal</li>
-                                    <li>Autorizaciones y consentimientos</li>
-                                </ul>
-                            </div>
+                        <!-- Datos del Representante -->
+                        <div class="mb-5">
+                            <EditableTable Title="Datos del Representante"
+                                           ColumnHeaders="@agentHeaders"
+                                           Rows="@agentRows"
+                                           RowIds="@agentIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@AbrirModalAgregarAgent"
+                                           OnEditRequested="@EditarAgent"
+                                           OnDeleteRequested="@EliminarAgent"
+                                           OnSaveRequested="@GuardarAgent"
+                                           IsValidForm="@ValidarFormularioAgent">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tipo de Documento *</label>
+                                            <select class="form-select" @bind="editingAgent.DocumentType">
+                                                <option value="0">Seleccione el tipo de documento</option>
+                                                @foreach (var docType in documentTypes)
+                                                {
+                                                    <option value="@docType.Id">@docType.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Número de Identificación *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.IdentificationNumber"
+                                                   placeholder="Ingrese el número de identificación" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Género *</label>
+                                            <select class="form-select" @bind="editingAgent.GenderId">
+                                                <option value="0">Seleccione el género</option>
+                                                @foreach (var gender in genders)
+                                                {
+                                                    <option value="@gender.Id">@gender.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Estado Civil *</label>
+                                            <select class="form-select" @bind="editingAgent.MaritalStatusId">
+                                                <option value="0">Seleccione el estado civil</option>
+                                                @foreach (var status in maritalStatuses)
+                                                {
+                                                    <option value="@status.Id">@status.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Primer Nombre *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.FirstName"
+                                                   placeholder="Ingrese el primer nombre" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Segundo Nombre</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.MiddleName"
+                                                   placeholder="Ingrese el segundo nombre (opcional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Primer Apellido *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.LastName"
+                                                   placeholder="Ingrese el primer apellido" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Segundo Apellido</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.SecondLastName"
+                                                   placeholder="Ingrese el segundo apellido (opcional)" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Teléfono Convencional</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.PhoneNumber"
+                                                   placeholder="Ingrese teléfono convencional" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Teléfono Celular *</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingAgent.CellphoneNumber"
+                                                   placeholder="Ingrese teléfono celular" />
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -532,12 +618,26 @@
     private List<int> evolutionTestIds = new();
 
 
+    // Variables para Representantes (Agents)
+    private AgentDTO editingAgent = new AgentDTO();
+    private List<AgentDTO> agents = new();
+    private List<string> agentHeaders = new() { "Tipo Documento", "N° Identificación", "Nombres", "Apellidos", "Género", "Estado Civil", "Teléfono", "Celular" };
+    private List<List<string>> agentRows = new();
+    private List<int> agentIds = new();
+
+    // Listas para los dropdowns
+    private List<DocumentTypeDTO> documentTypes = new();
+    private List<GenderDTO> genders = new();
+    private List<MaritalStatusDTO> maritalStatuses = new();
+
+
 
     protected override async Task OnInitializedAsync()
     {
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
         await ObtenerProfesionalLogueado();
+        await LoadDropdownData(); // ← Agregar esta línea
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -546,6 +646,7 @@
             selectedPatientId = MedicalCare.PatientId;
             await LoadExistingData();
             await LoadEvaluationData();
+            await LoadRepresentativesData(); // ← Agregar esta línea
         }
         else
         {
@@ -571,6 +672,13 @@
         }
 
         activeTab = tab;
+
+        // Cargar datos específicos de la pestaña cuando se activa
+        if (tab == "representatives")
+        {
+            await OnRepresentativesTabActivated();
+        }
+
         StateHasChanged();
     }
 
@@ -582,15 +690,6 @@
                selectedHealthProfessionalId > 0 &&
                earlyStimulationLocationId > 0;
     }
-
-
-    private bool IsRepresentativesComplete()
-    {
-        // Placeholder - cambiar cuando implementes esta funcionalidad
-        return false;
-    }
-
-
 
 
     private async Task FinalizarAtencionEstimulacion()
@@ -634,6 +733,204 @@
             await JS.InvokeVoidAsync("console.error", $"Error loading evaluation data: {ex.Message}");
         }
     }
+
+
+
+    private async Task LoadRepresentativesData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                await LoadDropdownData();
+                await LoadAgents();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading representatives data: {ex.Message}");
+        }
+    }
+
+    // ========== MÉTODOS PARA REPRESENTANTES (AGENTS) ==========
+
+    private async Task LoadAgents()
+    {
+        try
+        {
+            // Como no hay método específico, cargamos todos los agents
+            agents = await AgentService.GetAllAsync() ?? new List<AgentDTO>();
+
+            // En una implementación futura, podrías filtrar por el paciente actual
+            // Por ahora mostramos todos los agents
+            RefreshAgentsTable();
+
+            await JS.InvokeVoidAsync("console.log", $"Se cargaron {agents.Count} representantes");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading agents: {ex.Message}");
+            agents = new List<AgentDTO>();
+            RefreshAgentsTable();
+        }
+    }
+
+    private void RefreshAgentsTable()
+    {
+        agentRows.Clear();
+        agentIds.Clear();
+
+        foreach (var agent in agents)
+        {
+            var docType = documentTypes.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "-";
+            var gender = genders.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "-";
+            var maritalStatus = maritalStatuses.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "-";
+            var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
+            var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
+
+            agentRows.Add(new List<string> {
+            docType,
+            agent.IdentificationNumber ?? "-",
+            nombres,
+            apellidos,
+            gender,
+            maritalStatus,
+            agent.PhoneNumber ?? "-",
+            agent.CellphoneNumber ?? "-"
+        });
+            agentIds.Add(agent.AgentId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadDropdownData()
+    {
+        try
+        {
+            documentTypes = await DocumentTypeService.GetAllAsync() ?? new List<DocumentTypeDTO>();
+            genders = await GenderService.GetAllAsync() ?? new List<GenderDTO>();
+            maritalStatuses = await MaritalStatusService.GetAllAsync() ?? new List<MaritalStatusDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Dropdowns cargados: DocumentTypes={documentTypes.Count}, Genders={genders.Count}, MaritalStatuses={maritalStatuses.Count}");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading dropdown data: {ex.Message}");
+        }
+    }
+
+    private void AbrirModalAgregarAgent()
+    {
+        editingAgent = new AgentDTO
+        {
+            DocumentType = 0,
+            GenderId = 0,
+            MaritalStatusId = 0
+        };
+    }
+
+    private void EditarAgent(int id)
+    {
+        var agent = agents.FirstOrDefault(a => a.AgentId == id);
+        if (agent != null)
+        {
+            editingAgent = new AgentDTO
+            {
+                AgentId = agent.AgentId,
+                DocumentType = agent.DocumentType,
+                IdentificationNumber = agent.IdentificationNumber,
+                GenderId = agent.GenderId,
+                MaritalStatusId = agent.MaritalStatusId,
+                FirstName = agent.FirstName,
+                MiddleName = agent.MiddleName,
+                LastName = agent.LastName,
+                SecondLastName = agent.SecondLastName,
+                PhoneNumber = agent.PhoneNumber,
+                CellphoneNumber = agent.CellphoneNumber
+            };
+        }
+    }
+
+    private async Task GuardarAgent()
+    {
+        try
+        {
+            if (editingAgent.AgentId > 0)
+            {
+                // Actualizar
+                var updateResult = await AgentService.UpdateAsync(editingAgent);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+                    return;
+                }
+                await JS.InvokeVoidAsync("alert", "Representante actualizado correctamente.");
+            }
+            else
+            {
+                // Crear nuevo
+                var createResult = await AgentService.CreateAsync(editingAgent);
+                if (!createResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
+                    return;
+                }
+                await JS.InvokeVoidAsync("alert", "Representante creado correctamente.");
+            }
+
+            await LoadAgents(); // Recargar la lista
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarAgent(int id)
+    {
+        try
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", "¿Está seguro de que desea eliminar este representante?");
+            if (!confirmed) return;
+
+            var deleteResult = await AgentService.DeleteAsync(id);
+            if (!deleteResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                return;
+            }
+
+            await LoadAgents();
+            await JS.InvokeVoidAsync("alert", "Representante eliminado correctamente.");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private bool ValidarFormularioAgent()
+    {
+        return editingAgent.DocumentType > 0 &&
+               !string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber) &&
+               editingAgent.GenderId > 0 &&
+               editingAgent.MaritalStatusId > 0 &&
+               !string.IsNullOrWhiteSpace(editingAgent.FirstName) &&
+               !string.IsNullOrWhiteSpace(editingAgent.LastName) &&
+               !string.IsNullOrWhiteSpace(editingAgent.CellphoneNumber);
+    }
+
+    private bool IsRepresentativesComplete()
+    {
+        return agents != null && agents.Any();
+    }
+
+
+
 
     // ========== MÉTODOS PARA SESIONES ==========
 
@@ -1132,6 +1429,22 @@
             await JS.InvokeVoidAsync("console.error", $"Error loading evaluation data in LoadExistingData: {ex.Message}");
         }
 
+        try
+        {
+            await LoadAgents();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading representatives data in LoadExistingData: {ex.Message}");
+        }
+    }
+
+    private async Task OnRepresentativesTabActivated()
+    {
+        if (currentMedicalCareId > 0 && activeTab == "representatives")
+        {
+            await LoadRepresentativesData();
+        }
     }
 
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)

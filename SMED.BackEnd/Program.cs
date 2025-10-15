@@ -194,6 +194,16 @@ builder.Services.AddScoped<IRepository<EarlyStimulationSessionsDTO, int>, EarlyS
 builder.Services.AddScoped<EarlyStimulationSessionsRepository>();
 builder.Services.AddScoped<IRepository<EarlyStimulationEvolutionTestDTO, int>, EarlyStimulationEvolutionTestRepository>();
 builder.Services.AddScoped<EarlyStimulationEvolutionTestRepository>();
+builder.Services.AddScoped<DocumentTypeRepository>();
+builder.Services.AddScoped<IRepository<DocumentTypeDTO, int>, DocumentTypeRepository>();
+builder.Services.AddScoped<GenderRepository>();
+builder.Services.AddScoped<IRepository<GenderDTO, int>, GenderRepository>();
+builder.Services.AddScoped<MaritalStatusRepository>();
+builder.Services.AddScoped<IRepository<MaritalStatusDTO, int>, MaritalStatusRepository>();
+builder.Services.AddScoped<AgentRepository>();
+builder.Services.AddScoped<IRepository<AgentDTO, int>, AgentRepository>();
+
+
 
 
 

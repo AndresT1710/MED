@@ -9,7 +9,7 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AgentId { get; set; }
 
-        public int IdentificationNumber { get; set; }
+        public string? IdentificationNumber { get; set; }
         public string? FirstName { get; set; }
         public string? MiddleName { get; set; }
         public string? LastName { get; set; }

@@ -138,6 +138,10 @@ builder.Services.AddScoped<ComplementaryExamsService>();
 builder.Services.AddScoped<SessionsService>();
 builder.Services.AddScoped<EarlyStimulationSessionsService>();
 builder.Services.AddScoped<EarlyStimulationEvolutionTestService>();
+builder.Services.AddScoped<DocumentTypeService>();
+builder.Services.AddScoped<GenderService>();
+builder.Services.AddScoped<MaritalStatusService>();
+builder.Services.AddScoped<AgentService>();
 
 
 

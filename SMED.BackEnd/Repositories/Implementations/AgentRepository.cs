@@ -96,6 +96,20 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        public async Task<List<AgentDTO>> GetByPatientIdAsync(int patientId)
+        {
+            var agents = await _context.Agents
+                .Include(a => a.Patients)
+                .Where(a => a.Patients.Any(p => p.PersonId == patientId))
+                .Include(a => a.DocumentTypeNavigation)
+                .Include(a => a.Gender)
+                .Include(a => a.MaritalStatus)
+                .ToListAsync();
+
+            return agents.Select(MapToDto).ToList();
+        }
+
+
         private AgentDTO MapToDto(Agent entity) => new AgentDTO
         {
             AgentId = entity.AgentId,

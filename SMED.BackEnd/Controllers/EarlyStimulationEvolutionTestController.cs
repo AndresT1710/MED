@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,10 +10,13 @@ namespace SMED.BackEnd.Controllers
     public class EarlyStimulationEvolutionTestController : ControllerBase
     {
         private readonly IRepository<EarlyStimulationEvolutionTestDTO, int> _repository;
+        private readonly EarlyStimulationEvolutionTestRepository _customRepository;
 
-        public EarlyStimulationEvolutionTestController(IRepository<EarlyStimulationEvolutionTestDTO, int> repository)
+
+        public EarlyStimulationEvolutionTestController(IRepository<EarlyStimulationEvolutionTestDTO, int> repository, EarlyStimulationEvolutionTestRepository customRepository)
         {
             _repository = repository;
+            _customRepository = customRepository;
         }
 
         [HttpGet]
@@ -24,6 +28,13 @@ namespace SMED.BackEnd.Controllers
         {
             var result = await _repository.GetByIdAsync(id);
             return result == null ? NotFound() : Ok(result);
+        }
+
+        [HttpGet("medical-care/{medicalCareId}")]
+        public async Task<ActionResult<IEnumerable<EarlyStimulationEvolutionTestDTO>>> GetByMedicalCareId(int medicalCareId)
+        {
+            var result = await _customRepository.GetByMedicalCareIdAsync(medicalCareId);
+            return Ok(result);
         }
 
         [HttpPost]

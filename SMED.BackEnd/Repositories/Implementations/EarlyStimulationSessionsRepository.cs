@@ -61,6 +61,14 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        public async Task<List<EarlyStimulationSessionsDTO>> GetByMedicalCareIdAsync(int medicalCareId)
+        {
+            var entities = await _context.EarlyStimulationSessions
+                .Where(s => s.MedicalCareId == medicalCareId)
+                .ToListAsync();
+            return entities.Select(MapToDto).ToList();
+        }
+
         // ✅ Mapping
         private EarlyStimulationSessionsDTO MapToDto(EarlyStimulationSessions entity) => new EarlyStimulationSessionsDTO
         {

@@ -2060,6 +2060,8 @@
             motivoConsulta = existingReasonForConsultation.Description ?? "";
         }
 
+        await CargarProcedimientos();
+
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
@@ -2315,6 +2317,8 @@
     }
 
     private async Task CargarProcedimientos()
+{
+    try
     {
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?
@@ -2322,7 +2326,14 @@
             .ToList() ?? new();
 
         ActualizarTablaProcedimientos();
+        
+        await JS.InvokeVoidAsync("console.log", $"[CargarProcedimientos] Se cargaron {procedimientosList.Count} procedimientos para CareId: {currentMedicalCareId}");
     }
+    catch (Exception ex)
+    {
+        await JS.InvokeVoidAsync("console.error", $"[CargarProcedimientos] Error: {ex.Message}");
+    }
+}
 
     private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
     {

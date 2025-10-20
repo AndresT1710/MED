@@ -25,6 +25,12 @@ namespace SMED.BackEnd.Controllers
         private readonly SpecialTestRepository _specialTestService;
         private readonly ComplementaryExamsRepository _complementaryExamsService;
         private readonly SessionsRepository _sessionsService;
+        private readonly AgentRepository _agentService;
+        private readonly EarlyStimulationSessionsRepository _earlyStimulationSessionsService;
+        private readonly EarlyStimulationEvolutionTestRepository _earlyStimulationEvolutionTestService;
+        private readonly DocumentTypeRepository _documentTypeService;
+        private readonly GenderRepository _genderService;
+        private readonly MaritalStatusRepository _maritalStatusService;
 
         public PdfController(
             PdfService pdfService,
@@ -41,7 +47,13 @@ namespace SMED.BackEnd.Controllers
             PosturalEvaluationRepository posturalEvaluationService,
             SpecialTestRepository specialTestService,
             ComplementaryExamsRepository complementaryExamsService,
-            SessionsRepository sessionsService)
+            SessionsRepository sessionsService,
+            AgentRepository agentService,
+            EarlyStimulationSessionsRepository earlyStimulationSessionsService,
+            EarlyStimulationEvolutionTestRepository earlyStimulationEvolutionTestService,
+            DocumentTypeRepository documentTypeService,
+            GenderRepository genderService,
+            MaritalStatusRepository maritalStatusService)
         {
             _pdfService = pdfService;
             _personRepository = personRepository;
@@ -58,6 +70,12 @@ namespace SMED.BackEnd.Controllers
             _specialTestService = specialTestService;
             _complementaryExamsService = complementaryExamsService;
             _sessionsService = sessionsService;
+            _agentService = agentService;
+            _earlyStimulationSessionsService = earlyStimulationSessionsService;
+            _earlyStimulationEvolutionTestService = earlyStimulationEvolutionTestService;
+            _documentTypeService = documentTypeService;
+            _genderService = genderService;
+            _maritalStatusService = maritalStatusService;
         }
 
         [HttpGet("person/{id}")]
@@ -236,6 +254,136 @@ namespace SMED.BackEnd.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error cargando datos de fisioterapia: {ex.Message}");
+            }
+        }
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // EARLY STIMULATION PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        [HttpGet("early-stimulation/{id}")]
+        public async Task<IActionResult> GetEarlyStimulationPdf(int id)
+        {
+            try
+            {
+                // Obtener la atención de estimulación temprana completa
+                var earlyStimCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (earlyStimCare == null)
+                {
+                    return NotFound($"Atención de estimulación temprana con ID {id} no encontrada");
+                }
+
+                // Cargar datos específicos de estimulación temprana
+                await LoadEarlyStimulationData(earlyStimCare);
+
+                // Generar PDF específico para estimulación temprana
+                var pdfBytes = await _pdfService.GenerateEarlyStimulationPdfAsync(earlyStimCare);
+                var fileName = $"Atencion_Estimulacion_Temprana_{earlyStimCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de estimulación temprana: {ex.Message}");
+            }
+        }
+
+        private async Task LoadEarlyStimulationData(MedicalCareDTO earlyStimCare)
+        {
+            try
+            {
+                if (earlyStimCare == null)
+                    throw new ArgumentNullException(nameof(earlyStimCare));
+
+                Console.WriteLine($"[CONTROLLER DEBUG] ===== INICIO CARGA DATOS =====");
+                Console.WriteLine($"[CONTROLLER DEBUG] CareId: {earlyStimCare.CareId}");
+                Console.WriteLine($"[CONTROLLER DEBUG] PatientId: {earlyStimCare.PatientId}");
+                Console.WriteLine($"[CONTROLLER DEBUG] Patient from repo: {earlyStimCare.Patient != null}");
+                Console.WriteLine($"[CONTROLLER DEBUG] Agent from repo: {earlyStimCare.Patient?.Agent != null}");
+                Console.WriteLine($"[CONTROLLER DEBUG] AgentId from repo: {earlyStimCare.Patient?.AgentId}");
+
+                // Cargar motivo de consulta
+                if (earlyStimCare.CareId > 0)
+                {
+                    var reasons = await _reasonForConsultationService.GetByCareIdAsync(earlyStimCare.CareId);
+                    earlyStimCare.ReasonForConsultation = reasons?.FirstOrDefault();
+                    Console.WriteLine($"[CONTROLLER DEBUG] ReasonForConsultation cargado: {earlyStimCare.ReasonForConsultation != null}");
+                }
+
+                // Asegurar que Patient no sea nulo
+                earlyStimCare.Patient ??= new PatientDTO();
+
+                // **CORRECCIÓN: Cargar Agent desde el servicio como hace el componente Blazor**
+                if (earlyStimCare.Patient?.Agent == null)
+                {
+                    Console.WriteLine($"[CONTROLLER DEBUG] Cargando Agent desde AgentService...");
+
+                    // Opción 1: Si tienes el AgentId, cargar por ID
+                    if (earlyStimCare.Patient.AgentId.HasValue)
+                    {
+                        Console.WriteLine($"[CONTROLLER DEBUG] Buscando Agent por ID: {earlyStimCare.Patient.AgentId}");
+                        var agentById = await _agentService.GetByIdAsync(earlyStimCare.Patient.AgentId.Value);
+                        earlyStimCare.Patient.Agent = agentById;
+                        Console.WriteLine($"[CONTROLLER DEBUG] Agent cargado por ID: {agentById != null}");
+                    }
+
+                    // Opción 2: Cargar todos y tomar el primero (como hace tu componente Blazor)
+                    if (earlyStimCare.Patient.Agent == null)
+                    {
+                        Console.WriteLine($"[CONTROLLER DEBUG] Cargando todos los Agents...");
+                        var allAgents = await _agentService.GetAllAsync() ?? new List<AgentDTO>();
+
+                        // Buscar el Agent que corresponda a este Patient
+                        var agentForPatient = allAgents.FirstOrDefault(a => a.AgentId == earlyStimCare.Patient.AgentId);
+                        if (agentForPatient == null)
+                        {
+                            // Si no encuentra por ID, tomar el primero (como hace tu componente)
+                            agentForPatient = allAgents.FirstOrDefault();
+                        }
+
+                        earlyStimCare.Patient.Agent = agentForPatient;
+                        Console.WriteLine($"[CONTROLLER DEBUG] Agent cargado desde GetAll: {agentForPatient != null}");
+                    }
+                }
+
+                // Enriquecer datos del Agent si existe
+                if (earlyStimCare.Patient?.Agent != null)
+                {
+                    Console.WriteLine($"[CONTROLLER DEBUG] Enriqueciendo datos del Agent...");
+                    var agentsList = new List<AgentDTO> { earlyStimCare.Patient.Agent };
+                    await EnrichAgentsData(agentsList);
+                }
+
+                // Cargar sesiones de estimulación temprana
+                earlyStimCare.EarlyStimulationSessions = await _earlyStimulationSessionsService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
+                    ?? new List<EarlyStimulationSessionsDTO>();
+
+                // Cargar tests de evolución
+                earlyStimCare.EarlyStimulationEvolutionTests = await _earlyStimulationEvolutionTestService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
+                    ?? new List<EarlyStimulationEvolutionTestDTO>();
+
+                Console.WriteLine($"[CONTROLLER DEBUG] ===== FIN CARGA DATOS =====");
+                Console.WriteLine($"[CONTROLLER DEBUG] Agent final: {earlyStimCare.Patient?.Agent != null}");
+                Console.WriteLine($"[CONTROLLER DEBUG] AgentId final: {earlyStimCare.Patient?.AgentId}");
+                Console.WriteLine($"[CONTROLLER DEBUG] Agent Name: {earlyStimCare.Patient?.Agent?.FirstName} {earlyStimCare.Patient?.Agent?.LastName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando datos de estimulación temprana: {ex.Message}");
+                throw;
+            }
+        }
+
+        private async Task EnrichAgentsData(List<AgentDTO> agents)
+        {
+            var documentTypes = await _documentTypeService.GetAllAsync();
+            var genders = await _genderService.GetAllAsync();
+            var maritalStatuses = await _maritalStatusService.GetAllAsync();
+
+            foreach (var agent in agents)
+            {
+                agent.DocumentTypeName = documentTypes?.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "N/A";
+                agent.GenderName = genders?.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "N/A";
+                agent.MaritalStatusName = maritalStatuses?.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "N/A";
             }
         }
     }

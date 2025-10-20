@@ -108,5 +108,25 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+        public async Task<List<AgentDTO>?> GetByPatientId(int patientId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/Agent/ByPatient/{patientId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<AgentDTO>>();
+                }
+                _logger.LogWarning("Error al obtener agentes por paciente: {StatusCode}", response.StatusCode);
+                return new List<AgentDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener agentes por paciente ID: {PatientId}", patientId);
+                return new List<AgentDTO>();
+            }
+        }
+
     }
 }

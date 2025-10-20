@@ -1,0 +1,345 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.Shared.Entity
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject LocationService LocationService
+@inject EarlyStimulationSessionsService EarlyStimulationSessionsService
+@inject EarlyStimulationEvolutionTestService EarlyStimulationEvolutionTestService
+@inject AgentService AgentService
+@inject DocumentTypeService DocumentTypeService
+@inject GenderService GenderService
+@inject MaritalStatusService MaritalStatusService
+@inject IJSRuntime JS
+
+<div class="medical-care-detail">
+    <!-- HEADER CON BOTÓN DE IMPRIMIR -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención - Estimulación Temprana</h4>
+                <div>
+                    <ImprimirPdf Tipo="early-stimulation" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información básica -->
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-baby me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Atención:</strong> @MedicalCare?.CareId</p>
+                            <p><strong>Paciente:</strong> @MedicalCare?.NamePatient</p>
+                            <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Área:</strong> Estimulación Temprana</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
+                            <p><strong>Profesional:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motivo de Consulta -->
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Representantes del Paciente -->
+        @if (agents.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Representantes del Paciente (@agents.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo Documento</th>
+                                        <th>N° Identificación</th>
+                                        <th>Nombres</th>
+                                        <th>Apellidos</th>
+                                        <th>Género</th>
+                                        <th>Estado Civil</th>
+                                        <th>Teléfono</th>
+                                        <th>Celular</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var agent in agents)
+                                    {
+                                        var docType = documentTypes.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "-";
+                                        var gender = genders.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "-";
+                                        var maritalStatus = maritalStatuses.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "-";
+                                        var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
+                                        var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
+
+                                        <tr>
+                                            <td>@docType</td>
+                                            <td>@agent.IdentificationNumber</td>
+                                            <td>@nombres</td>
+                                            <td>@apellidos</td>
+                                            <td>@gender</td>
+                                            <td>@maritalStatus</td>
+                                            <td>@(string.IsNullOrEmpty(agent.PhoneNumber) ? "N/A" : agent.PhoneNumber)</td>
+                                            <td>@(string.IsNullOrEmpty(agent.CellphoneNumber) ? "N/A" : agent.CellphoneNumber)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Sesiones de Estimulación Temprana -->
+        @if (sessions.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Sesiones de Estimulación Temprana (@sessions.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Descripción</th>
+                                        <th>Tratamiento</th>
+                                        <th>Alta Médica</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var session in sessions)
+                                    {
+                                        <tr>
+                                            <td>@session.Date?.ToString("dd/MM/yyyy")</td>
+                                            <td>@(session.Description ?? "N/A")</td>
+                                            <td>@(session.Treatment ?? "N/A")</td>
+                                            <td>
+                                                <span class="badge @GetMedicalDischargeBadgeClass(session.MedicalDischarge)">
+                                                    @FormatMedicalDischarge(session.MedicalDischarge)
+                                                </span>
+                                            </td>
+                                            <td>@(session.Observations ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Test de Evolución -->
+        @if (evolutionTests.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Test de Evolución (@evolutionTests.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Edad Meses (De)</th>
+                                        <th>Edad Meses (A)</th>
+                                        <th>Motricidad Gruesa</th>
+                                        <th>Motricidad Fina</th>
+                                        <th>Audición y Lenguaje</th>
+                                        <th>Personal Social</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var test in evolutionTests)
+                                    {
+                                        <tr>
+                                            <td>@test.Age</td>
+                                            <td>@test.Age1</td>
+                                            <td>@test.GrossMotorSkills</td>
+                                            <td>@test.FineMotorSkills</td>
+                                            <td>@test.HearingAndLanguage</td>
+                                            <td>@test.SocialPerson</td>
+                                            <td><strong>@test.Total</strong></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Resumen de Datos -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resumen de Atención</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Representantes</h6>
+                                    <p class="card-text display-6">@agents.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Sesiones</h6>
+                                    <p class="card-text display-6">@sessions.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Tests</h6>
+                                    <p class="card-text display-6">@evolutionTests.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Motivo</h6>
+                                    <p class="card-text display-6">@(reasonForConsultation != null ? "✓" : "—")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!agents.Any() && !sessions.Any() && !evolutionTests.Any() && reasonForConsultation == null)
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta atención de estimulación temprana no tiene representantes, sesiones, tests o motivo de consulta registrados.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+
+    private ReasonForConsultationDTO? reasonForConsultation;
+    private List<AgentDTO> agents = new();
+    private List<EarlyStimulationSessionsDTO> sessions = new();
+    private List<EarlyStimulationEvolutionTestDTO> evolutionTests = new();
+    private List<DocumentTypeDTO> documentTypes = new();
+    private List<GenderDTO> genders = new();
+    private List<MaritalStatusDTO> maritalStatuses = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    private async Task LoadDetails()
+    {
+        if (MedicalCare == null) return;
+
+        try
+        {
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
+
+            // Cargar representantes
+            await LoadAgents();
+
+            // Cargar sesiones
+            sessions = await EarlyStimulationSessionsService.GetByMedicalCareIdAsync(MedicalCare.CareId) ?? new List<EarlyStimulationSessionsDTO>();
+
+            // Cargar tests de evolución
+            evolutionTests = await EarlyStimulationEvolutionTestService.GetByMedicalCareIdAsync(MedicalCare.CareId) ?? new List<EarlyStimulationEvolutionTestDTO>();
+
+            // Cargar datos de soporte
+            documentTypes = await DocumentTypeService.GetAllAsync() ?? new List<DocumentTypeDTO>();
+            genders = await GenderService.GetAllAsync() ?? new List<GenderDTO>();
+            maritalStatuses = await MaritalStatusService.GetAllAsync() ?? new List<MaritalStatusDTO>();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading early stimulation care details: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAgents()
+    {
+        var allAgents = await AgentService.GetAllAsync() ?? new List<AgentDTO>();
+        agents = allAgents.Take(3).ToList();
+    }
+
+    private string GetMedicalDischargeBadgeClass(bool? medicalDischarge)
+    {
+        if (!medicalDischarge.HasValue) return "bg-warning";
+        return medicalDischarge.Value ? "bg-success" : "bg-secondary";
+    }
+
+    private string FormatMedicalDischarge(bool? medicalDischarge)
+    {
+        if (!medicalDischarge.HasValue) return "No especificado";
+        return medicalDischarge.Value ? "Sí" : "No";
+    }
+}

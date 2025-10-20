@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
+using SMED.BackEnd.Repositories.Implementations;
 
 namespace SMED.BackEnd.Controllers
 {
@@ -9,10 +10,14 @@ namespace SMED.BackEnd.Controllers
     public class EarlyStimulationSessionsController : ControllerBase
     {
         private readonly IRepository<EarlyStimulationSessionsDTO, int> _repository;
+        private readonly EarlyStimulationSessionsRepository _customRepository;
 
-        public EarlyStimulationSessionsController(IRepository<EarlyStimulationSessionsDTO, int> repository)
+        public EarlyStimulationSessionsController(
+            IRepository<EarlyStimulationSessionsDTO, int> repository,
+            EarlyStimulationSessionsRepository customRepository)
         {
             _repository = repository;
+            _customRepository = customRepository;
         }
 
         [HttpGet]
@@ -48,6 +53,13 @@ namespace SMED.BackEnd.Controllers
         {
             var deleted = await _repository.DeleteAsync(id);
             return !deleted ? NotFound() : NoContent();
+        }
+
+        [HttpGet("by-care/{medicalCareId}")]
+        public async Task<ActionResult<IEnumerable<EarlyStimulationSessionsDTO>>> GetByMedicalCareId(int medicalCareId)
+        {
+            var result = await _customRepository.GetByMedicalCareIdAsync(medicalCareId);
+            return Ok(result);
         }
     }
 }

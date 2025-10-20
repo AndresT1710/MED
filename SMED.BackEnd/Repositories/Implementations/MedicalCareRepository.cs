@@ -485,6 +485,55 @@ namespace SMED.BackEnd.Repositories.Implementations
                                  (p.SecondLastName ?? ""))
                     .FirstOrDefaultAsync();
 
+                // Obtener información del Patient con Agent - VERSIÓN CORREGIDA
+                var patientInfo = await _context.Patients
+                    .Where(p => p.PersonId == medicalCareQuery.PatientId)
+                    .Select(p => new PatientDTO
+                    {
+                        PersonId = p.PersonId,
+                        AgentId = p.AgentId,
+                        Agent = p.Agent != null ? new AgentDTO
+                        {
+                            AgentId = p.Agent.AgentId,
+                            IdentificationNumber = p.Agent.IdentificationNumber,
+                            FirstName = p.Agent.FirstName,
+                            MiddleName = p.Agent.MiddleName,
+                            LastName = p.Agent.LastName,
+                            SecondLastName = p.Agent.SecondLastName,
+                            PhoneNumber = p.Agent.PhoneNumber,
+                            CellphoneNumber = p.Agent.CellphoneNumber,
+                            DocumentType = p.Agent.DocumentType,
+                            DocumentTypeName = p.Agent.DocumentTypeNavigation != null ? p.Agent.DocumentTypeNavigation.Name : null,
+                            GenderId = p.Agent.GenderId,
+                            GenderName = p.Agent.Gender != null ? p.Agent.Gender.Name : null,
+                            MaritalStatusId = p.Agent.MaritalStatusId,
+                            MaritalStatusName = p.Agent.MaritalStatus != null ? p.Agent.MaritalStatus.Name : null
+                        } : null
+                    })
+                    .FirstOrDefaultAsync();
+
+                Console.WriteLine($"[DEBUG REPOSITORY] PatientInfo cargado: {patientInfo != null}");
+                Console.WriteLine($"[DEBUG REPOSITORY] Agent cargado: {patientInfo?.Agent != null}");
+                Console.WriteLine($"[DEBUG REPOSITORY] AgentId: {patientInfo?.AgentId}");
+                Console.WriteLine($"[DEBUG REPOSITORY] Agent details - FirstName: {patientInfo?.Agent?.FirstName}, LastName: {patientInfo?.Agent?.LastName}");
+
+                // DEBUG: Consulta directa para verificar
+                var debugPatient = await _context.Patients
+                    .Where(p => p.PersonId == medicalCareQuery.PatientId)
+                    .Select(p => new
+                    {
+                        p.PersonId,
+                        p.AgentId,
+                        HasAgent = p.Agent != null,
+                        AgentFirstName = p.Agent != null ? p.Agent.FirstName : "NULL",
+                        AgentLastName = p.Agent != null ? p.Agent.LastName : "NULL"
+                    })
+                    .FirstOrDefaultAsync();
+
+                Console.WriteLine($"[DEBUG DATABASE] Patient PersonId: {debugPatient?.PersonId}");
+                Console.WriteLine($"[DEBUG DATABASE] Patient AgentId: {debugPatient?.AgentId}");
+                Console.WriteLine($"[DEBUG DATABASE] Has Agent: {debugPatient?.HasAgent}");
+                Console.WriteLine($"[DEBUG DATABASE] Agent Name: {debugPatient?.AgentFirstName} {debugPatient?.AgentLastName}");
                 // 3) Obtener todas las colecciones por separado - FISIOTERAPIA
                 var currentIllnesses = await _context.CurrentIllnesses
                     .Where(ci => ci.MedicalCareId == id)
@@ -721,6 +770,41 @@ namespace SMED.BackEnd.Repositories.Implementations
 
                 Console.WriteLine($"[DEBUG] MedicalEvaluations cargadas: {medicalEvaluations.Count}");
 
+                // <ADD> 3.4) Obtener datos de ESTIMULACIÓN TEMPRANA
+                var earlyStimulationSessions = await _context.EarlyStimulationSessions
+                    .Where(ess => ess.MedicalCareId == id)
+                    .Select(ess => new EarlyStimulationSessionsDTO
+                    {
+                        SessionsId = ess.SessionsId,
+                        Description = ess.Description,
+                        Date = ess.Date,
+                        Treatment = ess.Treatment,
+                        MedicalDischarge = ess.MedicalDischarge,
+                        Observations = ess.Observations,
+                        MedicalCareId = ess.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] EarlyStimulationSessions cargadas: {earlyStimulationSessions.Count}");
+
+                var earlyStimulationEvolutionTests = await _context.EarlyStimulationEvolutionTests
+                    .Where(eset => eset.MedicalCareId == id)
+                    .Select(eset => new EarlyStimulationEvolutionTestDTO
+                    {
+                        TestId = eset.TestId,
+                        Age = eset.Age,
+                        Age1 = eset.Age1,
+                        GrossMotorSkills = eset.GrossMotorSkills,
+                        FineMotorSkills = eset.FineMotorSkills,
+                        HearingAndLanguage = eset.HearingAndLanguage,
+                        SocialPerson = eset.SocialPerson,
+                        Total = eset.Total,
+                        MedicalCareId = eset.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] EarlyStimulationEvolutionTests cargados: {earlyStimulationEvolutionTests.Count}");
+
                 // 4) Obtener datos COMUNES (VitalSigns, ReasonForConsultation)
                 var vitalSigns = await _context.VitalSigns
                     .Where(vs => vs.MedicalCareId == id)
@@ -803,10 +887,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = ms.HealthProfessionalId,
                         HealthProfessionalName = person != null
                             ? string.Join(" ", new[] {
-                person.FirstName,
-                person.MiddleName,
-                person.LastName,
-                person.SecondLastName
+        person.FirstName,
+        person.MiddleName,
+        person.LastName,
+        person.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n)))
                             : null,
                         CareId = ms.CareId
@@ -874,18 +958,18 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = mp.HealthProfessionalId,
                         HealthProfessionalName = healthProfessional?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                healthProfessional.PersonNavigation.FirstName,
-                healthProfessional.PersonNavigation.MiddleName,
-                healthProfessional.PersonNavigation.LastName,
-                healthProfessional.PersonNavigation.SecondLastName
+                        healthProfessional.PersonNavigation.FirstName,
+                        healthProfessional.PersonNavigation.MiddleName,
+                        healthProfessional.PersonNavigation.LastName,
+                        healthProfessional.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         TreatingPhysicianId = mp.TreatingPhysicianId,
                         TreatingPhysicianName = treatingPhysician?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                treatingPhysician.PersonNavigation.FirstName,
-                treatingPhysician.PersonNavigation.MiddleName,
-                treatingPhysician.PersonNavigation.LastName,
-                treatingPhysician.PersonNavigation.SecondLastName
+                        treatingPhysician.PersonNavigation.FirstName,
+                        treatingPhysician.PersonNavigation.MiddleName,
+                        treatingPhysician.PersonNavigation.LastName,
+                        treatingPhysician.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         LocationId = mp.LocationId,
                         LocationName = location?.Name,
@@ -1110,13 +1194,20 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Sessions = sessions,
 
                     // Exámenes Complementarios
-                    ComplementaryExams = complementaryExams, // <ADD> Agregar ComplementaryExams al DTO
+                    ComplementaryExams = complementaryExams,
+
+                    //Estimulacion Temprana
+                    Patient = patientInfo,
 
                     // Evaluaciones Posturales
                     PosturalEvaluations = posturalEvaluations,
 
                     // Evaluaciones Médicas
                     MedicalEvaluations = medicalEvaluations,
+
+                    // Estimulación Temprana
+                    EarlyStimulationSessions = earlyStimulationSessions,
+                    EarlyStimulationEvolutionTests = earlyStimulationEvolutionTests,
 
                     // Común
                     VitalSigns = vitalSigns,
@@ -1140,9 +1231,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Console.WriteLine($"[DEBUG] Patient: {dto.NamePatient}, Professional: {dto.NameHealthProfessional}");
                 Console.WriteLine($"[DEBUG] VitalSigns: {dto.VitalSigns != null}, ReasonForConsultation: {dto.ReasonForConsultation != null}");
                 Console.WriteLine($"[DEBUG] MedicalServices: {dto.MedicalServices.Count}, MedicalProcedures: {dto.MedicalProcedures.Count}");
-                Console.WriteLine($"[DEBUG] ComplementaryExams: {dto.ComplementaryExams?.Count ?? 0}"); // <ADD> Debug para ComplementaryExams
+                Console.WriteLine($"[DEBUG] ComplementaryExams: {dto.ComplementaryExams?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] PosturalEvaluations: {dto.PosturalEvaluations?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] MedicalEvaluations: {dto.MedicalEvaluations?.Count ?? 0}");
+                Console.WriteLine($"[DEBUG] EarlyStimulationSessions: {dto.EarlyStimulationSessions?.Count ?? 0}, EarlyStimulationEvolutionTests: {dto.EarlyStimulationEvolutionTests?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] ReviewSystemDevices: {dto.ReviewSystemDevices?.Count ?? 0}, PhysicalExams: {dto.PhysicalExams?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Diagnoses: {dto.Diagnoses?.Count ?? 0}, Treatments: Pharma={dto.PharmacologicalTreatments?.Count ?? 0}, NonPharma={dto.NonPharmacologicalTreatments?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Referrals: {dto.Referrals?.Count ?? 0}, Evolutions: {dto.Evolutions?.Count ?? 0}");

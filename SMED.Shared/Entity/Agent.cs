@@ -31,6 +31,6 @@ namespace SMED.Shared.Entity
         public virtual MaritalStatus? MaritalStatus { get; set; }
 
         [InverseProperty("Agent")]
-        public virtual ICollection<Patient> Patients { get; set; } = new List<Patient>();
+        public virtual ICollection<Patient> Patients { get; set; } 
     }
 }

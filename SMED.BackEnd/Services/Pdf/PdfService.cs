@@ -2969,5 +2969,432 @@ namespace SMED.BackEnd.Services
         }
 
 
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // EARLY STIMULATION PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+
+        public async Task<byte[]> GenerateEarlyStimulationPdfAsync(MedicalCareDTO earlyStimCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                // Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+                var babyBlue = new BaseColor(173, 216, 230); // Color temático para estimulación temprana
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                var headerTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+                // Celda para el logo (izquierda)
+                var logoCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 8,
+                    BackgroundColor = universityRed
+                };
+
+                // Cargar logo
+                try
+                {
+                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                    if (File.Exists(logoPath))
+                    {
+                        var logo = Image.GetInstance(logoPath);
+                        logo.ScaleToFit(70, 70);
+                        logo.Alignment = Image.ALIGN_CENTER;
+                        logoCell.AddElement(logo);
+                    }
+                    else
+                    {
+                        var fallbackLogo = new Paragraph("UTA",
+                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                        {
+                            Alignment = Element.ALIGN_CENTER
+                        };
+                        logoCell.AddElement(fallbackLogo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error cargando logo: {ex.Message}");
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+
+                var textCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 10,
+                    BackgroundColor = universityRed
+                };
+
+                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                var systemName = new Paragraph("SISTEMA MÉDICO - ESTIMULACIÓN TEMPRANA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+                {
+                    SpacingBefore = 5f,
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                textCell.AddElement(universityName);
+                textCell.AddElement(systemName);
+
+                var emptyCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    BackgroundColor = universityRed
+                };
+
+                headerTable.AddCell(logoCell);
+                headerTable.AddCell(textCell);
+                headerTable.AddCell(emptyCell);
+
+                document.Add(headerTable);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN DE ESTIMULACIÓN TEMPRANA", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN GENERAL =====
+                AddEarlyStimInfoSection(document, earlyStimCare, titleFont, labelFont, textFont, lightGray, universityRed);
+
+                // ===== MOTIVO DE CONSULTA =====
+                AddEarlyStimReasonForConsultationSection(document, earlyStimCare, titleFont, textFont, lightGray);
+
+                // ===== REPRESENTANTES DEL PACIENTE =====
+                AddRepresentativesSection(document, earlyStimCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== SESIONES DE ESTIMULACIÓN TEMPRANA =====
+                AddEarlyStimSessionsSection(document, earlyStimCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== TEST DE EVOLUCIÓN =====
+                AddEvolutionTestsSection(document, earlyStimCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== RESUMEN DE ATENCIÓN =====
+                AddEarlyStimSummarySection(document, earlyStimCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de estimulación temprana: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private void AddEarlyStimInfoSection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN GENERAL", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", earlyStimCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", earlyStimCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", earlyStimCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", "Estimulación Temprana", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", earlyStimCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Profesional:", earlyStimCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", earlyStimCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+
+        private void AddEarlyStimReasonForConsultationSection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (earlyStimCare.ReasonForConsultation != null && !string.IsNullOrEmpty(earlyStimCare.ReasonForConsultation.Description))
+            {
+                var sectionTitle = new Paragraph("MOTIVO DE CONSULTA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var reasonTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var reasonCell = new PdfPCell(new Phrase(earlyStimCare.ReasonForConsultation.Description, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                reasonTable.AddCell(reasonCell);
+
+                document.Add(reasonTable);
+            }
+        }
+
+
+        private void AddRepresentativesSection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            // Verificar si el paciente tiene agente
+            if (earlyStimCare.Patient?.Agent != null)
+            {
+                var agent = earlyStimCare.Patient.Agent;
+
+                var sectionTitle = new Paragraph($"REPRESENTANTES DEL PACIENTE (1)", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var repsTable = new PdfPTable(8)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                repsTable.SetWidths(new float[] { 12, 15, 18, 18, 10, 12, 8, 7 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(repsTable, "TIPO DOC.", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "IDENTIFICACIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "NOMBRES", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "APELLIDOS", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "GÉNERO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "ESTADO CIVIL", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "TELÉFONO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(repsTable, "CELULAR", tableHeaderFont, universityRed);
+
+                var docType = agent.DocumentTypeName ?? "N/A";
+                var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
+                var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
+                var gender = agent.GenderName ?? "N/A";
+                var maritalStatus = agent.MaritalStatusName ?? "N/A";
+
+                AddTableCell(repsTable, docType, textFont);
+                AddTableCell(repsTable, agent.IdentificationNumber ?? "N/A", textFont);
+                AddTableCell(repsTable, nombres, textFont);
+                AddTableCell(repsTable, apellidos, textFont);
+                AddTableCell(repsTable, gender, textFont);
+                AddTableCell(repsTable, maritalStatus, textFont);
+                AddTableCell(repsTable, agent.PhoneNumber ?? "N/A", textFont);
+                AddTableCell(repsTable, agent.CellphoneNumber ?? "N/A", textFont);
+
+                document.Add(repsTable);
+            }
+        }
+
+        private void AddEarlyStimSessionsSection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (earlyStimCare.EarlyStimulationSessions != null && earlyStimCare.EarlyStimulationSessions.Any())
+            {
+                var sectionTitle = new Paragraph($"SESIONES DE ESTIMULACIÓN TEMPRANA ({earlyStimCare.EarlyStimulationSessions.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var sessionsTable = new PdfPTable(5)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                sessionsTable.SetWidths(new float[] { 15, 25, 25, 15, 20 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(sessionsTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "DESCRIPCIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "TRATAMIENTO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "ALTA MÉDICA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "OBSERVACIONES", tableHeaderFont, universityRed);
+
+                foreach (var session in earlyStimCare.EarlyStimulationSessions)
+                {
+                    AddTableCell(sessionsTable, session.Date?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    AddTableCell(sessionsTable, session.Description ?? "N/A", textFont);
+                    AddTableCell(sessionsTable, session.Treatment ?? "N/A", textFont);
+
+                    // Celda de alta médica
+                    var dischargeCell = new PdfPCell(new Phrase((session.MedicalDischarge ?? false) ? "Sí" : "No", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = (session.MedicalDischarge ?? false) ? new BaseColor(40, 167, 69) : new BaseColor(108, 117, 125),
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
+                    dischargeCell.Phrase.Font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.White);
+                    sessionsTable.AddCell(dischargeCell);
+
+                    AddTableCell(sessionsTable, session.Observations ?? "N/A", textFont);
+                }
+
+                document.Add(sessionsTable);
+            }
+        }
+
+        private void AddEvolutionTestsSection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (earlyStimCare.EarlyStimulationEvolutionTests != null && earlyStimCare.EarlyStimulationEvolutionTests.Any())
+            {
+                var sectionTitle = new Paragraph($"TEST DE EVOLUCIÓN - ESTIMULACIÓN TEMPRANA ({earlyStimCare.EarlyStimulationEvolutionTests.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var testsTable = new PdfPTable(7)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                testsTable.SetWidths(new float[] { 12, 12, 16, 16, 16, 16, 12 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(testsTable, "EDAD (DE)", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "EDAD (A)", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "MOTRICIDAD GRUESA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "MOTRICIDAD FINA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "AUDICIÓN Y LENGUAJE", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "PERSONAL SOCIAL", tableHeaderFont, universityRed);
+                AddTableHeaderCell(testsTable, "TOTAL", tableHeaderFont, universityRed);
+
+                foreach (var test in earlyStimCare.EarlyStimulationEvolutionTests)
+                {
+                    AddTableCell(testsTable, test.Age?.ToString() ?? "N/A", textFont);
+                    AddTableCell(testsTable, test.Age1?.ToString() ?? "N/A", textFont);
+                    AddTableCell(testsTable, test.GrossMotorSkills?.ToString() ?? "N/A", textFont);
+                    AddTableCell(testsTable, test.FineMotorSkills?.ToString() ?? "N/A", textFont);
+                    AddTableCell(testsTable, test.HearingAndLanguage?.ToString() ?? "N/A", textFont);
+                    AddTableCell(testsTable, test.SocialPerson?.ToString() ?? "N/A", textFont);
+
+                    // Celda de total con estilo especial
+                    var totalCell = new PdfPCell(new Phrase(test.Total?.ToString() ?? "N/A",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.Black)))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = new BaseColor(255, 243, 205), // Amarillo claro
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
+                    testsTable.AddCell(totalCell);
+                }
+
+                document.Add(testsTable);
+            }
+        }
+
+        private void AddEarlyStimSummarySection(Document document, MedicalCareDTO earlyStimCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(4)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+            var hasReason = earlyStimCare.ReasonForConsultation != null;
+            var hasAgent = earlyStimCare.Patient.Agent != null;
+            var sessionsCount = earlyStimCare.EarlyStimulationSessions?.Count ?? 0;
+            var testsCount = earlyStimCare.EarlyStimulationEvolutionTests?.Count ?? 0;
+
+            AddSummaryCard(summaryTable, "MOTIVO CONSULTA", hasReason ? "SI" : "NO", universityRed, textFont, hasReason);
+            AddSummaryCard(summaryTable, "REPRESENTANTE", hasAgent ? "SI" : "NO", universityRed, textFont, hasAgent);
+            AddSummaryCard(summaryTable, "SESIONES", sessionsCount.ToString(), universityRed, textFont, sessionsCount > 0);
+            AddSummaryCard(summaryTable, "TESTS EVOLUCIÓN", testsCount.ToString(), universityRed, textFont, testsCount > 0);
+
+            document.Add(summaryTable);
+        }
+
+
+
+
     }
 }

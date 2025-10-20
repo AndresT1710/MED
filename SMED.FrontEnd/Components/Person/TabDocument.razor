@@ -32,10 +32,9 @@
                            @oninput="OnDocumentNumberInput"
                            class="@GetDocumentNumberClass()"
                            placeholder="@GetDocumentPlaceholder()"
-                           maxlength="10"
+                           maxlength="@GetMaxLength()"
                            autocomplete="off"
-                           inputmode="numeric"
-                           pattern="[0-9]*" />
+                           inputmode="@GetInputMode()" />
                     @if (isValidatingDocument)
                     {
                         <span class="input-group-text">
@@ -51,11 +50,11 @@
                         </span>
                     }
                 </div>
-                <!-- Contador de dígitos -->
-                @if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                <!-- Contador de caracteres -->
+                @if (!string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
                 {
                     <small class="form-text text-muted">
-                        @Person.Document.DocumentNumber.Length / 10 dígitos
+                        @Person.Document.DocumentNumber.Length / @GetMaxLength() caracteres
                     </small>
                 }
                 @if (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
@@ -66,18 +65,18 @@
                 {
                     <div class="invalid-feedback d-block">@documentValidationError</div>
                 }
-                else if (documentAlreadyExists)
+                else if (documentAlreadyExists && IsCedulaType)
                 {
                     <div class="invalid-feedback d-block">
                         <i class="fas fa-exclamation-triangle me-1"></i>
                         Esta cédula ya está registrada en el sistema
                     </div>
                 }
-                else if (IsCedulaType && IsDocumentValid && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
+                else if (IsDocumentValid && !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber))
                 {
                     <div class="valid-feedback d-block">
                         <i class="fas fa-check-circle me-1"></i>
-                        Cédula válida
+                        @GetValidationSuccessMessage()
                     </div>
                 }
             </div>
@@ -157,20 +156,43 @@
     // Modificar ShowProfessionalFields para usar el nuevo método
     private bool ShowProfessionalFields => SelectedHealthProfessionalTypeId.HasValue && !IsNoneProfessionalType;
 
-    // Propiedades para validación
-    private bool IsCedulaType => SelectedDocumentTypeId.HasValue &&
-                                DocumentTypes.Any(dt => dt.Id == SelectedDocumentTypeId &&
-                                (dt.Name.ToLower().Contains("cédula") || dt.Name.ToLower().Contains("cedula")));
+    // Propiedades computadas para el tipo de documento seleccionado
+    private string SelectedDocumentTypeName =>
+        DocumentTypes.FirstOrDefault(dt => dt.Id == SelectedDocumentTypeId)?.Name?.ToLower() ?? "";
 
-    private bool IsDocumentValid => string.IsNullOrWhiteSpace(documentValidationError) && !documentAlreadyExists;
+    private bool IsCedulaType => SelectedDocumentTypeName.Contains("cédula") ||
+                                SelectedDocumentTypeName.Contains("cedula");
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private bool IsPasaporteType => SelectedDocumentTypeName.Contains("pasaporte");
+
+    private bool IsDocumentValid => string.IsNullOrWhiteSpace(documentValidationError) &&
+                                   !(documentAlreadyExists && IsCedulaType);
+
+    // Métodos helper para configuración dinámica
+    private string GetInputMode()
     {
-        if (firstRender)
-        {
-            // Configurar el input para solo números usando JavaScript
-            await JS.InvokeVoidAsync("setupNumericInput", documentInput);
-        }
+        return IsCedulaType ? "numeric" : "text";
+    }
+
+    private int GetMaxLength()
+    {
+        if (IsCedulaType) return 10;
+        if (IsPasaporteType) return 20;
+        return 15;
+    }
+
+    private string GetDocumentPlaceholder()
+    {
+        if (IsCedulaType) return "Ingrese 10 dígitos de la cédula";
+        if (IsPasaporteType) return "Ingrese número de pasaporte";
+        return "Ingrese el número de documento";
+    }
+
+    private string GetValidationSuccessMessage()
+    {
+        if (IsCedulaType) return "Cédula válida";
+        if (IsPasaporteType) return "Formato de pasaporte válido";
+        return "Documento válido";
     }
 
     // Métodos helper para generar clases CSS
@@ -183,13 +205,13 @@
     {
         var hasError = (ShowValidationErrors && string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber)) ||
                        !string.IsNullOrWhiteSpace(documentValidationError) ||
-                       documentAlreadyExists;
+                       (documentAlreadyExists && IsCedulaType);
 
         var isValid = !string.IsNullOrWhiteSpace(Person.Document?.DocumentNumber) &&
                       string.IsNullOrWhiteSpace(documentValidationError) &&
-                      !documentAlreadyExists;
+                      !(documentAlreadyExists && IsCedulaType);
 
-        return $"form-control {(hasError ? "is-invalid" : "")} {(isValid && IsCedulaType ? "is-valid" : "")}";
+        return $"form-control {(hasError ? "is-invalid" : "")} {(isValid ? "is-valid" : "")}";
     }
 
     private string GetProfessionalFieldClass()
@@ -198,24 +220,28 @@
         return $"form-control {(ShowValidationErrors && hasError ? "is-invalid" : "")}";
     }
 
-    private string GetDocumentPlaceholder()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        return IsCedulaType ? "Ingrese 10 dígitos de la cédula" : "Ingrese el número de documento";
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("setupDocumentInput", documentInput, IsCedulaType);
+        }
     }
 
+    // Método de validación principal
     private async Task OnDocumentNumberInput(ChangeEventArgs e)
     {
         var value = e.Value?.ToString() ?? string.Empty;
-        // Filtrar solo números y limitar a 10 dígitos
-        var filteredValue = new string(value.Where(char.IsDigit).Take(10).ToArray());
 
-        // Si el valor filtrado es diferente al original, actualizar el input
+        // Aplicar filtros según el tipo de documento
+        string filteredValue = ApplyInputFilters(value);
+
+        // Actualizar el valor filtrado
         if (filteredValue != value)
         {
             await JS.InvokeVoidAsync("setInputValue", documentInput, filteredValue);
         }
 
-        // Actualizar el valor filtrado
         Person.Document.DocumentNumber = filteredValue;
 
         // Limpiar validaciones anteriores
@@ -231,42 +257,83 @@
             return;
         }
 
-        // Solo validar si es cédula
-        if (IsCedulaType)
+        // Validación según el tipo de documento
+        if (!ValidateDocumentFormat(filteredValue))
         {
-            // Validación inmediata de formato
-            if (filteredValue.Length < 10)
-            {
-                // No mostrar error hasta que complete los 10 dígitos
-                StateHasChanged();
-                return;
-            }
+            StateHasChanged();
+            return;
+        }
 
-            if (!IsValidCedulaFormat(filteredValue))
-            {
-                documentValidationError = "Cédula ecuatoriana inválida";
-                StateHasChanged();
-                return;
-            }
-
-            // Si el formato es válido, verificar si existe (con delay)
-            if (filteredValue.Length == 10)
-            {
-                validationTimer = new Timer(async _ => await ValidateDocumentExists(filteredValue), null, 800, Timeout.Infinite);
-            }
+        // Si el formato es válido y es cédula, verificar si existe (con delay)
+        if (IsCedulaType && filteredValue.Length == 10)
+        {
+            validationTimer = new Timer(async _ => await ValidateDocumentExists(filteredValue), null, 800, Timeout.Infinite);
         }
 
         StateHasChanged();
     }
 
-    private bool IsValidCedulaFormat(string cedula)
+    private string ApplyInputFilters(string value)
+    {
+        if (IsCedulaType)
+        {
+            // Solo números, máximo 10 dígitos
+            return new string(value.Where(char.IsDigit).Take(10).ToArray());
+        }
+        else if (IsPasaporteType)
+        {
+            // Letras, números y algunos caracteres especiales comunes en pasaportes
+            var allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>";
+            return new string(value.Where(c => allowedChars.Contains(c)).Take(20).ToArray()).ToUpper();
+        }
+        else
+        {
+            // Para otros documentos, permitir números y letras
+            var allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
+            return new string(value.Where(c => allowedChars.Contains(c)).Take(15).ToArray()).ToUpper();
+        }
+    }
+
+
+    private bool ValidateDocumentFormat(string documentNumber)
+    {
+        if (string.IsNullOrWhiteSpace(documentNumber))
+            return true;
+
+        if (IsCedulaType)
+        {
+            return ValidateCedulaFormat(documentNumber);
+        }
+        else if (IsPasaporteType)
+        {
+            return ValidatePasaporteFormat(documentNumber);
+        }
+        else
+        {
+            // Validación básica para otros documentos
+            return documentNumber.Length >= 3 && documentNumber.Length <= GetMaxLength();
+        }
+    }
+
+    private bool ValidateCedulaFormat(string cedula)
     {
         if (string.IsNullOrWhiteSpace(cedula) || cedula.Length != 10)
+        {
+            if (cedula.Length < 10)
+            {
+                // No mostrar error hasta que complete los 10 dígitos
+                return true;
+            }
+            documentValidationError = "La cédula debe tener exactamente 10 dígitos";
             return false;
+        }
 
         // Verificar que todos sean dígitos
         if (!cedula.All(char.IsDigit))
+        {
+            documentValidationError = "La cédula debe contener solo números";
             return false;
+        }
 
         // Obtener los dígitos
         var digits = cedula.Select(c => int.Parse(c.ToString())).ToArray();
@@ -274,11 +341,17 @@
         // Verificar provincia (primeros 2 dígitos)
         var provincia = digits[0] * 10 + digits[1];
         if (provincia < 1 || provincia > 24)
+        {
+            documentValidationError = "Cédula inválida: código de provincia no válido";
             return false;
+        }
 
         // Verificar tercer dígito (debe ser menor a 6 para personas naturales)
         if (digits[2] >= 6)
+        {
+            documentValidationError = "Cédula inválida: tercer dígito no válido";
             return false;
+        }
 
         // Algoritmo de validación del dígito verificador
         var coeficientes = new[] { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
@@ -296,11 +369,46 @@
         if (digitoVerificador != 0)
             digitoVerificador = 10 - digitoVerificador;
 
-        return digitoVerificador == digits[9];
+        if (digitoVerificador != digits[9])
+        {
+            documentValidationError = "Cédula inválida: dígito verificador incorrecto";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidatePasaporteFormat(string pasaporte)
+    {
+        if (string.IsNullOrWhiteSpace(pasaporte))
+        {
+            documentValidationError = "El número de pasaporte es requerido";
+            return false;
+        }
+
+        // Longitud mínima y máxima para pasaporte
+        if (pasaporte.Length < 6 || pasaporte.Length > 20)
+        {
+            documentValidationError = "El pasaporte debe tener entre 6 y 20 caracteres";
+            return false;
+        }
+
+        // Formato básico: generalmente combina letras y números
+        var passportRegex = new System.Text.RegularExpressions.Regex(@"^[A-Z0-9<]{6,20}$");
+        if (!passportRegex.IsMatch(pasaporte))
+        {
+            documentValidationError = "Formato de pasaporte inválido. Use solo letras mayúsculas y números";
+            return false;
+        }
+
+        return true;
     }
 
     private async Task ValidateDocumentExists(string documentNumber)
     {
+        // Solo validar existencia para cédulas
+        if (!IsCedulaType) return;
+
         await InvokeAsync(async () =>
         {
             isValidatingDocument = true;
@@ -308,12 +416,10 @@
 
             try
             {
-                // Verificar si la cédula ya existe en el sistema
                 var response = await Http.GetAsync($"api/Person/by-document/{documentNumber}");
                 if (response.IsSuccessStatusCode)
                 {
                     var existingPerson = await response.Content.ReadFromJsonAsync<PersonDTO>();
-                    // Si existe y no es la misma persona que estamos editando
                     if (existingPerson != null && existingPerson.Id != Person.Id)
                     {
                         documentAlreadyExists = true;
@@ -325,19 +431,12 @@
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    // No existe, está bien
                     documentAlreadyExists = false;
-                }
-                else
-                {
-                    // Error en la consulta
-                    documentValidationError = "Error al validar el documento";
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error validating document: {ex.Message}");
-                documentValidationError = "Error al validar el documento";
             }
             finally
             {
@@ -363,8 +462,8 @@
             documentValidationError = string.Empty;
             documentAlreadyExists = false;
 
-            // Si cambia a cédula y ya hay un número, validar
-            if (IsCedulaType && !string.IsNullOrWhiteSpace(Person.Document.DocumentNumber))
+            // Si ya hay un número, revalidar con las nuevas reglas
+            if (!string.IsNullOrWhiteSpace(Person.Document.DocumentNumber))
             {
                 _ = Task.Run(async () => await OnDocumentNumberInput(new ChangeEventArgs
                     {
@@ -471,6 +570,16 @@
 }
 
 <script>
+    window.setupDocumentInput = (element, isNumeric) => {
+        if (!element) return;
+
+        if (isNumeric) {
+            setupNumericInput(element);
+        } else {
+            setupTextInput(element);
+        }
+    };
+
     window.setupNumericInput = (element) => {
         if (!element) return;
 
@@ -497,7 +606,7 @@
         element.addEventListener('paste', function(e) {
             e.preventDefault();
             let paste = (e.clipboardData || window.clipboardData).getData('text');
-            let numericValue = paste.replace(/[^0-9]/g, '').substring(0, 10);
+            let numericValue = paste.replace(/[^0-9]/g, '');
             element.value = numericValue;
             element.dispatchEvent(new Event('input', { bubbles: true }));
         });
@@ -505,9 +614,20 @@
         // Filtrar entrada directa
         element.addEventListener('input', function(e) {
             let value = e.target.value;
-            let numericValue = value.replace(/[^0-9]/g, '').substring(0, 10);
+            let numericValue = value.replace(/[^0-9]/g, '');
             if (value !== numericValue) {
                 e.target.value = numericValue;
+            }
+        });
+    };
+
+    window.setupTextInput = (element) => {
+        // Para inputs de texto, permitir más caracteres pero con límites
+        element.addEventListener('input', function(e) {
+            let value = e.target.value;
+            // Convertir a mayúsculas automáticamente
+            if (value !== value.toUpperCase()) {
+                e.target.value = value.toUpperCase();
             }
         });
     };
@@ -515,6 +635,7 @@
     window.setInputValue = (element, value) => {
         if (element) {
             element.value = value;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
         }
     };
 </script>

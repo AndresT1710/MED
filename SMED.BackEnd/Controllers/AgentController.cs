@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -47,5 +48,18 @@ namespace SMED.BackEnd.Controllers
             var deleted = await _repository.DeleteAsync(id);
             return !deleted ? NotFound() : NoContent();
         }
+
+        [HttpGet("ByPatient/{patientId}")]
+        public async Task<ActionResult<IEnumerable<AgentDTO>>> GetByPatientId(int patientId)
+        {
+            if (_repository is AgentRepository repo)
+            {
+                var result = await repo.GetByPatientIdAsync(patientId);
+                return Ok(result);
+            }
+
+            return BadRequest("Repositorio no soporta esta operación");
+        }
+
     }
 }

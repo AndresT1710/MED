@@ -48,5 +48,10 @@ namespace SMED.Shared.DTOs
         public List<NonPharmacologicalTreatmentDTO>? NonPharmacologicalTreatments { get; set; }
         public List<IndicationsDTO>? Indications { get; set; }
 
+        //Paciente
+        public PatientDTO? Patient { get; set; }
+        public List<EarlyStimulationSessionsDTO>? EarlyStimulationSessions { get; set; }
+        public List<EarlyStimulationEvolutionTestDTO>? EarlyStimulationEvolutionTests { get; set; }
+
     }
 }

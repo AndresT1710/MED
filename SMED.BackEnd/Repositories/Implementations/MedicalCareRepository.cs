@@ -534,6 +534,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Console.WriteLine($"[DEBUG DATABASE] Patient AgentId: {debugPatient?.AgentId}");
                 Console.WriteLine($"[DEBUG DATABASE] Has Agent: {debugPatient?.HasAgent}");
                 Console.WriteLine($"[DEBUG DATABASE] Agent Name: {debugPatient?.AgentFirstName} {debugPatient?.AgentLastName}");
+
                 // 3) Obtener todas las colecciones por separado - FISIOTERAPIA
                 var currentIllnesses = await _context.CurrentIllnesses
                     .Where(ci => ci.MedicalCareId == id)
@@ -887,10 +888,10 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = ms.HealthProfessionalId,
                         HealthProfessionalName = person != null
                             ? string.Join(" ", new[] {
-        person.FirstName,
-        person.MiddleName,
-        person.LastName,
-        person.SecondLastName
+person.FirstName,
+person.MiddleName,
+person.LastName,
+person.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n)))
                             : null,
                         CareId = ms.CareId
@@ -958,18 +959,18 @@ namespace SMED.BackEnd.Repositories.Implementations
                         HealthProfessionalId = mp.HealthProfessionalId,
                         HealthProfessionalName = healthProfessional?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                        healthProfessional.PersonNavigation.FirstName,
-                        healthProfessional.PersonNavigation.MiddleName,
-                        healthProfessional.PersonNavigation.LastName,
-                        healthProfessional.PersonNavigation.SecondLastName
+                healthProfessional.PersonNavigation.FirstName,
+                healthProfessional.PersonNavigation.MiddleName,
+                healthProfessional.PersonNavigation.LastName,
+                healthProfessional.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         TreatingPhysicianId = mp.TreatingPhysicianId,
                         TreatingPhysicianName = treatingPhysician?.PersonNavigation != null ?
                             string.Join(" ", new[] {
-                        treatingPhysician.PersonNavigation.FirstName,
-                        treatingPhysician.PersonNavigation.MiddleName,
-                        treatingPhysician.PersonNavigation.LastName,
-                        treatingPhysician.PersonNavigation.SecondLastName
+                treatingPhysician.PersonNavigation.FirstName,
+                treatingPhysician.PersonNavigation.MiddleName,
+                treatingPhysician.PersonNavigation.LastName,
+                treatingPhysician.PersonNavigation.SecondLastName
                             }.Where(n => !string.IsNullOrWhiteSpace(n))) : null,
                         LocationId = mp.LocationId,
                         LocationName = location?.Name,
@@ -1168,6 +1169,161 @@ namespace SMED.BackEnd.Repositories.Implementations
 
                 Console.WriteLine($"[DEBUG] Evolutions cargadas: {evolutions.Count}");
 
+                // <ADD> 15) OBTENER DATOS DE NUTRICIÓN - FOOD PLANS
+                var foodPlans = await _context.FoodPlans
+                    .Where(fp => fp.CareId == id)
+                    .Select(fp => new FoodPlanDTO
+                    {
+                        FoodPlanId = fp.FoodPlanId,
+                        RegistrationDate = fp.RegistrationDate,
+                        RestrictionId = fp.RestrictionId,
+                        RecommendedFoodId = fp.RecommendedFoodId,
+                        CareId = fp.CareId,
+                        Restriction = fp.Restriction != null ? new RestrictionDTO
+                        {
+                            RestrictionId = fp.Restriction.RestrictionId,
+                            Description = fp.Restriction.Description,
+                            FoodId = fp.Restriction.FoodId
+                        } : null,
+                        RecommendedFood = fp.RecommendedFood != null ? new RecommendedFoodsDTO
+                        {
+                            RecommendedFoodId = fp.RecommendedFood.RecommendedFoodId,
+                            Description = fp.RecommendedFood.Description,
+                            Frequency = fp.RecommendedFood.Frequency,
+                            Quantity = fp.RecommendedFood.Quantity,
+                            FoodId = fp.RecommendedFood.FoodId
+                        } : null
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] FoodPlans cargados: {foodPlans.Count}");
+
+                // <ADD> 16) OBTENER MEASUREMENTS Y SUS COMPONENTES
+                var measurementsData = await _context.Measurements
+                    .Where(m => m.MedicalCareId == id)
+                    .Select(m => new
+                    {
+                        m.MeasurementsId,
+                        m.MedicalCareId
+                    })
+                    .FirstOrDefaultAsync();
+
+                MeasurementsDTO? measurements = null;
+
+                if (measurementsData != null)
+                {
+                    var measurementsId = measurementsData.MeasurementsId;
+
+                    // Obtener SkinFolds
+                    var skinFolds = await _context.SkinFolds
+                        .Where(sf => sf.MeasurementsId == measurementsId)
+                        .Select(sf => new SkinFoldsDTO
+                        {
+                            SkinFoldsId = sf.SkinFoldsId,
+                            Subscapular = sf.Subscapular,
+                            Triceps = sf.Triceps,
+                            Biceps = sf.Biceps,
+                            IliacCrest = sf.IliacCrest,
+                            Supraespinal = sf.Supraespinal,
+                            Abdominal = sf.Abdominal,
+                            FrontalThigh = sf.FrontalThigh,
+                            MedialCalf = sf.MedialCalf,
+                            MedialAxillary = sf.MedialAxillary,
+                            Pectoral = sf.Pectoral,
+                            MeasurementsId = sf.MeasurementsId
+                        })
+                        .FirstOrDefaultAsync();
+
+                    // Obtener BioImpedance
+                    var bioImpedance = await _context.BioImpedances
+                        .Where(bi => bi.MeasurementsId == measurementsId)
+                        .Select(bi => new BioImpedanceDTO
+                        {
+                            BioImpedanceId = bi.BioImpedanceId,
+                            BodyFatPercentage = bi.BodyFatPercentage,
+                            UpperSectionFatPercentage = bi.UpperSectionFatPercentage,
+                            LowerSectionFatPercentage = bi.LowerSectionFatPercentage,
+                            VisceralFat = bi.VisceralFat,
+                            MuscleMass = bi.MuscleMass,
+                            BoneWeight = bi.BoneWeight,
+                            BodyWater = bi.BodyWater,
+                            MeasurementsId = bi.MeasurementsId
+                        })
+                        .FirstOrDefaultAsync();
+
+                    // Obtener Perimeters
+                    var perimeters = await _context.Perimeters
+                        .Where(p => p.MeasurementsId == measurementsId)
+                        .Select(p => new PerimetersDTO
+                        {
+                            PerimetersId = p.PerimetersId,
+                            Cephalic = p.Cephalic,
+                            Neck = p.Neck,
+                            RelaxedArmHalf = p.RelaxedArmHalf,
+                            Forearm = p.Forearm,
+                            Wrist = p.Wrist,
+                            MeasurementsId = p.MeasurementsId
+                        })
+                        .FirstOrDefaultAsync();
+
+                    // Obtener Diameters
+                    var diameters = await _context.Diameters
+                        .Where(d => d.MeasurementsId == measurementsId)
+                        .Select(d => new DiametersDTO
+                        {
+                            DiametersId = d.DiametersId,
+                            Humerus = d.Humerus,
+                            Femur = d.Femur,
+                            Wrist = d.Wrist,
+                            MeasurementsId = d.MeasurementsId
+                        })
+                        .FirstOrDefaultAsync();
+
+                    measurements = new MeasurementsDTO
+                    {
+                        MeasurementsId = measurementsData.MeasurementsId,
+                        MedicalCareId = measurementsData.MedicalCareId,
+                        SkinFolds = skinFolds,
+                        BioImpedance = bioImpedance,
+                        Perimeters = perimeters,
+                        Diameters = diameters
+                    };
+                }
+
+                Console.WriteLine($"[DEBUG] Measurements cargados: {measurements != null}");
+
+                // <ADD> 17) OBTENER EXAM RESULTS
+                var examResults = await _context.ExamResults
+                    .Where(er => er.MedicalCareId == id)
+                    .Select(er => new ExamResultsDTO
+                    {
+                        Id = er.Id,
+                        ExamDate = er.ExamDate,
+                        Description = er.Description,
+                        LinkPdf = er.LinkPdf,
+                        ExamTypeId = er.ExamTypeId,
+                        MedicalCareId = er.MedicalCareId
+                    })
+                    .ToListAsync();
+
+
+                Console.WriteLine($"[DEBUG] ExamResults cargados: {examResults.Count}");
+
+                // <ADD> 18) OBTENER IDENTIFIED DISEASES
+                var identifiedDiseases = await _context.IdentifiedDiseases
+                    .Where(d => d.MedicalCareId == id)
+                    .Select(d => new IdentifiedDiseaseDTO
+                    {
+                        Id = d.Id,
+                        Description = d.Description,
+                        DiseaseId = d.DiseaseId,
+                        MedicalCareId = d.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] IdentifiedDiseases cargados: {identifiedDiseases.Count}");
+
+
                 // <CHANGE> 14) Crear DTO final - AHORA con todas las variables ya declaradas
                 var dto = new MedicalCareDTO
                 {
@@ -1224,7 +1380,13 @@ namespace SMED.BackEnd.Repositories.Implementations
                     NonPharmacologicalTreatments = nonPharmacologicalTreatments,
                     Indications = indications,
                     Referrals = referrals,
-                    Evolutions = evolutions
+                    Evolutions = evolutions,
+
+                    // NUTRICIÓN - Nuevas propiedades agregadas
+                    FoodPlans = foodPlans,
+                    Measurements = measurements,
+                    ExamResults = examResults,
+                    IdentifiedDiseases = identifiedDiseases
                 };
 
                 Console.WriteLine($"[DEBUG] DTO creado exitosamente para CareId: {id}");
@@ -1238,6 +1400,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 Console.WriteLine($"[DEBUG] ReviewSystemDevices: {dto.ReviewSystemDevices?.Count ?? 0}, PhysicalExams: {dto.PhysicalExams?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Diagnoses: {dto.Diagnoses?.Count ?? 0}, Treatments: Pharma={dto.PharmacologicalTreatments?.Count ?? 0}, NonPharma={dto.NonPharmacologicalTreatments?.Count ?? 0}");
                 Console.WriteLine($"[DEBUG] Referrals: {dto.Referrals?.Count ?? 0}, Evolutions: {dto.Evolutions?.Count ?? 0}");
+                Console.WriteLine($"[DEBUG] Nutrición - FoodPlans: {dto.FoodPlans?.Count ?? 0}, Measurements: {dto.Measurements != null}, ExamResults: {dto.ExamResults?.Count ?? 0}, IdentifiedDiseases: {dto.IdentifiedDiseases?.Count ?? 0}");
 
                 return dto;
             }
@@ -1248,7 +1411,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 throw;
             }
         }
-
 
 
         public async Task<MedicalCareDTO> AddAsync(MedicalCareDTO dto)

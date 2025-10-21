@@ -177,11 +177,22 @@ namespace SGIS.Models
         public DbSet<PainMoment> PainMoments { get; set; }
         public DbSet<PosturalEvaluation> PosturalEvaluations { get; set; }
         public DbSet<View> Views { get; set; }
+
+        //Estimulación Temprana
         public DbSet<Agent> Agents { get; set; }
         public DbSet<ComplementaryExams> ComplementaryExams { get; set; }
         public DbSet<EarlyStimulationSessions> EarlyStimulationSessions { get; set; }
         public DbSet<EarlyStimulationEvolutionTest> EarlyStimulationEvolutionTests { get; set; }
 
+        //Nutricion
+        public DbSet<SkinFolds> SkinFolds { get; set; }
+        public DbSet<BioImpedance> BioImpedances { get; set; }
+        public DbSet<Perimeters> Perimeters { get; set; }
+        public DbSet<Diameters> Diameters { get; set; }
+        public DbSet<Measurements> Measurements { get; set; }
+        public DbSet<FoodPlan> FoodPlans { get; set; }
+        public DbSet<Restriction> Restrictions { get; set; }
+        public DbSet<RecommendedFoods> RecommendedFoods { get; set; }
 
 
 

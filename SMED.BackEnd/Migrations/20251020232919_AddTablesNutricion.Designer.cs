@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251020232919_AddTablesNutricion")]
+    partial class AddTablesNutricion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1060,7 +1063,7 @@ namespace SMED.BackEnd.Migrations
                         .IsUnique()
                         .HasFilter("[RestrictionId] IS NOT NULL");
 
-                    b.ToTable("FoodPlans");
+                    b.ToTable("FoodPlan");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Gender", b =>
@@ -3170,7 +3173,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasIndex("FoodId");
 
-                    b.ToTable("Restrictions");
+                    b.ToTable("Restriction");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ResultType", b =>

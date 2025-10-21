@@ -202,6 +202,22 @@ builder.Services.AddScoped<MaritalStatusRepository>();
 builder.Services.AddScoped<IRepository<MaritalStatusDTO, int>, MaritalStatusRepository>();
 builder.Services.AddScoped<AgentRepository>();
 builder.Services.AddScoped<IRepository<AgentDTO, int>, AgentRepository>();
+builder.Services.AddScoped<IRepository<MeasurementsDTO, int>, MeasurementsRepository>();
+builder.Services.AddScoped<MeasurementsRepository>();
+builder.Services.AddScoped<IRepository<DiametersDTO, int>, DiametersRepository>();
+builder.Services.AddScoped<DiametersRepository>();
+builder.Services.AddScoped<IRepository<BioImpedanceDTO, int>, BioImpedanceRepository>();
+builder.Services.AddScoped<BioImpedanceRepository>();
+builder.Services.AddScoped<IRepository<SkinFoldsDTO, int>, SkinFoldsRepository>();
+builder.Services.AddScoped<SkinFoldsRepository>();
+builder.Services.AddScoped<IRepository<PerimetersDTO, int>, PerimetersRepository>();
+builder.Services.AddScoped<PerimetersRepository>();
+builder.Services.AddScoped<IRepository<FoodPlanDTO, int>, FoodPlanRepository>();
+builder.Services.AddScoped<FoodPlanRepository>();
+builder.Services.AddScoped<IRepository<RestrictionDTO, int>, RestrictionRepository>();
+builder.Services.AddScoped<RestrictionRepository>();
+builder.Services.AddScoped<IRepository<RecommendedFoodsDTO, int>, RecommendedFoodsRepository>();
+builder.Services.AddScoped<RecommendedFoodsRepository>();
 
 
 

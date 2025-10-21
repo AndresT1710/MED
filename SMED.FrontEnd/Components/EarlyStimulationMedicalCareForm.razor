@@ -758,18 +758,30 @@
     {
         try
         {
-            // Como no hay método específico, cargamos todos los agents
-            agents = await AgentService.GetAllAsync() ?? new List<AgentDTO>();
+            if (selectedPatientId <= 0)
+            {
+                agents = new List<AgentDTO>();
+                RefreshAgentsTable();
+                await JS.InvokeVoidAsync("console.log", "⚠️ No hay paciente seleccionado, no se pueden cargar representantes");
+                return;
+            }
 
-            // En una implementación futura, podrías filtrar por el paciente actual
-            // Por ahora mostramos todos los agents
+            // Usar el método específico que filtra por paciente
+            agents = await AgentService.GetByPatientId(selectedPatientId) ?? new List<AgentDTO>();
+
             RefreshAgentsTable();
+            await JS.InvokeVoidAsync("console.log", $"✅ Se cargaron {agents.Count} representantes para el paciente ID: {selectedPatientId}");
 
-            await JS.InvokeVoidAsync("console.log", $"Se cargaron {agents.Count} representantes");
+            // Debug: mostrar información de los agentes cargados
+            foreach (var agent in agents)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"   - Agente: {agent.FirstName} {agent.LastName} (ID: {agent.AgentId})");
+            }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("console.error", $"Error loading agents: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"❌ Error loading agents: {ex.Message}");
             agents = new List<AgentDTO>();
             RefreshAgentsTable();
         }
@@ -859,7 +871,7 @@
         {
             if (editingAgent.AgentId > 0)
             {
-                // Actualizar
+                // Actualizar agente existente
                 var updateResult = await AgentService.UpdateAsync(editingAgent);
                 if (!updateResult.Success)
                 {
@@ -870,14 +882,31 @@
             }
             else
             {
-                // Crear nuevo
+                // Crear nuevo agente
                 var createResult = await AgentService.CreateAsync(editingAgent);
                 if (!createResult.Success)
                 {
                     await JS.InvokeVoidAsync("alert", $"Error al crear: {createResult.Error}");
                     return;
                 }
-                await JS.InvokeVoidAsync("alert", "Representante creado correctamente.");
+
+                // ASIGNAR EL AGENTE AL PACIENTE ACTUAL
+                if (createResult.Data != null && selectedPatientId > 0)
+                {
+                    var assignResult = await AssignAgentToPatient(selectedPatientId, createResult.Data.AgentId);
+                    if (assignResult)
+                    {
+                        await JS.InvokeVoidAsync("alert", "Representante creado y asignado al paciente correctamente.");
+                    }
+                    else
+                    {
+                        await JS.InvokeVoidAsync("alert", "Representante creado, pero hubo un error al asignarlo al paciente.");
+                    }
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Representante creado correctamente.");
+                }
             }
 
             await LoadAgents(); // Recargar la lista
@@ -886,6 +915,30 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    // Método para asignar agente al paciente
+    private async Task<bool> AssignAgentToPatient(int patientId, int agentId)
+    {
+        try
+        {
+            var assignResult = await AgentService.AssignAgentToPatient(patientId, agentId);
+            if (assignResult.Success)
+            {
+                await JS.InvokeVoidAsync("console.log", $"✅ Agente {agentId} asignado al paciente {patientId}");
+                return true;
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"❌ Error asignando agente: {assignResult.Error}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error en AssignAgentToPatient: {ex.Message}");
+            return false;
         }
     }
 

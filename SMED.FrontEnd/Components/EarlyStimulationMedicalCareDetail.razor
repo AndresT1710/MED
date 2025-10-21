@@ -78,45 +78,113 @@
             <div class="col-12">
                 <div class="card mb-4">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Representantes del Paciente (@agents.Count)</h5>
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Representantes del Paciente
+                            <span class="badge bg-info ms-2">@agents.Count</span>
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Tipo Documento</th>
-                                        <th>N° Identificación</th>
-                                        <th>Nombres</th>
-                                        <th>Apellidos</th>
-                                        <th>Género</th>
-                                        <th>Estado Civil</th>
-                                        <th>Teléfono</th>
-                                        <th>Celular</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var agent in agents)
-                                    {
-                                        var docType = documentTypes.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "-";
-                                        var gender = genders.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "-";
-                                        var maritalStatus = maritalStatuses.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "-";
-                                        var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
-                                        var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
+                        @if (agents.Count == 1)
+                        {
+                            <!-- Vista simplificada para un solo representante -->
+                            <div class="row">
+                                @foreach (var agent in agents)
+                                {
+                                    var docType = documentTypes.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "-";
+                                    var gender = genders.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "-";
+                                    var maritalStatus = maritalStatuses.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "-";
+                                    var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
+                                    var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
 
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">Información del Representante</h6>
+                                        <table class="table table-sm table-borderless">
+                                            <tr>
+                                                <td class="fw-bold" style="width: 40%">Nombre completo:</td>
+                                                <td>@nombres @apellidos</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Identificación:</td>
+                                                <td>@agent.IdentificationNumber (@docType)</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Contacto:</td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(agent.PhoneNumber))
+                                                    {
+                                                        <div>Tel: @agent.PhoneNumber</div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(agent.CellphoneNumber))
+                                                    {
+                                                        <div>Cel: @agent.CellphoneNumber</div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Demográficos:</td>
+                                                <td>@gender, @maritalStatus</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Tabla para múltiples representantes -->
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
                                         <tr>
-                                            <td>@docType</td>
-                                            <td>@agent.IdentificationNumber</td>
-                                            <td>@nombres</td>
-                                            <td>@apellidos</td>
-                                            <td>@gender</td>
-                                            <td>@maritalStatus</td>
-                                            <td>@(string.IsNullOrEmpty(agent.PhoneNumber) ? "N/A" : agent.PhoneNumber)</td>
-                                            <td>@(string.IsNullOrEmpty(agent.CellphoneNumber) ? "N/A" : agent.CellphoneNumber)</td>
+                                            <th>Tipo Documento</th>
+                                            <th>N° Identificación</th>
+                                            <th>Nombres</th>
+                                            <th>Apellidos</th>
+                                            <th>Género</th>
+                                            <th>Estado Civil</th>
+                                            <th>Teléfono</th>
+                                            <th>Celular</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var agent in agents)
+                                        {
+                                            var docType = documentTypes.FirstOrDefault(d => d.Id == agent.DocumentType)?.Name ?? "-";
+                                            var gender = genders.FirstOrDefault(g => g.Id == agent.GenderId)?.Name ?? "-";
+                                            var maritalStatus = maritalStatuses.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "-";
+                                            var nombres = $"{agent.FirstName} {agent.MiddleName}".Trim();
+                                            var apellidos = $"{agent.LastName} {agent.SecondLastName}".Trim();
+
+                                            <tr>
+                                                <td>@docType</td>
+                                                <td>@agent.IdentificationNumber</td>
+                                                <td>@nombres</td>
+                                                <td>@apellidos</td>
+                                                <td>@gender</td>
+                                                <td>@maritalStatus</td>
+                                                <td>@(string.IsNullOrEmpty(agent.PhoneNumber) ? "N/A" : agent.PhoneNumber)</td>
+                                                <td>@(string.IsNullOrEmpty(agent.CellphoneNumber) ? "N/A" : agent.CellphoneNumber)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Representantes del Paciente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No se han registrado representantes para este paciente.
                         </div>
                     </div>
                 </div>
@@ -303,7 +371,7 @@
             var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
             reasonForConsultation = reasons?.FirstOrDefault();
 
-            // Cargar representantes
+            // Cargar representantes (SOLO LOS DEL PACIENTE ACTUAL)
             await LoadAgents();
 
             // Cargar sesiones
@@ -317,6 +385,9 @@
             genders = await GenderService.GetAllAsync() ?? new List<GenderDTO>();
             maritalStatuses = await MaritalStatusService.GetAllAsync() ?? new List<MaritalStatusDTO>();
 
+            await JS.InvokeVoidAsync("console.log",
+                $"📊 Detalles cargados - Representantes: {agents.Count}, Sesiones: {sessions.Count}, Tests: {evolutionTests.Count}");
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -327,8 +398,25 @@
 
     private async Task LoadAgents()
     {
-        var allAgents = await AgentService.GetAllAsync() ?? new List<AgentDTO>();
-        agents = allAgents.Take(3).ToList();
+        try
+        {
+            if (MedicalCare?.PatientId > 0)
+            {
+                // Usar el método que filtra por paciente específico
+                agents = await AgentService.GetByPatientId(MedicalCare.PatientId) ?? new List<AgentDTO>();
+                await JS.InvokeVoidAsync("console.log", $"✅ Cargados {agents.Count} representantes para el paciente ID: {MedicalCare.PatientId}");
+            }
+            else
+            {
+                agents = new List<AgentDTO>();
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No hay PatientId disponible para cargar representantes");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error cargando representantes: {ex.Message}");
+            agents = new List<AgentDTO>();
+        }
     }
 
     private string GetMedicalDischargeBadgeClass(bool? medicalDischarge)

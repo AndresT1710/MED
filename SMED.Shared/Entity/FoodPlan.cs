@@ -26,7 +26,11 @@ namespace SMED.Shared.Entity
         [ForeignKey("RecommendedFoodId")]
         [InverseProperty("FoodPlans")]
         public virtual RecommendedFoods RecommendedFood { get; set; } = null!;
+
+        public int CareId { get; set; }
+
+        [ForeignKey("CareId")]
+        [InverseProperty("FoodPlans")]
+        public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
-
-
 }

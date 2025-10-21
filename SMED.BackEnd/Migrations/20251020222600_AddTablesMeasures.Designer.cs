@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251020222600_AddTablesMeasures")]
+    partial class AddTablesMeasures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1038,9 +1041,6 @@ namespace SMED.BackEnd.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FoodPlanId"));
 
-                    b.Property<int>("CareId")
-                        .HasColumnType("int");
-
                     b.Property<int>("RecommendedFoodId")
                         .HasColumnType("int");
 
@@ -1052,15 +1052,13 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasKey("FoodPlanId");
 
-                    b.HasIndex("CareId");
-
                     b.HasIndex("RecommendedFoodId");
 
                     b.HasIndex("RestrictionId")
                         .IsUnique()
                         .HasFilter("[RestrictionId] IS NOT NULL");
 
-                    b.ToTable("FoodPlans");
+                    b.ToTable("FoodPlan");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.Gender", b =>
@@ -3170,7 +3168,7 @@ namespace SMED.BackEnd.Migrations
 
                     b.HasIndex("FoodId");
 
-                    b.ToTable("Restrictions");
+                    b.ToTable("Restriction");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.ResultType", b =>
@@ -4472,12 +4470,6 @@ namespace SMED.BackEnd.Migrations
 
             modelBuilder.Entity("SMED.Shared.Entity.FoodPlan", b =>
                 {
-                    b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
-                        .WithMany("FoodPlans")
-                        .HasForeignKey("CareId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SMED.Shared.Entity.RecommendedFoods", "RecommendedFood")
                         .WithMany("FoodPlans")
                         .HasForeignKey("RecommendedFoodId")
@@ -4487,8 +4479,6 @@ namespace SMED.BackEnd.Migrations
                     b.HasOne("SMED.Shared.Entity.Restriction", "Restriction")
                         .WithOne("FoodPlan")
                         .HasForeignKey("SMED.Shared.Entity.FoodPlan", "RestrictionId");
-
-                    b.Navigation("MedicalCare");
 
                     b.Navigation("RecommendedFood");
 
@@ -5956,8 +5946,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("Evolutions");
 
                     b.Navigation("ExamResults");
-
-                    b.Navigation("FoodPlans");
 
                     b.Navigation("IdentifiedDiseases");
 

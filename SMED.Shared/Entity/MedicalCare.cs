@@ -112,5 +112,11 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<EarlyStimulationEvolutionTest> EarlyStimulationEvolutionTests { get; set; } = new List<EarlyStimulationEvolutionTest>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual Measurements? Measurements { get; set; }
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<FoodPlan> FoodPlans { get; set; } = new List<FoodPlan>();
+
     }
 }

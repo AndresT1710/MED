@@ -61,5 +61,31 @@ namespace SMED.BackEnd.Controllers
             return BadRequest("Repositorio no soporta esta operación");
         }
 
+        // NUEVO ENDPOINT: Asignar agente a paciente
+        [HttpPut("AssignToPatient")]
+        public async Task<IActionResult> AssignAgentToPatient([FromBody] AssignAgentRequest request)
+        {
+            try
+            {
+                if (_repository is AgentRepository repo)
+                {
+                    var result = await repo.AssignAgentToPatientAsync(request.AgentId, request.PatientId);
+                    return result ? Ok(new { Message = "Agente asignado correctamente al paciente" })
+                                 : NotFound("No se pudo asignar el agente al paciente");
+                }
+                return BadRequest("Repositorio no soporta esta operación");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error asignando agente: {ex.Message}");
+            }
+        }
+    }
+
+    // DTO para la request de asignación
+    public class AssignAgentRequest
+    {
+        public int PatientId { get; set; }
+        public int AgentId { get; set; }
     }
 }

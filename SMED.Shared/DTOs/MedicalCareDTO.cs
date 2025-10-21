@@ -52,6 +52,12 @@ namespace SMED.Shared.DTOs
         public PatientDTO? Patient { get; set; }
         public List<EarlyStimulationSessionsDTO>? EarlyStimulationSessions { get; set; }
         public List<EarlyStimulationEvolutionTestDTO>? EarlyStimulationEvolutionTests { get; set; }
+        public List<ExamResultsDTO>? ExamResults { get; set; }
 
+
+        // Nutricion
+        public List<FoodPlanDTO>? FoodPlans { get; set; }
+        public List<IdentifiedDiseaseDTO>? IdentifiedDiseases { get; set; }
+        public MeasurementsDTO? Measurements { get; set; }
     }
 }

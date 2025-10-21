@@ -109,6 +109,42 @@ namespace SMED.BackEnd.Repositories.Implementations
             return agents.Select(MapToDto).ToList();
         }
 
+        // NUEVO MÉTODO: Asignar agente a paciente
+        public async Task<bool> AssignAgentToPatientAsync(int agentId, int patientId)
+        {
+            try
+            {
+                var patient = await _context.Patients
+                    .FirstOrDefaultAsync(p => p.PersonId == patientId);
+
+                if (patient == null)
+                {
+                    Console.WriteLine($"❌ Paciente no encontrado: {patientId}");
+                    return false;
+                }
+
+                var agent = await _context.Agents
+                    .FirstOrDefaultAsync(a => a.AgentId == agentId);
+
+                if (agent == null)
+                {
+                    Console.WriteLine($"❌ Agente no encontrado: {agentId}");
+                    return false;
+                }
+
+                // Asignar el agente al paciente
+                patient.AgentId = agentId;
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"✅ Agente {agentId} asignado correctamente al paciente {patientId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error asignando agente {agentId} al paciente {patientId}: {ex.Message}");
+                return false;
+            }
+        }
 
         private AgentDTO MapToDto(Agent entity) => new AgentDTO
         {
@@ -129,7 +165,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             Patients = entity.Patients?.Select(p => new PatientDTO
             {
                 PersonId = p.PersonId,
-                // Solo los datos básicos
+                AgentId = p.AgentId
             }).ToList()
         };
 

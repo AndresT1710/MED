@@ -128,5 +128,26 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        // Asignar agente a paciente
+        public async Task<(bool Success, string Error)> AssignAgentToPatient(int patientId, int agentId)
+        {
+            try
+            {
+                var request = new { PatientId = patientId, AgentId = agentId };
+                var response = await _httpClient.PutAsJsonAsync($"api/Agent/AssignToPatient", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+                var error = await response.Content.ReadAsStringAsync();
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al asignar agente al paciente");
+                return (false, ex.Message);
+            }
+        }
     }
 }

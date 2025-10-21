@@ -142,6 +142,14 @@ builder.Services.AddScoped<DocumentTypeService>();
 builder.Services.AddScoped<GenderService>();
 builder.Services.AddScoped<MaritalStatusService>();
 builder.Services.AddScoped<AgentService>();
+builder.Services.AddScoped<SkinFoldsService>();
+builder.Services.AddScoped<MeasurementsService>();
+builder.Services.AddScoped<BioImpedanceService>();
+builder.Services.AddScoped<PerimetersService>();
+builder.Services.AddScoped<DiametersService>();
+builder.Services.AddScoped<FoodPlanService>();
+builder.Services.AddScoped<RestrictionService>();
+builder.Services.AddScoped<RecommendedFoodsService>();
 
 
 

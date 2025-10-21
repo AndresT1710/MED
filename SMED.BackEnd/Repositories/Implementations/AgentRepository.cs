@@ -146,6 +146,53 @@ namespace SMED.BackEnd.Repositories.Implementations
             }
         }
 
+
+        // NUEVO MÉTODO: Desvincular agente de paciente
+        public async Task<bool> UnassignAgentFromPatientAsync(int patientId, int agentId)
+        {
+            try
+            {
+                var patient = await _context.Patients
+                    .FirstOrDefaultAsync(p => p.PersonId == patientId);
+
+                if (patient == null)
+                {
+                    Console.WriteLine($"❌ Paciente no encontrado: {patientId}");
+                    return false;
+                }
+
+                var agent = await _context.Agents
+                    .FirstOrDefaultAsync(a => a.AgentId == agentId);
+
+                if (agent == null)
+                {
+                    Console.WriteLine($"❌ Agente no encontrado: {agentId}");
+                    return false;
+                }
+
+                // Verificar que el paciente tenga asignado este agente
+                if (patient.AgentId != agentId)
+                {
+                    Console.WriteLine($"⚠️ El paciente {patientId} no tiene asignado el agente {agentId}");
+                    return false;
+                }
+
+                // Desvincular el agente del paciente (establecer como null)
+                patient.AgentId = null;
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"✅ Agente {agentId} desvinculado correctamente del paciente {patientId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error desvinculando agente {agentId} del paciente {patientId}: {ex.Message}");
+                Console.WriteLine($"❌ StackTrace: {ex.StackTrace}");
+                return false;
+            }
+        }
+
+
         private AgentDTO MapToDto(Agent entity) => new AgentDTO
         {
             AgentId = entity.AgentId,

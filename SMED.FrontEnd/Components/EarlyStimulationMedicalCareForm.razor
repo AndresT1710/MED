@@ -271,7 +271,7 @@
                                            ColumnHeaders="@agentHeaders"
                                            Rows="@agentRows"
                                            RowIds="@agentIds"
-                                           ShowAddButton="true"
+                                           ShowAddButton="@CanAddAgent()"
                                            ShowEditButton="true"
                                            ShowDeleteButton="true"
                                            OnAddRequested="@AbrirModalAgregarAgent"
@@ -351,18 +351,31 @@
                                             <input type="text"
                                                    class="form-control"
                                                    @bind="editingAgent.PhoneNumber"
-                                                   placeholder="Ingrese teléfono convencional" />
+                                                   @oninput="(e) => HandlePhoneInput(e, nameof(editingAgent.PhoneNumber), 9)"
+                                                   placeholder="Ej: 032521273 (9 dígitos)"
+                                                   maxlength="9" />
+                                            <small class="text-muted">Máximo 9 dígitos (prefijo + 7 dígitos)</small>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Teléfono Celular *</label>
                                             <input type="text"
                                                    class="form-control"
                                                    @bind="editingAgent.CellphoneNumber"
-                                                   placeholder="Ingrese teléfono celular" />
+                                                   @oninput="(e) => HandlePhoneInput(e, nameof(editingAgent.CellphoneNumber), 10)"
+                                                   placeholder="Ej: 0991234567 (10 dígitos)"
+                                                   maxlength="10" />
+                                            <small class="text-muted">Máximo 10 dígitos</small>
                                         </div>
                                     </div>
                                 </EditModalContent>
                             </EditableTable>
+                            @if (agents.Count >= 1)
+                            {
+                                <div class="alert alert-info mt-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Información:</strong> Solo se permite registrar un representante por paciente.
+                                </div>
+                            }
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -833,8 +846,17 @@
         }
     }
 
-    private void AbrirModalAgregarAgent()
+    private async void AbrirModalAgregarAgent()
     {
+        // Verificar si ya existe un representante
+        if (agents.Count >= 1)
+        {
+            await JS.InvokeVoidAsync("alert",
+                "Solo se permite registrar un representante por paciente. " +
+                "Si necesita modificar los datos, utilice la opción de edición.");
+            return;
+        }
+
         editingAgent = new AgentDTO
         {
             DocumentType = 0,
@@ -869,6 +891,21 @@
     {
         try
         {
+            // Validar longitud de teléfonos
+            if (!string.IsNullOrEmpty(editingAgent.PhoneNumber) && editingAgent.PhoneNumber.Length != 9)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "El teléfono convencional debe tener exactamente 9 dígitos.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(editingAgent.CellphoneNumber) || editingAgent.CellphoneNumber.Length != 10)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "El teléfono celular debe tener exactamente 10 dígitos.");
+                return;
+            }
+
             if (editingAgent.AgentId > 0)
             {
                 // Actualizar agente existente
@@ -882,6 +919,15 @@
             }
             else
             {
+                // Verificar nuevamente antes de crear (doble validación)
+                if (agents.Count >= 1)
+                {
+                    await JS.InvokeVoidAsync("alert",
+                        "Ya existe un representante registrado para este paciente. " +
+                        "Solo se permite un representante por paciente.");
+                    return;
+                }
+
                 // Crear nuevo agente
                 var createResult = await AgentService.CreateAsync(editingAgent);
                 if (!createResult.Success)
@@ -946,41 +992,126 @@
     {
         try
         {
-            var confirmed = await JS.InvokeAsync<bool>("confirm", "¿Está seguro de que desea eliminar este representante?");
+            var confirmed = await JS.InvokeAsync<bool>("confirm",
+                "¿Está seguro de que desea ELIMINAR PERMANENTEMENTE este representante?\n\n" +
+                "Esta acción realizará lo siguiente:\n" +
+                "1. Desvinculará el representante del paciente\n" +
+                "2. Eliminará permanentemente el representante del sistema\n\n" +
+                "Esta acción NO se puede deshacer.");
+
             if (!confirmed) return;
 
+            // PRIMERO: Desvincular el agente del paciente
+            var unassignResult = await AgentService.UnassignAgentFromPatient(selectedPatientId, id);
+            if (!unassignResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    $"❌ Error al desvincular el representante del paciente: {unassignResult.Error}\n\n" +
+                    "No se pudo completar la eliminación.");
+                return;
+            }
+
+            // SEGUNDO: Eliminar el agente
             var deleteResult = await AgentService.DeleteAsync(id);
             if (!deleteResult.Success)
             {
-                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {deleteResult.Error}");
+                await JS.InvokeVoidAsync("alert",
+                    $"❌ Error al eliminar el representante: {deleteResult.Error}\n\n" +
+                    "El representante fue desvinculado del paciente pero no se pudo eliminar del sistema.");
                 return;
             }
 
             await LoadAgents();
-            await JS.InvokeVoidAsync("alert", "Representante eliminado correctamente.");
+            await JS.InvokeVoidAsync("alert", "✅ Representante eliminado correctamente.");
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+            await JS.InvokeVoidAsync("alert",
+                $"❌ Error inesperado al eliminar: {ex.Message}\n\n" +
+                "Por favor, contacte con soporte técnico.");
         }
     }
 
     private bool ValidarFormularioAgent()
     {
-        return editingAgent.DocumentType > 0 &&
+        var basicValidation = editingAgent.DocumentType > 0 &&
                !string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber) &&
                editingAgent.GenderId > 0 &&
                editingAgent.MaritalStatusId > 0 &&
                !string.IsNullOrWhiteSpace(editingAgent.FirstName) &&
                !string.IsNullOrWhiteSpace(editingAgent.LastName) &&
                !string.IsNullOrWhiteSpace(editingAgent.CellphoneNumber);
+
+        // Validar longitud de teléfonos
+        var phoneValidation = string.IsNullOrEmpty(editingAgent.PhoneNumber) ||
+                             editingAgent.PhoneNumber.Length == 9;
+        var cellphoneValidation = !string.IsNullOrEmpty(editingAgent.CellphoneNumber) &&
+                                 editingAgent.CellphoneNumber.Length == 10;
+
+        return basicValidation && phoneValidation && cellphoneValidation;
     }
 
     private bool IsRepresentativesComplete()
     {
         return agents != null && agents.Any();
     }
+
+
+    // ========== MÉTODOS PARA CONTROL DE TELÉFONOS ==========
+
+    private async Task HandlePhoneInput(ChangeEventArgs e, string propertyName, int maxLength)
+    {
+        try
+        {
+            var value = e.Value?.ToString() ?? "";
+
+            // Permitir solo números
+            var numericValue = new string(value.Where(char.IsDigit).ToArray());
+
+            // Limitar a la longitud máxima
+            if (numericValue.Length > maxLength)
+            {
+                numericValue = numericValue.Substring(0, maxLength);
+            }
+
+            // Actualizar la propiedad correspondiente
+            switch (propertyName)
+            {
+                case nameof(editingAgent.PhoneNumber):
+                    editingAgent.PhoneNumber = numericValue;
+                    break;
+                case nameof(editingAgent.CellphoneNumber):
+                    editingAgent.CellphoneNumber = numericValue;
+                    break;
+            }
+
+            // Forzar actualización del UI
+            StateHasChanged();
+
+            // Mostrar advertencia si se excede la longitud
+            if (value.Length > maxLength)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"Se ha limitado el número a {maxLength} dígitos");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error",
+                $"Error en HandlePhoneInput para {propertyName}: {ex.Message}");
+        }
+    }
+
+    // ========== MÉTODOS PARA CONTROL DE UN SOLO REPRESENTANTE ==========
+
+    private bool CanAddAgent()
+    {
+        // Permitir agregar solo si no hay representantes registrados
+        return agents.Count == 0;
+    }
+
+
 
 
 

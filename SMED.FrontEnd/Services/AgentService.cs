@@ -149,5 +149,30 @@ namespace SMED.FrontEnd.Services
                 return (false, ex.Message);
             }
         }
+
+
+        // Agrega este método en tu AgentService - para desvincular agente de paciente
+        public async Task<(bool Success, string Error)> UnassignAgentFromPatient(int patientId, int agentId)
+        {
+            try
+            {
+                var request = new { PatientId = patientId, AgentId = agentId };
+                var response = await _httpClient.PutAsJsonAsync($"api/Agent/UnassignFromPatient", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, string.Empty);
+                }
+
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Error al desvincular agente: {StatusCode} - {Error}", response.StatusCode, error);
+                return (false, error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al desvincular agente del paciente");
+                return (false, ex.Message);
+            }
+        }
     }
 }

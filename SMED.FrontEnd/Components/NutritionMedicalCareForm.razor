@@ -1,0 +1,1217 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.Shared.Entity
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject LocationService LocationService
+@inject AuthorizationService AuthorizationService
+@inject SkinFoldsService SkinFoldsService
+@inject MeasurementsService MeasurementsService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="nutrition-care-form">
+    <!-- Sistema de pestañas -->
+    <ul class="nav nav-tabs" id="nutritionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "pliegues" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("pliegues"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-ruler-combined me-2"></i>Pliegues
+                @if (IsPlieguesComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "bioimpedancia" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("bioimpedancia"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-weight me-2"></i>Bioimpedancia
+                @if (IsBioimpedanciaComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "perimetros" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("perimetros"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-ruler me-2"></i>Perímetros
+                @if (IsPerimetrosComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "diametros" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("diametros"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-arrows-alt-h me-2"></i>Diámetros
+                @if (IsDiametrosComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "plan" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("plan"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-utensils me-2"></i>Plan Alimentación
+                @if (IsPlanComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- Pestaña 1: Selección de Paciente -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-apple-alt me-2"></i>Selección de Paciente - Nutrición
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-apple-alt me-1"></i>Área: Nutrición
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (!isEditMode)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                                             OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención de nutrición existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Nutrición
+                                    <br>
+                                    <small class="text-muted">Esta atención se registrará automáticamente en el área de Nutrición.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                        @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta de nutrición..."
+                                      maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nutricionista *</label>
+
+                            @if (profesionalCargado)
+                            {
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Nutricionista asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el profesional responsable.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                                    @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un nutricionista manualmente</option>
+                                                @foreach (var profesional in nutricionistas)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un nutricionista responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del profesional...</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
+                                    </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("pliegues"))">
+                                            Continuar a Pliegues <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 2: Pliegues -->
+        <!-- Pestaña 2: Pliegues -->
+        <div class="tab-pane @(activeTab == "pliegues" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-ruler-combined me-2"></i>Medición de Pliegues Cutáneos
+                        <span class="badge bg-info ms-2">Opcional</span>
+                        @if (IsPlieguesComplete())
+                        {
+                            <span class="badge bg-success ms-1">✓</span>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Sección de Pliegues Cutáneos</strong> - Complete las mediciones antropométricas del paciente. Los datos se guardan automáticamente.
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Primera fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Subescapular (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Subscapular"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Tríceps (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Triceps"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+
+                            <!-- Segunda fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Bíceps (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Biceps"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Cresta Ilíaca (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.IliacCrest"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+
+                            <!-- Tercera fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Supraespinal (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Supraespinal"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Abdominal (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Abdominal"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+
+                            <!-- Cuarta fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Muslo Frontal (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.FrontalThigh"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Pantorrilla Medial (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.MedialCalf"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+
+                            <!-- Quinta fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Axilar Medial (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.MedialAxillary"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Pectoral (mm)"
+                                               Width="full"
+                                               @bind-Content="@skinFoldsData.Pectoral"
+                                               @bind-Content:after="AutoSaveSkinFolds" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("bioimpedancia"))">
+                                Continuar a Bioimpedancia <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Pestaña 3: Bioimpedancia -->
+        <div class="tab-pane @(activeTab == "bioimpedancia" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-weight me-2"></i>Bioimpedancia Eléctrica
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Análisis de Composición Corporal</strong> - Registre los resultados de la bioimpedancia.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Masa Magra (kg)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="masaMagra" placeholder="Ej: 45.2" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Masa Grasa (kg)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="masaGrasa" placeholder="Ej: 22.5" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Porcentaje de Grasa (%)</label>
+                                <input type="number" class="form-control" step="0.1" min="0" max="100"
+                                       @bind="porcentajeGrasa" placeholder="Ej: 25.8" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Agua Corporal (L)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="aguaCorporal" placeholder="Ej: 35.6" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("pliegues"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("perimetros"))">
+                                Continuar a Perímetros <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 4: Perímetros -->
+        <div class="tab-pane @(activeTab == "perimetros" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-ruler me-2"></i>Medición de Perímetros Corporales
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Perímetros Corporales</strong> - Registre las circunferencias del paciente.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Perímetro Cintura (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="perimetroCintura" placeholder="Ej: 85.5" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Perímetro Cadera (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="perimetroCadera" placeholder="Ej: 102.3" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Perímetro Braquial (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="perimetroBraquial" placeholder="Ej: 32.1" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Perímetro Muslo (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="perimetroMuslo" placeholder="Ej: 55.7" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("bioimpedancia"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("diametros"))">
+                                Continuar a Diámetros <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 5: Diámetros -->
+        <div class="tab-pane @(activeTab == "diametros" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-arrows-alt-h me-2"></i>Medición de Diámetros Óseos
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Diámetros Óseos</strong> - Registre las medidas de la estructura ósea.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Diámetro Biacromial (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="diametroBiacromial" placeholder="Ej: 42.3" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Diámetro Bicrestal (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="diametroBicrestal" placeholder="Ej: 28.7" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Diámetro Humeral (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="diametroHumeral" placeholder="Ej: 6.8" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Diámetro Femoral (cm)</label>
+                                <input type="number" class="form-control" step="0.1" min="0"
+                                       @bind="diametroFemoral" placeholder="Ej: 9.2" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("perimetros"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("plan"))">
+                                Continuar a Plan Alimentación <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 6: Plan Alimentación -->
+        <div class="tab-pane @(activeTab == "plan" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-utensils me-2"></i>Plan de Alimentación
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Plan Nutricional Personalizado</strong> - Establezca las recomendaciones alimentarias.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Requerimiento Calórico Diario (kcal)</label>
+                                <input type="number" class="form-control" min="0"
+                                       @bind="requerimientoCalorico" placeholder="Ej: 2000" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Distribución de Macronutrientes - Proteínas (%)</label>
+                                <input type="number" class="form-control" step="0.1" min="0" max="100"
+                                       @bind="distribucionProteinas" placeholder="Ej: 25" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Distribución de Macronutrientes - Carbohidratos (%)</label>
+                                <input type="number" class="form-control" step="0.1" min="0" max="100"
+                                       @bind="distribucionCarbohidratos" placeholder="Ej: 50" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Distribución de Macronutrientes - Grasas (%)</label>
+                                <input type="number" class="form-control" step="0.1" min="0" max="100"
+                                       @bind="distribucionGrasas" placeholder="Ej: 25" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Recomendaciones Específicas</label>
+                                <textarea class="form-control" rows="4"
+                                          @bind="recomendacionesAlimentarias"
+                                          placeholder="Describa las recomendaciones específicas de alimentación..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diametros"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-success" @onclick="FinalizarAtencionNutricion" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="fas fa-check me-2"></i>Finalizar Atención
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO MedicalCare { get; set; } = new();
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+
+
+    // Variables para pestañas
+    private string activeTab = "patient";
+
+    // Variables existentes para la pestaña de paciente
+    private int clinicalHistoryId;
+    private int selectedPatientId;
+    private string selectedHistoryNumber = string.Empty;
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+    private string lugarSeleccionada = string.Empty;
+    private string motivoConsulta = string.Empty;
+    private List<HealthProfessionalDTO> nutricionistas = new();
+    private HealthProfessionalDTO? profesionalLogueado;
+    private int selectedHealthProfessionalId;
+    private int nutritionLocationId;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private bool showValidationErrors = false;
+    private bool profesionalCargado = false;
+    private int currentMedicalCareId = 0;
+    private ReasonForConsultationDTO? existingReasonForConsultation;
+
+    // Variables para Pliegues
+    private SkinFoldsDTO skinFoldsData = new SkinFoldsDTO();
+    private int? currentMeasurementsId;
+    private bool skinFoldsLoaded = false;
+
+    // Variables para Bioimpedancia
+    private double? masaMagra;
+    private double? masaGrasa;
+    private double? porcentajeGrasa;
+    private double? aguaCorporal;
+
+    // Variables para Perímetros
+    private double? perimetroCintura;
+    private double? perimetroCadera;
+    private double? perimetroBraquial;
+    private double? perimetroMuslo;
+
+    // Variables para Diámetros
+    private double? diametroBiacromial;
+    private double? diametroBicrestal;
+    private double? diametroHumeral;
+    private double? diametroFemoral;
+
+    // Variables para Plan Alimentación
+    private int? requerimientoCalorico;
+    private double? distribucionProteinas;
+    private double? distribucionCarbohidratos;
+    private double? distribucionGrasas;
+    private string recomendacionesAlimentarias = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocationsAndPlaces();
+        await LoadHealthProfessionals();
+        await ObtenerProfesionalLogueado();
+
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
+            selectedPatientId = MedicalCare.PatientId;
+            await LoadExistingData();
+        }
+        else
+        {
+            await AsignarProfesionalLogueado();
+        }
+    }
+
+    // ========== MÉTODOS PARA PESTAÑAS ==========
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
+        // Cargar datos específicos cuando se activa la pestaña de Pliegues
+        if (tab == "pliegues" && currentMedicalCareId > 0 && !skinFoldsLoaded)
+        {
+            currentMeasurementsId = await GetOrCreateMeasurementsId();
+            if (currentMeasurementsId != null)
+            {
+                await LoadSkinFoldsData();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
+                return;
+            }
+        }
+
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta) &&
+               selectedHealthProfessionalId > 0 &&
+               nutritionLocationId > 0;
+    }
+
+
+    private bool IsBioimpedanciaComplete()
+    {
+        return masaMagra.HasValue || masaGrasa.HasValue ||
+               porcentajeGrasa.HasValue || aguaCorporal.HasValue;
+    }
+
+    private bool IsPerimetrosComplete()
+    {
+        return perimetroCintura.HasValue || perimetroCadera.HasValue ||
+               perimetroBraquial.HasValue || perimetroMuslo.HasValue;
+    }
+
+    private bool IsDiametrosComplete()
+    {
+        return diametroBiacromial.HasValue || diametroBicrestal.HasValue ||
+               diametroHumeral.HasValue || diametroFemoral.HasValue;
+    }
+
+    private bool IsPlanComplete()
+    {
+        return requerimientoCalorico.HasValue || !string.IsNullOrWhiteSpace(recomendacionesAlimentarias);
+    }
+
+    private async Task FinalizarAtencionNutricion()
+    {
+        isSaving = true;
+        try
+        {
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención de nutrición válida para finalizar.");
+                return;
+            }
+
+            // Aquí iría la lógica para guardar todos los datos de las pestañas
+            await GuardarDatosNutricionales();
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención de nutrición finalizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task GuardarDatosNutricionales()
+    {
+        // TODO: Implementar la lógica para guardar todos los datos nutricionales
+        // en sus respectivos servicios cuando los creemos
+        await Task.CompletedTask;
+    }
+
+    // Método para verificar si la pestaña de Pliegues está completa
+    private bool IsPlieguesComplete()
+    {
+        return !string.IsNullOrWhiteSpace(skinFoldsData.Subscapular) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.Triceps) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.Biceps) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.IliacCrest) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.Supraespinal) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.Abdominal) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.FrontalThigh) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.MedialCalf) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.MedialAxillary) ||
+               !string.IsNullOrWhiteSpace(skinFoldsData.Pectoral);
+    }
+
+    // Método para guardar automáticamente los pliegues
+    private async Task AutoSaveSkinFolds()
+    {
+        if (currentMedicalCareId <= 0 || currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            // Asegurarnos de que el MeasurementsId esté asignado
+            skinFoldsData.MeasurementsId = currentMeasurementsId.Value;
+
+            var result = await SkinFoldsService.SaveOrUpdateAsync(skinFoldsData);
+            if (result.Success)
+            {
+                if (result.Data != null)
+                {
+                    skinFoldsData.SkinFoldsId = result.Data.SkinFoldsId;
+                }
+                await JS.InvokeVoidAsync("console.log", "Pliegues cutáneos guardados automáticamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error guardando pliegues: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error en AutoSaveSkinFolds: {ex.Message}");
+        }
+    }
+
+    // Método para cargar los datos existentes de SkinFolds
+    private async Task LoadSkinFoldsData()
+    {
+        if (currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            var existingSkinFolds = await SkinFoldsService.GetByMeasurementsIdAsync(currentMeasurementsId.Value);
+            if (existingSkinFolds != null)
+            {
+                skinFoldsData = existingSkinFolds;
+                await JS.InvokeVoidAsync("console.log", "Datos de pliegues existentes cargados");
+            }
+            else
+            {
+                // Inicializar nuevo objeto si no existe
+                skinFoldsData = new SkinFoldsDTO { MeasurementsId = currentMeasurementsId.Value };
+                await JS.InvokeVoidAsync("console.log", "Nuevo objeto de pliegues inicializado");
+            }
+
+            skinFoldsLoaded = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando datos de pliegues: {ex.Message}");
+            skinFoldsData = new SkinFoldsDTO { MeasurementsId = currentMeasurementsId.Value };
+            skinFoldsLoaded = true;
+        }
+    }
+
+    // MÉTODO CORREGIDO - sin MeasurementDate
+    private async Task<int?> GetOrCreateMeasurementsId()
+    {
+        try
+        {
+            // Buscar si ya existe un Measurements para este MedicalCare
+            var existingMeasurements = await MeasurementsService.GetByMedicalCareIdAsync(currentMedicalCareId);
+            if (existingMeasurements != null)
+            {
+                await JS.InvokeVoidAsync("console.log", $"Measurements existente encontrado: {existingMeasurements.MeasurementsId}");
+                return existingMeasurements.MeasurementsId;
+            }
+
+            // Crear nuevo Measurements si no existe
+            var newMeasurements = new MeasurementsDTO
+            {
+                MedicalCareId = currentMedicalCareId
+                // No incluir MeasurementDate ya que no existe en el DTO
+            };
+
+            // Usamos el nuevo método con patrón de retorno consistente
+            var result = await MeasurementsService.CreateAsync(newMeasurements);
+            if (result.Success && result.Data != null)
+            {
+                await JS.InvokeVoidAsync("console.log", $"Nuevo Measurements creado: {result.Data.MeasurementsId}");
+                return result.Data.MeasurementsId;
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error creando Measurements: {result.Error}");
+
+                // Fallback: intentar con el método legacy
+                var legacyResult = await MeasurementsService.CreateMeasurementAsync(newMeasurements);
+                if (legacyResult != null)
+                {
+                    await JS.InvokeVoidAsync("console.log", $"Measurements creado con método legacy: {legacyResult.MeasurementsId}");
+                    return legacyResult.MeasurementsId;
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error obteniendo/creando Measurements: {ex.Message}");
+            return null;
+        }
+    }
+
+
+
+
+
+
+    // ========== MÉTODOS EXISTENTES ADAPTADOS ==========
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Nutricionista logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el nutricionista logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo nutricionista logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Nutricionista logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (nutricionistas.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn",
+                "⚠️ No se encontró nutricionista logueado, mostrando selector manual");
+        }
+    }
+
+    private async Task LoadLocationsAndPlaces()
+    {
+        try
+        {
+            var locations = await LocationService.GetAllAsync();
+            var nutritionLocation = locations?.FirstOrDefault(l =>
+                l.Name.Equals("Nutrición", StringComparison.OrdinalIgnoreCase));
+
+            nutritionLocationId = nutritionLocation?.Id ?? 0;
+
+            if (nutritionLocationId == 0)
+            {
+                await JS.InvokeVoidAsync("console.error", "No se encontró la ubicación de Nutrición");
+            }
+
+            lugaresAtencion = await PlaceService.GetAllPlacesAsync() ?? new List<PlaceOfAttentionDTO>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading locations and places: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        try
+        {
+            var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
+            nutricionistas = allProfessionals?
+                .Where(hp => hp.NameTypeProfessional != null &&
+                           (hp.NameTypeProfessional.ToLower().Contains("nutrición") ||
+                            hp.NameTypeProfessional.ToLower().Contains("nutricion") ||
+                            hp.NameTypeProfessional.ToLower().Contains("dietista") ||
+                            hp.NameTypeProfessional.ToLower().Contains("dietología") ||
+                            hp.NameTypeProfessional.ToLower().Contains("dietologia")))
+                .ToList() ?? new List<HealthProfessionalDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Se encontraron {nutricionistas.Count} nutricionistas");
+
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading health professionals: {ex.Message}");
+        }
+    }
+
+    private async Task LoadExistingData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                var medicalCare = await MedicalCareService.GetByIdAsync(currentMedicalCareId);
+                if (medicalCare != null)
+                {
+                    lugarSeleccionada = medicalCare.PlaceOfAttentionId.ToString();
+                    selectedHealthProfessionalId = medicalCare.HealthProfessionalId;
+
+                    var reasons = await ReasonForConsultationService.GetByCareIdAsync(currentMedicalCareId);
+                    existingReasonForConsultation = reasons?.FirstOrDefault();
+                    if (existingReasonForConsultation != null)
+                    {
+                        motivoConsulta = existingReasonForConsultation.Description;
+                    }
+
+                    // Cargar MeasurementsId existente si hay datos de pliegues
+                    currentMeasurementsId = await GetOrCreateMeasurementsId();
+                    if (currentMeasurementsId != null)
+                    {
+                        await LoadSkinFoldsData();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
+        }
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task GuardarDatosPaciente()
+    {
+        isSaving = true;
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
+
+            if (nutritionLocationId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar el área de nutrición. Por favor, contacte con soporte.");
+                return;
+            }
+
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar al nutricionista. Por favor, contacte con soporte.");
+                return;
+            }
+
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            {
+                MedicalCare.LocationId = nutritionLocationId;
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    return;
+                }
+
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                var medicalCareDto = new MedicalCareDTO
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = selectedHealthProfessionalId,
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = nutritionLocationId,
+                    CareDate = DateTime.Now
+                };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención de nutrición: {result.Error}");
+                    return;
+                }
+
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con las siguientes pestañas.");
+            showValidationErrors = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup si es necesario
+    }
+}

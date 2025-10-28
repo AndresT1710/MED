@@ -80,6 +80,30 @@ namespace SMED.BackEnd.Controllers
                 return StatusCode(500, $"Error asignando agente: {ex.Message}");
             }
         }
+
+
+        // NUEVO ENDPOINT: Desvincular agente de paciente
+        [HttpPut("UnassignFromPatient")]
+        public async Task<IActionResult> UnassignAgentFromPatient([FromBody] AssignAgentRequest request)
+        {
+            try
+            {
+                if (_repository is AgentRepository repo)
+                {
+                    var result = await repo.UnassignAgentFromPatientAsync(request.PatientId, request.AgentId);
+                    return result ? Ok(new { Message = "Agente desvinculado correctamente del paciente" })
+                                 : NotFound("No se pudo desvincular el agente del paciente");
+                }
+                return BadRequest("Repositorio no soporta esta operación");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error desvinculando agente: {ex.Message}");
+            }
+        }
+
+
+
     }
 
     // DTO para la request de asignación

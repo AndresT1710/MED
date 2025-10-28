@@ -148,8 +148,7 @@ builder.Services.AddScoped<BioImpedanceService>();
 builder.Services.AddScoped<PerimetersService>();
 builder.Services.AddScoped<DiametersService>();
 builder.Services.AddScoped<FoodPlanService>();
-builder.Services.AddScoped<RestrictionService>();
-builder.Services.AddScoped<RecommendedFoodsService>();
+builder.Services.AddScoped<ForbiddenFoodService>();
 
 
 

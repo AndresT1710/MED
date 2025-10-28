@@ -1,25 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SMED.Shared.Entity
 {
-    public class FoodPlan
+    public class ForbiddenFood
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int FoodPlanId { get; set; }
+        public int ForbiddenFoodId { get; set; }
 
         public DateTime? RegistrationDate { get; set; }
-
-        public int? Quantity { get; set; }
-
-        [StringLength(100)]
-        public string? Frequency { get; set; }
-
-        [StringLength(255)]
-        public string? Indications { get; set; }
 
         [StringLength(255)]
         public string? Description { get; set; }
@@ -27,13 +18,13 @@ namespace SMED.Shared.Entity
         public int FoodId { get; set; }
 
         [ForeignKey("FoodId")]
-        [InverseProperty("FoodPlans")]
+        [InverseProperty("ForbiddenFoods")]
         public virtual Food Food { get; set; } = null!;
 
         public int CareId { get; set; }
 
         [ForeignKey("CareId")]
-        [InverseProperty("FoodPlans")]
+        [InverseProperty("ForbiddenFoods")]
         public virtual MedicalCare MedicalCare { get; set; } = null!;
     }
 }

@@ -214,13 +214,8 @@ builder.Services.AddScoped<IRepository<PerimetersDTO, int>, PerimetersRepository
 builder.Services.AddScoped<PerimetersRepository>();
 builder.Services.AddScoped<IRepository<FoodPlanDTO, int>, FoodPlanRepository>();
 builder.Services.AddScoped<FoodPlanRepository>();
-builder.Services.AddScoped<IRepository<RestrictionDTO, int>, RestrictionRepository>();
-builder.Services.AddScoped<RestrictionRepository>();
-builder.Services.AddScoped<IRepository<RecommendedFoodsDTO, int>, RecommendedFoodsRepository>();
-builder.Services.AddScoped<RecommendedFoodsRepository>();
-
-
-
+builder.Services.AddScoped<IRepository<ForbiddenFoodDTO, int>, ForbiddenFoodRepository>();
+builder.Services.AddScoped<ForbiddenFoodRepository>();
 
 
 //PDF

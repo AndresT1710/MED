@@ -6,18 +6,12 @@ using System.Threading.Tasks;
 
 namespace SMED.Shared.DTOs
 {
-    public class FoodPlanDTO
+    public class ForbiddenFoodDTO
     {
-        public int FoodPlanId { get; set; }
+        public int ForbiddenFoodId { get; set; }
         public DateTime? RegistrationDate { get; set; }
-        public int? Quantity { get; set; }
-        public string? Frequency { get; set; }
-        public string? Indications { get; set; }
         public string? Description { get; set; }
         public int FoodId { get; set; }
         public int CareId { get; set; }
-
-        public FoodDTO? Food { get; set; }
-
     }
 }

@@ -1169,34 +1169,31 @@ person.SecondLastName
 
                 Console.WriteLine($"[DEBUG] Evolutions cargadas: {evolutions.Count}");
 
-                // <ADD> 15) OBTENER DATOS DE NUTRICIÓN - FOOD PLANS
+                // <UPDATED> 15) OBTENER DATOS DE NUTRICIÓN - FOOD PLANS
                 var foodPlans = await _context.FoodPlans
                     .Where(fp => fp.CareId == id)
                     .Select(fp => new FoodPlanDTO
                     {
                         FoodPlanId = fp.FoodPlanId,
                         RegistrationDate = fp.RegistrationDate,
-                        RestrictionId = fp.RestrictionId,
-                        RecommendedFoodId = fp.RecommendedFoodId,
+                        Quantity = fp.Quantity,
+                        Frequency = fp.Frequency,
+                        Indications = fp.Indications,
+                        Description = fp.Description,
+                        FoodId = fp.FoodId,
                         CareId = fp.CareId,
-                        Restriction = fp.Restriction != null ? new RestrictionDTO
+
+                        // Mapeo del alimento asociado
+                        Food = fp.Food != null ? new FoodDTO
                         {
-                            RestrictionId = fp.Restriction.RestrictionId,
-                            Description = fp.Restriction.Description,
-                            FoodId = fp.Restriction.FoodId
-                        } : null,
-                        RecommendedFood = fp.RecommendedFood != null ? new RecommendedFoodsDTO
-                        {
-                            RecommendedFoodId = fp.RecommendedFood.RecommendedFoodId,
-                            Description = fp.RecommendedFood.Description,
-                            Frequency = fp.RecommendedFood.Frequency,
-                            Quantity = fp.RecommendedFood.Quantity,
-                            FoodId = fp.RecommendedFood.FoodId
+                            FoodId = fp.Food.FoodId,
+                            Name = fp.Food.Name
                         } : null
                     })
                     .ToListAsync();
 
                 Console.WriteLine($"[DEBUG] FoodPlans cargados: {foodPlans.Count}");
+
 
                 // <ADD> 16) OBTENER MEASUREMENTS Y SUS COMPONENTES
                 var measurementsData = await _context.Measurements

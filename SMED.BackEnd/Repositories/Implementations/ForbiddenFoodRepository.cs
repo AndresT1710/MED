@@ -6,44 +6,41 @@ using SMED.Shared.Entity;
 
 namespace SMED.BackEnd.Repositories.Implementations
 {
-    public class FoodPlanRepository : IRepository<FoodPlanDTO, int>
+    public class ForbiddenFoodRepository : IRepository<ForbiddenFoodDTO, int>
     {
         private readonly SGISContext _context;
 
-        public FoodPlanRepository(SGISContext context)
+        public ForbiddenFoodRepository(SGISContext context)
         {
             _context = context;
         }
 
-        public async Task<List<FoodPlanDTO>> GetAllAsync()
+        public async Task<List<ForbiddenFoodDTO>> GetAllAsync()
         {
-            var entities = await _context.FoodPlans.ToListAsync();
+            var entities = await _context.ForbiddenFoods.ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
 
-        public async Task<FoodPlanDTO?> GetByIdAsync(int id)
+        public async Task<ForbiddenFoodDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.FoodPlans.FindAsync(id);
+            var entity = await _context.ForbiddenFoods.FindAsync(id);
             return entity != null ? MapToDto(entity) : null;
         }
 
-        public async Task<FoodPlanDTO> AddAsync(FoodPlanDTO dto)
+        public async Task<ForbiddenFoodDTO> AddAsync(ForbiddenFoodDTO dto)
         {
             var entity = MapToEntity(dto);
-            _context.FoodPlans.Add(entity);
+            _context.ForbiddenFoods.Add(entity);
             await _context.SaveChangesAsync();
             return MapToDto(entity);
         }
 
-        public async Task<FoodPlanDTO?> UpdateAsync(FoodPlanDTO dto)
+        public async Task<ForbiddenFoodDTO?> UpdateAsync(ForbiddenFoodDTO dto)
         {
-            var entity = await _context.FoodPlans.FindAsync(dto.FoodPlanId);
+            var entity = await _context.ForbiddenFoods.FindAsync(dto.ForbiddenFoodId);
             if (entity == null) return null;
 
             entity.RegistrationDate = dto.RegistrationDate;
-            entity.Quantity = dto.Quantity;
-            entity.Frequency = dto.Frequency;
-            entity.Indications = dto.Indications;
             entity.Description = dto.Description;
             entity.FoodId = dto.FoodId;
             entity.CareId = dto.CareId;
@@ -54,33 +51,27 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var entity = await _context.FoodPlans.FindAsync(id);
+            var entity = await _context.ForbiddenFoods.FindAsync(id);
             if (entity == null) return false;
 
-            _context.FoodPlans.Remove(entity);
+            _context.ForbiddenFoods.Remove(entity);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        private FoodPlanDTO MapToDto(FoodPlan entity) => new FoodPlanDTO
+        private ForbiddenFoodDTO MapToDto(ForbiddenFood entity) => new ForbiddenFoodDTO
         {
-            FoodPlanId = entity.FoodPlanId,
+            ForbiddenFoodId = entity.ForbiddenFoodId,
             RegistrationDate = entity.RegistrationDate,
-            Quantity = entity.Quantity,
-            Frequency = entity.Frequency,
-            Indications = entity.Indications,
             Description = entity.Description,
             FoodId = entity.FoodId,
             CareId = entity.CareId
         };
 
-        private FoodPlan MapToEntity(FoodPlanDTO dto) => new FoodPlan
+        private ForbiddenFood MapToEntity(ForbiddenFoodDTO dto) => new ForbiddenFood
         {
-            FoodPlanId = dto.FoodPlanId,
+            ForbiddenFoodId = dto.ForbiddenFoodId,
             RegistrationDate = dto.RegistrationDate,
-            Quantity = dto.Quantity,
-            Frequency = dto.Frequency,
-            Indications = dto.Indications,
             Description = dto.Description,
             FoodId = dto.FoodId,
             CareId = dto.CareId

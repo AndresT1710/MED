@@ -19,7 +19,7 @@ namespace SMED.FrontEnd.Services
                 return await _httpClient.GetFromJsonAsync<List<FoodPlanDTO>>("api/FoodPlan")
                     ?? new List<FoodPlanDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return new List<FoodPlanDTO>();
             }
@@ -31,7 +31,7 @@ namespace SMED.FrontEnd.Services
             {
                 return await _httpClient.GetFromJsonAsync<FoodPlanDTO>($"api/FoodPlan/{id}");
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -42,24 +42,26 @@ namespace SMED.FrontEnd.Services
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("api/FoodPlan", dto);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<FoodPlanDTO>();
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<FoodPlanDTO>();
+                return null;
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
         }
 
-        public async Task<FoodPlanDTO?> UpdateAsync(FoodPlanDTO dto)
+        public async Task<FoodPlanDTO?> UpdateAsync(int id, FoodPlanDTO dto)
         {
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"api/FoodPlan/{dto.FoodPlanId}", dto);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<FoodPlanDTO>();
+                var response = await _httpClient.PutAsJsonAsync($"api/FoodPlan/{id}", dto);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<FoodPlanDTO>();
+                return null;
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -72,47 +74,9 @@ namespace SMED.FrontEnd.Services
                 var response = await _httpClient.DeleteAsync($"api/FoodPlan/{id}");
                 return response.IsSuccessStatusCode;
             }
-            catch (Exception)
+            catch
             {
                 return false;
-            }
-        }
-
-        public async Task<List<FoodPlanDTO>> GetByCareIdAsync(int careId)
-        {
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<List<FoodPlanDTO>>($"api/FoodPlan/ByCare/{careId}")
-                    ?? new List<FoodPlanDTO>();
-            }
-            catch (Exception)
-            {
-                return new List<FoodPlanDTO>();
-            }
-        }
-
-        public async Task<FoodPlanDTO?> GetByRestrictionIdAsync(int restrictionId)
-        {
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<FoodPlanDTO>($"api/FoodPlan/ByRestriction/{restrictionId}");
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        public async Task<List<FoodPlanDTO>> GetByRecommendedFoodIdAsync(int recommendedFoodId)
-        {
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<List<FoodPlanDTO>>($"api/FoodPlan/ByRecommendedFood/{recommendedFoodId}")
-                    ?? new List<FoodPlanDTO>();
-            }
-            catch (Exception)
-            {
-                return new List<FoodPlanDTO>();
             }
         }
     }

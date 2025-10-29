@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SMED.Shared.Entity
 {
@@ -24,10 +21,9 @@ namespace SMED.Shared.Entity
         public virtual ICollection<FoodConsumptionHistory> FoodConsumptionHistories { get; set; } = new List<FoodConsumptionHistory>();
 
         [InverseProperty("Food")]
-        public virtual ICollection<Restriction> Restrictions { get; set; } = new List<Restriction>();
+        public virtual ICollection<FoodPlan> FoodPlans { get; set; } = new List<FoodPlan>();
 
         [InverseProperty("Food")]
-        public virtual ICollection<RecommendedFoods> RecommendedFoods { get; set; } = new List<RecommendedFoods>();
-
+        public virtual ICollection<ForbiddenFood> ForbiddenFoods { get; set; } = new List<ForbiddenFood>();
     }
 }

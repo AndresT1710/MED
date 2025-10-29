@@ -191,8 +191,8 @@ namespace SGIS.Models
         public DbSet<Diameters> Diameters { get; set; }
         public DbSet<Measurements> Measurements { get; set; }
         public DbSet<FoodPlan> FoodPlans { get; set; }
-        public DbSet<Restriction> Restrictions { get; set; }
-        public DbSet<RecommendedFoods> RecommendedFoods { get; set; }
+        //Nutricion
+        public DbSet<ForbiddenFood> ForbiddenFoods { get; set; }
 
 
 

@@ -14,6 +14,9 @@
 @inject BioImpedanceService BioImpedanceService
 @inject PerimetersService PerimetersService
 @inject DiametersService DiametersService
+@inject FoodPlanService FoodPlanService
+@inject ForbiddenFoodService ForbiddenFoodService
+@inject FoodService FoodService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -646,33 +649,120 @@
                             <strong>Plan Nutricional Personalizado</strong> - Establezca las recomendaciones alimentarias.
                         </div>
 
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label">Requerimiento Calórico Diario (kcal)</label>
-                                <input type="number" class="form-control" min="0"
-                                       @bind="requerimientoCalorico" placeholder="Ej: 2000" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Distribución de Macronutrientes - Proteínas (%)</label>
-                                <input type="number" class="form-control" step="0.1" min="0" max="100"
-                                       @bind="distribucionProteinas" placeholder="Ej: 25" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Distribución de Macronutrientes - Carbohidratos (%)</label>
-                                <input type="number" class="form-control" step="0.1" min="0" max="100"
-                                       @bind="distribucionCarbohidratos" placeholder="Ej: 50" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Distribución de Macronutrientes - Grasas (%)</label>
-                                <input type="number" class="form-control" step="0.1" min="0" max="100"
-                                       @bind="distribucionGrasas" placeholder="Ej: 25" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Recomendaciones Específicas</label>
-                                <textarea class="form-control" rows="4"
-                                          @bind="recomendacionesAlimentarias"
-                                          placeholder="Describa las recomendaciones específicas de alimentación..."></textarea>
-                            </div>
+                        <!-- Tabla: Plan de Alimentación -->
+                        <div class="mb-5">
+                            <EditableTable Title="Plan de Alimentación"
+                                           ColumnHeaders="@foodPlanHeaders"
+                                           Rows="@foodPlanRows"
+                                           RowIds="@foodPlanIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@PrepareForAddFoodPlan"
+                                           OnEditRequested="@PrepareForEditFoodPlan"
+                                           OnDeleteRequested="@HandleFoodPlanRowDeleted"
+                                           OnSaveRequested="@SaveFoodPlanChanges"
+                                           IsValidForm="@ValidateFoodPlanForm"
+                                           EmptyMessage="No hay planes de alimentación registrados">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Alimento *</label>
+                                            <select class="form-select" @bind="editingFoodPlan.FoodId">
+                                                <option value="0">Seleccione un alimento</option>
+                                                @foreach (var food in foods)
+                                                {
+                                                    <option value="@food.FoodId">@food.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Descripción</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingFoodPlan.Description"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Descripción del alimento..."></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha de Registro</label>
+                                            <input type="date"
+                                                   class="form-control"
+                                                   @bind="editingFoodPlan.RegistrationDate"
+                                                   @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cantidad</label>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   @bind="editingFoodPlan.Quantity"
+                                                   placeholder="Ej: 2" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Frecuencia</label>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   @bind="editingFoodPlan.Frequency"
+                                                   placeholder="Ej: Diaria, Semanal" />
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Indicaciones</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingFoodPlan.Indications"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Indicaciones específicas..."></textarea>
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
+                        </div>
+
+                        <!-- Tabla: Alimentos Restringidos -->
+                        <div class="mt-5">
+                            <EditableTable Title="Alimentos Restringidos"
+                                           ColumnHeaders="@forbiddenFoodHeaders"
+                                           Rows="@forbiddenFoodRows"
+                                           RowIds="@forbiddenFoodIds"
+                                           ShowAddButton="true"
+                                           ShowEditButton="true"
+                                           ShowDeleteButton="true"
+                                           OnAddRequested="@PrepareForAddForbiddenFood"
+                                           OnEditRequested="@PrepareForEditForbiddenFood"
+                                           OnDeleteRequested="@HandleForbiddenFoodRowDeleted"
+                                           OnSaveRequested="@SaveForbiddenFoodChanges"
+                                           IsValidForm="@ValidateForbiddenFoodForm"
+                                           EmptyMessage="No hay alimentos restringidos registrados">
+                                <EditModalContent>
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Alimento *</label>
+                                            <select class="form-select" @bind="editingForbiddenFood.FoodId">
+                                                <option value="0">Seleccione un alimento</option>
+                                                @foreach (var food in foods)
+                                                {
+                                                    <option value="@food.FoodId">@food.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Descripción</label>
+                                            <textarea class="form-control"
+                                                      @bind="editingForbiddenFood.Description"
+                                                      rows="3"
+                                                      style="resize: vertical; min-height: 80px;"
+                                                      placeholder="Descripción del alimento restringido..."></textarea>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Fecha de Registro</label>
+                                            <input type="date"
+                                                   class="form-control"
+                                                   @bind="editingForbiddenFood.RegistrationDate"
+                                                   @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                    </div>
+                                </EditModalContent>
+                            </EditableTable>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -698,6 +788,8 @@
                 </div>
             </div>
         </div>
+
+
     </div>
 </div>
 
@@ -747,11 +839,22 @@
     private bool diametersLoaded = false;
 
     // Variables para Plan Alimentación
-    private int? requerimientoCalorico;
-    private double? distribucionProteinas;
-    private double? distribucionCarbohidratos;
-    private double? distribucionGrasas;
-    private string recomendacionesAlimentarias = string.Empty;
+    private List<FoodDTO> foods = new();
+    private bool foodsLoaded = false;
+
+    // Variables para FoodPlan
+    private List<string> foodPlanHeaders = new() { "Alimento", "Descripción", "Fecha Registro", "Cantidad", "Frecuencia", "Indicaciones" };
+    private List<List<string>> foodPlanRows = new();
+    private List<int> foodPlanIds = new();
+    private List<FoodPlanDTO> currentFoodPlans = new();
+    private FoodPlanDTO editingFoodPlan = new FoodPlanDTO();
+
+    // Variables para ForbiddenFood
+    private List<string> forbiddenFoodHeaders = new() { "Alimento", "Descripción", "Fecha Registro" };
+    private List<List<string>> forbiddenFoodRows = new();
+    private List<int> forbiddenFoodIds = new();
+    private List<ForbiddenFoodDTO> currentForbiddenFoods = new();
+    private ForbiddenFoodDTO editingForbiddenFood = new ForbiddenFoodDTO();
 
     protected override async Task OnInitializedAsync()
     {
@@ -861,9 +964,21 @@
             }
         }
 
+        // Cargar datos específicos cuando se activa la pestaña de Plan Alimentación
+        if (tab == "plan" && currentMedicalCareId > 0 && !foodsLoaded)
+        {
+            await LoadFoodsData();
+            await LoadFoodPlansData();
+            await LoadForbiddenFoodsData();
+        }
+
         activeTab = tab;
         StateHasChanged();
     }
+
+
+
+
 
     private bool IsPatientTabComplete()
     {
@@ -875,12 +990,6 @@
     }
 
 
-
-
-    private bool IsPlanComplete()
-    {
-        return requerimientoCalorico.HasValue || !string.IsNullOrWhiteSpace(recomendacionesAlimentarias);
-    }
 
     private async Task FinalizarAtencionNutricion()
     {
@@ -1271,6 +1380,7 @@
                !string.IsNullOrWhiteSpace(diametersData.Wrist);
     }
 
+
     // Método para guardar automáticamente los diámetros
     private async Task AutoSaveDiameters()
     {
@@ -1360,6 +1470,262 @@
             diametersData = new DiametersDTO { MeasurementsId = currentMeasurementsId.Value };
             diametersLoaded = true;
         }
+    }
+
+
+
+    // Método para cargar datos de alimentos
+    private async Task LoadFoodsData()
+    {
+        try
+        {
+            foods = await FoodService.GetAllAsync() ?? new List<FoodDTO>();
+            foodsLoaded = true;
+            await JS.InvokeVoidAsync("console.log", $"Se cargaron {foods.Count} alimentos");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando alimentos: {ex.Message}");
+            foods = new List<FoodDTO>();
+            foodsLoaded = true;
+        }
+    }
+
+    // Método para cargar datos de FoodPlan
+    private async Task LoadFoodPlansData()
+    {
+        try
+        {
+            currentFoodPlans = await FoodPlanService.GetByCareIdAsync(currentMedicalCareId) ?? new List<FoodPlanDTO>();
+            foodPlanRows.Clear();
+            foodPlanIds.Clear();
+
+            foreach (var plan in currentFoodPlans)
+            {
+                var foodName = foods.FirstOrDefault(f => f.FoodId == plan.FoodId)?.Name ?? "N/A";
+                var registrationDate = plan.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A";
+                var quantity = plan.Quantity?.ToString() ?? "N/A";
+                var frequency = plan.Frequency ?? "N/A";
+                var indications = plan.Indications ?? "N/A";
+                var description = plan.Description ?? "N/A";
+
+                foodPlanRows.Add(new List<string> {
+                foodName,
+                description,
+                registrationDate,
+                quantity,
+                frequency,
+                indications
+            });
+                foodPlanIds.Add(plan.FoodPlanId);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando planes de alimentación: {ex.Message}");
+        }
+    }
+
+    // Método para cargar datos de ForbiddenFood
+    private async Task LoadForbiddenFoodsData()
+    {
+        try
+        {
+            currentForbiddenFoods = await ForbiddenFoodService.GetByCareIdAsync(currentMedicalCareId) ?? new List<ForbiddenFoodDTO>();
+            forbiddenFoodRows.Clear();
+            forbiddenFoodIds.Clear();
+
+            foreach (var forbidden in currentForbiddenFoods)
+            {
+                var foodName = foods.FirstOrDefault(f => f.FoodId == forbidden.FoodId)?.Name ?? "N/A";
+                var description = forbidden.Description ?? "N/A";
+                var registrationDate = forbidden.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A";
+
+                forbiddenFoodRows.Add(new List<string> {
+                foodName,
+                description,
+                registrationDate
+            });
+                forbiddenFoodIds.Add(forbidden.ForbiddenFoodId);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando alimentos restringidos: {ex.Message}");
+        }
+    }
+
+    // ========== MÉTODOS PARA FOODPLAN ==========
+
+    private void PrepareForAddFoodPlan()
+    {
+        editingFoodPlan = new FoodPlanDTO
+        {
+            CareId = currentMedicalCareId,
+            RegistrationDate = DateTime.Today
+        };
+    }
+
+    private void PrepareForEditFoodPlan(int id)
+    {
+        var plan = currentFoodPlans.FirstOrDefault(p => p.FoodPlanId == id);
+        if (plan != null)
+        {
+            editingFoodPlan = new FoodPlanDTO
+            {
+                FoodPlanId = plan.FoodPlanId,
+                CareId = plan.CareId,
+                FoodId = plan.FoodId,
+                Description = plan.Description,
+                RegistrationDate = plan.RegistrationDate,
+                Quantity = plan.Quantity,
+                Frequency = plan.Frequency,
+                Indications = plan.Indications
+            };
+        }
+    }
+
+    private async Task HandleFoodPlanRowDeleted(int id)
+    {
+        try
+        {
+            var result = await FoodPlanService.DeleteAsync(id);
+            if (result.Success)
+            {
+                await LoadFoodPlansData();
+                await JS.InvokeVoidAsync("alert", "Plan de alimentación eliminado correctamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task SaveFoodPlanChanges()
+    {
+        try
+        {
+            if (!ValidateFoodPlanForm())
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un alimento");
+                return;
+            }
+
+            var result = await FoodPlanService.SaveOrUpdateAsync(editingFoodPlan);
+            if (result.Success)
+            {
+                await LoadFoodPlansData();
+                await JS.InvokeVoidAsync("alert", "Plan de alimentación guardado correctamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al guardar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private bool ValidateFoodPlanForm()
+    {
+        return editingFoodPlan.FoodId > 0;
+    }
+
+    // ========== MÉTODOS PARA FORBIDDENFOOD ==========
+
+    private void PrepareForAddForbiddenFood()
+    {
+        editingForbiddenFood = new ForbiddenFoodDTO
+        {
+            CareId = currentMedicalCareId,
+            RegistrationDate = DateTime.Today
+        };
+    }
+
+    private void PrepareForEditForbiddenFood(int id)
+    {
+        var forbidden = currentForbiddenFoods.FirstOrDefault(f => f.ForbiddenFoodId == id);
+        if (forbidden != null)
+        {
+            editingForbiddenFood = new ForbiddenFoodDTO
+            {
+                ForbiddenFoodId = forbidden.ForbiddenFoodId,
+                CareId = forbidden.CareId,
+                FoodId = forbidden.FoodId,
+                Description = forbidden.Description,
+                RegistrationDate = forbidden.RegistrationDate
+            };
+        }
+    }
+
+    private async Task HandleForbiddenFoodRowDeleted(int id)
+    {
+        try
+        {
+            var result = await ForbiddenFoodService.DeleteAsync(id);
+            if (result.Success)
+            {
+                await LoadForbiddenFoodsData();
+                await JS.InvokeVoidAsync("alert", "Alimento restringido eliminado correctamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task SaveForbiddenFoodChanges()
+    {
+        try
+        {
+            if (!ValidateForbiddenFoodForm())
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un alimento");
+                return;
+            }
+
+            var result = await ForbiddenFoodService.SaveOrUpdateAsync(editingForbiddenFood);
+            if (result.Success)
+            {
+                await LoadForbiddenFoodsData();
+                await JS.InvokeVoidAsync("alert", "Alimento restringido guardado correctamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al guardar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+    }
+
+    private bool ValidateForbiddenFoodForm()
+    {
+        return editingForbiddenFood.FoodId > 0;
+    }
+
+    // Método para verificar si la pestaña de Plan está completa
+    private bool IsPlanComplete()
+    {
+        return currentFoodPlans.Any() || currentForbiddenFoods.Any();
     }
 
 
@@ -1480,8 +1846,13 @@
                         await LoadSkinFoldsData();
                         await LoadBioImpedanceData();
                         await LoadPerimetersData();
-                        await LoadDiametersData(); // ← AGREGAR ESTA LÍNEA
+                        await LoadDiametersData();
                     }
+
+                    // Cargar datos de plan alimentación
+                    await LoadFoodsData();
+                    await LoadFoodPlansData();
+                    await LoadForbiddenFoodsData();
                 }
             }
         }

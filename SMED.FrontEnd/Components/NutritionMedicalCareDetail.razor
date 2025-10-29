@@ -1,0 +1,451 @@
+﻿@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@using SMED.FrontEnd.Components
+
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject MeasurementsService MeasurementsService
+@inject SkinFoldsService SkinFoldsService
+@inject BioImpedanceService BioImpedanceService
+@inject PerimetersService PerimetersService
+@inject DiametersService DiametersService
+@inject FoodPlanService FoodPlanService
+@inject ForbiddenFoodService ForbiddenFoodService
+@inject FoodService FoodService
+@inject IJSRuntime JS
+
+<div class="nutrition-care-detail">
+    <!-- HEADER CON BOTÓN DE IMPRIMIR -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención de Nutrición</h4>
+                <div>
+                    <ImprimirPdf Tipo="nutrition" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información básica -->
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-apple-alt me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Atención:</strong> @MedicalCare?.CareId</p>
+                            <p><strong>Paciente:</strong> @MedicalCare?.NamePatient</p>
+                            <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "Nutrición")</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
+                            <p><strong>Nutricionista:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motivo de Consulta -->
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Pliegues Cutáneos -->
+        @if (skinFolds != null && HasSkinFoldsData())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-ruler-combined me-2"></i>Pliegues Cutáneos (mm)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Subescapular:</strong> @(skinFolds.Subscapular ?? "N/A")</p>
+                                <p><strong>Tríceps:</strong> @(skinFolds.Triceps ?? "N/A")</p>
+                                <p><strong>Bíceps:</strong> @(skinFolds.Biceps ?? "N/A")</p>
+                                <p><strong>Cresta Ilíaca:</strong> @(skinFolds.IliacCrest ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Supraespinal:</strong> @(skinFolds.Supraespinal ?? "N/A")</p>
+                                <p><strong>Abdominal:</strong> @(skinFolds.Abdominal ?? "N/A")</p>
+                                <p><strong>Muslo Frontal:</strong> @(skinFolds.FrontalThigh ?? "N/A")</p>
+                                <p><strong>Pantorrilla Medial:</strong> @(skinFolds.MedialCalf ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Axilar Medial:</strong> @(skinFolds.MedialAxillary ?? "N/A")</p>
+                                <p><strong>Pectoral:</strong> @(skinFolds.Pectoral ?? "N/A")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Bioimpedancia -->
+        @if (bioImpedance != null && HasBioImpedanceData())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-weight me-2"></i>Bioimpedancia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Grasa Corporal:</strong> @(bioImpedance.BodyFatPercentage ?? "N/A")</p>
+                                <p><strong>Grasa Superior:</strong> @(bioImpedance.UpperSectionFatPercentage ?? "N/A")</p>
+                                <p><strong>Grasa Inferior:</strong> @(bioImpedance.LowerSectionFatPercentage ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Grasa Visceral:</strong> @(bioImpedance.VisceralFat ?? "N/A")</p>
+                                <p><strong>Masa Muscular:</strong> @(bioImpedance.MuscleMass ?? "N/A")</p>
+                                <p><strong>Peso Óseo:</strong> @(bioImpedance.BoneWeight ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Agua Corporal:</strong> @(bioImpedance.BodyWater ?? "N/A")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Perímetros -->
+        @if (perimeters != null && HasPerimetersData())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-ruler me-2"></i>Perímetros Corporales (cm)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Cefálico:</strong> @(perimeters.Cephalic ?? "N/A")</p>
+                                <p><strong>Cuello:</strong> @(perimeters.Neck ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Mitad Brazo Relajado:</strong> @(perimeters.RelaxedArmHalf ?? "N/A")</p>
+                                <p><strong>Antebrazo:</strong> @(perimeters.Forearm ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Muñeca:</strong> @(perimeters.Wrist ?? "N/A")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Diámetros -->
+        @if (diameters != null && HasDiametersData())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-arrows-alt-h me-2"></i>Diámetros Óseos (cm)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Húmero:</strong> @(diameters.Humerus ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Fémur:</strong> @(diameters.Femur ?? "N/A")</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Muñeca:</strong> @(diameters.Wrist ?? "N/A")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Plan de Alimentación -->
+        @if (foodPlans.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-utensils me-2"></i>Plan de Alimentación (@foodPlans.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Alimento</th>
+                                        <th>Descripción</th>
+                                        <th>Fecha Registro</th>
+                                        <th>Cantidad</th>
+                                        <th>Frecuencia</th>
+                                        <th>Indicaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var plan in foodPlans)
+                                    {
+                                        <tr>
+                                            <td>@(GetFoodName(plan.FoodId) ?? "N/A")</td>
+                                            <td>@(plan.Description ?? "N/A")</td>
+                                            <td>@(plan.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                            <td>@(plan.Quantity?.ToString() ?? "N/A")</td>
+                                            <td>@(plan.Frequency ?? "N/A")</td>
+                                            <td>@(plan.Indications ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Alimentos Restringidos -->
+        @if (forbiddenFoods.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-ban me-2"></i>Alimentos Restringidos (@forbiddenFoods.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Alimento</th>
+                                        <th>Descripción</th>
+                                        <th>Fecha Registro</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var forbidden in forbiddenFoods)
+                                    {
+                                        <tr>
+                                            <td>@(GetFoodName(forbidden.FoodId) ?? "N/A")</td>
+                                            <td>@(forbidden.Description ?? "N/A")</td>
+                                            <td>@(forbidden.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Resumen de Datos Nutricionales -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resumen de Evaluación Nutricional</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Pliegues</h6>
+                                    <p class="card-text display-6">@(skinFolds != null && HasSkinFoldsData() ? "✓" : "—")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Bioimpedancia</h6>
+                                    <p class="card-text display-6">@(bioImpedance != null && HasBioImpedanceData() ? "✓" : "—")</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Planes Alimentación</h6>
+                                    <p class="card-text display-6">@foodPlans.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Alimentos Restringidos</h6>
+                                    <p class="card-text display-6">@forbiddenFoods.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!HasNutritionData())
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta atención de nutrición no tiene datos antropométricos o planes alimentarios registrados.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+
+    private ReasonForConsultationDTO? reasonForConsultation;
+    private MeasurementsDTO? measurements;
+    private SkinFoldsDTO? skinFolds;
+    private BioImpedanceDTO? bioImpedance;
+    private PerimetersDTO? perimeters;
+    private DiametersDTO? diameters;
+    private List<FoodPlanDTO> foodPlans = new();
+    private List<ForbiddenFoodDTO> forbiddenFoods = new();
+    private List<FoodDTO> foods = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    private async Task LoadDetails()
+    {
+        if (MedicalCare == null) return;
+
+        try
+        {
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
+
+            // Cargar measurements
+            measurements = await MeasurementsService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+
+            if (measurements != null)
+            {
+                // Cargar datos antropométricos
+                skinFolds = await SkinFoldsService.GetByMeasurementsIdAsync(measurements.MeasurementsId);
+                bioImpedance = await BioImpedanceService.GetByMeasurementsIdAsync(measurements.MeasurementsId);
+                perimeters = await PerimetersService.GetByMeasurementsIdAsync(measurements.MeasurementsId);
+                diameters = await DiametersService.GetByMeasurementsIdAsync(measurements.MeasurementsId);
+            }
+
+            // Cargar planes alimentarios
+            foodPlans = await FoodPlanService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<FoodPlanDTO>();
+
+            // Cargar alimentos restringidos
+            forbiddenFoods = await ForbiddenFoodService.GetByCareIdAsync(MedicalCare.CareId) ?? new List<ForbiddenFoodDTO>();
+
+            // Cargar catálogo de alimentos
+            foods = await FoodService.GetAllAsync() ?? new List<FoodDTO>();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading nutrition care details: {ex.Message}");
+        }
+    }
+
+    private bool HasSkinFoldsData()
+    {
+        return skinFolds != null && (
+            !string.IsNullOrWhiteSpace(skinFolds.Subscapular) ||
+            !string.IsNullOrWhiteSpace(skinFolds.Triceps) ||
+            !string.IsNullOrWhiteSpace(skinFolds.Biceps) ||
+            !string.IsNullOrWhiteSpace(skinFolds.IliacCrest) ||
+            !string.IsNullOrWhiteSpace(skinFolds.Supraespinal) ||
+            !string.IsNullOrWhiteSpace(skinFolds.Abdominal) ||
+            !string.IsNullOrWhiteSpace(skinFolds.FrontalThigh) ||
+            !string.IsNullOrWhiteSpace(skinFolds.MedialCalf) ||
+            !string.IsNullOrWhiteSpace(skinFolds.MedialAxillary) ||
+            !string.IsNullOrWhiteSpace(skinFolds.Pectoral)
+        );
+    }
+
+    private bool HasBioImpedanceData()
+    {
+        return bioImpedance != null && (
+            !string.IsNullOrWhiteSpace(bioImpedance.BodyFatPercentage) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.UpperSectionFatPercentage) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.LowerSectionFatPercentage) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.VisceralFat) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.MuscleMass) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.BoneWeight) ||
+            !string.IsNullOrWhiteSpace(bioImpedance.BodyWater)
+        );
+    }
+
+    private bool HasPerimetersData()
+    {
+        return perimeters != null && (
+            !string.IsNullOrWhiteSpace(perimeters.Cephalic) ||
+            !string.IsNullOrWhiteSpace(perimeters.Neck) ||
+            !string.IsNullOrWhiteSpace(perimeters.RelaxedArmHalf) ||
+            !string.IsNullOrWhiteSpace(perimeters.Forearm) ||
+            !string.IsNullOrWhiteSpace(perimeters.Wrist)
+        );
+    }
+
+    private bool HasDiametersData()
+    {
+        return diameters != null && (
+            !string.IsNullOrWhiteSpace(diameters.Humerus) ||
+            !string.IsNullOrWhiteSpace(diameters.Femur) ||
+            !string.IsNullOrWhiteSpace(diameters.Wrist)
+        );
+    }
+
+    private bool HasNutritionData()
+    {
+        return reasonForConsultation != null ||
+               HasSkinFoldsData() ||
+               HasBioImpedanceData() ||
+               HasPerimetersData() ||
+               HasDiametersData() ||
+               foodPlans.Any() ||
+               forbiddenFoods.Any();
+    }
+
+    private string? GetFoodName(int foodId)
+    {
+        return foods.FirstOrDefault(f => f.FoodId == foodId)?.Name;
+    }
+}

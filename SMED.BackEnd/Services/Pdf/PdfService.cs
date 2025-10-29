@@ -3394,7 +3394,597 @@ namespace SMED.BackEnd.Services
         }
 
 
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // NUTRITION PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
 
+        public async Task<byte[]> GenerateNutritionPdfAsync(MedicalCareDTO nutritionCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
 
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                //Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+                var babyBlue = new BaseColor(173, 216, 230); // Color temático para estimulación temprana
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                var headerTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+                // Celda para el logo (izquierda)
+                var logoCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 8,
+                    BackgroundColor = universityRed
+                };
+
+                // Cargar logo
+                try
+                {
+                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                    if (File.Exists(logoPath))
+                    {
+                        var logo = Image.GetInstance(logoPath);
+                        logo.ScaleToFit(70, 70);
+                        logo.Alignment = Image.ALIGN_CENTER;
+                        logoCell.AddElement(logo);
+                    }
+                    else
+                    {
+                        var fallbackLogo = new Paragraph("UTA",
+                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                        {
+                            Alignment = Element.ALIGN_CENTER
+                        };
+                        logoCell.AddElement(fallbackLogo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error cargando logo: {ex.Message}");
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+
+                var textCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 10,
+                    BackgroundColor = universityRed
+                };
+
+                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                var systemName = new Paragraph("SISTEMA MÉDICO - NUTRICIÓN",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+                {
+                    SpacingBefore = 5f,
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                textCell.AddElement(universityName);
+                textCell.AddElement(systemName);
+
+                var emptyCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    BackgroundColor = universityRed
+                };
+
+                headerTable.AddCell(logoCell);
+                headerTable.AddCell(textCell);
+                headerTable.AddCell(emptyCell);
+
+                document.Add(headerTable);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN DE NUTRICIÓN", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN DE LA ATENCIÓN =====
+                AddNutritionInfoSection(document, nutritionCare, titleFont, labelFont, textFont, lightGray, universityRed);
+
+                // ===== MOTIVO DE CONSULTA =====
+                AddReasonForConsultationSections(document, nutritionCare, titleFont, textFont, lightGray);
+
+                // ===== PLIEGUES CUTÁNEOS =====
+                AddSkinFoldsSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== BIOIMPEDANCIA =====
+                AddBioImpedanceSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== PERÍMETROS CORPORALES =====
+                AddPerimetersSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== DIÁMETROS ÓSEOS =====
+                AddDiametersSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== PLAN DE ALIMENTACIÓN =====
+                AddFoodPlanSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== ALIMENTOS RESTRINGIDOS =====
+                AddForbiddenFoodSection(document, nutritionCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== RESUMEN DE EVALUACIÓN NUTRICIONAL =====
+                AddNutritionSummarySection(document, nutritionCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de nutrición: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private void AddNutritionInfoSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityGreen)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN DE LA ATENCIÓN", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", nutritionCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", nutritionCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", nutritionCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", nutritionCare.Area ?? "Nutrición", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", nutritionCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Nutricionista:", nutritionCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", nutritionCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+        private void AddReasonForConsultationSections(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (nutritionCare.ReasonForConsultation != null && !string.IsNullOrEmpty(nutritionCare.ReasonForConsultation.Description))
+            {
+                var sectionTitle = new Paragraph("MOTIVO DE CONSULTA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var reasonTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var reasonCell = new PdfPCell(new Phrase(nutritionCare.ReasonForConsultation.Description, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                reasonTable.AddCell(reasonCell);
+
+                document.Add(reasonTable);
+            }
+        }
+
+        private void AddSkinFoldsSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+        {
+            if (nutritionCare.Measurements.SkinFolds != null && HasSkinFoldsData(nutritionCare.Measurements.SkinFolds))
+            {
+                var sectionTitle = new Paragraph("PLIEGUES CUTÁNEOS (mm)", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var skinFoldsTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                skinFoldsTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                var skinFolds = nutritionCare.Measurements.SkinFolds;
+
+                // Primera fila
+                AddNutritionDataCell(skinFoldsTable, "SUBESCAPULAR", skinFolds.Subscapular ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "TRÍCEPS", skinFolds.Triceps ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "BÍCEPS", skinFolds.Biceps ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "CRESTA ILÍACA", skinFolds.IliacCrest ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Segunda fila
+                AddNutritionDataCell(skinFoldsTable, "SUPRAESPINAL", skinFolds.Supraespinal ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "ABDOMINAL", skinFolds.Abdominal ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "MUSLO FRONTAL", skinFolds.FrontalThigh ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "PANTORRILLA MEDIAL", skinFolds.MedialCalf ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Tercera fila
+                AddNutritionDataCell(skinFoldsTable, "AXILAR MEDIAL", skinFolds.MedialAxillary ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(skinFoldsTable, "PECTORAL", skinFolds.Pectoral ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Celdas vacías para completar la fila
+                skinFoldsTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+                skinFoldsTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+
+                document.Add(skinFoldsTable);
+            }
+        }
+
+        private void AddBioImpedanceSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+        {
+            if (nutritionCare.Measurements.BioImpedance != null && HasBioImpedanceData(nutritionCare.Measurements.BioImpedance))
+            {
+                var sectionTitle = new Paragraph("BIOIMPEDANCIA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var bioImpedanceTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                bioImpedanceTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                var bioImpedance = nutritionCare.Measurements.BioImpedance;
+
+                // Primera fila
+                AddNutritionDataCell(bioImpedanceTable, "GRASA CORPORAL", bioImpedance.BodyFatPercentage ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(bioImpedanceTable, "GRASA SUPERIOR", bioImpedance.UpperSectionFatPercentage ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(bioImpedanceTable, "GRASA INFERIOR", bioImpedance.LowerSectionFatPercentage ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(bioImpedanceTable, "GRASA VISCERAL", bioImpedance.VisceralFat ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Segunda fila
+                AddNutritionDataCell(bioImpedanceTable, "MASA MUSCULAR", bioImpedance.MuscleMass ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(bioImpedanceTable, "PESO ÓSEO", bioImpedance.BoneWeight ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(bioImpedanceTable, "AGUA CORPORAL", bioImpedance.BodyWater ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Celda vacía para completar la fila
+                bioImpedanceTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+
+                document.Add(bioImpedanceTable);
+            }
+        }
+
+        private void AddPerimetersSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+        {
+            if (nutritionCare.Measurements.Perimeters != null && HasPerimetersData(nutritionCare.Measurements.Perimeters))
+            {
+                var sectionTitle = new Paragraph("PERÍMETROS CORPORALES (cm)", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var perimetersTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                perimetersTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                var perimeters = nutritionCare.Measurements.Perimeters;
+
+                // Primera fila
+                AddNutritionDataCell(perimetersTable, "CEFÁLICO", perimeters.Cephalic ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(perimetersTable, "CUELLO", perimeters.Neck ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(perimetersTable, "MITAD BRAZO RELAJADO", perimeters.RelaxedArmHalf ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(perimetersTable, "ANTEBRAZO", perimeters.Forearm ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Segunda fila
+                AddNutritionDataCell(perimetersTable, "MUÑECA", perimeters.Wrist ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Celdas vacías para completar la fila
+                perimetersTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+                perimetersTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+                perimetersTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+
+                document.Add(perimetersTable);
+            }
+        }
+
+        private void AddDiametersSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+        {
+            if (nutritionCare.Measurements.Diameters != null && HasDiametersData(nutritionCare.Measurements.Diameters))
+            {
+                var sectionTitle = new Paragraph("DIÁMETROS ÓSEOS (cm)", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var diametersTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                diametersTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                var diameters = nutritionCare.Measurements.Diameters;
+
+                // Primera fila
+                AddNutritionDataCell(diametersTable, "HÚMERO", diameters.Humerus ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(diametersTable, "FÉMUR", diameters.Femur ?? "N/A", tableHeaderFont, textFont, universityGreen);
+                AddNutritionDataCell(diametersTable, "MUÑECA", diameters.Wrist ?? "N/A", tableHeaderFont, textFont, universityGreen);
+
+                // Celda vacía para completar la fila
+                diametersTable.AddCell(new PdfPCell(new Phrase("")) { Border = Rectangle.NO_BORDER });
+
+                document.Add(diametersTable);
+            }
+        }
+
+        private void AddFoodPlanSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+        {
+            if (nutritionCare.FoodPlans != null && nutritionCare.FoodPlans.Any())
+            {
+                var sectionTitle = new Paragraph($"PLAN DE ALIMENTACIÓN ({nutritionCare.FoodPlans.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var foodPlanTable = new PdfPTable(6)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                foodPlanTable.SetWidths(new float[] { 20, 20, 15, 10, 15, 20 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(foodPlanTable, "ALIMENTO", tableHeaderFont, universityGreen);
+                AddTableHeaderCell(foodPlanTable, "DESCRIPCIÓN", tableHeaderFont, universityGreen);
+                AddTableHeaderCell(foodPlanTable, "FECHA REGISTRO", tableHeaderFont, universityGreen);
+                AddTableHeaderCell(foodPlanTable, "CANTIDAD", tableHeaderFont, universityGreen);
+                AddTableHeaderCell(foodPlanTable, "FRECUENCIA", tableHeaderFont, universityGreen);
+                AddTableHeaderCell(foodPlanTable, "INDICACIONES", tableHeaderFont, universityGreen);
+
+                foreach (var plan in nutritionCare.FoodPlans)
+                {
+                    AddTableCell(foodPlanTable, plan.Food?.Name ?? "N/A", textFont);
+                    AddTableCell(foodPlanTable, plan.Description ?? "N/A", textFont);
+                    AddTableCell(foodPlanTable, plan.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    AddTableCell(foodPlanTable, plan.Quantity?.ToString() ?? "N/A", textFont);
+                    AddTableCell(foodPlanTable, plan.Frequency ?? "N/A", textFont);
+                    AddTableCell(foodPlanTable, plan.Indications ?? "N/A", textFont);
+                }
+
+                document.Add(foodPlanTable);
+            }
+        }
+
+        private void AddForbiddenFoodSection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen, Font tableHeaderFont)
+{
+    if (nutritionCare.ForbiddenFoods != null && nutritionCare.ForbiddenFoods.Any())
+    {
+        var sectionTitle = new Paragraph($"ALIMENTOS RESTRINGIDOS ({nutritionCare.ForbiddenFoods.Count})", titleFont)
+        {
+            SpacingBefore = 15f,
+            SpacingAfter = 10f
+        };
+        document.Add(sectionTitle);
+
+        var forbiddenFoodTable = new PdfPTable(3)
+        {
+            WidthPercentage = 100,
+            SpacingAfter = 20f
+        };
+        forbiddenFoodTable.SetWidths(new float[] { 30, 40, 30 });
+
+        // Encabezados de la tabla
+        AddTableHeaderCell(forbiddenFoodTable, "ALIMENTO", tableHeaderFont, universityGreen);
+        AddTableHeaderCell(forbiddenFoodTable, "DESCRIPCIÓN", tableHeaderFont, universityGreen);
+        AddTableHeaderCell(forbiddenFoodTable, "FECHA REGISTRO", tableHeaderFont, universityGreen);
+
+        foreach (var forbidden in nutritionCare.ForbiddenFoods)
+        {
+            // Asumiendo que ForbiddenFoodDTO también tiene una propiedad Food
+            AddTableCell(forbiddenFoodTable, forbidden.Food?.Name ?? "N/A", textFont);
+            AddTableCell(forbiddenFoodTable, forbidden.Description ?? "N/A", textFont);
+            AddTableCell(forbiddenFoodTable, forbidden.RegistrationDate?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+        }
+
+        document.Add(forbiddenFoodTable);
+    }
+}
+
+        private void AddNutritionSummarySection(Document document, MedicalCareDTO nutritionCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityGreen)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE EVALUACIÓN NUTRICIONAL", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(4)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+            var hasSkinFolds = HasSkinFoldsData(nutritionCare.Measurements?.SkinFolds);
+            var hasBioImpedance = HasBioImpedanceData(nutritionCare.Measurements.BioImpedance);
+            var foodPlansCount = nutritionCare.FoodPlans?.Count ?? 0;
+            var forbiddenFoodsCount = nutritionCare.ForbiddenFoods?.Count ?? 0;
+            var hasFoodPlans = foodPlansCount > 0;
+            var hasForbiddenFoods = forbiddenFoodsCount > 0;
+
+            AddSummaryCard(summaryTable, "PLIEGUES", hasSkinFolds ? "SI" : "NO", universityGreen, textFont, hasSkinFolds);
+            AddSummaryCard(summaryTable, "BIOIMPEDANCIA", hasBioImpedance ? "SI" : "NO", universityGreen, textFont, hasBioImpedance);
+            AddSummaryCard(summaryTable, "PLANES ALIMENTACIÓN", foodPlansCount.ToString(), universityGreen, textFont, hasFoodPlans);
+            AddSummaryCard(summaryTable, "ALIMENTOS RESTRINGIDOS", forbiddenFoodsCount.ToString(), universityGreen, textFont, hasForbiddenFoods);
+
+            document.Add(summaryTable);
+        }
+
+        // Métodos auxiliares específicos para Nutrition PDF
+        private bool HasSkinFoldsData(SkinFoldsDTO skinFolds)
+        {
+            if (skinFolds == null)
+                return false;
+
+            return !string.IsNullOrWhiteSpace(skinFolds.Subscapular) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.Triceps) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.Biceps) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.IliacCrest) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.Supraespinal) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.Abdominal) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.FrontalThigh) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.MedialCalf) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.MedialAxillary) ||
+                   !string.IsNullOrWhiteSpace(skinFolds.Pectoral);
+        }
+
+        private bool HasBioImpedanceData(BioImpedanceDTO bioImpedance)
+        {
+            if (bioImpedance == null)
+                return false;
+
+            return !string.IsNullOrWhiteSpace(bioImpedance.BodyFatPercentage) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.UpperSectionFatPercentage) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.LowerSectionFatPercentage) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.VisceralFat) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.MuscleMass) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.BoneWeight) ||
+                   !string.IsNullOrWhiteSpace(bioImpedance.BodyWater);
+        }
+
+        private bool HasPerimetersData(PerimetersDTO perimeters)
+        {
+            if (perimeters == null)
+                return false;
+
+            return !string.IsNullOrWhiteSpace(perimeters.Cephalic) ||
+                   !string.IsNullOrWhiteSpace(perimeters.Neck) ||
+                   !string.IsNullOrWhiteSpace(perimeters.RelaxedArmHalf) ||
+                   !string.IsNullOrWhiteSpace(perimeters.Forearm) ||
+                   !string.IsNullOrWhiteSpace(perimeters.Wrist);
+        }
+
+        private bool HasDiametersData(DiametersDTO diameters)
+        {
+            if (diameters == null)
+                return false;
+
+            return !string.IsNullOrWhiteSpace(diameters.Humerus) ||
+                   !string.IsNullOrWhiteSpace(diameters.Femur) ||
+                   !string.IsNullOrWhiteSpace(diameters.Wrist);
+        }
+
+        private void AddNutritionDataCell(PdfPTable table, string title, string value, Font titleFont, Font valueFont, BaseColor headerColor)
+        {
+            // Celda de título
+            var titleCell = new PdfPCell(new Phrase(title, titleFont))
+            {
+                BackgroundColor = headerColor,
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.White,
+                Padding = 8,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            table.AddCell(titleCell);
+
+            // Celda de valor
+            var valueCell = new PdfPCell(new Phrase(value, valueFont))
+            {
+                BackgroundColor = BaseColor.White,
+                Border = Rectangle.BOX,
+                BorderColor = BaseColor.LightGray,
+                Padding = 8,
+                HorizontalAlignment = Element.ALIGN_CENTER
+            };
+            table.AddCell(valueCell);
+        }
+
+        private string GetFoodName(int foodId, List<FoodDTO> foods)
+        {
+            return foods?.FirstOrDefault(f => f.FoodId == foodId)?.Name;
+        }
+
+       
     }
 }

@@ -158,6 +158,39 @@ namespace SMED.BackEnd.Controllers
             }
         }
 
+        [HttpGet("nutrition/{id}")]
+        public async Task<IActionResult> GetNutritionPdf(int id)
+        {
+            try
+            {
+                // Obtener la atención de nutrición completa
+                var nutritionCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (nutritionCare == null)
+                {
+                    return NotFound($"Atención de nutrición con ID {id} no encontrada");
+                }
+
+                // Verificar que sea una atención de nutrición
+                var isNutritionCare = nutritionCare.Area?.ToLower().Contains("nutrición") == true ||
+                                     nutritionCare.Area?.ToLower().Contains("nutricion") == true ||
+                                     nutritionCare.LocationId == 3; // ID de nutrición según tu BD
+
+                if (!isNutritionCare)
+                {
+                    return BadRequest($"La atención con ID {id} no pertenece al área de nutrición");
+                }
+
+                // Generar PDF específico para nutrición
+                var pdfBytes = await _pdfService.GenerateNutritionPdfAsync(nutritionCare);
+                var fileName = $"Atencion_Nutricion_{nutritionCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de nutrición: {ex.Message}");
+            }
+        }
+
         [HttpGet("medical-care/{id}")]
         public async Task<IActionResult> GetMedicalCarePdf(int id)
         {

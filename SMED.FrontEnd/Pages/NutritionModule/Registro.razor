@@ -220,7 +220,7 @@
     {
         try
         {
-            var result = await MedicalCareService.GetAllAsync();
+            var result = await MedicalCareService.GetNutritionCareAsync();
             await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} nutrition records");
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
 

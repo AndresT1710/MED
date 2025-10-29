@@ -57,6 +57,7 @@ namespace SMED.Shared.DTOs
 
         // Nutricion
         public List<FoodPlanDTO>? FoodPlans { get; set; }
+        public List<ForbiddenFoodDTO>? ForbiddenFoods { get; set; }
         public List<IdentifiedDiseaseDTO>? IdentifiedDiseases { get; set; }
         public MeasurementsDTO? Measurements { get; set; }
     }

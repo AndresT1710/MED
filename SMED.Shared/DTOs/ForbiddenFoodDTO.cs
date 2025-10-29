@@ -13,5 +13,7 @@ namespace SMED.Shared.DTOs
         public string? Description { get; set; }
         public int FoodId { get; set; }
         public int CareId { get; set; }
+
+        public FoodDTO? Food { get; set; }
     }
 }

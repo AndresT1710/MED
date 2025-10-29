@@ -11,6 +11,9 @@
 @inject AuthorizationService AuthorizationService
 @inject SkinFoldsService SkinFoldsService
 @inject MeasurementsService MeasurementsService
+@inject BioImpedanceService BioImpedanceService
+@inject PerimetersService PerimetersService
+@inject DiametersService DiametersService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -288,7 +291,7 @@
             </div>
         </div>
 
-        <!-- Pestaña 2: Pliegues -->
+
         <!-- Pestaña 2: Pliegues -->
         <div class="tab-pane @(activeTab == "pliegues" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -296,10 +299,6 @@
                     <h5 class="mb-0">
                         <i class="fas fa-ruler-combined me-2"></i>Medición de Pliegues Cutáneos
                         <span class="badge bg-info ms-2">Opcional</span>
-                        @if (IsPlieguesComplete())
-                        {
-                            <span class="badge bg-success ms-1">✓</span>
-                        }
                     </h5>
                 </div>
                 <div class="card-body">
@@ -408,7 +407,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-weight me-2"></i>Bioimpedancia Eléctrica
+                        <i class="fas fa-weight me-2"></i>Bioimpedancia
                         <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
                 </div>
@@ -417,29 +416,58 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Análisis de Composición Corporal</strong> - Registre los resultados de la bioimpedancia.
+                            <strong>Análisis de Composición Corporal</strong> - Registre los resultados de la bioimpedancia. Los datos se guardan automáticamente.
                         </div>
 
                         <div class="row g-3">
+                            <!-- Primera fila -->
                             <div class="col-md-6">
-                                <label class="form-label">Masa Magra (kg)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="masaMagra" placeholder="Ej: 45.2" />
+                                <ContainerBox1 Title="Porcentaje de Grasa Corporal (%)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.BodyFatPercentage"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Masa Grasa (kg)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="masaGrasa" placeholder="Ej: 22.5" />
+                                <ContainerBox1 Title="Porcentaje Grasa Sección Superior (%)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.UpperSectionFatPercentage"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
+                            </div>
+
+                            <!-- Segunda fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Porcentaje Grasa Sección Inferior (%)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.LowerSectionFatPercentage"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Porcentaje de Grasa (%)</label>
-                                <input type="number" class="form-control" step="0.1" min="0" max="100"
-                                       @bind="porcentajeGrasa" placeholder="Ej: 25.8" />
+                                <ContainerBox1 Title="Grasa Visceral"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.VisceralFat"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
+                            </div>
+
+                            <!-- Tercera fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Masa Muscular (kg)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.MuscleMass"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Agua Corporal (L)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="aguaCorporal" placeholder="Ej: 35.6" />
+                                <ContainerBox1 Title="Peso Óseo (kg)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.BoneWeight"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
+                            </div>
+
+                            <!-- Cuarta fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Agua Corporal (L)"
+                                               Width="full"
+                                               @bind-Content="@bioImpedanceData.BodyWater"
+                                               @bind-Content:after="AutoSaveBioImpedance" />
                             </div>
                         </div>
 
@@ -463,6 +491,8 @@
             </div>
         </div>
 
+
+
         <!-- Pestaña 4: Perímetros -->
         <div class="tab-pane @(activeTab == "perimetros" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -477,29 +507,44 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Perímetros Corporales</strong> - Registre las circunferencias del paciente.
+                            <strong>Perímetros Corporales</strong> - Registre las circunferencias del paciente. Los datos se guardan automáticamente.
                         </div>
 
                         <div class="row g-3">
+                            <!-- Primera fila -->
                             <div class="col-md-6">
-                                <label class="form-label">Perímetro Cintura (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="perimetroCintura" placeholder="Ej: 85.5" />
+                                <ContainerBox1 Title="Cefálico (cm)"
+                                               Width="full"
+                                               @bind-Content="@perimetersData.Cephalic"
+                                               @bind-Content:after="AutoSavePerimeters" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Perímetro Cadera (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="perimetroCadera" placeholder="Ej: 102.3" />
+                                <ContainerBox1 Title="Cuello (cm)"
+                                               Width="full"
+                                               @bind-Content="@perimetersData.Neck"
+                                               @bind-Content:after="AutoSavePerimeters" />
+                            </div>
+
+                            <!-- Segunda fila -->
+                            <div class="col-md-6">
+                                <ContainerBox1 Title="Mitad Brazo Relajado (cm)"
+                                               Width="full"
+                                               @bind-Content="@perimetersData.RelaxedArmHalf"
+                                               @bind-Content:after="AutoSavePerimeters" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Perímetro Braquial (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="perimetroBraquial" placeholder="Ej: 32.1" />
+                                <ContainerBox1 Title="Antebrazo (cm)"
+                                               Width="full"
+                                               @bind-Content="@perimetersData.Forearm"
+                                               @bind-Content:after="AutoSavePerimeters" />
                             </div>
+
+                            <!-- Tercera fila -->
                             <div class="col-md-6">
-                                <label class="form-label">Perímetro Muslo (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="perimetroMuslo" placeholder="Ej: 55.7" />
+                                <ContainerBox1 Title="Muñeca (cm)"
+                                               Width="full"
+                                               @bind-Content="@perimetersData.Wrist"
+                                               @bind-Content:after="AutoSavePerimeters" />
                             </div>
                         </div>
 
@@ -537,29 +582,30 @@
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Diámetros Óseos</strong> - Registre las medidas de la estructura ósea.
+                            <strong>Diámetros Óseos</strong> - Registre las medidas de la estructura ósea. Los datos se guardan automáticamente.
                         </div>
 
                         <div class="row g-3">
+                            <!-- Primera fila -->
                             <div class="col-md-6">
-                                <label class="form-label">Diámetro Biacromial (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="diametroBiacromial" placeholder="Ej: 42.3" />
+                                <ContainerBox1 Title="Húmero (cm)"
+                                               Width="full"
+                                               @bind-Content="@diametersData.Humerus"
+                                               @bind-Content:after="AutoSaveDiameters" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Diámetro Bicrestal (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="diametroBicrestal" placeholder="Ej: 28.7" />
+                                <ContainerBox1 Title="Fémur (cm)"
+                                               Width="full"
+                                               @bind-Content="@diametersData.Femur"
+                                               @bind-Content:after="AutoSaveDiameters" />
                             </div>
+
+                            <!-- Segunda fila -->
                             <div class="col-md-6">
-                                <label class="form-label">Diámetro Humeral (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="diametroHumeral" placeholder="Ej: 6.8" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Diámetro Femoral (cm)</label>
-                                <input type="number" class="form-control" step="0.1" min="0"
-                                       @bind="diametroFemoral" placeholder="Ej: 9.2" />
+                                <ContainerBox1 Title="Muñeca (cm)"
+                                               Width="full"
+                                               @bind-Content="@diametersData.Wrist"
+                                               @bind-Content:after="AutoSaveDiameters" />
                             </div>
                         </div>
 
@@ -689,22 +735,16 @@
     private bool skinFoldsLoaded = false;
 
     // Variables para Bioimpedancia
-    private double? masaMagra;
-    private double? masaGrasa;
-    private double? porcentajeGrasa;
-    private double? aguaCorporal;
+    private BioImpedanceDTO bioImpedanceData = new BioImpedanceDTO();
+    private bool bioImpedanceLoaded = false;
 
     // Variables para Perímetros
-    private double? perimetroCintura;
-    private double? perimetroCadera;
-    private double? perimetroBraquial;
-    private double? perimetroMuslo;
+    private PerimetersDTO perimetersData = new PerimetersDTO();
+    private bool perimetersLoaded = false;
 
     // Variables para Diámetros
-    private double? diametroBiacromial;
-    private double? diametroBicrestal;
-    private double? diametroHumeral;
-    private double? diametroFemoral;
+    private DiametersDTO diametersData = new DiametersDTO();
+    private bool diametersLoaded = false;
 
     // Variables para Plan Alimentación
     private int? requerimientoCalorico;
@@ -764,6 +804,63 @@
             }
         }
 
+        // Cargar datos específicos cuando se activa la pestaña de Bioimpedancia
+        if (tab == "bioimpedancia" && currentMedicalCareId > 0 && !bioImpedanceLoaded)
+        {
+            if (currentMeasurementsId == null)
+            {
+                currentMeasurementsId = await GetOrCreateMeasurementsId();
+            }
+
+            if (currentMeasurementsId != null)
+            {
+                await LoadBioImpedanceData();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
+                return;
+            }
+        }
+
+        // Cargar datos específicos cuando se activa la pestaña de Perímetros
+        if (tab == "perimetros" && currentMedicalCareId > 0 && !perimetersLoaded)
+        {
+            if (currentMeasurementsId == null)
+            {
+                currentMeasurementsId = await GetOrCreateMeasurementsId();
+            }
+
+            if (currentMeasurementsId != null)
+            {
+                await LoadPerimetersData();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
+                return;
+            }
+        }
+
+        // Cargar datos específicos cuando se activa la pestaña de Diámetros
+        if (tab == "diametros" && currentMedicalCareId > 0 && !diametersLoaded)
+        {
+            if (currentMeasurementsId == null)
+            {
+                currentMeasurementsId = await GetOrCreateMeasurementsId();
+            }
+
+            if (currentMeasurementsId != null)
+            {
+                await LoadDiametersData();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
+                return;
+            }
+        }
+
         activeTab = tab;
         StateHasChanged();
     }
@@ -778,23 +875,7 @@
     }
 
 
-    private bool IsBioimpedanciaComplete()
-    {
-        return masaMagra.HasValue || masaGrasa.HasValue ||
-               porcentajeGrasa.HasValue || aguaCorporal.HasValue;
-    }
 
-    private bool IsPerimetrosComplete()
-    {
-        return perimetroCintura.HasValue || perimetroCadera.HasValue ||
-               perimetroBraquial.HasValue || perimetroMuslo.HasValue;
-    }
-
-    private bool IsDiametrosComplete()
-    {
-        return diametroBiacromial.HasValue || diametroBicrestal.HasValue ||
-               diametroHumeral.HasValue || diametroFemoral.HasValue;
-    }
 
     private bool IsPlanComplete()
     {
@@ -963,7 +1044,323 @@
     }
 
 
+    // Método para verificar si la pestaña de Bioimpedancia está completa
+    private bool IsBioimpedanciaComplete()
+    {
+        return !string.IsNullOrWhiteSpace(bioImpedanceData.BodyFatPercentage) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.UpperSectionFatPercentage) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.LowerSectionFatPercentage) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.VisceralFat) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.MuscleMass) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.BoneWeight) ||
+               !string.IsNullOrWhiteSpace(bioImpedanceData.BodyWater);
+    }
 
+    // Método para guardar automáticamente la bioimpedancia
+    private async Task AutoSaveBioImpedance()
+    {
+        if (currentMedicalCareId <= 0 || currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            // Procesar campos de porcentaje - agregar % si es necesario
+            ProcessPercentageFields();
+
+            // Asegurarnos de que el MeasurementsId esté asignado
+            bioImpedanceData.MeasurementsId = currentMeasurementsId.Value;
+
+            var result = await BioImpedanceService.SaveOrUpdateAsync(bioImpedanceData);
+            if (result.Success)
+            {
+                if (result.Data != null)
+                {
+                    bioImpedanceData.BioImpedanceId = result.Data.BioImpedanceId;
+                }
+                await JS.InvokeVoidAsync("console.log", "Bioimpedancia guardada automáticamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error guardando bioimpedancia: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error en AutoSaveBioImpedance: {ex.Message}");
+        }
+    }
+
+    // Método para procesar campos de porcentaje
+    private void ProcessPercentageFields()
+    {
+        // Procesar BodyFatPercentage
+        if (!string.IsNullOrWhiteSpace(bioImpedanceData.BodyFatPercentage) &&
+            !bioImpedanceData.BodyFatPercentage.EndsWith("%"))
+        {
+            bioImpedanceData.BodyFatPercentage = $"{bioImpedanceData.BodyFatPercentage.Trim()}%";
+        }
+
+        // Procesar UpperSectionFatPercentage
+        if (!string.IsNullOrWhiteSpace(bioImpedanceData.UpperSectionFatPercentage) &&
+            !bioImpedanceData.UpperSectionFatPercentage.EndsWith("%"))
+        {
+            bioImpedanceData.UpperSectionFatPercentage = $"{bioImpedanceData.UpperSectionFatPercentage.Trim()}%";
+        }
+
+        // Procesar LowerSectionFatPercentage
+        if (!string.IsNullOrWhiteSpace(bioImpedanceData.LowerSectionFatPercentage) &&
+            !bioImpedanceData.LowerSectionFatPercentage.EndsWith("%"))
+        {
+            bioImpedanceData.LowerSectionFatPercentage = $"{bioImpedanceData.LowerSectionFatPercentage.Trim()}%";
+        }
+    }
+
+    // Método para cargar los datos existentes de Bioimpedancia
+    private async Task LoadBioImpedanceData()
+    {
+        if (currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            var existingBioImpedance = await BioImpedanceService.GetByMeasurementsIdAsync(currentMeasurementsId.Value);
+            if (existingBioImpedance != null)
+            {
+                bioImpedanceData = existingBioImpedance;
+                await JS.InvokeVoidAsync("console.log", "Datos de bioimpedancia existentes cargados");
+            }
+            else
+            {
+                // Inicializar nuevo objeto si no existe
+                bioImpedanceData = new BioImpedanceDTO { MeasurementsId = currentMeasurementsId.Value };
+                await JS.InvokeVoidAsync("console.log", "Nuevo objeto de bioimpedancia inicializado");
+            }
+
+            bioImpedanceLoaded = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando datos de bioimpedancia: {ex.Message}");
+            bioImpedanceData = new BioImpedanceDTO { MeasurementsId = currentMeasurementsId.Value };
+            bioImpedanceLoaded = true;
+        }
+    }
+
+
+    // Método para verificar si la pestaña de Perímetros está completa
+    private bool IsPerimetrosComplete()
+    {
+        return !string.IsNullOrWhiteSpace(perimetersData.Cephalic) ||
+               !string.IsNullOrWhiteSpace(perimetersData.Neck) ||
+               !string.IsNullOrWhiteSpace(perimetersData.RelaxedArmHalf) ||
+               !string.IsNullOrWhiteSpace(perimetersData.Forearm) ||
+               !string.IsNullOrWhiteSpace(perimetersData.Wrist);
+    }
+
+    // Método para guardar automáticamente los perímetros
+    private async Task AutoSavePerimeters()
+    {
+        if (currentMedicalCareId <= 0 || currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            // Procesar campos - agregar "cm" si es necesario
+            ProcessPerimeterFields();
+
+            // Asegurarnos de que el MeasurementsId esté asignado
+            perimetersData.MeasurementsId = currentMeasurementsId.Value;
+
+            var result = await PerimetersService.SaveOrUpdateAsync(perimetersData);
+            if (result.Success)
+            {
+                if (result.Data != null)
+                {
+                    perimetersData.PerimetersId = result.Data.PerimetersId;
+                }
+                await JS.InvokeVoidAsync("console.log", "Perímetros guardados automáticamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error guardando perímetros: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error en AutoSavePerimeters: {ex.Message}");
+        }
+    }
+
+    // Método para procesar campos de perímetros
+    private void ProcessPerimeterFields()
+    {
+        // Procesar Cephalic
+        if (!string.IsNullOrWhiteSpace(perimetersData.Cephalic) &&
+            !perimetersData.Cephalic.EndsWith("cm"))
+        {
+            perimetersData.Cephalic = $"{perimetersData.Cephalic.Trim()} cm";
+        }
+
+        // Procesar Neck
+        if (!string.IsNullOrWhiteSpace(perimetersData.Neck) &&
+            !perimetersData.Neck.EndsWith("cm"))
+        {
+            perimetersData.Neck = $"{perimetersData.Neck.Trim()} cm";
+        }
+
+        // Procesar RelaxedArmHalf
+        if (!string.IsNullOrWhiteSpace(perimetersData.RelaxedArmHalf) &&
+            !perimetersData.RelaxedArmHalf.EndsWith("cm"))
+        {
+            perimetersData.RelaxedArmHalf = $"{perimetersData.RelaxedArmHalf.Trim()} cm";
+        }
+
+        // Procesar Forearm
+        if (!string.IsNullOrWhiteSpace(perimetersData.Forearm) &&
+            !perimetersData.Forearm.EndsWith("cm"))
+        {
+            perimetersData.Forearm = $"{perimetersData.Forearm.Trim()} cm";
+        }
+
+        // Procesar Wrist
+        if (!string.IsNullOrWhiteSpace(perimetersData.Wrist) &&
+            !perimetersData.Wrist.EndsWith("cm"))
+        {
+            perimetersData.Wrist = $"{perimetersData.Wrist.Trim()} cm";
+        }
+    }
+
+    // Método para cargar los datos existentes de Perímetros
+    private async Task LoadPerimetersData()
+    {
+        if (currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            var existingPerimeters = await PerimetersService.GetByMeasurementsIdAsync(currentMeasurementsId.Value);
+            if (existingPerimeters != null)
+            {
+                perimetersData = existingPerimeters;
+                await JS.InvokeVoidAsync("console.log", "Datos de perímetros existentes cargados");
+            }
+            else
+            {
+                // Inicializar nuevo objeto si no existe
+                perimetersData = new PerimetersDTO { MeasurementsId = currentMeasurementsId.Value };
+                await JS.InvokeVoidAsync("console.log", "Nuevo objeto de perímetros inicializado");
+            }
+
+            perimetersLoaded = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando datos de perímetros: {ex.Message}");
+            perimetersData = new PerimetersDTO { MeasurementsId = currentMeasurementsId.Value };
+            perimetersLoaded = true;
+        }
+    }
+
+    // Método para verificar si la pestaña de Diámetros está completa
+    private bool IsDiametrosComplete()
+    {
+        return !string.IsNullOrWhiteSpace(diametersData.Humerus) ||
+               !string.IsNullOrWhiteSpace(diametersData.Femur) ||
+               !string.IsNullOrWhiteSpace(diametersData.Wrist);
+    }
+
+    // Método para guardar automáticamente los diámetros
+    private async Task AutoSaveDiameters()
+    {
+        if (currentMedicalCareId <= 0 || currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            // Procesar campos - agregar "cm" si es necesario
+            ProcessDiameterFields();
+
+            // Asegurarnos de que el MeasurementsId esté asignado
+            diametersData.MeasurementsId = currentMeasurementsId.Value;
+
+            var result = await DiametersService.SaveOrUpdateAsync(diametersData);
+            if (result.Success)
+            {
+                if (result.Data != null)
+                {
+                    diametersData.DiametersId = result.Data.DiametersId;
+                }
+                await JS.InvokeVoidAsync("console.log", "Diámetros guardados automáticamente");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error guardando diámetros: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error en AutoSaveDiameters: {ex.Message}");
+        }
+    }
+
+    // Método para procesar campos de diámetros
+    private void ProcessDiameterFields()
+    {
+        // Procesar Humerus
+        if (!string.IsNullOrWhiteSpace(diametersData.Humerus) &&
+            !diametersData.Humerus.EndsWith("cm"))
+        {
+            diametersData.Humerus = $"{diametersData.Humerus.Trim()} cm";
+        }
+
+        // Procesar Femur
+        if (!string.IsNullOrWhiteSpace(diametersData.Femur) &&
+            !diametersData.Femur.EndsWith("cm"))
+        {
+            diametersData.Femur = $"{diametersData.Femur.Trim()} cm";
+        }
+
+        // Procesar Wrist
+        if (!string.IsNullOrWhiteSpace(diametersData.Wrist) &&
+            !diametersData.Wrist.EndsWith("cm"))
+        {
+            diametersData.Wrist = $"{diametersData.Wrist.Trim()} cm";
+        }
+    }
+
+    // Método para cargar los datos existentes de Diámetros
+    private async Task LoadDiametersData()
+    {
+        if (currentMeasurementsId == null)
+            return;
+
+        try
+        {
+            var existingDiameters = await DiametersService.GetByMeasurementsIdAsync(currentMeasurementsId.Value);
+            if (existingDiameters != null)
+            {
+                diametersData = existingDiameters;
+                await JS.InvokeVoidAsync("console.log", "Datos de diámetros existentes cargados");
+            }
+            else
+            {
+                // Inicializar nuevo objeto si no existe
+                diametersData = new DiametersDTO { MeasurementsId = currentMeasurementsId.Value };
+                await JS.InvokeVoidAsync("console.log", "Nuevo objeto de diámetros inicializado");
+            }
+
+            diametersLoaded = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando datos de diámetros: {ex.Message}");
+            diametersData = new DiametersDTO { MeasurementsId = currentMeasurementsId.Value };
+            diametersLoaded = true;
+        }
+    }
 
 
 
@@ -1076,11 +1473,14 @@
                         motivoConsulta = existingReasonForConsultation.Description;
                     }
 
-                    // Cargar MeasurementsId existente si hay datos de pliegues
+                    // Cargar MeasurementsId existente si hay datos
                     currentMeasurementsId = await GetOrCreateMeasurementsId();
                     if (currentMeasurementsId != null)
                     {
                         await LoadSkinFoldsData();
+                        await LoadBioImpedanceData();
+                        await LoadPerimetersData();
+                        await LoadDiametersData(); // ← AGREGAR ESTA LÍNEA
                     }
                 }
             }

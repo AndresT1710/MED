@@ -20,6 +20,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("DiagnosticTypeNavigation")]
         public virtual ICollection<MedicalDiagnosis> Diagnoses { get; set; } = new List<MedicalDiagnosis>();
+
+        [InverseProperty("DiagnosticTypeNavigation")]
+        public virtual ICollection<PsychologicalDiagnosis> PsychologicalDiagnoses { get; set; } = new List<PsychologicalDiagnosis>();
     }
 
 }

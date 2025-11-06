@@ -23,6 +23,10 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("Session")]
         public virtual ICollection<Activity> Activities { get; set; } = new List<Activity>();
+
+        // En Sessions entity, agregar esta propiedad en la sección de InverseProperty
+        [InverseProperty("Session")]
+        public virtual ICollection<Advance> Advances { get; set; } = new List<Advance>();
     }
 
 }

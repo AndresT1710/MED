@@ -191,9 +191,15 @@ namespace SGIS.Models
         public DbSet<Diameters> Diameters { get; set; }
         public DbSet<Measurements> Measurements { get; set; }
         public DbSet<FoodPlan> FoodPlans { get; set; }
-        //Nutricion
         public DbSet<ForbiddenFood> ForbiddenFoods { get; set; }
 
+        //Psycologia
+        public DbSet<MentalFunctionsPsychology> MentalFunctionsPsychologies { get; set; }
+        public DbSet<MentalFunction> MentalFunctions { get; set; }
+        public DbSet<TypesOfMentalFunctions> TypesOfMentalFunctions { get; set; }
+        public DbSet<PsychologicalDiagnosis> PsychologicalDiagnoses { get; set; }
+        public DbSet<Advance> Advances { get; set; }
+        public DbSet<TherapeuticPlan> TherapeuticPlans { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

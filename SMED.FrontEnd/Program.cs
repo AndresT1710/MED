@@ -149,6 +149,12 @@ builder.Services.AddScoped<PerimetersService>();
 builder.Services.AddScoped<DiametersService>();
 builder.Services.AddScoped<FoodPlanService>();
 builder.Services.AddScoped<ForbiddenFoodService>();
+builder.Services.AddScoped<TypesOfMentalFunctionsService>();
+builder.Services.AddScoped<MentalFunctionService>();
+builder.Services.AddScoped<MentalFunctionsPsychologyService>();
+builder.Services.AddScoped<PsychologicalDiagnosisService>();
+builder.Services.AddScoped<AdvanceService>();
+builder.Services.AddScoped<TherapeuticPlanService>();
 
 
 

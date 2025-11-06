@@ -216,7 +216,18 @@ builder.Services.AddScoped<IRepository<FoodPlanDTO, int>, FoodPlanRepository>();
 builder.Services.AddScoped<FoodPlanRepository>();
 builder.Services.AddScoped<IRepository<ForbiddenFoodDTO, int>, ForbiddenFoodRepository>();
 builder.Services.AddScoped<ForbiddenFoodRepository>();
-
+builder.Services.AddScoped<IRepository<TypesOfMentalFunctionsDTO, int>, TypesOfMentalFunctionsRepository>();
+builder.Services.AddScoped<TypesOfMentalFunctionsRepository>();
+builder.Services.AddScoped<IRepository<MentalFunctionDTO, int>, MentalFunctionRepository>();
+builder.Services.AddScoped<MentalFunctionRepository>();
+builder.Services.AddScoped<IRepository<MentalFunctionsPsychologyDTO, int>, MentalFunctionsPsychologyRepository>();
+builder.Services.AddScoped<MentalFunctionsPsychologyRepository>();
+builder.Services.AddScoped<IRepository<PsychologicalDiagnosisDTO, int>, PsychologicalDiagnosisRepository>();
+builder.Services.AddScoped<PsychologicalDiagnosisRepository>();
+builder.Services.AddScoped<IRepository<AdvanceDTO, int>, AdvanceRepository>();
+builder.Services.AddScoped<AdvanceRepository>();
+builder.Services.AddScoped<IRepository<TherapeuticPlanDTO, int>, TherapeuticPlanRepository>();
+builder.Services.AddScoped<TherapeuticPlanRepository>();
 
 //PDF
 builder.Services.AddScoped<PdfService>();

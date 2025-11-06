@@ -121,6 +121,11 @@ namespace SMED.Shared.Entity
         [InverseProperty("MedicalCare")]
         public virtual ICollection<ForbiddenFood> ForbiddenFoods { get; set; } = new List<ForbiddenFood>();
 
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<MentalFunctionsPsychology> MentalFunctionsPsychologies { get; set; } = new List<MentalFunctionsPsychology>();
+
+        [InverseProperty("MedicalCare")]
+        public virtual PsychologicalDiagnosis? PsychologicalDiagnosis { get; set; }
 
     }
 }

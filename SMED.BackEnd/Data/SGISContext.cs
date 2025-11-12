@@ -200,6 +200,7 @@ namespace SGIS.Models
         public DbSet<PsychologicalDiagnosis> PsychologicalDiagnoses { get; set; }
         public DbSet<Advance> Advances { get; set; }
         public DbSet<TherapeuticPlan> TherapeuticPlans { get; set; }
+        public DbSet<PsychologySessions> PsychologySessions { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

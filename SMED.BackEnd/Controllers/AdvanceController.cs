@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SGIS.Models;
 using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
-using Microsoft.EntityFrameworkCore;
 using SMED.Shared.DTOs;
 
 namespace SMED.BackEnd.Controllers
@@ -40,10 +40,24 @@ namespace SMED.BackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<AdvanceDTO>> Create(AdvanceDTO dto)
         {
-            // Validar que el SessionId exista
-            var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
-            if (!sessionExists)
-                return BadRequest("La sesión especificada no existe");
+            // Validar que al menos una sesión esté especificada
+            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
+
+            // Validar que las sesiones existan si se especifican
+            if (dto.SessionId.HasValue)
+            {
+                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
+                if (!sessionExists)
+                    return BadRequest("La sesión especificada no existe");
+            }
+
+            if (dto.PsychologySessionId.HasValue)
+            {
+                var psychologySessionExists = await _context.PsychologySessions.AnyAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionId);
+                if (!psychologySessionExists)
+                    return BadRequest("La sesión psicológica especificada no existe");
+            }
 
             var createdAdvance = await _repository.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = createdAdvance.AdvanceId }, createdAdvance);
@@ -55,10 +69,23 @@ namespace SMED.BackEnd.Controllers
             if (id != dto.AdvanceId)
                 return BadRequest();
 
-            // Validar que el SessionId exista
-            var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
-            if (!sessionExists)
-                return BadRequest("La sesión especificada no existe");
+            // Validaciones similares a Create
+            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
+
+            if (dto.SessionId.HasValue)
+            {
+                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
+                if (!sessionExists)
+                    return BadRequest("La sesión especificada no existe");
+            }
+
+            if (dto.PsychologySessionId.HasValue)
+            {
+                var psychologySessionExists = await _context.PsychologySessions.AnyAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionId);
+                if (!psychologySessionExists)
+                    return BadRequest("La sesión psicológica especificada no existe");
+            }
 
             var updatedAdvance = await _repository.UpdateAsync(dto);
             if (updatedAdvance == null)
@@ -85,6 +112,17 @@ namespace SMED.BackEnd.Controllers
                 return BadRequest("Repository type not supported");
 
             var advances = await repository.GetBySessionIdAsync(sessionId);
+            return Ok(advances);
+        }
+
+        [HttpGet("ByPsychologySession/{psychologySessionId}")]
+        public async Task<ActionResult<List<AdvanceDTO>>> GetByPsychologySessionId(int psychologySessionId)
+        {
+            var repository = _repository as AdvanceRepository;
+            if (repository == null)
+                return BadRequest("Repository type not supported");
+
+            var advances = await repository.GetByPsychologySessionIdAsync(psychologySessionId);
             return Ok(advances);
         }
 

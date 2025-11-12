@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SGIS.Models;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -9,13 +12,14 @@ namespace SMED.BackEnd.Controllers
     public class ActivityController : ControllerBase
     {
         private readonly IRepository<ActivityDTO, int> _repository;
+        private readonly SGISContext _context;
 
-        public ActivityController(IRepository<ActivityDTO, int> repository)
+        public ActivityController(IRepository<ActivityDTO, int> repository, SGISContext context)
         {
             _repository = repository;
+            _context = context;
         }
 
-        // GET: api/Activity
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ActivityDTO>>> GetAll()
         {
@@ -23,7 +27,6 @@ namespace SMED.BackEnd.Controllers
             return Ok(result);
         }
 
-        // GET: api/Activity/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ActivityDTO>> GetById(int id)
         {
@@ -34,20 +37,55 @@ namespace SMED.BackEnd.Controllers
             return Ok(result);
         }
 
-        // POST: api/Activity
         [HttpPost]
         public async Task<ActionResult<ActivityDTO>> Create(ActivityDTO dto)
         {
+            // Validar que al menos una sesión esté especificada
+            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
+
+            // Validar que las sesiones existan si se especifican
+            if (dto.SessionId.HasValue)
+            {
+                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
+                if (!sessionExists)
+                    return BadRequest("La sesión especificada no existe");
+            }
+
+            if (dto.PsychologySessionId.HasValue)
+            {
+                var psychologySessionExists = await _context.PsychologySessions.AnyAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionId);
+                if (!psychologySessionExists)
+                    return BadRequest("La sesión psicológica especificada no existe");
+            }
+
             var created = await _repository.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.ActivityId }, created);
         }
 
-        // PUT: api/Activity/5
         [HttpPut("{id}")]
         public async Task<ActionResult<ActivityDTO>> Update(int id, ActivityDTO dto)
         {
             if (id != dto.ActivityId)
                 return BadRequest("ID mismatch");
+
+            // Validaciones similares a Create
+            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
+
+            if (dto.SessionId.HasValue)
+            {
+                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
+                if (!sessionExists)
+                    return BadRequest("La sesión especificada no existe");
+            }
+
+            if (dto.PsychologySessionId.HasValue)
+            {
+                var psychologySessionExists = await _context.PsychologySessions.AnyAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionId);
+                if (!psychologySessionExists)
+                    return BadRequest("La sesión psicológica especificada no existe");
+            }
 
             var updated = await _repository.UpdateAsync(dto);
             if (updated == null)
@@ -56,7 +94,6 @@ namespace SMED.BackEnd.Controllers
             return Ok(updated);
         }
 
-        // DELETE: api/Activity/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -65,6 +102,39 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpGet("BySession/{sessionId}")]
+        public async Task<ActionResult<List<ActivityDTO>>> GetBySessionId(int sessionId)
+        {
+            var repository = _repository as ActivityRepository;
+            if (repository == null)
+                return BadRequest("Repository type not supported");
+
+            var activities = await repository.GetBySessionIdAsync(sessionId);
+            return Ok(activities);
+        }
+
+        [HttpGet("ByPsychologySession/{psychologySessionId}")]
+        public async Task<ActionResult<List<ActivityDTO>>> GetByPsychologySessionId(int psychologySessionId)
+        {
+            var repository = _repository as ActivityRepository;
+            if (repository == null)
+                return BadRequest("Repository type not supported");
+
+            var activities = await repository.GetByPsychologySessionIdAsync(psychologySessionId);
+            return Ok(activities);
+        }
+
+        [HttpGet("ByTypeOfActivity/{typeOfActivityId}")]
+        public async Task<ActionResult<List<ActivityDTO>>> GetByTypeOfActivityId(int typeOfActivityId)
+        {
+            var repository = _repository as ActivityRepository;
+            if (repository == null)
+                return BadRequest("Repository type not supported");
+
+            var activities = await repository.GetByTypeOfActivityIdAsync(typeOfActivityId);
+            return Ok(activities);
         }
     }
 }

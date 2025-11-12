@@ -17,13 +17,21 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<List<ActivityDTO>> GetAllAsync()
         {
-            var entities = await _context.Activities.ToListAsync();
+            var entities = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
 
         public async Task<ActivityDTO?> GetByIdAsync(int id)
         {
-            var entity = await _context.Activities.FindAsync(id);
+            var entity = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .FirstOrDefaultAsync(a => a.ActivityId == id);
             return entity != null ? MapToDto(entity) : null;
         }
 
@@ -32,16 +40,36 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = MapToEntity(dto);
             _context.Activities.Add(entity);
             await _context.SaveChangesAsync();
+
+            // Recargar con datos relacionados
+            await _context.Entry(entity)
+                .Reference(a => a.Session)
+                .LoadAsync();
+            await _context.Entry(entity)
+                .Reference(a => a.PsychologySession)
+                .LoadAsync();
+            await _context.Entry(entity)
+                .Reference(a => a.TypeOfActivity)
+                .LoadAsync();
+
             return MapToDto(entity);
         }
 
         public async Task<ActivityDTO?> UpdateAsync(ActivityDTO dto)
         {
-            var entity = await _context.Activities.FindAsync(dto.ActivityId);
+            var entity = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .FirstOrDefaultAsync(a => a.ActivityId == dto.ActivityId);
+
             if (entity == null) return null;
 
-            entity.Name = dto.Name;
+            entity.NameActivity = dto.NameActivity;
+            entity.DateActivity = dto.DateActivity;
             entity.SessionId = dto.SessionId;
+            entity.PsychologySessionId = dto.PsychologySessionId;
+            entity.TypeOfActivityId = dto.TypeOfActivityId;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -57,6 +85,46 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+        // Métodos adicionales específicos de Activity
+        public async Task<List<ActivityDTO>> GetBySessionIdAsync(int sessionId)
+        {
+            var entities = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .Where(a => a.SessionId == sessionId)
+                .OrderBy(a => a.DateActivity)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ActivityDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
+        {
+            var entities = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .Where(a => a.PsychologySessionId == psychologySessionId)
+                .OrderBy(a => a.DateActivity)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ActivityDTO>> GetByTypeOfActivityIdAsync(int typeOfActivityId)
+        {
+            var entities = await _context.Activities
+                .Include(a => a.Session)
+                .Include(a => a.PsychologySession)
+                .Include(a => a.TypeOfActivity)
+                .Where(a => a.TypeOfActivityId == typeOfActivityId)
+                .OrderBy(a => a.DateActivity)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
         // =========================
         // 🔹 Mapeos
         // =========================
@@ -65,8 +133,14 @@ namespace SMED.BackEnd.Repositories.Implementations
             return new ActivityDTO
             {
                 ActivityId = entity.ActivityId,
-                Name = entity.Name,
-                SessionId = entity.SessionId
+                NameActivity = entity.NameActivity,
+                DateActivity = entity.DateActivity,
+                SessionId = entity.SessionId,
+                PsychologySessionId = entity.PsychologySessionId,
+                TypeOfActivityId = entity.TypeOfActivityId,
+                SessionDescription = entity.Session?.Description,
+                PsychologySessionDescription = entity.PsychologySession?.Description,
+                TypeOfActivityName = entity.TypeOfActivity?.Name
             };
         }
 
@@ -75,8 +149,11 @@ namespace SMED.BackEnd.Repositories.Implementations
             return new Activity
             {
                 ActivityId = dto.ActivityId,
-                Name = dto.Name,
-                SessionId = dto.SessionId
+                NameActivity = dto.NameActivity,
+                DateActivity = dto.DateActivity,
+                SessionId = dto.SessionId,
+                PsychologySessionId = dto.PsychologySessionId,
+                TypeOfActivityId = dto.TypeOfActivityId
             };
         }
     }

@@ -72,7 +72,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             entity.CaseSummary = dto.CaseSummary;
             entity.TherapeuticObjective = dto.TherapeuticObjective;
             entity.StrategyApproach = dto.StrategyApproach;
-            entity.AssignedTasks = dto.AssignedTasks;
 
             await _context.SaveChangesAsync();
             return MapToDto(entity);
@@ -142,7 +141,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 CaseSummary = entity.CaseSummary,
                 TherapeuticObjective = entity.TherapeuticObjective,
                 StrategyApproach = entity.StrategyApproach,
-                AssignedTasks = entity.AssignedTasks,
                 CIE10 = entity.PsychologicalDiagnosis?.CIE10,
                 Denomination = entity.PsychologicalDiagnosis?.Denomination,
                 DiagnosticTypeName = entity.PsychologicalDiagnosis?.DiagnosticTypeNavigation?.Name,
@@ -162,7 +160,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 CaseSummary = dto.CaseSummary,
                 TherapeuticObjective = dto.TherapeuticObjective,
                 StrategyApproach = dto.StrategyApproach,
-                AssignedTasks = dto.AssignedTasks
             };
         }
     }

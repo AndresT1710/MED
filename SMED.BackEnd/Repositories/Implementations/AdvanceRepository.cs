@@ -21,6 +21,9 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
                 .ToListAsync();
             return entities.Select(MapToDto).ToList();
         }
@@ -30,6 +33,9 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.Advances
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
                 .FirstOrDefaultAsync(a => a.AdvanceId == id);
             return entity != null ? MapToDto(entity) : null;
@@ -49,6 +55,13 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .ThenInclude(mc => mc.Patient)
                 .LoadAsync();
 
+            await _context.Entry(entity)
+                .Reference(a => a.PsychologySession)
+                .Query()
+                .Include(ps => ps.MedicalCare)
+                .ThenInclude(mc => mc.Patient)
+                .LoadAsync();
+
             return MapToDto(entity);
         }
 
@@ -58,11 +71,16 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
                 .FirstOrDefaultAsync(a => a.AdvanceId == dto.AdvanceId);
 
             if (entity == null) return null;
 
-            entity.Task = dto.Task;
+            entity.SessionId = dto.SessionId;
+            entity.PsychologySessionId = dto.PsychologySessionId;
+            entity.Indications = dto.Indications;
             entity.Description = dto.Description;
             entity.Date = dto.Date;
 
@@ -86,7 +104,26 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
                 .Where(a => a.SessionId == sessionId)
+                .OrderBy(a => a.Date)
+                .ToListAsync();
+
+            return entities.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<AdvanceDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
+        {
+            var entities = await _context.Advances
+                .Include(a => a.Session)
+                    .ThenInclude(s => s.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
+                .Where(a => a.PsychologySessionId == psychologySessionId)
                 .OrderBy(a => a.Date)
                 .ToListAsync();
 
@@ -98,6 +135,9 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.Advances
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
                 .Where(a => a.Date >= startDate && a.Date <= endDate)
                 .OrderBy(a => a.Date)
@@ -112,7 +152,11 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(a => a.Session)
                     .ThenInclude(s => s.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
-                .Where(a => a.Session.MedicalCareId == medicalCareId)
+                .Include(a => a.PsychologySession)
+                    .ThenInclude(ps => ps.MedicalCare)
+                    .ThenInclude(mc => mc.Patient)
+                .Where(a => a.Session.MedicalCareId == medicalCareId ||
+                           a.PsychologySession.MedicalCareId == medicalCareId)
                 .OrderBy(a => a.Date)
                 .ToListAsync();
 
@@ -124,15 +168,36 @@ namespace SMED.BackEnd.Repositories.Implementations
         // =========================
         private AdvanceDTO MapToDto(Advance entity)
         {
+            string? sessionDescription = null;
+            string? psychologySessionDescription = null;
+            int? medicalCareId = null;
+            string? patientName = null;
+
+            if (entity.Session != null)
+            {
+                sessionDescription = entity.Session.Description;
+                medicalCareId = entity.Session.MedicalCareId;
+                patientName = entity.Session.MedicalCare?.Patient?.PersonNavigation.FirstName;
+            }
+            else if (entity.PsychologySession != null)
+            {
+                psychologySessionDescription = entity.PsychologySession.Description;
+                medicalCareId = entity.PsychologySession.MedicalCareId;
+                patientName = entity.PsychologySession.MedicalCare?.Patient?.PersonNavigation.FirstName;
+            }
+
             return new AdvanceDTO
             {
                 AdvanceId = entity.AdvanceId,
                 SessionId = entity.SessionId,
-                Task = entity.Task,
+                PsychologySessionId = entity.PsychologySessionId,
+                Indications = entity.Indications,
                 Description = entity.Description,
                 Date = entity.Date,
-                SessionDescription = entity.Session?.Description,
-                MedicalCareId = entity.Session?.MedicalCareId
+                SessionDescription = sessionDescription,
+                PsychologySessionDescription = psychologySessionDescription,
+                MedicalCareId = medicalCareId,
+                PatientName = patientName
             };
         }
 
@@ -142,7 +207,8 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 AdvanceId = dto.AdvanceId,
                 SessionId = dto.SessionId,
-                Task = dto.Task,
+                PsychologySessionId = dto.PsychologySessionId,
+                Indications = dto.Indications,
                 Description = dto.Description,
                 Date = dto.Date
             };

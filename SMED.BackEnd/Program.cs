@@ -228,6 +228,8 @@ builder.Services.AddScoped<IRepository<AdvanceDTO, int>, AdvanceRepository>();
 builder.Services.AddScoped<AdvanceRepository>();
 builder.Services.AddScoped<IRepository<TherapeuticPlanDTO, int>, TherapeuticPlanRepository>();
 builder.Services.AddScoped<TherapeuticPlanRepository>();
+builder.Services.AddScoped<IRepository<PsychologySessionsDTO, int>, PsychologySessionsRepository>();
+builder.Services.AddScoped<PsychologySessionsRepository>();
 
 //PDF
 builder.Services.AddScoped<PdfService>();

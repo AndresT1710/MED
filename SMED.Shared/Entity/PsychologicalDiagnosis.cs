@@ -9,7 +9,6 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PsychologicalDiagnosisId { get; set; }
 
-        [Required]
         public int MedicalCareId { get; set; }
 
         [Required]
@@ -23,12 +22,16 @@ namespace SMED.Shared.Entity
         [StringLength(500)]
         public string Denomination { get; set; } = null!;
 
-        // Relación con MedicalCare (1:1 - una atención médica tiene un diagnóstico psicológico)
+        public string DiagnosisMotivation { get; set; } = null!;
+
+        public string Differential { get; set; } = null!;
+
+        // 🔗 Relación con MedicalCare (N:1) - UN diagnóstico pertenece a UNA atención médica
         [ForeignKey("MedicalCareId")]
-        [InverseProperty("PsychologicalDiagnosis")]
+        [InverseProperty("PsychologicalDiagnoses")] // ← Apunta a la colección en MedicalCare
         public virtual MedicalCare MedicalCare { get; set; } = null!;
 
-        // Relación con DiagnosticType
+        // 🔗 Relación con DiagnosticType
         [ForeignKey("DiagnosticTypeId")]
         [InverseProperty("PsychologicalDiagnoses")]
         public virtual DiagnosticType DiagnosticTypeNavigation { get; set; } = null!;

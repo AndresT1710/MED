@@ -29,9 +29,7 @@ namespace SMED.Shared.Entity
         [StringLength(1000)]
         public string StrategyApproach { get; set; } = null!;
 
-        [Required]
-        [StringLength(1000)]
-        public string AssignedTasks { get; set; } = null!;
+        public int NumberOfSessions { get; set; }
 
         // Relación con PsychologicalDiagnosis (1:Many - un diagnóstico psicológico tiene muchos planes terapéuticos)
         [ForeignKey("PsychologicalDiagnosisId")]

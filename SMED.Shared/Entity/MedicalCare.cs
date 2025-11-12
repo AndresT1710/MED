@@ -125,7 +125,12 @@ namespace SMED.Shared.Entity
         public virtual ICollection<MentalFunctionsPsychology> MentalFunctionsPsychologies { get; set; } = new List<MentalFunctionsPsychology>();
 
         [InverseProperty("MedicalCare")]
-        public virtual PsychologicalDiagnosis? PsychologicalDiagnosis { get; set; }
+        public virtual ICollection<PsychologicalDiagnosis> PsychologicalDiagnoses { get; set; } = new List<PsychologicalDiagnosis>();
+
+
+        [InverseProperty("MedicalCare")]
+        public virtual ICollection<PsychologySessions> PsychologySessions { get; set; } = new List<PsychologySessions>();
+
 
     }
 }

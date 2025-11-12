@@ -91,6 +91,19 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<AdvanceDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<AdvanceDTO>>($"api/Advance/ByPsychologySession/{psychologySessionId}")
+                    ?? new List<AdvanceDTO>();
+            }
+            catch (Exception)
+            {
+                return new List<AdvanceDTO>();
+            }
+        }
+
         public async Task<List<AdvanceDTO>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             try

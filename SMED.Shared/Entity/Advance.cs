@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SMED.Shared.Entity
@@ -9,12 +10,12 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AdvanceId { get; set; }
 
-        [Required]
-        public int SessionId { get; set; }
+        public int? SessionId { get; set; }
+        public int? PsychologySessionId { get; set; }
 
         [Required]
         [StringLength(200)]
-        public string Task { get; set; } = null!;
+        public string Indications { get; set; } = null!;
 
         [Required]
         [StringLength(500)]
@@ -24,9 +25,14 @@ namespace SMED.Shared.Entity
         [Column(TypeName = "date")]
         public DateTime Date { get; set; }
 
-        // Relación con Sessions (1:Many - una sesión tiene muchos avances)
+        // 🔗 Relación con Sessions
         [ForeignKey("SessionId")]
         [InverseProperty("Advances")]
-        public virtual Sessions Session { get; set; } = null!;
+        public virtual Sessions? Session { get; set; }
+
+        // 🔗 Relación con PsychologySessions
+        [ForeignKey("PsychologySessionId")]
+        [InverseProperty("Advances")]
+        public virtual PsychologySessions? PsychologySession { get; set; }
     }
 }

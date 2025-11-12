@@ -1,4 +1,4 @@
-﻿@page "/physiotherapy-module/registro"
+﻿@page "/psychology-module/registro"
 @layout MainLayout
 @using SMED.FrontEnd.Components
 @using SMED.Shared.Entity
@@ -10,7 +10,7 @@
 @inject HttpClient Http
 
 <TabContainerE OnSave="GuardarDatos">
-    <h3 class="mb-4">Gestión de Atenciones Fisioterapia</h3>
+    <h3 class="mb-4">Gestión de Atenciones de Psicología</h3>
 
     <!-- Filtros de búsqueda mejorados -->
     <div class="card mb-4">
@@ -88,7 +88,7 @@
         <div class="col-12">
             <div class="d-flex align-items-center gap-3">
                 <span class="badge bg-success">
-                    <i class="fas fa-heartbeat me-1"></i>Área: Fisioterapia <!-- Cambiado -->
+                    <i class="fas fa-brain me-1"></i>Área: Psicología
                 </span>
                 @if (selectedDate.HasValue)
                 {
@@ -113,8 +113,7 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                 <i class="fas fa-list me-2"></i>Lista de Atenciones - Fisioterapia
-   
+                <i class="fas fa-list me-2"></i>Lista de Atenciones - Psicología
             </h5>
         </div>
         <div class="card-body">
@@ -139,12 +138,12 @@
                      style="width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1100px;">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-eye me-2"></i>Detalle de Atención Médica
+                            <i class="fas fa-eye me-2"></i>Detalle de Atención de Psicología
                         </h5>
                         <button type="button" class="btn-close" @onclick="() => showDetail = false"></button>
                     </div>
                     <div class="modal-body" style="overflow-y: auto; flex-grow: 1;">
-                        <PhysiotherapyMedicalCareDetail MedicalCare="selectedMedicalCare" />
+                        <PsychologyMedicalCareDetail MedicalCare="selectedMedicalCare" />
                     </div>
                 </div>
             </div>
@@ -161,12 +160,12 @@
                     <div class="modal-header">
                         <h5 class="modal-title">
                             <i class="fas @(selectedMedicalCare?.CareId == 0 ? "fa-plus" : "fa-edit") me-2"></i>
-                            @(selectedMedicalCare?.CareId == 0 ? "Nueva Atención Médica" : "Editar Atención Médica")
+                            @(selectedMedicalCare?.CareId == 0 ? "Nueva Atención de Psicología" : "Editar Atención de Psicología")
                         </h5>
                         <button type="button" class="btn-close" @onclick="HideForm" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <PhysiotherapyMedicalCareForm MedicalCare="selectedMedicalCare"
+                        <PsychologyMedicalCareForm MedicalCare="selectedMedicalCare"
                                          OnSaved="OnMedicalCareSaved"
                                          OnCancel="HideForm" />
                     </div>
@@ -208,46 +207,28 @@
     // Columnas de la tabla (sin ID)
     private List<string> MedicalCareColumns = new()
     {
-        "Fecha", "Paciente", "Sectores", "Profesional", "Acciones"
+        "Fecha", "Paciente", "Lugar de Atención", "Psicólogo", "Acciones"
     };
 
     protected override async Task OnInitializedAsync()
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
-        await LoadPhysiotherapyCareData(); // Cambiado para cargar solo fisioterapia
+        await LoadPsychologyCareData();
     }
 
-    private async Task LoadPhysiotherapyCareData() // Método nuevo
-    {
-        try
-        {
-            var result = await MedicalCareService.GetPhysiotherapyCareAsync();
-            await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} physiotherapy records");
-            allMedicalCareList = result ?? new List<MedicalCareDTO>();
-
-            ApplyFilters();
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", $"Error loading physiotherapy care data: {ex.Message}");
-            allMedicalCareList = new List<MedicalCareDTO>();
-            filteredMedicalCareList = new List<MedicalCareDTO>();
-        }
-    }
-
-    private async Task LoadAllMedicalCareData()
+    private async Task LoadPsychologyCareData()
     {
         try
         {
             var result = await MedicalCareService.GetAllAsync();
+            await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} psychology records");
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
-            totalMedicalCareCount = allMedicalCareList.Count;
 
             ApplyFilters();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("console.error", $"Error loading medical care data: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"Error loading psychology care data: {ex.Message}");
             allMedicalCareList = new List<MedicalCareDTO>();
             filteredMedicalCareList = new List<MedicalCareDTO>();
         }
@@ -279,15 +260,6 @@
             hasActiveFilters = true;
         }
 
-        // Filtro por búsqueda rápida de ID
-        if (!string.IsNullOrWhiteSpace(quickSearchTerm) && int.TryParse(quickSearchTerm, out int careId))
-        {
-            filteredMedicalCareList = filteredMedicalCareList
-                .Where(mc => mc.CareId == careId)
-                .ToList();
-            hasActiveFilters = true;
-        }
-
         // Verificar si no hay resultados
         if (hasActiveFilters && !filteredMedicalCareList.Any())
         {
@@ -307,12 +279,9 @@
         if (selectedPerson != null)
             filters.Add($"paciente {selectedPerson.FirstName} {selectedPerson.LastName}");
 
-        if (!string.IsNullOrWhiteSpace(quickSearchTerm))
-            filters.Add($"ID {quickSearchTerm}");
-
         searchMessage = filters.Count > 0
-            ? $"No se encontraron atenciones de fisioterapia para: {string.Join(", ", filters)}"
-            : "No se encontraron atenciones de fisioterapia";
+            ? $"No se encontraron atenciones de psicología para: {string.Join(", ", filters)}"
+            : "No se encontraron atenciones de psicología";
 
         showNoMedicalCareAlert = !selectedDate.HasValue;
     }
@@ -336,12 +305,6 @@
     }
 
     private async Task HandleDateFilter()
-    {
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task HandleQuickSearch()
     {
         ApplyFilters();
         await InvokeAsync(StateHasChanged);
@@ -380,9 +343,9 @@
     private void CreateNewMedicalCare()
     {
         selectedMedicalCare = new MedicalCareDTO
-            {
-                CareId = 0
-            };
+        {
+            CareId = 0
+        };
         showForm = true;
         showNoMedicalCareAlert = false;
     }
@@ -446,13 +409,13 @@
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", "No se pudo cargar la atención médica");
+                    await JS.InvokeVoidAsync("alert", "No se pudo cargar la atención de psicología");
                 }
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("console.error", $"Error cargando atención médica: {ex.Message}");
-                await JS.InvokeVoidAsync("alert", "Error al cargar la atención médica");
+                await JS.InvokeVoidAsync("console.error", $"Error cargando atención de psicología: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", "Error al cargar la atención de psicología");
             }
         }
     }
@@ -468,12 +431,12 @@
         var medicalCareToDelete = filteredMedicalCareList.FirstOrDefault(mc => mc.CareId == idInt);
         if (medicalCareToDelete == null)
         {
-            await JS.InvokeVoidAsync("alert", "Atención de fisioterapia no encontrada");
+            await JS.InvokeVoidAsync("alert", "Atención de psicología no encontrada");
             return;
         }
 
         bool confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"¿Estás seguro de eliminar la atención de fisioterapia del paciente {medicalCareToDelete.NamePatient}?\n\nEsta acción no se puede deshacer.");
+            $"¿Estás seguro de eliminar la atención de psicología del paciente {medicalCareToDelete.NamePatient}?\n\nEsta acción no se puede deshacer.");
 
         if (confirmed)
         {
@@ -482,22 +445,21 @@
                 var result = await MedicalCareService.DeleteAsync(idInt);
                 if (result.Success)
                 {
-                    await LoadPhysiotherapyCareData();
-                    await JS.InvokeVoidAsync("alert", "Atención de fisioterapia eliminada exitosamente");
+                    await LoadPsychologyCareData();
+                    await JS.InvokeVoidAsync("alert", "Atención de psicología eliminada exitosamente");
                 }
                 else
                 {
-                    await JS.InvokeVoidAsync("alert", $"Error al eliminar la atención de fisioterapia: {result.Error}");
+                    await JS.InvokeVoidAsync("alert", $"Error al eliminar la atención de psicología: {result.Error}");
                 }
             }
             catch (Exception ex)
             {
                 await JS.InvokeVoidAsync("console.error", $"Error eliminando: {ex.Message}");
-                await JS.InvokeVoidAsync("alert", "Error inesperado al eliminar la atención de fisioterapia");
+                await JS.InvokeVoidAsync("alert", "Error inesperado al eliminar la atención de psicología");
             }
         }
     }
-
 
     private void HideForm()
     {
@@ -508,18 +470,18 @@
     private async Task OnMedicalCareSaved(MedicalCareDTO savedMedicalCare)
     {
         showForm = false;
-        await LoadPhysiotherapyCareData();
+        await LoadPsychologyCareData();
         await InvokeAsync(StateHasChanged);
 
         var message = savedMedicalCare.CareId == 0
-            ? "Atención de fisioterapia creada exitosamente"
-            : "Atención de fisioterapia actualizada exitosamente";
+            ? "Atención de psicología creada exitosamente"
+            : "Atención de psicología actualizada exitosamente";
 
         await JS.InvokeVoidAsync("alert", message);
     }
 
     void GuardarDatos()
     {
-        // Lógica para guardar los datoss
+        // Lógica para guardar los datos
     }
 }

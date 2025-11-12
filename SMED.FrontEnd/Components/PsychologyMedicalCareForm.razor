@@ -1,0 +1,774 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.Shared.Entity
+@using SMED.FrontEnd.Services
+@inject MedicalCareService MedicalCareService
+@inject HealthProfessionalService HealthProfessionalService
+@inject PlaceOfAttentionService PlaceService
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject LocationService LocationService
+@inject AuthorizationService AuthorizationService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="psychology-care-form">
+    <!-- Sistema de pestañas -->
+    <ul class="nav nav-tabs" id="psychologyTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "patient" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("patient"))"
+                    type="button" role="tab">
+                <i class="fas fa-user me-2"></i>Selección de Paciente
+                @if (IsPatientTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ms-1">*</span>
+                }
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "diagnosis" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("diagnosis"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-stethoscope me-2"></i>Diagnóstico Psicológico
+                <small class="text-muted ms-1">(Por implementar)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "plan" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("plan"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-clipboard-list me-2"></i>Plan Terapéutico
+                <small class="text-muted ms-1">(Por implementar)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "sessions" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("sessions"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-calendar-alt me-2"></i>Sesiones
+                <small class="text-muted ms-1">(Por implementar)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "activities" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("activities"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-tasks me-2"></i>Actividades
+                <small class="text-muted ms-1">(Por implementar)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "progress" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("progress"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-chart-line me-2"></i>Avances
+                <small class="text-muted ms-1">(Por implementar)</small>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <!-- Pestaña 1: Selección de Paciente -->
+        <div class="tab-pane @(activeTab == "patient" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-brain me-2"></i>Selección de Paciente - Psicología
+                        <span class="badge bg-danger ms-2">Obligatorio</span>
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-brain me-1"></i>Área: Psicología
+                        </span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (!isEditMode)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Paciente *</label>
+                            <PatientSelector @bind-Value="clinicalHistoryId"
+                                             OnPatientSelected="HandlePatientSelected" />
+                            @if (showValidationErrors && selectedPatientId <= 0)
+                            {
+                                <div class="text-danger mt-1">
+                                    <small><i class="fas fa-exclamation-triangle me-1"></i>Debe seleccionar un paciente</small>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Editando atención de psicología existente. Paciente: @selectedHistoryNumber
+                        </div>
+                    }
+
+                    @if (selectedPatientId > 0)
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Paciente seleccionado correctamente. Historia Clínica: @selectedHistoryNumber
+                        </div>
+
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Área de Atención:</strong> Psicología
+                                    <br>
+                                    <small class="text-muted">Esta atención se registrará automáticamente en el área de Psicología.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Lugar de Atención *</label>
+                                <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
+                                        @bind="lugarSeleccionada">
+                                    <option value="">Seleccione el lugar de Atención</option>
+                                    @foreach (var lugar in lugaresAtencion)
+                                    {
+                                        <option value="@lugar.Id">@lugar.Name</option>
+                                    }
+                                </select>
+                                @if (showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada))
+                                {
+                                    <div class="invalid-feedback">
+                                        Debe seleccionar un lugar de atención
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Motivo de la Consulta *</label>
+                            <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
+                                      @bind="motivoConsulta"
+                                      rows="3"
+                                      placeholder="Describa el motivo principal de la consulta psicológica..."
+                                      maxlength="500"></textarea>
+                            @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
+                            {
+                                <div class="invalid-feedback">
+                                    Debe ingresar el motivo de la consulta
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Psicólogo *</label>
+
+                            @if (profesionalCargado)
+                            {
+                                @if (profesionalLogueado != null)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-user-md me-2"></i>
+                                        <strong>Psicólogo asignado automáticamente:</strong>
+                                        @profesionalLogueado.FullName - @profesionalLogueado.NameTypeProfessional
+                                        <input type="hidden" @bind="selectedHealthProfessionalId" />
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Usted ha sido asignado automáticamente como el profesional responsable.
+                                            </small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>No se pudo identificar su perfil profesional.</strong>
+                                        <div class="mt-2">
+                                            <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
+                                                    @bind="selectedHealthProfessionalId">
+                                                <option value="0">Seleccione un psicólogo manualmente</option>
+                                                @foreach (var profesional in psicologos)
+                                                {
+                                                    <option value="@profesional.HealthProfessionalId">
+                                                        @profesional.FullName - @profesional.NameTypeProfessional
+                                                    </option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (showValidationErrors && selectedHealthProfessionalId <= 0)
+                                        {
+                                            <div class="invalid-feedback d-block">
+                                                Debe seleccionar un psicólogo responsable
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando información del profesional...</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!IsPatientTabComplete())
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Complete todos los campos obligatorios para continuar a las siguientes pestañas.
+                            </div>
+                        }
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <button class="btn btn-outline-secondary" @onclick="ValidateAndShowErrors">
+                                    <i class="fas fa-check me-2"></i>Validar Información
+                                </button>
+                            </div>
+                            <div>
+                                @if (IsPatientTabComplete())
+                                {
+                                    <button class="btn btn-success me-2" @onclick="GuardarDatosPaciente" disabled="@isSaving">
+                                        @if (isSaving)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="fas fa-save me-2"></i>@(currentMedicalCareId > 0 ? "Actualizar" : "Guardar") Datos Básicos
+                                    </button>
+                                    @if (currentMedicalCareId > 0)
+                                    {
+                                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("diagnosis"))">
+                                            Continuar a Diagnóstico <i class="fas fa-arrow-right ms-2"></i>
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <button class="btn btn-secondary" disabled>
+                                        Complete la información obligatoria
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 2: Diagnóstico Psicológico -->
+        <div class="tab-pane @(activeTab == "diagnosis" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-stethoscope me-2"></i>Diagnóstico Psicológico
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Sección en desarrollo</strong> - Aquí irá la información del diagnóstico psicológico del paciente.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Diagnóstico Psicológico</h5>
+                        <p class="text-muted">Esta sección estará disponible próximamente</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("plan"))">
+                            Continuar a Plan Terapéutico <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 3: Plan Terapéutico -->
+        <div class="tab-pane @(activeTab == "plan" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Plan Terapéutico
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Sección en desarrollo</strong> - Aquí irá la información del plan terapéutico del paciente.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Plan Terapéutico</h5>
+                        <p class="text-muted">Esta sección estará disponible próximamente</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diagnosis"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("sessions"))">
+                            Continuar a Sesiones <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 4: Sesiones -->
+        <div class="tab-pane @(activeTab == "sessions" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Sesiones de Terapia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Sección en desarrollo</strong> - Aquí irá la información de las sesiones de terapia del paciente.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Sesiones de Terapia</h5>
+                        <p class="text-muted">Esta sección estará disponible próximamente</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("plan"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("activities"))">
+                            Continuar a Actividades <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 5: Actividades -->
+        <div class="tab-pane @(activeTab == "activities" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Actividades Terapéuticas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Sección en desarrollo</strong> - Aquí irá la información de las actividades terapéuticas del paciente.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Actividades Terapéuticas</h5>
+                        <p class="text-muted">Esta sección estará disponible próximamente</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("sessions"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("progress"))">
+                            Continuar a Avances <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña 6: Avances -->
+        <div class="tab-pane @(activeTab == "progress" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Avances del Paciente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Sección en desarrollo</strong> - Aquí irá la información de los avances y progreso del paciente.
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Avances del Paciente</h5>
+                        <p class="text-muted">Esta sección estará disponible próximamente</p>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("activities"))">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button class="btn btn-success" @onclick="FinalizarAtencionPsicologia" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="fas fa-check me-2"></i>Finalizar Atención
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO MedicalCare { get; set; } = new();
+    [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    // Variables para pestañas
+    private string activeTab = "patient";
+
+    // Variables para la pestaña de paciente
+    private int clinicalHistoryId;
+    private int selectedPatientId;
+    private string selectedHistoryNumber = string.Empty;
+    private List<PlaceOfAttentionDTO> lugaresAtencion = new();
+    private string lugarSeleccionada = string.Empty;
+    private string motivoConsulta = string.Empty;
+    private List<HealthProfessionalDTO> psicologos = new();
+    private HealthProfessionalDTO? profesionalLogueado;
+    private int selectedHealthProfessionalId;
+    private int psychologyLocationId;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private bool showValidationErrors = false;
+    private bool profesionalCargado = false;
+    private int currentMedicalCareId = 0;
+    private ReasonForConsultationDTO? existingReasonForConsultation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocationsAndPlaces();
+        await LoadHealthProfessionals();
+        await ObtenerProfesionalLogueado();
+
+        if (MedicalCare != null && MedicalCare.CareId > 0)
+        {
+            isEditMode = true;
+            currentMedicalCareId = MedicalCare.CareId;
+            selectedPatientId = MedicalCare.PatientId;
+            await LoadExistingData();
+        }
+        else
+        {
+            await AsignarProfesionalLogueado();
+        }
+    }
+
+    // ========== MÉTODOS PARA PESTAÑAS ==========
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (tab != "patient" && !IsPatientTabComplete())
+        {
+            showValidationErrors = true;
+            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            return;
+        }
+
+        if (tab != "patient" && currentMedicalCareId == 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            return;
+        }
+
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private bool IsPatientTabComplete()
+    {
+        return selectedPatientId > 0 &&
+               !string.IsNullOrEmpty(lugarSeleccionada) &&
+               !string.IsNullOrWhiteSpace(motivoConsulta) &&
+               selectedHealthProfessionalId > 0 &&
+               psychologyLocationId > 0;
+    }
+
+    private async Task FinalizarAtencionPsicologia()
+    {
+        isSaving = true;
+        try
+        {
+            if (currentMedicalCareId == 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No hay una atención de psicología válida para finalizar.");
+                return;
+            }
+
+            await OnSaved.InvokeAsync(MedicalCare ?? new MedicalCareDTO { CareId = currentMedicalCareId });
+            await JS.InvokeVoidAsync("alert", "Atención de psicología finalizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    // ========== MÉTODOS EXISTENTES ADAPTADOS ==========
+
+    private async Task ObtenerProfesionalLogueado()
+    {
+        try
+        {
+            profesionalLogueado = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+
+            if (profesionalLogueado != null)
+            {
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Psicólogo logueado encontrado: {profesionalLogueado.FullName}, ID: {profesionalLogueado.HealthProfessionalId}");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.warn", "⚠️ No se pudo encontrar el psicólogo logueado");
+            }
+
+            profesionalCargado = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error obteniendo psicólogo logueado: {ex.Message}");
+            profesionalCargado = true;
+        }
+    }
+
+    private async Task AsignarProfesionalLogueado()
+    {
+        if (profesionalLogueado != null)
+        {
+            selectedHealthProfessionalId = profesionalLogueado.HealthProfessionalId;
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Psicólogo logueado asignado automáticamente: {profesionalLogueado.FullName}");
+        }
+        else if (psicologos.Any())
+        {
+            await JS.InvokeVoidAsync("console.warn",
+                "⚠️ No se encontró psicólogo logueado, mostrando selector manual");
+        }
+    }
+
+    private async Task LoadLocationsAndPlaces()
+    {
+        try
+        {
+            var locations = await LocationService.GetAllAsync();
+            var psychologyLocation = locations?.FirstOrDefault(l =>
+                l.Name.Equals("Psicología", StringComparison.OrdinalIgnoreCase) ||
+                l.Name.Equals("Psicologia", StringComparison.OrdinalIgnoreCase));
+
+            psychologyLocationId = psychologyLocation?.Id ?? 0;
+
+            if (psychologyLocationId == 0)
+            {
+                await JS.InvokeVoidAsync("console.error", "No se encontró la ubicación de Psicología");
+            }
+
+            lugaresAtencion = await PlaceService.GetAllPlacesAsync() ?? new List<PlaceOfAttentionDTO>();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading locations and places: {ex.Message}");
+        }
+    }
+
+    private async Task LoadHealthProfessionals()
+    {
+        try
+        {
+            var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
+            psicologos = allProfessionals?
+                .Where(hp => hp.NameTypeProfessional != null &&
+                           (hp.NameTypeProfessional.ToLower().Contains("psicología") ||
+                            hp.NameTypeProfessional.ToLower().Contains("psicologia") ||
+                            hp.NameTypeProfessional.ToLower().Contains("psicólogo") ||
+                            hp.NameTypeProfessional.ToLower().Contains("psicologo") ||
+                            hp.NameTypeProfessional.ToLower().Contains("terapeuta")))
+                .ToList() ?? new List<HealthProfessionalDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Se encontraron {psicologos.Count} psicólogos");
+
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading health professionals: {ex.Message}");
+        }
+    }
+
+    private async Task LoadExistingData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                var medicalCare = await MedicalCareService.GetByIdAsync(currentMedicalCareId);
+                if (medicalCare != null)
+                {
+                    lugarSeleccionada = medicalCare.PlaceOfAttentionId.ToString();
+                    selectedHealthProfessionalId = medicalCare.HealthProfessionalId;
+
+                    var reasons = await ReasonForConsultationService.GetByCareIdAsync(currentMedicalCareId);
+                    existingReasonForConsultation = reasons?.FirstOrDefault();
+                    if (existingReasonForConsultation != null)
+                    {
+                        motivoConsulta = existingReasonForConsultation.Description;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
+        }
+    }
+
+    private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
+    {
+        clinicalHistoryId = paciente.ClinicalHistoryId;
+        selectedPatientId = paciente.PersonId;
+        selectedHistoryNumber = paciente.MedicalRecordNumber;
+        if (selectedPatientId > 0)
+        {
+            showValidationErrors = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void ValidateAndShowErrors()
+    {
+        showValidationErrors = true;
+        StateHasChanged();
+    }
+
+    private async Task GuardarDatosPaciente()
+    {
+        isSaving = true;
+        try
+        {
+            if (!IsPatientTabComplete())
+            {
+                showValidationErrors = true;
+                await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria antes de guardar.");
+                return;
+            }
+
+            if (psychologyLocationId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar el área de psicología. Por favor, contacte con soporte.");
+                return;
+            }
+
+            if (selectedHealthProfessionalId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar al psicólogo. Por favor, contacte con soporte.");
+                return;
+            }
+
+            MedicalCareDTO medicalCareResult;
+
+            if (isEditMode && MedicalCare != null && MedicalCare.CareId > 0)
+            {
+                MedicalCare.LocationId = psychologyLocationId;
+                MedicalCare.HealthProfessionalId = selectedHealthProfessionalId;
+                MedicalCare.PlaceOfAttentionId = int.Parse(lugarSeleccionada);
+
+                var updateResult = await MedicalCareService.UpdateAsync(MedicalCare);
+                if (!updateResult.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar la atención: {updateResult.Error}");
+                    return;
+                }
+
+                medicalCareResult = MedicalCare;
+                currentMedicalCareId = MedicalCare.CareId;
+            }
+            else
+            {
+                var medicalCareDto = new MedicalCareDTO
+                {
+                    PatientId = selectedPatientId,
+                    HealthProfessionalId = selectedHealthProfessionalId,
+                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                    LocationId = psychologyLocationId,
+                    CareDate = DateTime.Now
+                };
+
+                var result = await MedicalCareService.CreateAsync(medicalCareDto);
+                if (!result.Success)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Error al crear la atención de psicología: {result.Error}");
+                    return;
+                }
+
+                medicalCareResult = result.Data;
+                currentMedicalCareId = medicalCareResult.CareId;
+                isEditMode = true;
+                MedicalCare = medicalCareResult;
+            }
+
+            if (!string.IsNullOrWhiteSpace(motivoConsulta))
+            {
+                var reasonDto = new ReasonForConsultationDTO
+                {
+                    Id = existingReasonForConsultation?.Id ?? 0,
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = currentMedicalCareId
+                };
+
+                if (existingReasonForConsultation != null && existingReasonForConsultation.Id > 0)
+                {
+                    await ReasonForConsultationService.UpdateAsync(reasonDto);
+                }
+                else
+                {
+                    await ReasonForConsultationService.CreateAsync(reasonDto);
+                }
+            }
+
+            await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con las siguientes pestañas.");
+            showValidationErrors = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error saving data:", ex.Message);
+            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup si es necesario
+    }
+}

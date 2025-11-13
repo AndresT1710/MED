@@ -10,6 +10,9 @@
 @inject AuthorizationService AuthorizationService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject PsychologicalDiagnosisService PsychologicalDiagnosisService
+@inject DiagnosticTypeService DiagnosticTypeService
+@inject TherapeuticPlanService TherapeuticPlanService
 @implements IDisposable
 
 <div class="psychology-care-form">
@@ -36,7 +39,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-stethoscope me-2"></i>Diagnóstico Psicológico
-                <small class="text-muted ms-1">(Por implementar)</small>
+                @if (IsPsychologicalDiagnosisTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -45,7 +51,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-list me-2"></i>Plan Terapéutico
-                <small class="text-muted ms-1">(Por implementar)</small>
+                @if (IsTherapeuticPlanTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -268,31 +277,164 @@
         <!-- Pestaña 2: Diagnóstico Psicológico -->
         <div class="tab-pane @(activeTab == "diagnosis" ? "show active" : "")" role="tabpanel">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-stethoscope me-2"></i>Diagnóstico Psicológico
+                        <i class="fas fa-brain me-2"></i>Diagnóstico Psicológico
+                        <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
+                    <small class="text-muted">Diagnóstico psicológico del paciente</small>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Sección en desarrollo</strong> - Aquí irá la información del diagnóstico psicológico del paciente.
-                    </div>
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar diagnósticos psicológicos para esta atención.
+                        </div>
 
-                    <div class="text-center py-5">
-                        <i class="fas fa-stethoscope fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Diagnóstico Psicológico</h5>
-                        <p class="text-muted">Esta sección estará disponible próximamente</p>
-                    </div>
+                        <EditableTable Title="Diagnósticos Psicológicos"
+                                       ColumnHeaders="@psychologicalDiagnosisHeaders"
+                                       Rows="@psychologicalDiagnosisRows"
+                                       RowIds="@psychologicalDiagnosisIds"
+                                       EmptyMessage="No se han registrado diagnósticos psicológicos"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este diagnóstico psicológico?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddPsychologicalDiagnosisRequested"
+                                       OnEditRequested="@OnEditPsychologicalDiagnosisRequested"
+                                       OnDeleteRequested="@OnDeletePsychologicalDiagnosisRequested"
+                                       OnSaveRequested="@OnSavePsychologicalDiagnosisRequested"
+                                       IsValidForm="@IsPsychologicalDiagnosisFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">CIE10 <span class="text-danger">*</span></label>
+                                        <input type="text"
+                                               class="form-control @(psychologicalDiagnosisErrors.ContainsKey("CIE10") ? "is-invalid" : "")"
+                                               @bind="currentPsychologicalDiagnosis.CIE10"
+                                               maxlength="20"
+                                               placeholder="Ingrese el código CIE10"
+                                               disabled="@isUnidentifiedCie10Psychological" />
+                                        @if (psychologicalDiagnosisErrors.ContainsKey("CIE10"))
+                                        {
+                                            <div class="invalid-feedback">@psychologicalDiagnosisErrors["CIE10"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 20 caracteres. Restantes: @(20 - (currentPsychologicalDiagnosis.CIE10?.Length ?? 0))
+                                        </small>
 
-                    <div class="d-flex justify-content-between mt-4">
-                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
-                            <i class="fas fa-arrow-left me-2"></i>Volver
-                        </button>
-                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("plan"))">
-                            Continuar a Plan Terapéutico <i class="fas fa-arrow-right ms-2"></i>
-                        </button>
-                    </div>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   id="unidentifiedCie10PsychologicalCheck"
+                                                   checked="@isUnidentifiedCie10Psychological"
+                                                   @onchange="HandleUnidentifiedCie10CheckboxChanged" />
+                                            <label class="form-check-label" for="unidentifiedCie10PsychologicalCheck">
+                                                No Identificado
+                                            </label>
+                                        </div>
+
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Tipo de Diagnóstico <span class="text-danger">*</span></label>
+                                        <select class="form-select @(psychologicalDiagnosisErrors.ContainsKey("DiagnosticTypeId") ? "is-invalid" : "")"
+                                                @bind="currentPsychologicalDiagnosis.DiagnosticTypeId">
+                                            <option value="0">Seleccione un tipo de diagnóstico</option>
+                                            @foreach (var type in availableDiagnosticTypes)
+                                            {
+                                                <option value="@type.Id">@type.Name</option>
+                                            }
+                                        </select>
+                                        @if (psychologicalDiagnosisErrors.ContainsKey("DiagnosticTypeId"))
+                                        {
+                                            <div class="invalid-feedback">@psychologicalDiagnosisErrors["DiagnosticTypeId"]</div>
+                                        }
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Denominación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(psychologicalDiagnosisErrors.ContainsKey("Denomination") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologicalDiagnosis.Denomination"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa la denominación del diagnóstico psicológico..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (psychologicalDiagnosisErrors.ContainsKey("Denomination"))
+                                        {
+                                            <div class="invalid-feedback">@psychologicalDiagnosisErrors["Denomination"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentPsychologicalDiagnosis.Denomination?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivación del Diagnóstico <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(psychologicalDiagnosisErrors.ContainsKey("DiagnosisMotivation") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologicalDiagnosis.DiagnosisMotivation"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa la motivación del diagnóstico psicológico..."
+                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @if (psychologicalDiagnosisErrors.ContainsKey("DiagnosisMotivation"))
+                                        {
+                                            <div class="invalid-feedback">@psychologicalDiagnosisErrors["DiagnosisMotivation"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentPsychologicalDiagnosis.DiagnosisMotivation?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Diagnóstico Diferencial</label>
+                                        <textarea class="form-control @(psychologicalDiagnosisErrors.ContainsKey("DifferentialDiagnosis") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologicalDiagnosis.DifferentialDiagnosis"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa el diagnóstico diferencial (condiciones consideradas y descartadas)..."
+                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @if (psychologicalDiagnosisErrors.ContainsKey("DifferentialDiagnosis"))
+                                        {
+                                            <div class="invalid-feedback">@psychologicalDiagnosisErrors["DifferentialDiagnosis"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentPsychologicalDiagnosis.DifferentialDiagnosis?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(psychologicalDiagnosisFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @psychologicalDiagnosisFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                @if (hasUnsavedPsychologicalDiagnosisData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("plan"))">
+                                    Continuar a Plan Terapéutico <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -300,31 +442,95 @@
         <!-- Pestaña 3: Plan Terapéutico -->
         <div class="tab-pane @(activeTab == "plan" ? "show active" : "")" role="tabpanel">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-clipboard-list me-2"></i>Plan Terapéutico
+                        <span class="badge bg-info ms-2">Opcional</span>
                     </h5>
+                    <small class="text-muted">Planes terapéuticos por diagnóstico psicológico</small>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Sección en desarrollo</strong> - Aquí irá la información del plan terapéutico del paciente.
-                    </div>
+                    @if (currentMedicalCareId > 0)
+                    {
+                        @if (!psychologicalDiagnosisList.Any())
+                        {
+                            <div class="alert alert-warning mb-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <div>
+                                        <strong>No hay diagnósticos psicológicos registrados</strong>
+                                        <p class="mb-0">Debe registrar al menos un diagnóstico psicológico en la pestaña anterior para poder asignar planes terapéuticos.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Información:</strong> Puede asignar planes terapéuticos específicos a cada diagnóstico psicológico registrado.
+                            </div>
 
-                    <div class="text-center py-5">
-                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Plan Terapéutico</h5>
-                        <p class="text-muted">Esta sección estará disponible próximamente</p>
-                    </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>CIE10</th>
+                                            <th>Denominación</th>
+                                            <th>Tipo Diagnóstico</th>
+                                            <th>Diagnóstico Diferencial</th>
+                                            <th>Planes Terapéuticos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var diagnosis in psychologicalDiagnosisList)
+                                        {
+                                            <tr>
+                                                <td>@diagnosis.CIE10</td>
+                                                <td>@diagnosis.Denomination</td>
+                                                <td>@(availableDiagnosticTypes.FirstOrDefault(t => t.Id == diagnosis.DiagnosticTypeId)?.Name ?? "N/A")</td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(diagnosis.DifferentialDiagnosis))
+                                                    {
+                                                        <span title="@diagnosis.DifferentialDiagnosis">
+                                                            @(diagnosis.DifferentialDiagnosis.Length > 50 ?
+                                                                                                        diagnosis.DifferentialDiagnosis.Substring(0, 50) + "..." :
+                                                                                                        diagnosis.DifferentialDiagnosis)
+                                        </span>
+                                                                                }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Sin diagnóstico diferencial</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-success btn-sm" @onclick="() => OpenTherapeuticPlanModal(diagnosis.PsychologicalDiagnosisId)">
+                                                        <i class="fas fa-eye me-1"></i>Gestionar Plan
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
 
-                    <div class="d-flex justify-content-between mt-4">
-                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diagnosis"))">
-                            <i class="fas fa-arrow-left me-2"></i>Volver
-                        </button>
-                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("sessions"))">
-                            Continuar a Sesiones <i class="fas fa-arrow-right ms-2"></i>
-                        </button>
-                    </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diagnosis"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("sessions"))">
+                                Continuar a Sesiones <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -431,6 +637,133 @@
     </div>
 </div>
 
+@* Modal para gestión de Planes Terapéuticos con EditableTable *@
+@if (showTherapeuticPlanModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        Gestión de Plan Terapéutico - @selectedDiagnosisForTherapeuticPlan?.Denomination
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseTherapeuticPlanModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (selectedDiagnosisForTherapeuticPlan != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples planes terapéuticos para este diagnóstico psicológico.
+                        </div>
+
+                        <EditableTable Title="Planes Terapéuticos"
+                                       ColumnHeaders="@therapeuticPlanHeaders"
+                                       Rows="@therapeuticPlanRows"
+                                       RowIds="@therapeuticPlanIds"
+                                       EmptyMessage="No se han registrado planes terapéuticos"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar este plan terapéutico?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddTherapeuticPlanRequested"
+                                       OnEditRequested="@OnEditTherapeuticPlanRequested"
+                                       OnDeleteRequested="@OnDeleteTherapeuticPlanRequested"
+                                       OnSaveRequested="@OnSaveTherapeuticPlanRequested"
+                                       IsValidForm="@IsTherapeuticPlanFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Resumen del Caso <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(therapeuticPlanErrors.ContainsKey("CaseSummary") ? "is-invalid" : "")"
+                                                  @bind="currentTherapeuticPlan.CaseSummary"
+                                                  rows="3"
+                                                  maxlength="1000"
+                                                  placeholder="Describa el resumen del caso del paciente..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (therapeuticPlanErrors.ContainsKey("CaseSummary"))
+                                        {
+                                            <div class="invalid-feedback">@therapeuticPlanErrors["CaseSummary"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentTherapeuticPlan.CaseSummary?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Objetivos Terapéuticos <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(therapeuticPlanErrors.ContainsKey("TherapeuticObjective") ? "is-invalid" : "")"
+                                                  @bind="currentTherapeuticPlan.TherapeuticObjective"
+                                                  rows="3"
+                                                  maxlength="1000"
+                                                  placeholder="Describa los objetivos terapéuticos..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (therapeuticPlanErrors.ContainsKey("TherapeuticObjective"))
+                                        {
+                                            <div class="invalid-feedback">@therapeuticPlanErrors["TherapeuticObjective"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentTherapeuticPlan.TherapeuticObjective?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Estrategia y Enfoque <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(therapeuticPlanErrors.ContainsKey("StrategyApproach") ? "is-invalid" : "")"
+                                                  @bind="currentTherapeuticPlan.StrategyApproach"
+                                                  rows="3"
+                                                  maxlength="1000"
+                                                  placeholder="Describa la estrategia y enfoque terapéutico..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (therapeuticPlanErrors.ContainsKey("StrategyApproach"))
+                                        {
+                                            <div class="invalid-feedback">@therapeuticPlanErrors["StrategyApproach"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentTherapeuticPlan.StrategyApproach?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Número de Sesiones <span class="text-danger">*</span></label>
+                                        <input type="number"
+                                               class="form-control @(therapeuticPlanErrors.ContainsKey("NumberOfSessions") ? "is-invalid" : "")"
+                                               @bind="currentTherapeuticPlan.NumberOfSessions"
+                                               min="1"
+                                               max="100"
+                                               placeholder="Ingrese el número de sesiones" />
+                                        @if (therapeuticPlanErrors.ContainsKey("NumberOfSessions"))
+                                        {
+                                            <div class="invalid-feedback">@therapeuticPlanErrors["NumberOfSessions"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Número total de sesiones terapéuticas planificadas.
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(therapeuticPlanFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @therapeuticPlanFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseTherapeuticPlanModal">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
 @code {
     [Parameter] public MedicalCareDTO MedicalCare { get; set; } = new();
     [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
@@ -457,11 +790,39 @@
     private int currentMedicalCareId = 0;
     private ReasonForConsultationDTO? existingReasonForConsultation;
 
+    // Variables para Diagnóstico Psicológico
+    private List<PsychologicalDiagnosisDTO> psychologicalDiagnosisList = new();
+    private PsychologicalDiagnosisDTO currentPsychologicalDiagnosis = new();
+    private List<string> psychologicalDiagnosisHeaders = new() { "CIE10", "Denominación", "Tipo Diagnóstico", "Diagnóstico Diferencial" };
+    private List<List<string>> psychologicalDiagnosisRows = new();
+    private List<int> psychologicalDiagnosisIds = new();
+    private Dictionary<string, string> psychologicalDiagnosisErrors = new();
+    private string psychologicalDiagnosisFormError = "";
+    private bool hasUnsavedPsychologicalDiagnosisData = false;
+    private bool isUnidentifiedCie10Psychological = false;
+    private List<DiagnosticTypeDTO> availableDiagnosticTypes = new();
+
+    // Variables para Plan Terapéutico
+    private bool showTherapeuticPlanModal = false;
+    private PsychologicalDiagnosisDTO? selectedDiagnosisForTherapeuticPlan;
+    private List<TherapeuticPlanDTO> therapeuticPlansList = new();
+    private TherapeuticPlanDTO currentTherapeuticPlan = new();
+    // Variables para Plan Terapéutico (EditableTable)
+    private List<string> therapeuticPlanHeaders = new() { "Resumen", "Objetivos", "Estrategia", "Sesiones" };
+    private List<List<string>> therapeuticPlanRows = new();
+    private List<int> therapeuticPlanIds = new();
+    private Dictionary<string, string> therapeuticPlanErrors = new();
+    private string therapeuticPlanFormError = "";
+    private bool hasUnsavedTherapeuticPlanData = false;
+
+
+
     protected override async Task OnInitializedAsync()
     {
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
         await ObtenerProfesionalLogueado();
+        await LoadPsychologicalDiagnosisData();
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -491,6 +852,12 @@
         {
             await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
             return;
+        }
+
+        // Cargar datos específicos de la pestaña cuando se active
+        if (tab == "plan" && currentMedicalCareId > 0)
+        {
+            await LoadTherapeuticPlanData();
         }
 
         activeTab = tab;
@@ -527,6 +894,578 @@
         finally
         {
             isSaving = false;
+        }
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA DIAGNÓSTICO PSICOLÓGICO
+    // ============================================================================
+
+    private async Task LoadPsychologicalDiagnosisData()
+    {
+        try
+        {
+            availableDiagnosticTypes = await DiagnosticTypeService.GetAllAsync();
+
+            if (currentMedicalCareId > 0)
+            {
+                var allDiagnosis = await PsychologicalDiagnosisService.GetAllAsync();
+                if (allDiagnosis != null)
+                {
+                    psychologicalDiagnosisList = allDiagnosis
+                        .Where(d => d.MedicalCareId == currentMedicalCareId)
+                        .ToList();
+                }
+                else
+                {
+                    psychologicalDiagnosisList = new List<PsychologicalDiagnosisDTO>();
+                }
+
+                await RefreshPsychologicalDiagnosisTable();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading psychological diagnosis data: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshPsychologicalDiagnosisTable()
+    {
+        psychologicalDiagnosisRows.Clear();
+        psychologicalDiagnosisIds.Clear();
+
+        foreach (var diagnosis in psychologicalDiagnosisList)
+        {
+            var cie10 = !string.IsNullOrEmpty(diagnosis.CIE10) ? diagnosis.CIE10 : "N/A";
+            var denomination = !string.IsNullOrEmpty(diagnosis.Denomination)
+                ? (diagnosis.Denomination.Length > 50 ? diagnosis.Denomination.Substring(0, 50) + "..." : diagnosis.Denomination)
+                : "Sin denominación";
+            var diagnosticTypeName = await DiagnosticTypeService.GetDiagnosticTypeNameByIdAsync(diagnosis.DiagnosticTypeId);
+            var differential = !string.IsNullOrEmpty(diagnosis.DifferentialDiagnosis)
+                ? (diagnosis.DifferentialDiagnosis.Length > 50 ? diagnosis.DifferentialDiagnosis.Substring(0, 50) + "..." : diagnosis.DifferentialDiagnosis)
+                : "Sin diagnóstico diferencial";
+
+            psychologicalDiagnosisRows.Add(new List<string> { cie10, denomination, diagnosticTypeName, differential });
+            psychologicalDiagnosisIds.Add(diagnosis.PsychologicalDiagnosisId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddPsychologicalDiagnosisRequested()
+    {
+        currentPsychologicalDiagnosis = new PsychologicalDiagnosisDTO
+        {
+            PsychologicalDiagnosisId = 0,
+            MedicalCareId = currentMedicalCareId,
+            CIE10 = "",
+            Denomination = "",
+            DiagnosticTypeId = 0,
+            DifferentialDiagnosis = "",
+            DiagnosisMotivation = ""
+        };
+
+        psychologicalDiagnosisErrors.Clear();
+        psychologicalDiagnosisFormError = "";
+        isUnidentifiedCie10Psychological = false;
+    }
+
+    private async Task OnEditPsychologicalDiagnosisRequested(int id)
+    {
+        var existing = psychologicalDiagnosisList.FirstOrDefault(d => d.PsychologicalDiagnosisId == id);
+        if (existing != null)
+        {
+            currentPsychologicalDiagnosis = new PsychologicalDiagnosisDTO
+            {
+                PsychologicalDiagnosisId = existing.PsychologicalDiagnosisId,
+                MedicalCareId = existing.MedicalCareId,
+                CIE10 = existing.CIE10 ?? "",
+                Denomination = existing.Denomination ?? "",
+                DiagnosticTypeId = existing.DiagnosticTypeId,
+                DifferentialDiagnosis = existing.DifferentialDiagnosis ?? "",
+                DiagnosisMotivation = existing.DiagnosisMotivation ?? ""
+            };
+
+            isUnidentifiedCie10Psychological = existing.CIE10 == "No Identificado";
+        }
+
+        psychologicalDiagnosisErrors.Clear();
+        psychologicalDiagnosisFormError = "";
+    }
+
+    private async Task OnDeletePsychologicalDiagnosisRequested(int id)
+    {
+        try
+        {
+            bool success = await PsychologicalDiagnosisService.DeleteAsync(id);
+
+            if (success)
+            {
+                var toRemove = psychologicalDiagnosisList.FirstOrDefault(d => d.PsychologicalDiagnosisId == id);
+                if (toRemove != null)
+                {
+                    psychologicalDiagnosisList.Remove(toRemove);
+                    await RefreshPsychologicalDiagnosisTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Diagnóstico psicológico eliminado exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al eliminar el diagnóstico psicológico.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSavePsychologicalDiagnosisRequested()
+    {
+        try
+        {
+            if (!ValidatePsychologicalDiagnosisForm())
+            {
+                return;
+            }
+
+            currentPsychologicalDiagnosis.MedicalCareId = currentMedicalCareId;
+
+            PsychologicalDiagnosisDTO? resultData;
+
+            if (currentPsychologicalDiagnosis.PsychologicalDiagnosisId == 0)
+            {
+                resultData = await PsychologicalDiagnosisService.CreateAsync(currentPsychologicalDiagnosis);
+                if (resultData != null)
+                {
+                    psychologicalDiagnosisList.Add(resultData);
+                    await RefreshPsychologicalDiagnosisTable();
+                    await JS.InvokeVoidAsync("alert", "Diagnóstico psicológico agregado exitosamente.");
+                }
+                else
+                {
+                    psychologicalDiagnosisFormError = "Error al crear el diagnóstico psicológico";
+                    await JS.InvokeVoidAsync("alert", psychologicalDiagnosisFormError);
+                    return;
+                }
+            }
+            else
+            {
+                resultData = await PsychologicalDiagnosisService.UpdateAsync(currentPsychologicalDiagnosis);
+                if (resultData != null)
+                {
+                    var index = psychologicalDiagnosisList.FindIndex(d => d.PsychologicalDiagnosisId == currentPsychologicalDiagnosis.PsychologicalDiagnosisId);
+                    if (index >= 0)
+                    {
+                        psychologicalDiagnosisList[index] = resultData;
+                    }
+                    await RefreshPsychologicalDiagnosisTable();
+                    await JS.InvokeVoidAsync("alert", "Diagnóstico psicológico actualizado exitosamente.");
+                }
+                else
+                {
+                    psychologicalDiagnosisFormError = "Error al actualizar el diagnóstico psicológico";
+                    await JS.InvokeVoidAsync("alert", psychologicalDiagnosisFormError);
+                    return;
+                }
+            }
+
+            currentPsychologicalDiagnosis = new PsychologicalDiagnosisDTO();
+            psychologicalDiagnosisErrors.Clear();
+            psychologicalDiagnosisFormError = "";
+            isUnidentifiedCie10Psychological = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            psychologicalDiagnosisFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", psychologicalDiagnosisFormError);
+        }
+    }
+
+    private bool ValidatePsychologicalDiagnosisForm()
+    {
+        psychologicalDiagnosisErrors.Clear();
+        psychologicalDiagnosisFormError = "";
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.CIE10))
+        {
+            psychologicalDiagnosisErrors["CIE10"] = "El código CIE10 es obligatorio.";
+            isValid = false;
+        }
+        else if (currentPsychologicalDiagnosis.CIE10.Length > 20 && currentPsychologicalDiagnosis.CIE10 != "No Identificado")
+        {
+            psychologicalDiagnosisErrors["CIE10"] = "El código CIE10 no puede exceder 20 caracteres.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.Denomination))
+        {
+            psychologicalDiagnosisErrors["Denomination"] = "La denominación es obligatoria.";
+            isValid = false;
+        }
+        else if (currentPsychologicalDiagnosis.Denomination.Length > 500)
+        {
+            psychologicalDiagnosisErrors["Denomination"] = "La denominación no puede exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (currentPsychologicalDiagnosis.DiagnosticTypeId <= 0)
+        {
+            psychologicalDiagnosisErrors["DiagnosticTypeId"] = "Debe seleccionar un tipo de diagnóstico.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.DiagnosisMotivation))
+        {
+            psychologicalDiagnosisErrors["DiagnosisMotivation"] = "La motivación del diagnóstico es obligatoria.";
+            isValid = false;
+        }
+        else if (currentPsychologicalDiagnosis.DiagnosisMotivation.Length > 1000)
+        {
+            psychologicalDiagnosisErrors["DiagnosisMotivation"] = "La motivación del diagnóstico no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentPsychologicalDiagnosis.DifferentialDiagnosis) &&
+            currentPsychologicalDiagnosis.DifferentialDiagnosis.Length > 1000)
+        {
+            psychologicalDiagnosisErrors["DifferentialDiagnosis"] = "El diagnóstico diferencial no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            psychologicalDiagnosisFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsPsychologicalDiagnosisFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.CIE10) &&
+               (currentPsychologicalDiagnosis.CIE10?.Length ?? 0) <= 20 &&
+               !string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.Denomination) &&
+               (currentPsychologicalDiagnosis.Denomination?.Length ?? 0) <= 500 &&
+               currentPsychologicalDiagnosis.DiagnosticTypeId > 0 &&
+               !string.IsNullOrWhiteSpace(currentPsychologicalDiagnosis.DiagnosisMotivation) &&
+               (currentPsychologicalDiagnosis.DiagnosisMotivation?.Length ?? 0) <= 1000 &&
+               (currentPsychologicalDiagnosis.DifferentialDiagnosis?.Length ?? 0) <= 1000;
+    }
+
+    private bool IsPsychologicalDiagnosisTabComplete()
+    {
+        return psychologicalDiagnosisList != null && psychologicalDiagnosisList.Any();
+    }
+
+    private void HandleUnidentifiedCie10CheckboxChanged(ChangeEventArgs e)
+    {
+        isUnidentifiedCie10Psychological = (bool)(e.Value ?? false);
+
+        if (isUnidentifiedCie10Psychological)
+        {
+            currentPsychologicalDiagnosis.CIE10 = "No Identificado";
+        }
+        else
+        {
+            currentPsychologicalDiagnosis.CIE10 = "";
+        }
+
+        StateHasChanged();
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA PLAN TERAPÉUTICO (USANDO EDITABLETABLE)
+    // ============================================================================
+
+    private bool IsTherapeuticPlanTabComplete()
+    {
+        return therapeuticPlansList.Any();
+    }
+
+    private async Task OpenTherapeuticPlanModal(int psychologicalDiagnosisId)
+    {
+        selectedDiagnosisForTherapeuticPlan = psychologicalDiagnosisList
+            .FirstOrDefault(d => d.PsychologicalDiagnosisId == psychologicalDiagnosisId);
+
+        if (selectedDiagnosisForTherapeuticPlan != null)
+        {
+            // Cargar planes específicos para este diagnóstico
+            therapeuticPlansList = await TherapeuticPlanService
+                .GetByPsychologicalDiagnosisIdAsync(psychologicalDiagnosisId);
+
+            await RefreshTherapeuticPlanTable();
+            showTherapeuticPlanModal = true;
+            StateHasChanged();
+        }
+    }
+
+    private async void CloseTherapeuticPlanModal()
+    {
+        try
+        {
+            showTherapeuticPlanModal = false;
+            selectedDiagnosisForTherapeuticPlan = null;
+
+            // Recargar datos generales para actualizar badges
+            await LoadTherapeuticPlanData();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error closing therapeutic plan modal: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshTherapeuticPlanTable()
+    {
+        therapeuticPlanRows.Clear();
+        therapeuticPlanIds.Clear();
+
+        foreach (var plan in therapeuticPlansList)
+        {
+            var caseSummary = !string.IsNullOrEmpty(plan.CaseSummary)
+                ? (plan.CaseSummary.Length > 50 ? plan.CaseSummary.Substring(0, 50) + "..." : plan.CaseSummary)
+                : "Sin resumen";
+            var objectives = !string.IsNullOrEmpty(plan.TherapeuticObjective)
+                ? (plan.TherapeuticObjective.Length > 50 ? plan.TherapeuticObjective.Substring(0, 50) + "..." : plan.TherapeuticObjective)
+                : "Sin objetivos";
+            var strategy = !string.IsNullOrEmpty(plan.StrategyApproach)
+                ? (plan.StrategyApproach.Length > 50 ? plan.StrategyApproach.Substring(0, 50) + "..." : plan.StrategyApproach)
+                : "Sin estrategia";
+
+            therapeuticPlanRows.Add(new List<string> { caseSummary, objectives, strategy, plan.NumberOfSessions.ToString() });
+            therapeuticPlanIds.Add(plan.TherapeuticPlanId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddTherapeuticPlanRequested()
+    {
+        currentTherapeuticPlan = new TherapeuticPlanDTO
+        {
+            TherapeuticPlanId = 0,
+            PsychologicalDiagnosisId = selectedDiagnosisForTherapeuticPlan?.PsychologicalDiagnosisId ?? 0,
+            CaseSummary = "",
+            TherapeuticObjective = "",
+            StrategyApproach = "",
+            NumberOfSessions = 1,
+            AssignedTasks = ""
+        };
+
+        therapeuticPlanErrors.Clear();
+        therapeuticPlanFormError = "";
+    }
+
+    private async Task OnEditTherapeuticPlanRequested(int id)
+    {
+        var existing = therapeuticPlansList.FirstOrDefault(p => p.TherapeuticPlanId == id);
+        if (existing != null)
+        {
+            currentTherapeuticPlan = new TherapeuticPlanDTO
+            {
+                TherapeuticPlanId = existing.TherapeuticPlanId,
+                PsychologicalDiagnosisId = existing.PsychologicalDiagnosisId,
+                CaseSummary = existing.CaseSummary ?? "",
+                TherapeuticObjective = existing.TherapeuticObjective ?? "",
+                StrategyApproach = existing.StrategyApproach ?? "",
+                NumberOfSessions = existing.NumberOfSessions,
+                AssignedTasks = existing.AssignedTasks ?? ""
+            };
+        }
+
+        therapeuticPlanErrors.Clear();
+        therapeuticPlanFormError = "";
+    }
+
+    private async Task OnDeleteTherapeuticPlanRequested(int id)
+    {
+        try
+        {
+            bool success = await TherapeuticPlanService.DeleteAsync(id);
+            if (success)
+            {
+                var toRemove = therapeuticPlansList.FirstOrDefault(p => p.TherapeuticPlanId == id);
+                if (toRemove != null)
+                {
+                    therapeuticPlansList.Remove(toRemove);
+                    await RefreshTherapeuticPlanTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Plan terapéutico eliminado exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al eliminar el plan terapéutico.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveTherapeuticPlanRequested()
+    {
+        try
+        {
+            if (!ValidateTherapeuticPlanForm())
+            {
+                return;
+            }
+
+            // Asegurar que tenemos el PsychologicalDiagnosisId correcto
+            currentTherapeuticPlan.PsychologicalDiagnosisId = selectedDiagnosisForTherapeuticPlan?.PsychologicalDiagnosisId ?? 0;
+
+            TherapeuticPlanDTO? resultData;
+
+            if (currentTherapeuticPlan.TherapeuticPlanId == 0)
+            {
+                resultData = await TherapeuticPlanService.CreateAsync(currentTherapeuticPlan);
+                if (resultData != null)
+                {
+                    therapeuticPlansList.Add(resultData);
+                    await RefreshTherapeuticPlanTable();
+                    await JS.InvokeVoidAsync("alert", "Plan terapéutico agregado exitosamente.");
+                }
+                else
+                {
+                    therapeuticPlanFormError = "Error al crear el plan terapéutico";
+                    await JS.InvokeVoidAsync("alert", therapeuticPlanFormError);
+                    return;
+                }
+            }
+            else
+            {
+                resultData = await TherapeuticPlanService.UpdateAsync(currentTherapeuticPlan);
+                if (resultData != null)
+                {
+                    var index = therapeuticPlansList.FindIndex(p => p.TherapeuticPlanId == currentTherapeuticPlan.TherapeuticPlanId);
+                    if (index >= 0)
+                    {
+                        therapeuticPlansList[index] = resultData;
+                    }
+                    await RefreshTherapeuticPlanTable();
+                    await JS.InvokeVoidAsync("alert", "Plan terapéutico actualizado exitosamente.");
+                }
+                else
+                {
+                    therapeuticPlanFormError = "Error al actualizar el plan terapéutico";
+                    await JS.InvokeVoidAsync("alert", therapeuticPlanFormError);
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentTherapeuticPlan = new TherapeuticPlanDTO();
+            therapeuticPlanErrors.Clear();
+            therapeuticPlanFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            therapeuticPlanFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", therapeuticPlanFormError);
+        }
+    }
+
+    private bool ValidateTherapeuticPlanForm()
+    {
+        therapeuticPlanErrors.Clear();
+        therapeuticPlanFormError = "";
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(currentTherapeuticPlan.CaseSummary))
+        {
+            therapeuticPlanErrors["CaseSummary"] = "El resumen del caso es obligatorio.";
+            isValid = false;
+        }
+        else if (currentTherapeuticPlan.CaseSummary.Length > 1000)
+        {
+            therapeuticPlanErrors["CaseSummary"] = "El resumen del caso no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentTherapeuticPlan.TherapeuticObjective))
+        {
+            therapeuticPlanErrors["TherapeuticObjective"] = "Los objetivos terapéuticos son obligatorios.";
+            isValid = false;
+        }
+        else if (currentTherapeuticPlan.TherapeuticObjective.Length > 1000)
+        {
+            therapeuticPlanErrors["TherapeuticObjective"] = "Los objetivos terapéuticos no pueden exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentTherapeuticPlan.StrategyApproach))
+        {
+            therapeuticPlanErrors["StrategyApproach"] = "La estrategia y enfoque es obligatorio.";
+            isValid = false;
+        }
+        else if (currentTherapeuticPlan.StrategyApproach.Length > 1000)
+        {
+            therapeuticPlanErrors["StrategyApproach"] = "La estrategia y enfoque no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (currentTherapeuticPlan.NumberOfSessions <= 0)
+        {
+            therapeuticPlanErrors["NumberOfSessions"] = "El número de sesiones debe ser mayor a 0.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            therapeuticPlanFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsTherapeuticPlanFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(currentTherapeuticPlan.CaseSummary) &&
+               (currentTherapeuticPlan.CaseSummary?.Length ?? 0) <= 1000 &&
+               !string.IsNullOrWhiteSpace(currentTherapeuticPlan.TherapeuticObjective) &&
+               (currentTherapeuticPlan.TherapeuticObjective?.Length ?? 0) <= 1000 &&
+               !string.IsNullOrWhiteSpace(currentTherapeuticPlan.StrategyApproach) &&
+               (currentTherapeuticPlan.StrategyApproach?.Length ?? 0) <= 1000 &&
+               currentTherapeuticPlan.NumberOfSessions > 0;
+    }
+
+    private async Task LoadTherapeuticPlanData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                therapeuticPlansList = await TherapeuticPlanService.GetByMedicalCareIdAsync(currentMedicalCareId);
+                await JS.InvokeVoidAsync("console.log",
+                    $"Loaded {therapeuticPlansList.Count} therapeutic plans");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading therapeutic plan data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadExistingTherapeuticPlans()
+    {
+        try
+        {
+            therapeuticPlansList = await TherapeuticPlanService.GetByMedicalCareIdAsync(currentMedicalCareId);
+            await JS.InvokeVoidAsync("console.log",
+                $"Loaded {therapeuticPlansList.Count} therapeutic plans for medical care {currentMedicalCareId}");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading existing therapeutic plans: {ex.Message}");
+            therapeuticPlansList = new List<TherapeuticPlanDTO>();
         }
     }
 
@@ -640,6 +1579,9 @@
                         motivoConsulta = existingReasonForConsultation.Description;
                     }
                 }
+
+                await LoadPsychologicalDiagnosisData();
+                await LoadExistingTherapeuticPlans();
             }
         }
         catch (Exception ex)
@@ -647,6 +1589,7 @@
             await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
         }
     }
+
 
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {
@@ -751,6 +1694,8 @@
                     await ReasonForConsultationService.CreateAsync(reasonDto);
                 }
             }
+
+            await LoadTherapeuticPlanData();
 
             await JS.InvokeVoidAsync("alert", "Datos guardados correctamente. Puede continuar con las siguientes pestañas.");
             showValidationErrors = false;

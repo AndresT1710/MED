@@ -12,7 +12,7 @@ namespace SMED.Shared.Entity
         public int MedicalCareId { get; set; }
 
         [Required]
-        [StringLength(10)]
+        [StringLength(500)]
         public string CIE10 { get; set; } = null!;
 
         [Required]
@@ -24,7 +24,7 @@ namespace SMED.Shared.Entity
 
         public string DiagnosisMotivation { get; set; } = null!;
 
-        public string Differential { get; set; } = null!;
+        public string DifferentialDiagnosis { get; set; } = null!;
 
         // 🔗 Relación con MedicalCare (N:1) - UN diagnóstico pertenece a UNA atención médica
         [ForeignKey("MedicalCareId")]

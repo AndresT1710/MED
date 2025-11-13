@@ -74,6 +74,8 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.CIE10 = dto.CIE10;
             entity.DiagnosticTypeId = dto.DiagnosticTypeId;
+            entity.DiagnosisMotivation = dto.DiagnosisMotivation;
+            entity.DifferentialDiagnosis = dto.DifferentialDiagnosis;
             entity.Denomination = dto.Denomination;
 
             await _context.SaveChangesAsync();
@@ -136,18 +138,52 @@ namespace SMED.BackEnd.Repositories.Implementations
         // =========================
         private PsychologicalDiagnosisDTO MapToDto(PsychologicalDiagnosis entity)
         {
-            return new PsychologicalDiagnosisDTO
+            var dto = new PsychologicalDiagnosisDTO
             {
                 PsychologicalDiagnosisId = entity.PsychologicalDiagnosisId,
                 MedicalCareId = entity.MedicalCareId,
                 CIE10 = entity.CIE10,
                 DiagnosticTypeId = entity.DiagnosticTypeId,
                 Denomination = entity.Denomination,
+                DifferentialDiagnosis = entity.DifferentialDiagnosis,
+                DiagnosisMotivation = entity.DiagnosisMotivation,
                 DiagnosticTypeName = entity.DiagnosticTypeNavigation?.Name,
-                PatientName = entity.MedicalCare?.Patient.PersonNavigation?.FirstName + " " + entity.MedicalCare?.Patient?.PersonNavigation?.LastName,
-                CareDate = entity.MedicalCare?.CareDate,
-                HealthProfessionalName = entity.MedicalCare?.HealthProfessional.PersonNavigation ?.FirstName + " " + entity.MedicalCare?.HealthProfessional.PersonNavigation.LastName
+                CareDate = entity.MedicalCare?.CareDate
             };
+
+            // 🔹 Construir PatientName de forma segura
+            var patientNameParts = new List<string>();
+
+            if (entity.MedicalCare?.Patient?.PersonNavigation != null)
+            {
+                if (!string.IsNullOrEmpty(entity.MedicalCare.Patient.PersonNavigation.FirstName))
+                    patientNameParts.Add(entity.MedicalCare.Patient.PersonNavigation.FirstName);
+
+                if (!string.IsNullOrEmpty(entity.MedicalCare.Patient.PersonNavigation.LastName))
+                    patientNameParts.Add(entity.MedicalCare.Patient.PersonNavigation.LastName);
+            }
+
+            dto.PatientName = patientNameParts.Any()
+                ? string.Join(" ", patientNameParts)
+                : "Paciente no disponible";
+
+            // 🔹 Construir HealthProfessionalName de forma segura
+            var professionalNameParts = new List<string>();
+
+            if (entity.MedicalCare?.HealthProfessional?.PersonNavigation != null)
+            {
+                if (!string.IsNullOrEmpty(entity.MedicalCare.HealthProfessional.PersonNavigation.FirstName))
+                    professionalNameParts.Add(entity.MedicalCare.HealthProfessional.PersonNavigation.FirstName);
+
+                if (!string.IsNullOrEmpty(entity.MedicalCare.HealthProfessional.PersonNavigation.LastName))
+                    professionalNameParts.Add(entity.MedicalCare.HealthProfessional.PersonNavigation.LastName);
+            }
+
+            dto.HealthProfessionalName = professionalNameParts.Any()
+                ? string.Join(" ", professionalNameParts)
+                : "Profesional no disponible";
+
+            return dto;
         }
 
         private PsychologicalDiagnosis MapToEntity(PsychologicalDiagnosisDTO dto)
@@ -157,6 +193,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 PsychologicalDiagnosisId = dto.PsychologicalDiagnosisId,
                 MedicalCareId = dto.MedicalCareId,
                 CIE10 = dto.CIE10,
+                DifferentialDiagnosis = dto.DifferentialDiagnosis,
+                DiagnosisMotivation = dto.DiagnosisMotivation,
                 DiagnosticTypeId = dto.DiagnosticTypeId,
                 Denomination = dto.Denomination
             };

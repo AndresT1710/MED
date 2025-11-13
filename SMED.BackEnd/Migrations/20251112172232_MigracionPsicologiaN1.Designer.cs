@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251112172232_MigracionPsicologiaN1")]
+    partial class MigracionPsicologiaN1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3120,8 +3123,8 @@ namespace SMED.BackEnd.Migrations
 
                     b.Property<string>("CIE10")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("Denomination")
                         .IsRequired()
@@ -3135,7 +3138,7 @@ namespace SMED.BackEnd.Migrations
                     b.Property<int>("DiagnosticTypeId")
                         .HasColumnType("int");
 
-                    b.Property<string>("DifferentialDiagnosis")
+                    b.Property<string>("Differential")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

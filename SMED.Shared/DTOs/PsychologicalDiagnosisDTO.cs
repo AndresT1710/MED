@@ -7,7 +7,10 @@
         public string CIE10 { get; set; } = null!;
         public int DiagnosticTypeId { get; set; }
         public string Denomination { get; set; } = null!;
-        
+        public string? DifferentialDiagnosis { get; set; }
+        public string? DiagnosisMotivation { get; set; }
+
+
         // Datos relacionados para mostrar en frontend
         public string? DiagnosticTypeName { get; set; }
         public string? PatientName { get; set; }

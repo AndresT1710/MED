@@ -14,6 +14,7 @@ namespace SMED.Shared.DTOs
         public string TherapeuticObjective { get; set; } = null!;
         public string StrategyApproach { get; set; } = null!;
         public string AssignedTasks { get; set; } = null!;
+        public int NumberOfSessions { get; set; }
 
         // Datos relacionados para mostrar en frontend
         public string? CIE10 { get; set; }

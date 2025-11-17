@@ -156,6 +156,7 @@ builder.Services.AddScoped<PsychologicalDiagnosisService>();
 builder.Services.AddScoped<AdvanceService>();
 builder.Services.AddScoped<TherapeuticPlanService>();
 builder.Services.AddScoped<ActivityService>();
+builder.Services.AddScoped<TypeOfActivityService>();
 builder.Services.AddScoped<PsychologySessionsService>();
 
 

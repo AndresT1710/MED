@@ -11,7 +11,6 @@ namespace SMED.Shared.DTOs
         public int ActivityId { get; set; }
         public string? NameActivity { get; set; }
         public DateTime? DateActivity { get; set; }
-        public int? SessionId { get; set; }
         public int? PsychologySessionId { get; set; }
         public int? TypeOfActivityId { get; set; }
 

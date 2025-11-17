@@ -18,7 +18,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<ActivityDTO>> GetAllAsync()
         {
             var entities = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .ToListAsync();
@@ -28,7 +27,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<ActivityDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .FirstOrDefaultAsync(a => a.ActivityId == id);
@@ -43,9 +41,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             // Recargar con datos relacionados
             await _context.Entry(entity)
-                .Reference(a => a.Session)
-                .LoadAsync();
-            await _context.Entry(entity)
                 .Reference(a => a.PsychologySession)
                 .LoadAsync();
             await _context.Entry(entity)
@@ -58,7 +53,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<ActivityDTO?> UpdateAsync(ActivityDTO dto)
         {
             var entity = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .FirstOrDefaultAsync(a => a.ActivityId == dto.ActivityId);
@@ -67,7 +61,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             entity.NameActivity = dto.NameActivity;
             entity.DateActivity = dto.DateActivity;
-            entity.SessionId = dto.SessionId;
             entity.PsychologySessionId = dto.PsychologySessionId;
             entity.TypeOfActivityId = dto.TypeOfActivityId;
 
@@ -89,7 +82,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<ActivityDTO>> GetBySessionIdAsync(int sessionId)
         {
             var entities = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .Where(a => a.SessionId == sessionId)
@@ -102,7 +94,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<ActivityDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
         {
             var entities = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .Where(a => a.PsychologySessionId == psychologySessionId)
@@ -115,7 +106,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<ActivityDTO>> GetByTypeOfActivityIdAsync(int typeOfActivityId)
         {
             var entities = await _context.Activities
-                .Include(a => a.Session)
                 .Include(a => a.PsychologySession)
                 .Include(a => a.TypeOfActivity)
                 .Where(a => a.TypeOfActivityId == typeOfActivityId)
@@ -135,10 +125,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ActivityId = entity.ActivityId,
                 NameActivity = entity.NameActivity,
                 DateActivity = entity.DateActivity,
-                SessionId = entity.SessionId,
                 PsychologySessionId = entity.PsychologySessionId,
                 TypeOfActivityId = entity.TypeOfActivityId,
-                SessionDescription = entity.Session?.Description,
                 PsychologySessionDescription = entity.PsychologySession?.Description,
                 TypeOfActivityName = entity.TypeOfActivity?.Name
             };
@@ -151,7 +139,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                 ActivityId = dto.ActivityId,
                 NameActivity = dto.NameActivity,
                 DateActivity = dto.DateActivity,
-                SessionId = dto.SessionId,
                 PsychologySessionId = dto.PsychologySessionId,
                 TypeOfActivityId = dto.TypeOfActivityId
             };

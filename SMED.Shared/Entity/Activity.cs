@@ -16,11 +16,6 @@ namespace SMED.Shared.Entity
         public int? SessionId { get; set; }
         public int? PsychologySessionId { get; set; }
 
-        // 🔗 Relación con Sessions
-        [ForeignKey("SessionId")]
-        [InverseProperty("Activities")]
-        public virtual Sessions? Session { get; set; }
-
         // 🔗 Relación con PsychologySessions
         [ForeignKey("PsychologySessionId")]
         [InverseProperty("Activities")]

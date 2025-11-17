@@ -17,9 +17,9 @@ namespace SMED.FrontEnd.Services
             try
             {
                 return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>("api/Activity")
-                    ?? new List<ActivityDTO>();
+                       ?? new List<ActivityDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return new List<ActivityDTO>();
             }
@@ -31,7 +31,7 @@ namespace SMED.FrontEnd.Services
             {
                 return await _httpClient.GetFromJsonAsync<ActivityDTO>($"api/Activity/{id}");
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -45,7 +45,7 @@ namespace SMED.FrontEnd.Services
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadFromJsonAsync<ActivityDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -59,7 +59,7 @@ namespace SMED.FrontEnd.Services
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadFromJsonAsync<ActivityDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -72,22 +72,9 @@ namespace SMED.FrontEnd.Services
                 var response = await _httpClient.DeleteAsync($"api/Activity/{id}");
                 return response.IsSuccessStatusCode;
             }
-            catch (Exception)
+            catch
             {
                 return false;
-            }
-        }
-
-        public async Task<List<ActivityDTO>> GetBySessionIdAsync(int sessionId)
-        {
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>($"api/Activity/BySession/{sessionId}")
-                    ?? new List<ActivityDTO>();
-            }
-            catch (Exception)
-            {
-                return new List<ActivityDTO>();
             }
         }
 
@@ -95,10 +82,11 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>($"api/Activity/ByPsychologySession/{psychologySessionId}")
-                    ?? new List<ActivityDTO>();
+                return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>(
+                           $"api/Activity/ByPsychologySession/{psychologySessionId}")
+                       ?? new List<ActivityDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return new List<ActivityDTO>();
             }
@@ -108,10 +96,11 @@ namespace SMED.FrontEnd.Services
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>($"api/Activity/ByTypeOfActivity/{typeOfActivityId}")
-                    ?? new List<ActivityDTO>();
+                return await _httpClient.GetFromJsonAsync<List<ActivityDTO>>(
+                           $"api/Activity/ByTypeOfActivity/{typeOfActivityId}")
+                       ?? new List<ActivityDTO>();
             }
-            catch (Exception)
+            catch
             {
                 return new List<ActivityDTO>();
             }

@@ -20,6 +20,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .ToListAsync();
@@ -31,6 +32,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .FirstOrDefaultAsync(ps => ps.PsychologySessionsId == id);
@@ -48,6 +50,7 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Reference(ps => ps.MedicalCare)
                 .Query()
                 .Include(mc => mc.Patient)
+                .ThenInclude(p => p.PersonNavigation)
                 .LoadAsync();
 
             await _context.Entry(entity)
@@ -66,6 +69,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entity = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .FirstOrDefaultAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionsId);
@@ -100,6 +104,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .Where(ps => ps.MedicalCareId == medicalCareId)
@@ -114,6 +119,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .Where(ps => ps.Date >= startDate && ps.Date <= endDate)
@@ -128,6 +134,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             var entities = await _context.PsychologySessions
                 .Include(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
+                    .ThenInclude(p => p.PersonNavigation)
                 .Include(ps => ps.Activities)
                 .Include(ps => ps.Advances)
                 .Where(ps => ps.MedicalDischarge == medicalDischarge)
@@ -138,7 +145,7 @@ namespace SMED.BackEnd.Repositories.Implementations
         }
 
         // =========================
-        // 🔹 Mapeos
+        // 🔹 Mapeos - CORREGIDOS siguiendo el patrón de TherapeuticPlan
         // =========================
         private PsychologySessionsDTO MapToDto(PsychologySessions entity)
         {
@@ -152,20 +159,22 @@ namespace SMED.BackEnd.Repositories.Implementations
                 VoluntaryRegistrationLink = entity.VoluntaryRegistrationLink,
                 SummarySession = entity.SummarySession,
                 MedicalCareId = entity.MedicalCareId,
-                PatientName = entity.MedicalCare?.Patient?.PersonNavigation.FirstName,
-                Activities = entity.Activities.Select(a => new ActivityDTO
+                // SIGUIENDO EL PATRÓN DE THERAPEUTIC PLAN:
+                PatientName = entity.MedicalCare?.Patient?.PersonNavigation?.FirstName + " " +
+                             entity.MedicalCare?.Patient?.PersonNavigation?.LastName,
+                Activities = entity.Activities?.Select(a => new ActivityDTO
                 {
                     ActivityId = a.ActivityId,
                     NameActivity = a.NameActivity,
                     DateActivity = a.DateActivity
-                }).ToList(),
-                Advances = entity.Advances.Select(a => new AdvanceDTO
+                }).ToList() ?? new List<ActivityDTO>(),
+                Advances = entity.Advances?.Select(a => new AdvanceDTO
                 {
                     AdvanceId = a.AdvanceId,
                     Indications = a.Indications,
                     Description = a.Description,
                     Date = a.Date
-                }).ToList()
+                }).ToList() ?? new List<AdvanceDTO>()
             };
         }
 

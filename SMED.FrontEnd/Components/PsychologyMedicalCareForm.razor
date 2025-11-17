@@ -13,6 +13,7 @@
 @inject PsychologicalDiagnosisService PsychologicalDiagnosisService
 @inject DiagnosticTypeService DiagnosticTypeService
 @inject TherapeuticPlanService TherapeuticPlanService
+@inject PsychologySessionsService PsychologySessionsService
 @implements IDisposable
 
 <div class="psychology-care-form">
@@ -63,7 +64,10 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-calendar-alt me-2"></i>Sesiones
-                <small class="text-muted ms-1">(Por implementar)</small>
+                @if (IsPsychologySessionsTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -72,7 +76,6 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-tasks me-2"></i>Actividades
-                <small class="text-muted ms-1">(Por implementar)</small>
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -81,7 +84,6 @@
                     type="button" role="tab"
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-chart-line me-2"></i>Avances
-                <small class="text-muted ms-1">(Por implementar)</small>
             </button>
         </li>
     </ul>
@@ -538,31 +540,170 @@
         <!-- Pestaña 4: Sesiones -->
         <div class="tab-pane @(activeTab == "sessions" ? "show active" : "")" role="tabpanel">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-alt me-2"></i>Sesiones de Terapia
+                        <span class="badge bg-info ms-2">Opcional</span>
+                        @if (IsPsychologySessionsTabComplete())
+                        {
+                            <span class="badge bg-success ms-1">✓</span>
+                        }
                     </h5>
+                    <small class="text-muted">Registro de sesiones terapéuticas</small>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Sección en desarrollo</strong> - Aquí irá la información de las sesiones de terapia del paciente.
-                    </div>
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar las sesiones de terapia realizadas con el paciente.
+                        </div>
 
-                    <div class="text-center py-5">
-                        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Sesiones de Terapia</h5>
-                        <p class="text-muted">Esta sección estará disponible próximamente</p>
-                    </div>
+                        <EditableTable Title="Sesiones de Terapia"
+                                       ColumnHeaders="@psychologySessionsHeaders"
+                                       Rows="@psychologySessionsRows"
+                                       RowIds="@psychologySessionsIds"
+                                       EmptyMessage="No se han registrado sesiones de terapia"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta sesión?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddPsychologySessionRequested"
+                                       OnEditRequested="@OnEditPsychologySessionRequested"
+                                       OnDeleteRequested="@OnDeletePsychologySessionRequested"
+                                       OnSaveRequested="@OnSavePsychologySessionRequested"
+                                       IsValidForm="@IsPsychologySessionFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(psychologySessionsErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologySession.Description"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Describa la sesión de terapia..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (psychologySessionsErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentPsychologySession.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
 
-                    <div class="d-flex justify-content-between mt-4">
-                        <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("plan"))">
-                            <i class="fas fa-arrow-left me-2"></i>Volver
-                        </button>
-                        <button class="btn btn-primary" @onclick="@(() => SetActiveTab("activities"))">
-                            Continuar a Actividades <i class="fas fa-arrow-right ms-2"></i>
-                        </button>
-                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Fecha de Sesión <span class="text-danger">*</span></label>
+                                        <input type="date"
+                                               class="form-control @(psychologySessionsErrors.ContainsKey("Date") ? "is-invalid" : "")"
+                                               @bind="currentPsychologySession.Date"
+                                               @bind:format="yyyy-MM-dd" />
+                                        @if (psychologySessionsErrors.ContainsKey("Date"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["Date"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Alta Médica</label>
+                                        @* Corregido: usar variable auxiliar string para binding correcto *@
+                                        <select class="form-select @(psychologySessionsErrors.ContainsKey("MedicalDischarge") ? "is-invalid" : "")"
+                                                @bind="medicalDischargeValue">
+                                            <option value="">Seleccione una opción</option>
+                                            <option value="true">Sí</option>
+                                            <option value="false">No</option>
+                                        </select>
+                                        @if (psychologySessionsErrors.ContainsKey("MedicalDischarge"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["MedicalDischarge"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Resumen de la Sesión <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(psychologySessionsErrors.ContainsKey("SummarySession") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologySession.SummarySession"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa el resumen de lo trabajado en la sesión..."
+                                                  style="resize: vertical; min-height: 100px; max-height: 200px;"></textarea>
+                                        @if (psychologySessionsErrors.ContainsKey("SummarySession"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["SummarySession"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentPsychologySession.SummarySession?.Length ?? 0))
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Observaciones</label>
+                                        <textarea class="form-control @(psychologySessionsErrors.ContainsKey("Observations") ? "is-invalid" : "")"
+                                                  @bind="currentPsychologySession.Observations"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Agregue observaciones adicionales..."
+                                                  style="resize: vertical; max-height: 150px;"></textarea>
+                                        @if (psychologySessionsErrors.ContainsKey("Observations"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["Observations"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentPsychologySession.Observations?.Length ?? 0))
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Link de Alta Voluntaria</label>
+                                        <input type="text"
+                                               class="form-control @(psychologySessionsErrors.ContainsKey("VoluntaryRegistrationLink") ? "is-invalid" : "")"
+                                               @bind="currentPsychologySession.VoluntaryRegistrationLink"
+                                               maxlength="200"
+                                               placeholder="Ingrese el link de alta voluntaria (opcional)" />
+                                        @if (psychologySessionsErrors.ContainsKey("VoluntaryRegistrationLink"))
+                                        {
+                                            <div class="invalid-feedback">@psychologySessionsErrors["VoluntaryRegistrationLink"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Enlace para registro voluntario
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(psychologySessionsFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @psychologySessionsFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("plan"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                @if (hasUnsavedPsychologySessionsData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("activities"))">
+                                    Continuar a Actividades <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -807,7 +948,6 @@
     private PsychologicalDiagnosisDTO? selectedDiagnosisForTherapeuticPlan;
     private List<TherapeuticPlanDTO> therapeuticPlansList = new();
     private TherapeuticPlanDTO currentTherapeuticPlan = new();
-    // Variables para Plan Terapéutico (EditableTable)
     private List<string> therapeuticPlanHeaders = new() { "Resumen", "Objetivos", "Estrategia", "Sesiones" };
     private List<List<string>> therapeuticPlanRows = new();
     private List<int> therapeuticPlanIds = new();
@@ -815,6 +955,17 @@
     private string therapeuticPlanFormError = "";
     private bool hasUnsavedTherapeuticPlanData = false;
 
+    // Variables para PsychologySessions
+    private List<PsychologySessionsDTO> psychologySessionsList = new();
+    private PsychologySessionsDTO currentPsychologySession = new();
+    private List<string> psychologySessionsHeaders = new() { "Descripción", "Fecha", "Resumen", "Alta Médica", "Observaciones", "Link Alta" };
+    private List<List<string>> psychologySessionsRows = new();
+    private List<int> psychologySessionsIds = new();
+    private Dictionary<string, string> psychologySessionsErrors = new();
+    private string psychologySessionsFormError = "";
+    private bool hasUnsavedPsychologySessionsData = false;
+
+    private string medicalDischargeValue = "";
 
 
     protected override async Task OnInitializedAsync()
@@ -858,6 +1009,10 @@
         if (tab == "plan" && currentMedicalCareId > 0)
         {
             await LoadTherapeuticPlanData();
+        }
+        else if (tab == "sessions" && currentMedicalCareId > 0)
+        {
+            await LoadPsychologySessionsData();
         }
 
         activeTab = tab;
@@ -1193,7 +1348,6 @@
 
         if (selectedDiagnosisForTherapeuticPlan != null)
         {
-            // Cargar planes específicos para este diagnóstico
             therapeuticPlansList = await TherapeuticPlanService
                 .GetByPsychologicalDiagnosisIdAsync(psychologicalDiagnosisId);
 
@@ -1210,7 +1364,6 @@
             showTherapeuticPlanModal = false;
             selectedDiagnosisForTherapeuticPlan = null;
 
-            // Recargar datos generales para actualizar badges
             await LoadTherapeuticPlanData();
 
             StateHasChanged();
@@ -1318,7 +1471,6 @@
                 return;
             }
 
-            // Asegurar que tenemos el PsychologicalDiagnosisId correcto
             currentTherapeuticPlan.PsychologicalDiagnosisId = selectedDiagnosisForTherapeuticPlan?.PsychologicalDiagnosisId ?? 0;
 
             TherapeuticPlanDTO? resultData;
@@ -1360,7 +1512,6 @@
                 }
             }
 
-            // Limpiar el formulario
             currentTherapeuticPlan = new TherapeuticPlanDTO();
             therapeuticPlanErrors.Clear();
             therapeuticPlanFormError = "";
@@ -1467,6 +1618,282 @@
             await JS.InvokeVoidAsync("console.error", $"Error loading existing therapeutic plans: {ex.Message}");
             therapeuticPlansList = new List<TherapeuticPlanDTO>();
         }
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA PSYCHOLOGY SESSIONS - CORREGIDOS
+    // ============================================================================
+
+    private bool IsPsychologySessionsTabComplete()
+    {
+        return psychologySessionsList != null && psychologySessionsList.Any();
+    }
+
+    private async Task LoadPsychologySessionsData()
+    {
+        try
+        {
+            if (currentMedicalCareId > 0)
+            {
+                psychologySessionsList = await PsychologySessionsService.GetByMedicalCareIdAsync(currentMedicalCareId);
+                await RefreshPsychologySessionsTable();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading psychology sessions data: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshPsychologySessionsTable()
+    {
+        psychologySessionsRows.Clear();
+        psychologySessionsIds.Clear();
+
+        foreach (var session in psychologySessionsList)
+        {
+            var description = !string.IsNullOrEmpty(session.Description)
+                ? (session.Description.Length > 30 ? session.Description.Substring(0, 30) + "..." : session.Description)
+                : "Sin descripción";
+
+            var date = session.Date?.ToString("dd/MM/yyyy") ?? "Sin fecha";
+
+            var summary = !string.IsNullOrEmpty(session.SummarySession)
+                ? (session.SummarySession.Length > 30 ? session.SummarySession.Substring(0, 30) + "..." : session.SummarySession)
+                : "Sin resumen";
+
+            var medicalDischarge = session.MedicalDischarge.HasValue
+                ? (session.MedicalDischarge.Value ? "Sí" : "No")
+                : "No especificada";
+
+            var observations = !string.IsNullOrEmpty(session.Observations)
+                ? (session.Observations.Length > 30 ? session.Observations.Substring(0, 30) + "..." : session.Observations)
+                : "Sin observaciones";
+
+            var voluntaryLink = !string.IsNullOrEmpty(session.VoluntaryRegistrationLink)
+                ? (session.VoluntaryRegistrationLink.Length > 20 ? session.VoluntaryRegistrationLink.Substring(0, 20) + "..." : session.VoluntaryRegistrationLink)
+                : "Sin link";
+
+            psychologySessionsRows.Add(new List<string> { description, date, summary, medicalDischarge, observations, voluntaryLink });
+            psychologySessionsIds.Add(session.PsychologySessionsId);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddPsychologySessionRequested()
+    {
+        currentPsychologySession = new PsychologySessionsDTO
+        {
+            PsychologySessionsId = 0,
+            MedicalCareId = currentMedicalCareId,
+            Description = "",
+            Date = DateTime.Today,
+            SummarySession = "",
+            MedicalDischarge = null,
+            Observations = "",
+            VoluntaryRegistrationLink = ""
+        };
+
+        medicalDischargeValue = "";
+
+        psychologySessionsErrors.Clear();
+        psychologySessionsFormError = "";
+    }
+
+    private async Task OnEditPsychologySessionRequested(int id)
+    {
+        var existing = psychologySessionsList.FirstOrDefault(s => s.PsychologySessionsId == id);
+        if (existing != null)
+        {
+            currentPsychologySession = new PsychologySessionsDTO
+            {
+                PsychologySessionsId = existing.PsychologySessionsId,
+                MedicalCareId = existing.MedicalCareId,
+                Description = existing.Description ?? "",
+                Date = existing.Date,
+                SummarySession = existing.SummarySession ?? "",
+                MedicalDischarge = existing.MedicalDischarge,
+                Observations = existing.Observations ?? "",
+                VoluntaryRegistrationLink = existing.VoluntaryRegistrationLink ?? ""
+            };
+
+            if (existing.MedicalDischarge.HasValue)
+            {
+                medicalDischargeValue = existing.MedicalDischarge.Value.ToString().ToLower();
+            }
+            else
+            {
+                medicalDischargeValue = "";
+            }
+        }
+
+        psychologySessionsErrors.Clear();
+        psychologySessionsFormError = "";
+    }
+
+    private async Task OnDeletePsychologySessionRequested(int id)
+    {
+        try
+        {
+            bool success = await PsychologySessionsService.DeleteAsync(id);
+            if (success)
+            {
+                var toRemove = psychologySessionsList.FirstOrDefault(s => s.PsychologySessionsId == id);
+                if (toRemove != null)
+                {
+                    psychologySessionsList.Remove(toRemove);
+                    await RefreshPsychologySessionsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Sesión eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error al eliminar la sesión.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSavePsychologySessionRequested()
+    {
+        try
+        {
+            if (!ValidatePsychologySessionForm())
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(medicalDischargeValue))
+            {
+                currentPsychologySession.MedicalDischarge = null;
+            }
+            else
+            {
+                currentPsychologySession.MedicalDischarge = medicalDischargeValue == "true";
+            }
+
+            currentPsychologySession.MedicalCareId = currentMedicalCareId;
+
+            PsychologySessionsDTO? resultData;
+
+            if (currentPsychologySession.PsychologySessionsId == 0)
+            {
+                resultData = await PsychologySessionsService.CreateAsync(currentPsychologySession);
+                if (resultData != null)
+                {
+                    psychologySessionsList.Add(resultData);
+                    await RefreshPsychologySessionsTable();
+                    await JS.InvokeVoidAsync("alert", "Sesión agregada exitosamente.");
+                }
+                else
+                {
+                    psychologySessionsFormError = "Error al crear la sesión";
+                    await JS.InvokeVoidAsync("alert", psychologySessionsFormError);
+                    return;
+                }
+            }
+            else
+            {
+                resultData = await PsychologySessionsService.UpdateAsync(currentPsychologySession);
+                if (resultData != null)
+                {
+                    var index = psychologySessionsList.FindIndex(s => s.PsychologySessionsId == currentPsychologySession.PsychologySessionsId);
+                    if (index >= 0)
+                    {
+                        psychologySessionsList[index] = resultData;
+                    }
+                    await RefreshPsychologySessionsTable();
+                    await JS.InvokeVoidAsync("alert", "Sesión actualizada exitosamente.");
+                }
+                else
+                {
+                    psychologySessionsFormError = "Error al actualizar la sesión";
+                    await JS.InvokeVoidAsync("alert", psychologySessionsFormError);
+                    return;
+                }
+            }
+
+            currentPsychologySession = new PsychologySessionsDTO();
+            medicalDischargeValue = ""; // Limpiar también la variable auxiliar
+            psychologySessionsErrors.Clear();
+            psychologySessionsFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            psychologySessionsFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", psychologySessionsFormError);
+        }
+    }
+
+    private bool ValidatePsychologySessionForm()
+    {
+        psychologySessionsErrors.Clear();
+        psychologySessionsFormError = "";
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(currentPsychologySession.Description))
+        {
+            psychologySessionsErrors["Description"] = "La descripción es obligatoria.";
+            isValid = false;
+        }
+        else if (currentPsychologySession.Description.Length > 500)
+        {
+            psychologySessionsErrors["Description"] = "La descripción no puede exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!currentPsychologySession.Date.HasValue)
+        {
+            psychologySessionsErrors["Date"] = "La fecha de sesión es obligatoria.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPsychologySession.SummarySession))
+        {
+            psychologySessionsErrors["SummarySession"] = "El resumen de la sesión es obligatorio.";
+            isValid = false;
+        }
+        else if (currentPsychologySession.SummarySession.Length > 1000)
+        {
+            psychologySessionsErrors["SummarySession"] = "El resumen de la sesión no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentPsychologySession.Observations) && currentPsychologySession.Observations.Length > 500)
+        {
+            psychologySessionsErrors["Observations"] = "Las observaciones no pueden exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentPsychologySession.VoluntaryRegistrationLink) && currentPsychologySession.VoluntaryRegistrationLink.Length > 200)
+        {
+            psychologySessionsErrors["VoluntaryRegistrationLink"] = "El link de alta voluntaria no puede exceder 200 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            psychologySessionsFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsPsychologySessionFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(currentPsychologySession.Description) &&
+               (currentPsychologySession.Description?.Length ?? 0) <= 500 &&
+               currentPsychologySession.Date.HasValue &&
+               !string.IsNullOrWhiteSpace(currentPsychologySession.SummarySession) &&
+               (currentPsychologySession.SummarySession?.Length ?? 0) <= 1000 &&
+               (currentPsychologySession.Observations?.Length ?? 0) <= 500 &&
+               (currentPsychologySession.VoluntaryRegistrationLink?.Length ?? 0) <= 200;
     }
 
     // ========== MÉTODOS EXISTENTES ADAPTADOS ==========
@@ -1582,6 +2009,7 @@
 
                 await LoadPsychologicalDiagnosisData();
                 await LoadExistingTherapeuticPlans();
+                await LoadPsychologySessionsData();
             }
         }
         catch (Exception ex)
@@ -1589,7 +2017,6 @@
             await JS.InvokeVoidAsync("console.error", $"Error loading existing data: {ex.Message}");
         }
     }
-
 
     private Task HandlePatientSelected((int ClinicalHistoryId, string MedicalRecordNumber, int PersonId) paciente)
     {

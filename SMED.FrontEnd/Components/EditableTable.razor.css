@@ -1,54 +1,118 @@
 ﻿/* === Estilos principales de la tabla === */
 .editable-table {
     background-color: #fff;
-    border: 1px solid #ccc;
+    border: 1px solid #dee2e6;
     padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     margin-bottom: 1rem;
     display: flex;
     flex-direction: column;
-    height: 300px;
+    height: 500px;
     overflow: hidden;
 }
 
 /* === Header === */
 .editable-table-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
     margin-bottom: 0.75rem;
 }
 
-    .editable-table-header h5 {
+.editable-table-title-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+    .editable-table-title-section h5 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 1.25rem;
         font-weight: 600;
-        color: #333;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        color: #212529;
+    }
+
+.editable-table-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* === Search Section - CORREGIDO === */
+.editable-table-search-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: end;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    border: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+}
+
+.editable-table-search-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.editable-table-search-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.editable-table-search-input {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    width: 100%;
+    background-color: white;
+}
+
+    .editable-table-search-input::placeholder {
+        color: #6c757d;
+        opacity: 0.8;
+    }
+
+    .editable-table-search-input:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 
 /* === Scroll Container === */
 .editable-table-scroll {
     overflow: auto;
     flex: 1;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #fff;
+    margin-bottom: 0.5rem;
 }
 
 /* === Table === */
 .editable-table-content {
     width: 100%;
     border-collapse: collapse;
+    margin-bottom: 0;
+    font-size: 0.875rem;
 }
 
     .editable-table-content th,
     .editable-table-content td {
-        border: 1px solid #ddd;
-        padding: 0.5rem 0.75rem;
+        border: 1px solid #dee2e6;
+        padding: 0.6rem;
         text-align: left;
+        vertical-align: middle;
     }
 
     .editable-table-content th {
@@ -56,12 +120,24 @@
         font-weight: 600;
         position: sticky;
         top: 0;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        font-size: 0.8rem;
+    }
+
+    .editable-table-content td {
+        background-color: #fff;
+        color: #212529;
     }
 
     .editable-table-content .action-column {
         text-align: center;
         white-space: nowrap;
-        width: 120px;
+        width: 140px;
+    }
+
+    .editable-table-content tbody tr:hover td {
+        background-color: #f8f9fa;
     }
 
 /* === Empty State === */
@@ -70,99 +146,250 @@
     padding: 2rem;
     color: #6c757d;
     font-style: italic;
+    background-color: #f8f9fa;
 }
 
-/* === Modal Styles === */
-.editable-table-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1040;
-}
-
-.editable-table-modal-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1050;
-}
-
-.editable-table-modal-dialog {
-    width: auto;
-    max-width: 90%;
-    min-width: 300px;
-    margin: 1rem;
-}
-
-.editable-table-modal-content {
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    width: 100%;
-}
-
-.editable-table-modal-header {
-    padding: 1rem;
-    border-bottom: 1px solid #dee2e6;
+/* === Pagination - CORREGIDO === */
+.editable-table-pagination {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.editable-table-modal-body {
-    padding: 1rem;
-    min-width: 300px;
-}
-
-.editable-table-modal-footer {
-    padding: 1rem;
+    padding: 0.75rem 0;
     border-top: 1px solid #dee2e6;
-    display: flex;
-    justify-content: flex-end;
+    background-color: #fff;
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-/* === Form Styles === */
-.editable-table-form-group {
-    margin-bottom: 1rem;
+.editable-table-pagination-info {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
 }
 
-.editable-table-form-label {
-    display: block;
-    margin-bottom: 0.5rem;
+.editable-table-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
 }
 
-.editable-table-form-select {
-    width: 100%;
-    padding: 0.5rem;
+.editable-table-page-size {
+    padding: 0.3rem 1.5rem 0.3rem 0.5rem;
     border: 1px solid #ced4da;
     border-radius: 0.25rem;
+    font-size: 0.8rem;
+    background-color: white;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 12px 10px;
+    appearance: none;
+    min-width: 110px;
 }
 
-/* === Layout Modifiers === */
-.editable-table.half-width {
-    flex: 1 1 calc(50% - 0.5rem);
+.editable-table-pagination-btn {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #6c757d;
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
 }
 
-.editable-table.full-width {
-    flex: 1 1 100%;
+    .editable-table-pagination-btn:hover:not(:disabled) {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+    }
+
+    .editable-table-pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f8f9fa;
+    }
+
+.editable-table-page-info {
+    font-size: 0.8rem;
+    color: #495057;
+    margin: 0 0.5rem;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
-/* Responsive */
+/* === Botones de acción en tabla === */
+.editable-table-content .action-column .btn {
+    margin: 0.1rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* === Responsive Design === */
+@media (max-width: 1200px) {
+    .editable-table-search-group {
+        min-width: 140px;
+        max-width: 180px;
+    }
+}
+
+@media (max-width: 992px) {
+    .editable-table {
+        height: 450px;
+    }
+
+    .editable-table-search-section {
+        gap: 0.75rem;
+    }
+
+    .editable-table-search-group {
+        min-width: 130px;
+        max-width: 160px;
+    }
+
+    .editable-table-pagination {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+
+    .editable-table-pagination-controls {
+        justify-content: center;
+    }
+}
+
 @media (max-width: 768px) {
     .editable-table {
-        flex: 1 1 100% !important;
+        height: auto;
+        min-height: 400px;
+        padding: 0.75rem;
     }
 
-    .editable-table-modal-dialog {
-        max-width: 95%;
+    .editable-table-title-section {
+        flex-direction: column;
+        align-items: flex-start;
     }
+
+    .editable-table-controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .editable-table-search-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .editable-table-search-group {
+        min-width: auto;
+        max-width: none;
+        margin-bottom: 0.5rem;
+    }
+
+    .editable-table-scroll {
+        margin: 0;
+    }
+
+    .editable-table-content {
+        font-size: 0.8rem;
+    }
+
+        .editable-table-content th,
+        .editable-table-content td {
+            padding: 0.4rem;
+        }
+
+    .editable-table-pagination {
+        padding: 0.5rem 0;
+    }
+
+    .editable-table-pagination-controls {
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .editable-table-page-info {
+        margin: 0;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .editable-table-content .action-column {
+        width: 120px;
+    }
+
+        .editable-table-content .action-column .btn {
+            display: block;
+            width: 100%;
+            margin: 0.2rem 0;
+            font-size: 0.7rem;
+        }
+
+    .editable-table-pagination-info {
+        text-align: center;
+        font-size: 0.75rem;
+    }
+
+    .editable-table-page-size {
+        min-width: 100px;
+        font-size: 0.75rem;
+    }
+
+    .editable-table-pagination-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* === Estados de loading === */
+.editable-table-loading {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+    .editable-table-loading::after {
+        content: "Cargando...";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1rem 2rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        z-index: 10;
+    }
+
+/* === Scrollbar personalizado === */
+.editable-table-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.editable-table-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.editable-table-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+    .editable-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+/* === Mejoras de accesibilidad === */
+.editable-table-content th:focus,
+.editable-table-search-input:focus,
+.editable-table-pagination-btn:focus,
+.editable-table-page-size:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 1px;
 }

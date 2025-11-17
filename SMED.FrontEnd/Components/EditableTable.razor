@@ -2,10 +2,37 @@
 
 <div class="editable-table">
     <div class="editable-table-header">
-        <h5>@Title</h5>
-        @if (ShowAddButton)
+        <div class="editable-table-title-section">
+            <h5>@Title</h5>
+            <div class="editable-table-controls">
+                @if (ShowAddButton)
+                {
+                    <button class="btn btn-success btn-sm" @onclick="OpenAddModal">Agregar</button>
+                }
+            </div>
+        </div>
+
+        @if (ShowSearch && ColumnHeaders.Any())
         {
-            <button class="btn btn-success" @onclick="OpenAddModal">Agregar</button>
+            <div class="editable-table-search-section">
+                @for (int i = 0; i < ColumnHeaders.Count; i++)
+                {
+                    var columnIndex = i;
+                    if (!IsColumnSearchable(columnIndex)) continue;
+
+                    <div class="editable-table-search-group">
+                        <span class="editable-table-search-label">@ColumnHeaders[columnIndex]:</span>
+                        <input type="text"
+                               class="editable-table-search-input"
+                               placeholder="Buscar..."
+                               value="@GetColumnFilter(columnIndex)"
+                               @oninput="@(e => UpdateColumnFilter(columnIndex, e.Value?.ToString() ?? string.Empty))" />
+                    </div>
+                }
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearSearch" title="Limpiar búsqueda">
+                    Limpiar
+                </button>
+            </div>
         }
     </div>
 
@@ -26,24 +53,29 @@
             <tbody>
                 @if (HasData)
                 {
-                    @for (int i = 0; i < Rows.Count; i++)
+                    var displayedRows = GetDisplayedRows();
+                    @foreach (var row in displayedRows)
                     {
-                        var rowId = i < RowIds.Count ? RowIds[i] : -1;
                         <tr>
-                            @foreach (var cell in Rows[i])
+                            @foreach (var cell in row.Cells)
                             {
                                 <td>@cell</td>
                             }
                             @if (ShowActions)
                             {
                                 <td class="action-column">
+                                    @if (RowCustomAction is not null)
+                                    {
+                                        @RowCustomAction(row.Id)
+                                    }
+
                                     @if (ShowEditButton)
                                     {
-                                        <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(rowId)" disabled="@(rowId < 0)">Editar</button>
+                                        <button class="btn btn-sm btn-primary me-1" @onclick="() => EditRow(row.Id)" disabled="@(row.Id < 0)">Editar</button>
                                     }
                                     @if (ShowDeleteButton)
                                     {
-                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(rowId)" disabled="@(rowId < 0)">Eliminar</button>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(row.Id)" disabled="@(row.Id < 0)">Eliminar</button>
                                     }
                                 </td>
                             }
@@ -62,22 +94,66 @@
         </table>
     </div>
 
+    @if (ShowPagination && HasData)
+    {
+        <div class="editable-table-pagination">
+            <div class="editable-table-pagination-info">
+                Mostrando @((CurrentPage - 1) * PageSize + 1) - @Math.Min(CurrentPage * PageSize, TotalFilteredRows) de @TotalFilteredRows registros
+            </div>
+
+            <div class="editable-table-pagination-controls">
+                <select class="form-select form-select-sm editable-table-page-size" @bind="PageSize">
+                    <option value="5">5 por página</option>
+                    <option value="10">10 por página</option>
+                    <option value="20">20 por página</option>
+                    <option value="50">50 por página</option>
+                </select>
+
+                <button class="btn btn-sm btn-outline-primary editable-table-pagination-btn"
+                        @onclick="FirstPage"
+                        disabled="@(CurrentPage == 1)">
+                    « Primero
+                </button>
+                <button class="btn btn-sm btn-outline-primary editable-table-pagination-btn"
+                        @onclick="PreviousPage"
+                        disabled="@(CurrentPage == 1)">
+                    ‹ Anterior
+                </button>
+
+                <span class="editable-table-page-info">
+                    Página @CurrentPage de @TotalPages
+                </span>
+
+                <button class="btn btn-sm btn-outline-primary editable-table-pagination-btn"
+                        @onclick="NextPage"
+                        disabled="@(CurrentPage == TotalPages)">
+                    Siguiente ›
+                </button>
+                <button class="btn btn-sm btn-outline-primary editable-table-pagination-btn"
+                        @onclick="LastPage"
+                        disabled="@(CurrentPage == TotalPages)">
+                    Último »
+                </button>
+            </div>
+        </div>
+    }
+
     @if (showAddModal)
     {
-        <div class="editable-table-modal-backdrop" @onclick="CloseModal"></div>
-        <div class="editable-table-modal-container">
-            <div class="editable-table-modal-dialog" @onclick:stopPropagation="true">
-                <div class="editable-table-modal-content">
-                    <div class="editable-table-modal-header">
-                        <h5>@(editingId == -1 ? "Agregar Registro" : "Editar Registro")</h5>
-                        <button class="btn-close" @onclick="CloseModal"></button>
+        <div class="modal-backdrop show" @onclick="CloseModal"></div>
+        <div class="modal show d-block" tabindex="-1" @onclick="CloseModal">
+            <div class="modal-dialog modal-lg" @onclick:stopPropagation="true">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(editingId == -1 ? "Agregar Registro" : "Editar Registro")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
                     </div>
-                    <div class="editable-table-modal-body">
+                    <div class="modal-body">
                         @EditModalContent
                     </div>
-                    <div class="editable-table-modal-footer">
-                        <button class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
-                        <button class="btn btn-primary" @onclick="SaveRow" disabled="@(!IsValidForm())">Guardar</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" @onclick="SaveRow" disabled="@(!IsValidForm())">Guardar</button>
                     </div>
                 </div>
             </div>
@@ -86,20 +162,20 @@
 
     @if (showDeleteConfirm)
     {
-        <div class="editable-table-modal-backdrop" @onclick="() => showDeleteConfirm = false"></div>
-        <div class="editable-table-modal-container">
-            <div class="editable-table-modal-dialog editable-table-modal-sm" @onclick:stopPropagation="true">
-                <div class="editable-table-modal-content">
-                    <div class="editable-table-modal-header">
-                        <h5>Confirmar Eliminación</h5>
-                        <button class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+        <div class="modal-backdrop show" @onclick="() => showDeleteConfirm = false"></div>
+        <div class="modal show d-block" tabindex="-1" @onclick="() => showDeleteConfirm = false">
+            <div class="modal-dialog modal-sm" @onclick:stopPropagation="true">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                        <button type="button" class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
                     </div>
-                    <div class="editable-table-modal-body">
+                    <div class="modal-body">
                         @DeleteConfirmationMessage
                     </div>
-                    <div class="editable-table-modal-footer">
-                        <button class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
-                        <button class="btn btn-danger" @onclick="() => DeleteConfirmed()">Eliminar</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancelar</button>
+                        <button type="button" class="btn btn-danger" @onclick="() => DeleteConfirmed()">Eliminar</button>
                     </div>
                 </div>
             </div>
@@ -119,8 +195,12 @@
     [Parameter] public bool ShowEditButton { get; set; } = true;
     [Parameter] public bool ShowDeleteButton { get; set; } = true;
     [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = true;
+    [Parameter] public bool ShowSearch { get; set; } = true;
 
     [Parameter] public RenderFragment EditModalContent { get; set; }
+    [Parameter] public RenderFragment<int>? RowCustomAction { get; set; }
+    [Parameter] public HashSet<int>? SearchableColumnIndexes { get; set; }
 
     [Parameter] public EventCallback<int> OnEditRequested { get; set; }
     [Parameter] public EventCallback<int> OnDeleteRequested { get; set; }
@@ -132,8 +212,151 @@
     private bool showAddModal = false;
     private bool showDeleteConfirm = false;
 
+    // Paginación y búsqueda
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private List<string> columnFilters = new();
+
     private bool HasData => Rows?.Count > 0 && RowIds?.Count > 0 && Rows.Count == RowIds.Count;
     private int TotalColumns => ColumnHeaders.Count + (ShowActions ? 1 : 0);
+    private int TotalFilteredRows { get; set; }
+    private int TotalPages { get; set; }
+
+    private bool IsColumnSearchable(int idx)
+        => SearchableColumnIndexes is null || SearchableColumnIndexes.Contains(idx);
+
+    protected override void OnInitialized()
+    {
+        InitializeColumnFilters();
+    }
+
+    protected override void OnParametersSet()
+    {
+        InitializeColumnFilters();
+    }
+
+    private void InitializeColumnFilters()
+    {
+        if (columnFilters.Count != ColumnHeaders.Count)
+        {
+            columnFilters = new List<string>(new string[ColumnHeaders.Count]);
+            for (int i = 0; i < columnFilters.Count; i++)
+            {
+                columnFilters[i] = string.Empty;
+            }
+        }
+    }
+
+    private string GetColumnFilter(int index)
+    {
+        if (index >= 0 && index < columnFilters.Count)
+        {
+            return columnFilters[index] ?? string.Empty;
+        }
+        return string.Empty;
+    }
+
+    private void UpdateColumnFilter(int index, string value)
+    {
+        if (index >= 0 && index < columnFilters.Count)
+        {
+            columnFilters[index] = value ?? string.Empty;
+            CurrentPage = 1;
+            StateHasChanged();
+        }
+    }
+
+    private int CurrentPage
+    {
+        get => currentPage;
+        set
+        {
+            currentPage = value;
+            StateHasChanged();
+        }
+    }
+
+    private int PageSize
+    {
+        get => pageSize;
+        set
+        {
+            pageSize = value;
+            CurrentPage = 1;
+            StateHasChanged();
+        }
+    }
+
+    private List<TableRow> GetDisplayedRows()
+    {
+        var filteredRows = FilterRows();
+        TotalFilteredRows = filteredRows.Count;
+        TotalPages = (int)Math.Ceiling((double)TotalFilteredRows / PageSize);
+
+        if (CurrentPage > TotalPages && TotalPages > 0)
+        {
+            CurrentPage = TotalPages;
+        }
+
+        return filteredRows
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    private List<TableRow> FilterRows()
+    {
+        if (!HasData) return new List<TableRow>();
+
+        var result = new List<TableRow>();
+
+        for (int i = 0; i < Rows.Count; i++)
+        {
+            var rowId = i < RowIds.Count ? RowIds[i] : -1;
+            var rowCells = Rows[i];
+
+            var matchesAllFilters = true;
+            for (int j = 0; j < columnFilters.Count && j < rowCells.Count; j++)
+            {
+                if (!IsColumnSearchable(j)) continue;
+                if (!string.IsNullOrEmpty(columnFilters[j]))
+                {
+                    var cellValue = rowCells[j] ?? "";
+                    if (!cellValue.Contains(columnFilters[j], StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchesAllFilters = false;
+                        break;
+                    }
+                }
+            }
+
+            if (matchesAllFilters)
+            {
+                result.Add(new TableRow
+                {
+                    Id = rowId,
+                    Cells = rowCells
+                });
+            }
+        }
+
+        return result;
+    }
+
+    private void FirstPage() => CurrentPage = 1;
+    private void PreviousPage() => CurrentPage = Math.Max(1, CurrentPage - 1);
+    private void NextPage() => CurrentPage = Math.Min(TotalPages, CurrentPage + 1);
+    private void LastPage() => CurrentPage = TotalPages;
+
+    private void ClearSearch()
+    {
+        for (int i = 0; i < columnFilters.Count; i++)
+        {
+            columnFilters[i] = string.Empty;
+        }
+        CurrentPage = 1;
+        StateHasChanged();
+    }
 
     private void OpenAddModal()
     {
@@ -180,5 +403,11 @@
     {
         showAddModal = false;
         editingId = -1;
+    }
+
+    private class TableRow
+    {
+        public int Id { get; set; }
+        public List<string> Cells { get; set; } = new();
     }
 }

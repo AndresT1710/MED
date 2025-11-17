@@ -40,18 +40,11 @@ namespace SMED.BackEnd.Controllers
         [HttpPost]
         public async Task<ActionResult<AdvanceDTO>> Create(AdvanceDTO dto)
         {
-            // Validar que al menos una sesión esté especificada
-            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
-                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
+            // Validar que la sesión psicológica esté especificada
+            if (!dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar PsychologySessionId");
 
-            // Validar que las sesiones existan si se especifican
-            if (dto.SessionId.HasValue)
-            {
-                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
-                if (!sessionExists)
-                    return BadRequest("La sesión especificada no existe");
-            }
-
+            // Validar que la sesión psicológica exista
             if (dto.PsychologySessionId.HasValue)
             {
                 var psychologySessionExists = await _context.PsychologySessions.AnyAsync(ps => ps.PsychologySessionsId == dto.PsychologySessionId);
@@ -70,15 +63,8 @@ namespace SMED.BackEnd.Controllers
                 return BadRequest();
 
             // Validaciones similares a Create
-            if (!dto.SessionId.HasValue && !dto.PsychologySessionId.HasValue)
-                return BadRequest("Debe especificar al menos una SessionId o PsychologySessionId");
-
-            if (dto.SessionId.HasValue)
-            {
-                var sessionExists = await _context.Sessions.AnyAsync(s => s.SessionsId == dto.SessionId);
-                if (!sessionExists)
-                    return BadRequest("La sesión especificada no existe");
-            }
+            if (!dto.PsychologySessionId.HasValue)
+                return BadRequest("Debe especificar PsychologySessionId");
 
             if (dto.PsychologySessionId.HasValue)
             {
@@ -102,17 +88,6 @@ namespace SMED.BackEnd.Controllers
                 return NotFound();
 
             return NoContent();
-        }
-
-        [HttpGet("BySession/{sessionId}")]
-        public async Task<ActionResult<List<AdvanceDTO>>> GetBySessionId(int sessionId)
-        {
-            var repository = _repository as AdvanceRepository;
-            if (repository == null)
-                return BadRequest("Repository type not supported");
-
-            var advances = await repository.GetBySessionIdAsync(sessionId);
-            return Ok(advances);
         }
 
         [HttpGet("ByPsychologySession/{psychologySessionId}")]

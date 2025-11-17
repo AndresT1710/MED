@@ -9,7 +9,6 @@ namespace SMED.Shared.DTOs
     public class AdvanceDTO
     {
         public int AdvanceId { get; set; }
-        public int? SessionId { get; set; }
         public int? PsychologySessionId { get; set; }
         public string Indications { get; set; } = null!;
         public string Description { get; set; } = null!;

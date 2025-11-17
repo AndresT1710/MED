@@ -78,19 +78,6 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        public async Task<List<AdvanceDTO>> GetBySessionIdAsync(int sessionId)
-        {
-            try
-            {
-                return await _httpClient.GetFromJsonAsync<List<AdvanceDTO>>($"api/Advance/BySession/{sessionId}")
-                    ?? new List<AdvanceDTO>();
-            }
-            catch (Exception)
-            {
-                return new List<AdvanceDTO>();
-            }
-        }
-
         public async Task<List<AdvanceDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
         {
             try

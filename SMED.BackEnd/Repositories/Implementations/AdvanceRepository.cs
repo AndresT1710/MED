@@ -18,9 +18,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<AdvanceDTO>> GetAllAsync()
         {
             var entities = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
@@ -31,9 +28,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<AdvanceDTO?> GetByIdAsync(int id)
         {
             var entity = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
@@ -49,13 +43,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             // Reload with related data
             await _context.Entry(entity)
-                .Reference(a => a.Session)
-                .Query()
-                .Include(s => s.MedicalCare)
-                .ThenInclude(mc => mc.Patient)
-                .LoadAsync();
-
-            await _context.Entry(entity)
                 .Reference(a => a.PsychologySession)
                 .Query()
                 .Include(ps => ps.MedicalCare)
@@ -68,9 +55,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<AdvanceDTO?> UpdateAsync(AdvanceDTO dto)
         {
             var entity = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
@@ -78,7 +62,6 @@ namespace SMED.BackEnd.Repositories.Implementations
 
             if (entity == null) return null;
 
-            entity.SessionId = dto.SessionId;
             entity.PsychologySessionId = dto.PsychologySessionId;
             entity.Indications = dto.Indications;
             entity.Description = dto.Description;
@@ -98,28 +81,9 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
-        public async Task<List<AdvanceDTO>> GetBySessionIdAsync(int sessionId)
-        {
-            var entities = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
-                .Include(a => a.PsychologySession)
-                    .ThenInclude(ps => ps.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
-                .Where(a => a.SessionId == sessionId)
-                .OrderBy(a => a.Date)
-                .ToListAsync();
-
-            return entities.Select(MapToDto).ToList();
-        }
-
         public async Task<List<AdvanceDTO>> GetByPsychologySessionIdAsync(int psychologySessionId)
         {
             var entities = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
@@ -133,9 +97,6 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<AdvanceDTO>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             var entities = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
@@ -149,14 +110,10 @@ namespace SMED.BackEnd.Repositories.Implementations
         public async Task<List<AdvanceDTO>> GetByMedicalCareIdAsync(int medicalCareId)
         {
             var entities = await _context.Advances
-                .Include(a => a.Session)
-                    .ThenInclude(s => s.MedicalCare)
-                    .ThenInclude(mc => mc.Patient)
                 .Include(a => a.PsychologySession)
                     .ThenInclude(ps => ps.MedicalCare)
                     .ThenInclude(mc => mc.Patient)
-                .Where(a => a.Session.MedicalCareId == medicalCareId ||
-                           a.PsychologySession.MedicalCareId == medicalCareId)
+                .Where(a => a.PsychologySession.MedicalCareId == medicalCareId)
                 .OrderBy(a => a.Date)
                 .ToListAsync();
 
@@ -168,36 +125,41 @@ namespace SMED.BackEnd.Repositories.Implementations
         // =========================
         private AdvanceDTO MapToDto(Advance entity)
         {
-            string? sessionDescription = null;
             string? psychologySessionDescription = null;
             int? medicalCareId = null;
             string? patientName = null;
 
-            if (entity.Session != null)
-            {
-                sessionDescription = entity.Session.Description;
-                medicalCareId = entity.Session.MedicalCareId;
-                patientName = entity.Session.MedicalCare?.Patient?.PersonNavigation.FirstName;
-            }
-            else if (entity.PsychologySession != null)
+            // ✅ CORREGIDO: Verificar cada nivel de navegación antes de acceder
+            if (entity.PsychologySession != null)
             {
                 psychologySessionDescription = entity.PsychologySession.Description;
                 medicalCareId = entity.PsychologySession.MedicalCareId;
-                patientName = entity.PsychologySession.MedicalCare?.Patient?.PersonNavigation.FirstName;
+
+                // Verificar MedicalCare y Patient antes de acceder a PersonNavigation
+                if (entity.PsychologySession.MedicalCare != null &&
+                    entity.PsychologySession.MedicalCare.Patient != null &&
+                    entity.PsychologySession.MedicalCare.Patient.PersonNavigation != null)
+                {
+                    patientName = entity.PsychologySession.MedicalCare.Patient.PersonNavigation.FirstName;
+
+                    // ✅ Opcional: Concatenar nombre completo si quieres mostrar más información
+                    if (!string.IsNullOrEmpty(entity.PsychologySession.MedicalCare.Patient.PersonNavigation.LastName))
+                    {
+                        patientName += " " + entity.PsychologySession.MedicalCare.Patient.PersonNavigation.LastName;
+                    }
+                }
             }
 
             return new AdvanceDTO
             {
                 AdvanceId = entity.AdvanceId,
-                SessionId = entity.SessionId,
                 PsychologySessionId = entity.PsychologySessionId,
                 Indications = entity.Indications,
                 Description = entity.Description,
                 Date = entity.Date,
-                SessionDescription = sessionDescription,
                 PsychologySessionDescription = psychologySessionDescription,
                 MedicalCareId = medicalCareId,
-                PatientName = patientName
+                PatientName = patientName ?? "Paciente no disponible" // ✅ Valor por defecto
             };
         }
 
@@ -206,7 +168,6 @@ namespace SMED.BackEnd.Repositories.Implementations
             return new Advance
             {
                 AdvanceId = dto.AdvanceId,
-                SessionId = dto.SessionId,
                 PsychologySessionId = dto.PsychologySessionId,
                 Indications = dto.Indications,
                 Description = dto.Description,

@@ -10,7 +10,6 @@ namespace SMED.Shared.Entity
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AdvanceId { get; set; }
 
-        public int? SessionId { get; set; }
         public int? PsychologySessionId { get; set; }
 
         [Required]
@@ -24,11 +23,6 @@ namespace SMED.Shared.Entity
         [Required]
         [Column(TypeName = "date")]
         public DateTime Date { get; set; }
-
-        // 🔗 Relación con Sessions
-        [ForeignKey("SessionId")]
-        [InverseProperty("Advances")]
-        public virtual Sessions? Session { get; set; }
 
         // 🔗 Relación con PsychologySessions
         [ForeignKey("PsychologySessionId")]

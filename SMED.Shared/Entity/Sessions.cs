@@ -21,10 +21,6 @@ namespace SMED.Shared.Entity
         [InverseProperty("Sessions")]
         public virtual MedicalCare? MedicalCare { get; set; }
 
-
-        // En Sessions entity, agregar esta propiedad en la sección de InverseProperty
-        [InverseProperty("Session")]
-        public virtual ICollection<Advance> Advances { get; set; } = new List<Advance>();
     }
 
 }

@@ -1,7 +1,1170 @@
 ﻿@page "/reports"
+@using SMED.FrontEnd.Services
+@using SMED.Shared.DTOs
+@inject ReportService ReportService
+@inject HealthProfessionalService HealthProfessionalService
+@inject LocationService LocationService
+@inject PlaceOfAttentionService PlaceOfAttentionService
 
-<h3>HomeReports</h3>
+<PageTitle>Reportes del Sistema</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4">Sistema de Reportes</h3>
+        </div>
+    </div>
+
+    <!-- Filtros para Generación de Reportes -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Generación de Reportes</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de Reporte</label>
+                    <select @bind="ReportRequest.ReportType"
+                            @bind:event="onchange"
+                            @bind:after="OnReportTypeChanged"
+                            class="form-select">
+                        <option value="">Seleccione un reporte</option>
+                        <option value="medical-care">Atenciones Médicas</option>
+                        <option value="patient">Pacientes</option>
+                        <option value="professional">Profesionales</option>
+                        <option value="professional-detail">Detalle de Profesional</option>
+                        <option value="location">Por Ubicación</option>
+                        <option value="area">Por Área</option>
+                        <option value="top-patients">Pacientes con Más Atenciones</option>
+                        <option value="statistical">Estadístico</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" @bind="ReportRequest.StartDate"
+                           @bind:format="yyyy-MM-dd" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" @bind="ReportRequest.EndDate"
+                           @bind:format="yyyy-MM-dd" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Formato</label>
+                    <select @bind="ReportRequest.Format" class="form-select">
+                        <option value="PDF">PDF</option>
+                        <option value="Excel">Excel</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Área</label>
+                    <select @bind="ReportRequest.Area" class="form-select">
+                        <option value="">Todas las áreas</option>
+                        @foreach (var area in Areas)
+                        {
+                            <option value="@area.Name">@area.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtros adicionales según el tipo de reporte -->
+            <div class="row g-3 mt-2">
+                <div class="col-md-4">
+                    <label class="form-label">Profesional</label>
+                    <select @bind="ReportRequest.HealthProfessionalId" class="form-select">
+                        <option value="">Todos los profesionales</option>
+                        @foreach (var prof in Professionals)
+                        {
+                            <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ubicación</label>
+                    <select @bind="ReportRequest.PlaceOfAttentionId" class="form-select">
+                        <option value="">Todas las ubicaciones</option>
+                        @foreach (var location in Locations)
+                        {
+                            <option value="@location.Id">@location.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cédula Paciente</label>
+                    <input type="text" @bind="ReportRequest.DocumentNumber" class="form-control" placeholder="Número de cédula" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@IsLoading">
+                        <i class="fas fa-file-pdf"></i> Generar Reporte
+                    </button>
+                    <button class="btn btn-success me-2" @onclick="PreviewReport" disabled="@IsLoading">
+                        <i class="fas fa-eye"></i> Vista Previa
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ClearReportFilters">
+                        <i class="fas fa-broom"></i> Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: Control de Estadísticas Generales -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Estadísticas del Sistema</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="includeAllRecords"
+                               @bind="StatisticsIncludeAllRecords">
+                        <label class="form-check-label" for="includeAllRecords">
+                            <strong>Mostrar todos los registros</strong>
+                        </label>
+                    </div>
+                    <small class="text-muted">
+                        @if (StatisticsIncludeAllRecords)
+                        {
+                            <span>Mostrando todos los registros históricos</span>
+                        }
+                        else
+                        {
+                            <span>Aplicando filtro de fechas</span>
+                        }
+                    </small>
+                </div>
+
+                @if (!StatisticsIncludeAllRecords)
+                {
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" @bind="StatisticsStartDate"
+                               @bind:format="yyyy-MM-dd" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" @bind="StatisticsEndDate"
+                               @bind:format="yyyy-MM-dd" class="form-control" />
+                    </div>
+                }
+
+                <div class="col-md-3">
+                    <button class="btn btn-info w-100" @onclick="LoadStatistics" disabled="@IsLoadingStatistics">
+                        <i class="fas fa-sync-alt @(IsLoadingStatistics ? "fa-spin" : "")"></i>
+                        @(IsLoadingStatistics ? "Cargando..." : "Actualizar Estadísticas")
+                    </button>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(StatisticsInfo))
+            {
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle"></i> @StatisticsInfo
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    @if (ShowStatistics)
+    {
+        <div class="row mb-4">
+            <!-- Resumen General -->
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h4>@TotalProfessionals</h4>
+                        <p class="mb-0">Total Profesionales</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h4>@TotalAreas</h4>
+                        <p class="mb-0">Áreas Médicas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body text-center">
+                        <h4>@TotalLocations</h4>
+                        <p class="mb-0">Ubicaciones</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center">
+                        <h4>@TotalConsultations</h4>
+                        <p class="mb-0">Total Atenciones</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Top Profesionales por Atenciones -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Top 10 Profesionales por Atenciones</h6>
+                        <button class="btn btn-sm btn-light" @onclick="() => ShowTableFilter = ShowTableFilter != 1 ? 1 : 0">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+
+                    @if (ShowTableFilter == 1)
+                    {
+                        <div class="card-body bg-light border-bottom">
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table1StartDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table1EndDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" @onclick="() => FilterTable(1)">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        @if (FilteredTopProfessionals.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Profesional</th>
+                                            <th>Matrícula</th>
+                                            <th>Tipo</th>
+                                            <th>Atenciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            int rank = 1;
+                                        }
+                                        @foreach (var prof in FilteredTopProfessionals.Take(10))
+                                        {
+                                            <tr>
+                                                <td>@rank</td>
+                                                <td>@prof.FullName</td>
+                                                <td>@prof.RegistrationNumber</td>
+                                                <td>@prof.ProfessionalType</td>
+                                                <td>
+                                                    <span class="badge bg-primary">@prof.TotalConsultations</span>
+                                                </td>
+                                            </tr>
+                                            rank++;
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No hay datos disponibles
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profesionales por Área -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Profesionales por Área</h6>
+                        <button class="btn btn-sm btn-light" @onclick="() => ShowTableFilter = ShowTableFilter != 2 ? 2 : 0">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+
+                    @if (ShowTableFilter == 2)
+                    {
+                        <div class="card-body bg-light border-bottom">
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table2StartDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table2EndDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" @onclick="() => FilterTable(2)">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        @if (FilteredProfessionalsByArea.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Área</th>
+                                            <th>Profesionales</th>
+                                            <th>Total Atenciones</th>
+                                            <th>Promedio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var area in FilteredProfessionalsByArea.OrderByDescending(x => x.TotalConsultations))
+                                        {
+                                            <tr>
+                                                <td>@area.AreaName</td>
+                                                <td>
+                                                    <span class="badge bg-success">@area.ProfessionalCount</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-primary">@area.TotalConsultations</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-warning">@area.AverageConsultations</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No hay datos disponibles
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Profesionales por Ubicación -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Profesionales por Ubicación</h6>
+                        <button class="btn btn-sm btn-light" @onclick="() => ShowTableFilter = ShowTableFilter != 3 ? 3 : 0">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+
+                    @if (ShowTableFilter == 3)
+                    {
+                        <div class="card-body bg-light border-bottom">
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table3StartDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table3EndDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" @onclick="() => FilterTable(3)">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        @if (FilteredProfessionalsByLocation.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Ubicación</th>
+                                            <th>Profesionales</th>
+                                            <th>Total Atenciones</th>
+                                            <th>Última Atención</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var location in FilteredProfessionalsByLocation.OrderByDescending(x => x.TotalConsultations))
+                                        {
+                                            <tr>
+                                                <td>@location.LocationName</td>
+                                                <td>
+                                                    <span class="badge bg-warning">@location.ProfessionalCount</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-primary">@location.TotalConsultations</span>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">@(location.LastConsultation?.ToString("dd/MM/yyyy") ?? "N/A")</small>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No hay datos disponibles
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tipos de Profesionales -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-user-md me-2"></i>Distribución por Tipo de Profesional</h6>
+                        <button class="btn btn-sm btn-light" @onclick="() => ShowTableFilter = ShowTableFilter != 4 ? 4 : 0">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+
+                    @if (ShowTableFilter == 4)
+                    {
+                        <div class="card-body bg-light border-bottom">
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table4StartDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="date" @bind="Table4EndDate" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" @onclick="() => FilterTable(4)">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        @if (FilteredProfessionalsByType.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Tipo de Profesional</th>
+                                            <th>Cantidad</th>
+                                            <th>Porcentaje</th>
+                                            <th>Total Atenciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var type in FilteredProfessionalsByType.OrderByDescending(x => x.Count))
+                                        {
+                                            <tr>
+                                                <td>@type.ProfessionalType</td>
+                                                <td>
+                                                    <span class="badge bg-info">@type.Count</span>
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-info" style="width: @(type.Percentage)%;">
+                                                            @type.Percentage.ToString("0.0")%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-primary">@type.TotalConsultations</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No hay datos disponibles
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Vista previa de datos (mantener el código original aquí) -->
+    <!-- ... resto del código de vista previa ... -->
+    <!-- Indicadores de carga y mensajes -->
+    @if (IsLoading)
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Generando reporte, por favor espere...
+        </div>
+    }
+
+    @if (IsLoadingStatistics)
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Cargando estadísticas, por favor espere...
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle"></i> @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = string.Empty"></button>
+        </div>
+    }
+</div>
 
 @code {
+    // ... código existente ...
+    private ReportRequestDTO ReportRequest { get; set; } = new();
+    private object? PreviewData { get; set; }
+    private string PreviewTitle { get; set; } = string.Empty;
+    private List<HealthProfessionalDTO> Professionals { get; set; } = new();
+    private List<LocationDTO> Areas { get; set; } = new();
+    private List<PlaceOfAttentionDTO> Locations { get; set; } = new();
+    private bool IsLoading = false;
+    private bool IsLoadingPreview = false;
+    private bool IsLoadingStatistics = false;
+    private bool ShowPreview = false;
+    private bool ShowStatistics = true;
+    private string Message = string.Empty;
+    private string ErrorMessage = string.Empty;
+    private string StatisticsInfo = string.Empty;
 
+    // NUEVAS VARIABLES para control de estadísticas
+    private bool StatisticsIncludeAllRecords = true;
+    private DateTime? StatisticsStartDate;
+    private DateTime? StatisticsEndDate;
+
+    // Variables para filtros por tabla
+    private int ShowTableFilter = 0; // 0=ninguno, 1=tabla1, 2=tabla2, etc.
+    private DateTime? Table1StartDate;
+    private DateTime? Table1EndDate;
+    private DateTime? Table2StartDate;
+    private DateTime? Table2EndDate;
+    private DateTime? Table3StartDate;
+    private DateTime? Table3EndDate;
+    private DateTime? Table4StartDate;
+    private DateTime? Table4EndDate;
+
+    // Variables para estadísticas (datos originales SIN filtrar)
+    private int TotalProfessionals = 0;
+    private int TotalAreas = 0;
+    private int TotalLocations = 0;
+    private int TotalConsultations = 0;
+    private List<ProfessionalReportDTO> AllProfessionalsData { get; set; } = new();
+    private List<ProfessionalReportDTO> TopProfessionalsByConsultations { get; set; } = new();
+    private List<AreaStatisticsDTO> ProfessionalsByArea { get; set; } = new();
+    private List<LocationStatisticsDTO> ProfessionalsByLocation { get; set; } = new();
+    private List<ProfessionalTypeStatisticsDTO> ProfessionalsByType { get; set; } = new();
+
+    // Variables para datos FILTRADOS por tabla
+    private List<ProfessionalReportDTO> FilteredTopProfessionals { get; set; } = new();
+    private List<AreaStatisticsDTO> FilteredProfessionalsByArea { get; set; } = new();
+    private List<LocationStatisticsDTO> FilteredProfessionalsByLocation { get; set; } = new();
+    private List<ProfessionalTypeStatisticsDTO> FilteredProfessionalsByType { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdownData();
+        // NO establecer fechas por defecto, cargar TODOS los registros
+        ReportRequest.IncludeAllRecords = false; // Para reportes individuales
+
+        // Cargar estadísticas automáticamente (todos los registros)
+        await LoadStatistics();
+    }
+
+    private async Task LoadDropdownData()
+    {
+        try
+        {
+            Professionals = (await HealthProfessionalService.GetAllHealthProfessionalsAsync()).ToList();
+            Areas = (await LocationService.GetAllAsync()).ToList();
+            Locations = (await PlaceOfAttentionService.GetAllPlacesAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error cargando datos: {ex.Message}";
+        }
+    }
+
+    private async Task LoadStatistics()
+    {
+        IsLoadingStatistics = true;
+        Message = string.Empty;
+        ErrorMessage = string.Empty;
+        StatisticsInfo = string.Empty;
+
+        try
+        {
+            // Validar fechas si no se incluyen todos los registros
+            if (!StatisticsIncludeAllRecords && (!StatisticsStartDate.HasValue || !StatisticsEndDate.HasValue))
+            {
+                ErrorMessage = "Por favor seleccione ambas fechas para filtrar las estadísticas.";
+                return;
+            }
+
+            // Obtener datos de profesionales
+            var request = new ReportRequestDTO
+                {
+                    IncludeAllRecords = StatisticsIncludeAllRecords,
+                    StartDate = StatisticsStartDate,
+                    EndDate = StatisticsEndDate
+                };
+
+            AllProfessionalsData = await ReportService.GetProfessionalReportDataAsync(request);
+
+            // Calcular estadísticas
+            await CalculateStatistics(AllProfessionalsData);
+
+            // Inicializar datos filtrados con todos los datos
+            ResetTableFilters();
+
+            // Información sobre el período consultado
+            if (StatisticsIncludeAllRecords)
+            {
+                StatisticsInfo = "Mostrando todos los registros históricos del sistema";
+            }
+            else
+            {
+                StatisticsInfo = $"Mostrando registros del {StatisticsStartDate:dd/MM/yyyy} al {StatisticsEndDate:dd/MM/yyyy}";
+            }
+
+            Message = "Estadísticas actualizadas correctamente";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error cargando estadísticas: {ex.Message}";
+            Console.WriteLine($"Error en LoadStatistics: {ex}");
+        }
+        finally
+        {
+            IsLoadingStatistics = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CalculateStatistics(List<ProfessionalReportDTO> professionalData)
+    {
+        try
+        {
+            // Estadísticas básicas
+            TotalProfessionals = professionalData.Count;
+            TotalAreas = Areas.Count;
+            TotalLocations = Locations.Count;
+            TotalConsultations = professionalData.Sum(p => p.TotalConsultations);
+
+            // Top profesionales por atenciones
+            TopProfessionalsByConsultations = professionalData
+                .Where(p => p.TotalConsultations > 0)
+                .OrderByDescending(p => p.TotalConsultations)
+                .ToList();
+
+            // Profesionales por área
+            ProfessionalsByArea = professionalData
+                .SelectMany(p => p.ConsultationsByArea.Select(c => new { Area = c.Key, Professional = p, Count = c.Value }))
+                .GroupBy(x => x.Area)
+                .Select(g => new AreaStatisticsDTO
+                    {
+                        AreaName = g.Key,
+                        ProfessionalCount = g.Select(x => x.Professional).Distinct().Count(),
+                        TotalConsultations = g.Sum(x => x.Count),
+                        AverageConsultations = g.Select(x => x.Professional).Distinct().Count() > 0 ?
+                            g.Sum(x => x.Count) / g.Select(x => x.Professional).Distinct().Count() : 0
+                    })
+                .Where(x => !string.IsNullOrEmpty(x.AreaName) && x.AreaName != "Sin área")
+                .ToList();
+
+            // Profesionales por ubicación
+            ProfessionalsByLocation = professionalData
+                .SelectMany(p => p.RecentConsultations.Select(c => new { Location = c.Area, Professional = p, Date = c.CareDate }))
+                .GroupBy(x => x.Location)
+                .Select(g => new LocationStatisticsDTO
+                    {
+                        LocationName = g.Key,
+                        ProfessionalCount = g.Select(x => x.Professional).Distinct().Count(),
+                        TotalConsultations = g.Count(),
+                        LastConsultation = g.Max(x => x.Date)
+                    })
+                .Where(x => !string.IsNullOrEmpty(x.LocationName) && x.LocationName != "Sin área")
+                .ToList();
+
+            // Distribución por tipo de profesional
+            var typeGroups = professionalData
+                .GroupBy(p => p.ProfessionalType)
+                .Select(g => new ProfessionalTypeStatisticsDTO
+                    {
+                        ProfessionalType = g.Key ?? "Sin tipo",
+                        Count = g.Count(),
+                        TotalConsultations = g.Sum(p => p.TotalConsultations)
+                    })
+                .ToList();
+
+            // Calcular porcentajes
+            var totalByType = typeGroups.Sum(t => t.Count);
+            foreach (var type in typeGroups)
+            {
+                type.Percentage = totalByType > 0 ? (type.Count * 100.0) / totalByType : 0;
+            }
+
+            ProfessionalsByType = typeGroups;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error en CalculateStatistics: {ex.Message}");
+            // Inicializar listas vacías en caso de error
+            TopProfessionalsByConsultations = new List<ProfessionalReportDTO>();
+            ProfessionalsByArea = new List<AreaStatisticsDTO>();
+            ProfessionalsByLocation = new List<LocationStatisticsDTO>();
+            ProfessionalsByType = new List<ProfessionalTypeStatisticsDTO>();
+        }
+    }
+
+    private void ResetTableFilters()
+    {
+        FilteredTopProfessionals = TopProfessionalsByConsultations;
+        FilteredProfessionalsByArea = ProfessionalsByArea;
+        FilteredProfessionalsByLocation = ProfessionalsByLocation;
+        FilteredProfessionalsByType = ProfessionalsByType;
+    }
+
+    private async Task FilterTable(int tableNumber)
+    {
+        try
+        {
+            switch (tableNumber)
+            {
+                case 1: // Top Profesionales
+                    await FilterTopProfessionals();
+                    break;
+                case 2: // Por Área
+                    await FilterProfessionalsByArea();
+                    break;
+                case 3: // Por Ubicación
+                    await FilterProfessionalsByLocation();
+                    break;
+                case 4: // Por Tipo
+                    await FilterProfessionalsByType();
+                    break;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error aplicando filtro: {ex.Message}";
+        }
+    }
+
+    private async Task FilterTopProfessionals()
+    {
+        if (!Table1StartDate.HasValue || !Table1EndDate.HasValue)
+        {
+            ErrorMessage = "Seleccione ambas fechas para filtrar";
+            return;
+        }
+
+        var filteredData = AllProfessionalsData
+            .Select(p => new ProfessionalReportDTO
+                {
+                    FullName = p.FullName,
+                    RegistrationNumber = p.RegistrationNumber,
+                    ProfessionalType = p.ProfessionalType,
+                    Email = p.Email,
+                    TotalConsultations = p.RecentConsultations
+                        .Where(c => c.CareDate >= Table1StartDate.Value && c.CareDate <= Table1EndDate.Value)
+                        .Count(),
+                    ConsultationsByArea = p.ConsultationsByArea,
+                    ConsultationsByMonth = p.ConsultationsByMonth,
+                    RecentConsultations = p.RecentConsultations
+                        .Where(c => c.CareDate >= Table1StartDate.Value && c.CareDate <= Table1EndDate.Value)
+                        .ToList()
+                })
+            .Where(p => p.TotalConsultations > 0)
+            .OrderByDescending(p => p.TotalConsultations)
+            .ToList();
+
+        FilteredTopProfessionals = filteredData;
+        Message = $"Filtro aplicado: {Table1StartDate:dd/MM/yyyy} - {Table1EndDate:dd/MM/yyyy}";
+    }
+
+    private async Task FilterProfessionalsByArea()
+    {
+        if (!Table2StartDate.HasValue || !Table2EndDate.HasValue)
+        {
+            ErrorMessage = "Seleccione ambas fechas para filtrar";
+            return;
+        }
+
+        var filteredProfessionals = AllProfessionalsData
+            .Select(p => new
+            {
+                Professional = p,
+                FilteredConsultations = p.RecentConsultations
+                    .Where(c => c.CareDate >= Table2StartDate.Value && c.CareDate <= Table2EndDate.Value)
+                    .ToList()
+            })
+            .Where(x => x.FilteredConsultations.Any())
+            .ToList();
+
+        FilteredProfessionalsByArea = filteredProfessionals
+            .SelectMany(x => x.FilteredConsultations.Select(c => new { Area = c.Area, Professional = x.Professional }))
+            .GroupBy(x => x.Area)
+            .Select(g => new AreaStatisticsDTO
+                {
+                    AreaName = g.Key,
+                    ProfessionalCount = g.Select(x => x.Professional).Distinct().Count(),
+                    TotalConsultations = g.Count(),
+                    AverageConsultations = g.Select(x => x.Professional).Distinct().Count() > 0 ?
+                        g.Count() / g.Select(x => x.Professional).Distinct().Count() : 0
+                })
+            .Where(x => !string.IsNullOrEmpty(x.AreaName) && x.AreaName != "Sin área")
+            .ToList();
+
+        Message = $"Filtro aplicado: {Table2StartDate:dd/MM/yyyy} - {Table2EndDate:dd/MM/yyyy}";
+    }
+
+    private async Task FilterProfessionalsByLocation()
+    {
+        if (!Table3StartDate.HasValue || !Table3EndDate.HasValue)
+        {
+            ErrorMessage = "Seleccione ambas fechas para filtrar";
+            return;
+        }
+
+        var filteredProfessionals = AllProfessionalsData
+            .Select(p => new
+            {
+                Professional = p,
+                FilteredConsultations = p.RecentConsultations
+                    .Where(c => c.CareDate >= Table3StartDate.Value && c.CareDate <= Table3EndDate.Value)
+                    .ToList()
+            })
+            .Where(x => x.FilteredConsultations.Any())
+            .ToList();
+
+        FilteredProfessionalsByLocation = filteredProfessionals
+            .SelectMany(x => x.FilteredConsultations.Select(c => new { Location = c.Area, Professional = x.Professional, Date = c.CareDate }))
+            .GroupBy(x => x.Location)
+            .Select(g => new LocationStatisticsDTO
+                {
+                    LocationName = g.Key,
+                    ProfessionalCount = g.Select(x => x.Professional).Distinct().Count(),
+                    TotalConsultations = g.Count(),
+                    LastConsultation = g.Max(x => x.Date)
+                })
+            .Where(x => !string.IsNullOrEmpty(x.LocationName) && x.LocationName != "Sin área")
+            .ToList();
+
+        Message = $"Filtro aplicado: {Table3StartDate:dd/MM/yyyy} - {Table3EndDate:dd/MM/yyyy}";
+    }
+
+    private async Task FilterProfessionalsByType()
+    {
+        if (!Table4StartDate.HasValue || !Table4EndDate.HasValue)
+        {
+            ErrorMessage = "Seleccione ambas fechas para filtrar";
+            return;
+        }
+
+        var filteredProfessionals = AllProfessionalsData
+            .Select(p => new
+            {
+                Professional = p,
+                FilteredConsultations = p.RecentConsultations
+                    .Where(c => c.CareDate >= Table4StartDate.Value && c.CareDate <= Table4EndDate.Value)
+                    .Count()
+            })
+            .Where(x => x.FilteredConsultations > 0)
+            .ToList();
+
+        var typeGroups = filteredProfessionals
+            .GroupBy(x => x.Professional.ProfessionalType)
+            .Select(g => new ProfessionalTypeStatisticsDTO
+                {
+                    ProfessionalType = g.Key ?? "Sin tipo",
+                    Count = g.Count(),
+                    TotalConsultations = g.Sum(x => x.FilteredConsultations)
+                })
+            .ToList();
+
+        // Calcular porcentajes
+        var totalByType = typeGroups.Sum(t => t.Count);
+        foreach (var type in typeGroups)
+        {
+            type.Percentage = totalByType > 0 ? (type.Count * 100.0) / totalByType : 0;
+        }
+
+        FilteredProfessionalsByType = typeGroups;
+        Message = $"Filtro aplicado: {Table4StartDate:dd/MM/yyyy} - {Table4EndDate:dd/MM/yyyy}";
+    }
+
+    private async Task GenerateReport()
+    {
+        if (string.IsNullOrEmpty(ReportRequest.ReportType))
+        {
+            ErrorMessage = "Por favor seleccione un tipo de reporte";
+            return;
+        }
+
+        // Validaciones específicas por tipo de reporte
+        if (!ValidateReportRequirements())
+        {
+            return;
+        }
+
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+        Message = string.Empty;
+
+        try
+        {
+            // Crear una copia limpia con fechas formateadas correctamente
+            var cleanRequest = new ReportRequestDTO
+                {
+                    ReportType = ReportRequest.ReportType,
+                    StartDate = ReportRequest.StartDate?.Date,
+                    EndDate = ReportRequest.EndDate?.Date,
+                    Format = ReportRequest.Format,
+                    Area = ReportRequest.Area ?? "",
+                    LocationId = ReportRequest.LocationId,
+                    HealthProfessionalId = ReportRequest.HealthProfessionalId,
+                    PlaceOfAttentionId = ReportRequest.PlaceOfAttentionId,
+                    DocumentNumber = ReportRequest.DocumentNumber ?? "",
+                    IncludeAllRecords = false // Para reportes se respetan las fechas
+                };
+
+            byte[] reportContent = cleanRequest.ReportType switch
+            {
+                "medical-care" => await ReportService.GenerateMedicalCareReportAsync(cleanRequest),
+                "patient" => await ReportService.GeneratePatientReportAsync(cleanRequest),
+                "professional" => await ReportService.GenerateProfessionalReportAsync(cleanRequest),
+                "professional-detail" => await ReportService.GenerateProfessionalDetailReportAsync(cleanRequest),
+                "location" => await ReportService.GenerateLocationReportAsync(cleanRequest),
+                "area" => await ReportService.GenerateAreaReportAsync(cleanRequest),
+                "top-patients" => await ReportService.GenerateTopPatientReportAsync(cleanRequest),
+                "statistical" => await ReportService.GenerateStatisticalReportAsync(cleanRequest),
+                _ => throw new ArgumentException("Tipo de reporte no válido")
+            };
+
+            Message = $"Reporte {GetReportTypeName(cleanRequest.ReportType)} generado exitosamente";
+
+            // Descargar el reporte
+            var fileName = $"{GetReportTypeName(cleanRequest.ReportType)}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            await ReportService.DownloadReport(reportContent, fileName);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            ErrorMessage = $"Error de conexión: {httpEx.Message}";
+            Console.WriteLine($"Error HTTP: {httpEx}");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error generando reporte: {ex.Message}";
+            Console.WriteLine($"Error detallado: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateReportRequirements()
+    {
+        switch (ReportRequest.ReportType)
+        {
+            case "professional-detail":
+                if (!ReportRequest.HealthProfessionalId.HasValue)
+                {
+                    ErrorMessage = "Para el reporte detallado de profesional, debe seleccionar un profesional específico";
+                    return false;
+                }
+                break;
+
+            case "location":
+                if (!ReportRequest.PlaceOfAttentionId.HasValue)
+                {
+                    ErrorMessage = "Para el reporte por ubicación, debe seleccionar una ubicación específica";
+                    return false;
+                }
+                break;
+
+            case "area":
+                if (string.IsNullOrEmpty(ReportRequest.Area))
+                {
+                    ErrorMessage = "Para el reporte por área, debe seleccionar un área específica";
+                    return false;
+                }
+                break;
+        }
+
+        // Validación de fechas
+        if (ReportRequest.StartDate.HasValue && ReportRequest.EndDate.HasValue)
+        {
+            if (ReportRequest.StartDate.Value > ReportRequest.EndDate.Value)
+            {
+                ErrorMessage = "La fecha de inicio no puede ser mayor a la fecha de fin";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task PreviewReport()
+    {
+        if (string.IsNullOrEmpty(ReportRequest.ReportType))
+        {
+            ErrorMessage = "Por favor seleccione un tipo de reporte";
+            return;
+        }
+
+        IsLoadingPreview = true;
+        ShowPreview = true;
+        ErrorMessage = string.Empty;
+        Message = string.Empty;
+
+        try
+        {
+            PreviewTitle = GetReportTypeName(ReportRequest.ReportType);
+
+            switch (ReportRequest.ReportType)
+            {
+                case "statistical":
+                    if (ReportRequest.StartDate.HasValue && ReportRequest.EndDate.HasValue)
+                    {
+                        PreviewData = await ReportService.GetStatisticalDataAsync(
+                            ReportRequest.StartDate.Value, ReportRequest.EndDate.Value, false);
+                    }
+                    break;
+                case "professional-detail":
+                    PreviewData = await ReportService.GetProfessionalDetailDataAsync(ReportRequest);
+                    break;
+                case "location":
+                    PreviewData = await ReportService.GetLocationReportDataAsync(ReportRequest);
+                    break;
+                case "area":
+                    PreviewData = await ReportService.GetAreaReportDataAsync(ReportRequest);
+                    break;
+                case "top-patients":
+                    PreviewData = await ReportService.GetTopPatientsDataAsync(ReportRequest);
+                    break;
+                case "patient":
+                    PreviewData = await ReportService.GetPatientReportDataAsync(ReportRequest);
+                    break;
+                case "professional":
+                    PreviewData = await ReportService.GetProfessionalReportDataAsync(ReportRequest);
+                    break;
+                default:
+                    PreviewData = null;
+                    Message = "Vista previa no disponible para este tipo de reporte";
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error cargando vista previa: {ex.Message}";
+            PreviewData = null;
+        }
+        finally
+        {
+            IsLoadingPreview = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClosePreview()
+    {
+        ShowPreview = false;
+        PreviewData = null;
+    }
+
+    private void OnReportTypeChanged()
+    {
+        // Limpiar vista previa cuando cambia el tipo de reporte
+        ClosePreview();
+    }
+
+    private void ClearReportFilters()
+    {
+        ReportRequest = new ReportRequestDTO
+            {
+                Format = "PDF",
+                IncludeAllRecords = false
+            };
+        ClosePreview();
+        Message = string.Empty;
+        ErrorMessage = string.Empty;
+        StateHasChanged();
+    }
+
+    private string GetReportTypeName(string reportType)
+    {
+        return reportType switch
+        {
+            "medical-care" => "Atenciones_Médicas",
+            "patient" => "Pacientes",
+            "professional" => "Profesionales",
+            "professional-detail" => "Detalle_Profesional",
+            "location" => "Por_Ubicación",
+            "area" => "Por_Área",
+            "top-patients" => "Pacientes_Más_Atenciones",
+            "statistical" => "Estadístico",
+            _ => "Reporte"
+        };
+    }
+
+    // DTOs para las estadísticas
+    public class AreaStatisticsDTO
+    {
+        public string AreaName { get; set; } = string.Empty;
+        public int ProfessionalCount { get; set; }
+        public int TotalConsultations { get; set; }
+        public int AverageConsultations { get; set; }
+    }
+
+    public class LocationStatisticsDTO
+    {
+        public string LocationName { get; set; } = string.Empty;
+        public int ProfessionalCount { get; set; }
+        public int TotalConsultations { get; set; }
+        public DateTime? LastConsultation { get; set; }
+    }
+
+    public class ProfessionalTypeStatisticsDTO
+    {
+        public string ProfessionalType { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double Percentage { get; set; }
+        public int TotalConsultations { get; set; }
+    }
 }

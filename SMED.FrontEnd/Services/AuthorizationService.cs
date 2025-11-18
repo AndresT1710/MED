@@ -18,12 +18,12 @@ namespace SMED.FrontEnd.Services
         {
             ["Admin"] = new() { "Personas", "Historia Clínica", "Atención Médica", "Nutrición", "Enfermería", "Psicología", "Estimulación Temprana", "Fisioterapia", "Usuarios" },
             ["Enfermero"] = new() { "Personas", "Historia Clínica", "Enfermería" },
-            ["Médico General"] = new() { "Historia Clínica", "Atención Médica" },
-            ["Nutricionista"] = new() { "Historia Clínica", "Nutrición" },
-            ["Psicólogo"] = new() { "Historia Clínica", "Psicología", "Estimulación Temprana" },
-            ["Psicólogo Clínico"] = new() { "Historia Clínica", "Psicología", "Estimulación Temprana" },
-            ["Fisioterapeuta"] = new() { "Historia Clínica", "Fisioterapia", "Estimulación Temprana" },
-            ["Pediatra"] = new() { "Historia Clínica", "Atención Médica", "Estimulación Temprana" }
+            ["Médico General"] = new() { "Personas", "Historia Clínica", "Atención Médica" },
+            ["Nutricionista"] = new() { "Personas", "Historia Clínica", "Nutrición" },
+            ["Psicólogo"] = new() { "Personas", "Historia Clínica", "Psicología" },
+            ["Psicólogo Clínico"] = new() { "Personas", "Historia Clínica", "Psicología" },
+            ["Fisioterapeuta"] = new() { "Personas", "Historia Clínica", "Fisioterapia" },
+            ["Pediatra"] = new() { "Personas", "Historia Clínica", "Atención Médica" }
         };
 
         public AuthorizationService(IJSRuntime jsRuntime, HttpClient httpClient)

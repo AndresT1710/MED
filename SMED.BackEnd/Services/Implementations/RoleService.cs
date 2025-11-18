@@ -21,13 +21,14 @@ namespace SMED.BackEnd.Services.Implementations
 
             // Historias Clínicas - todos por el momento
             modules.Add("Historia Clínica");
+            modules.Add("Personas");
 
             // Reglas específicas por tipo de profesional
             switch (typeName)
             {
                 case "enfermero":
                 case "enfermera":
-                    modules.AddRange(new[] { "Personas", "Enfermería" });
+                    modules.Add("Enfermería");
                     break;
 
                 case "médico general":
@@ -43,11 +44,11 @@ namespace SMED.BackEnd.Services.Implementations
                 case "psicologo":
                 case "psicólogo clínico":
                 case "psicologo clinico":
-                    modules.AddRange(new[] { "Psicología", "Estimulación Temprana" });
-                    break;
+                    modules.Add("Estimulación Temprana");   
+                        break;
 
                 case "fisioterapeuta":
-                    modules.AddRange(new[] { "Fisioterapia", "Estimulación Temprana" });
+                    modules.Add("Fisioterapia");
                     break;
 
                 case "pediatra":

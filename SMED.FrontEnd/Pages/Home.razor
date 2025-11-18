@@ -105,6 +105,15 @@
                       Route="/users" />
             </div>
         }
+        @if (isAdmin)
+        {
+            <div class="col">
+                <Card Title="Reportes"
+                      ImageUrl="/images/reportes.png"
+                      Description="Reportes de atenciones"
+                      Route="/reports" />
+            </div>
+        }
     </div>
 </div>
 

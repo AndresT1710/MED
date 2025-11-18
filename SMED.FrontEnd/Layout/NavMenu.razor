@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark d-md-none">
+﻿@using SMED.FrontEnd.Services
+
+<div class="top-row ps-3 navbar navbar-dark d-md-none">
     <div class="container-fluid">
         <a class="navbar-brand" href="">SMED.FrontEnd</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -16,26 +18,109 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/persons">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Personas
-            </NavLink>
-        </div>
+        @if (allowedModules.Contains("Personas"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/persons">
+                    <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Personas
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/users">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Usuarios
-            </NavLink>
-        </div>
+        @if (allowedModules.Contains("Historia Clínica"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/clinical-history">
+                    <span class="bi bi-file-medical" aria-hidden="true"></span> Historia Clínica
+                </NavLink>
+            </div>
+        }
 
+        @if (allowedModules.Contains("Atención Médica"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/medical-care">
+                    <span class="bi bi-heart-pulse" aria-hidden="true"></span> Atención Médica
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Nutrición"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/nutrition">
+                    <span class="bi bi-egg-fried" aria-hidden="true"></span> Nutrición
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Enfermería"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/nursing">
+                    <span class="bi bi-bandaid" aria-hidden="true"></span> Enfermería
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Psicología"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/psychology">
+                    <span class="bi bi-brain" aria-hidden="true"></span> Psicología
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Estimulación Temprana"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/early-stimulation">
+                    <span class="bi bi-balloon-heart" aria-hidden="true"></span> Estimulación Temprana
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Fisioterapia"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/physiotherapy">
+                    <span class="bi bi-person-walking" aria-hidden="true"></span> Fisioterapia
+                </NavLink>
+            </div>
+        }
+
+        @if (allowedModules.Contains("Usuarios"))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/users">
+                    <span class="bi bi-people-fill" aria-hidden="true"></span> Usuarios
+                </NavLink>
+            </div>
+        }
 
     </nav>
 </div>
 
 @code {
     private bool collapseNavMenu = true;
+    private List<string> allowedModules = new List<string>();
+
+    [Inject]
+    private IAuthorizationService AuthorizationService { get; set; } = null!;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserModules();
+    }
+
+    private async Task LoadUserModules()
+    {
+        allowedModules = await AuthorizationService.GetUserModulesAsync();
+        StateHasChanged(); // Asegura que la UI se actualice
+    }
 
     private void ToggleNavMenu()
     {

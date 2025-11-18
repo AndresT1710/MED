@@ -41,10 +41,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Tipo de Enfermedad</label>
                         <select class="form-select" @onchange="OnDiseaseTypeChanged">
                             <option value="">Seleccione un tipo</option>
@@ -101,10 +97,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingSurgeryId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Cirugía</label>
                         <select class="form-select" @bind="selectedSurgery">
                             <option value="">Seleccione una cirugía</option>
@@ -145,10 +137,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingAllergyId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Alergia</label>
                         <select class="form-select" @bind="selectedAllergy">
                             <option value="">Seleccione una alergia</option>
@@ -181,10 +169,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingHabitId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Hábito</label>
                         <select class="form-select" @bind="selectedHabit">
                             <option value="">Seleccione un hábito</option>
@@ -216,10 +200,6 @@
                            EmptyMessage="@(isLoadingFamily ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingFamilyId()" disabled />
-                    </div>
                     <div class="form-group mb-3">
                         <label>Parentesco</label>
                         <select class="form-select" @bind="selectedRelationshipId">
@@ -301,10 +281,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingTransfusionId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Razón</label>
                         <input type="text" class="form-control" @bind="transfusionReason" placeholder="Ingrese la razón de la transfusión" />
                         @if (string.IsNullOrEmpty(transfusionReason))
@@ -344,10 +320,6 @@
                            EmptyMessage="@(isLoadingHospitalizations ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingHospitalizationId()" disabled />
-                    </div>
                     <div class="form-group mb-3">
                         <label>Razón</label>
                         <input type="text" class="form-control" @bind="hospitalizationReason" placeholder="Ingrese la razón de la hospitalización" />
@@ -395,11 +367,6 @@
                            IsValidForm="() => !string.IsNullOrWhiteSpace(traumaticDescription)"
                            EmptyMessage="@GetTraumaticHistoryEmptyMessage()">
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingTraumaticHistoryId()" disabled />
-                    </div>
-
                     <div class="form-group mb-3">
                         <label>Descripción</label>
                         <textarea class="form-control" @bind="traumaticDescription" rows="6"

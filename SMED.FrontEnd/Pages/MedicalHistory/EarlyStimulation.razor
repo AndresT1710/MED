@@ -341,11 +341,6 @@
                                EmptyMessage="@GetDevelopmentRecordsEmptyMessage()">
                     <EditModalContent>
                         <div class="form-group mb-3">
-                            <label>ID del Registro</label>
-                            <input class="form-control" value="@GetCurrentEditingDevelopmentRecordId()" disabled />
-                        </div>
-
-                        <div class="form-group mb-3">
                             <label>Hito de Desarrollo</label>
                             <textarea class="form-control" @bind="developmentMilestone" rows="3"
                                       placeholder="Ingrese el hito de desarrollo"
@@ -393,11 +388,6 @@
                                IsValidForm="() => !string.IsNullOrWhiteSpace(selectedExamType) && !string.IsNullOrWhiteSpace(selectedExamName)"
                                EmptyMessage="@GetNeurologicalExamsEmptyMessage()">
                     <EditModalContent>
-                        <div class="form-group mb-3">
-                            <label>ID del Registro</label>
-                            <input class="form-control" value="@GetCurrentEditingNeurologicalExamId()" disabled />
-                        </div>
-
                         <div class="form-group mb-3">
                             <label>Tipo de Examen</label>
                             <select class="form-select" @bind="selectedExamType">

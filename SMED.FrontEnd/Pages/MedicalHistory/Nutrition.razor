@@ -37,10 +37,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingSportsActivityId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Actividad Deportiva</label>
                         <select class="form-select" @bind="selectedSportsActivity">
                             <option value="">Seleccione una actividad deportiva</option>
@@ -93,10 +89,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingLifeStyleId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Estilo de Vida</label>
                         <select class="form-select" @bind="selectedLifeStyle">
                             <option value="">Seleccione un estilo de vida</option>
@@ -133,10 +125,6 @@
 
                 <EditModalContent>
                     <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingDietaryHabitId()" disabled />
-                    </div>
-                    <div class="form-group mb-3">
                         <label>Descripción del Hábito Dietético</label>
                         <textarea class="form-control" @bind="dietaryHabitDescription" rows="4"
                                   placeholder="Describa los hábitos dietéticos del paciente (ej: vegetariano, consume 5 comidas al día, evita azúcares, etc.)"></textarea>
@@ -167,10 +155,6 @@
                            EmptyMessage="@(isLoadingSleepHabits ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingSleepHabitId()" disabled />
-                    </div>
                     <div class="form-group mb-3">
                         <label>Hábito de Sueño</label>
                         <select class="form-select" @bind="selectedSleepHabit">
@@ -216,10 +200,6 @@
                            EmptyMessage="@(isLoadingFoodConsumption ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingFoodConsumptionId()" disabled />
-                    </div>
                     <div class="form-group mb-3">
                         <label>Alimento</label>
                         <select class="form-select" @bind="selectedFood">
@@ -277,10 +257,6 @@
                            EmptyMessage="@(isLoadingWaterConsumption ? "Cargando..." : "No hay datos disponibles")">
 
                 <EditModalContent>
-                    <div class="form-group mb-3">
-                        <label>ID del Registro</label>
-                        <input class="form-control" value="@GetCurrentEditingWaterConsumptionId()" disabled />
-                    </div>
                     <div class="form-group mb-3">
                         <label>Cantidad (litros por día)</label>
                         <input type="number" class="form-control" @bind="waterConsumptionAmount" min="0.1" step="0.1" placeholder="Ej: 2.5" />

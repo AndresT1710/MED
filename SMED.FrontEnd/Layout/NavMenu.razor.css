@@ -1,48 +1,52 @@
-/* NavMenu.razor.css */
+/* NavMenu.razor.css - Diseño Minimalista */
 .navbar-toggler {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
     border: none;
     padding: 0.5rem;
 }
 
 .top-row {
     height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgba(0, 0, 0, 0.3);
     position: relative;
     z-index: 20;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .navbar-brand {
     font-size: 1.1rem;
     font-weight: 600;
+    color: #ffffff;
 }
 
-/* SOLUCIÓN DEFINITIVA - Estructura del contenido del nav-link */
+/* Estructura del contenido del nav-link */
 .nav-link-content {
     display: flex !important;
     align-items: center !important;
     width: 100% !important;
-    gap: 0.90rem !important; /* Este es el espacio entre icono y texto */
+    gap: 0.75rem !important;
 }
 
 .nav-icon {
-    font-size: 1.2rem;
-    width: 1.25rem;
+    font-size: 1.1rem;
+    width: 1.2rem;
     text-align: center;
-    color: #2c3e50;
-    flex-shrink: 0; /* Evita que el icono se reduzca */
+    color: rgba(255, 255, 255, 0.7);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
 }
 
 .nav-text {
     flex-grow: 1;
     white-space: nowrap;
+    color: rgba(255, 255, 255, 0.85);
+    transition: all 0.2s ease;
 }
 
 /* Navegación */
 .nav-item {
     font-size: 0.9rem;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
 }
 
     .nav-item:first-of-type {
@@ -54,75 +58,66 @@
     }
 
     .nav-item ::deep a {
-        color: #2c3e50;
-        border-radius: 8px;
-        height: 3rem;
+        color: rgba(255, 255, 255, 0.85);
+        border-radius: 10px;
+        height: 2.8rem;
         display: flex;
         align-items: center;
-        line-height: 3rem;
-        margin: 0.15rem 0.5rem;
+        line-height: 2.8rem;
+        margin: 0.2rem 0.75rem;
         padding: 0 1rem;
-        transition: all 0.3s ease;
-        font-weight: 500;
+        transition: all 0.2s ease;
+        font-weight: 400;
         border: 1px solid transparent;
         text-decoration: none;
         position: relative;
     }
 
-        /* Estado normal con hover sutil */
+        /* Estado hover - Sutil y elegante */
         .nav-item ::deep a:not(.active):hover {
-            background-color: #f8f9fa;
-            color: #2c3e50;
-            border-color: #e9ecef;
-            transform: translateY(-1px);
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* Estado activo - Fondo blanco profesional */
+            .nav-item ::deep a:not(.active):hover .nav-icon {
+                color: rgba(255, 255, 255, 0.95);
+                transform: scale(1.05);
+            }
+
+            .nav-item ::deep a:not(.active):hover .nav-text {
+                color: rgba(255, 255, 255, 1);
+            }
+
+        /* Estado activo - Minimalista con contraste */
         .nav-item ::deep a.active {
-            background-color: #ffffff;
-            color: #2c3e50;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #1a1a2e;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            font-weight: 500;
         }
 
-            /* Indicador lateral para el item activo */
+            /* Indicador lateral minimalista */
             .nav-item ::deep a.active::before {
                 content: '';
                 position: absolute;
                 left: 0;
                 top: 50%;
                 transform: translateY(-50%);
-                width: 4px;
-                height: 60%;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                width: 3px;
+                height: 55%;
+                background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
                 border-radius: 0 2px 2px 0;
             }
 
-            /* Cambiar color de iconos cuando está activo */
+            /* Iconos y texto en estado activo */
             .nav-item ::deep a.active .nav-icon {
-                filter: brightness(0.8);
-                color: #667eea; /* Color diferente para activo */
+                color: #667eea;
             }
 
-    /* Efecto de transición más suave para todos los estados */
-    .nav-item ::deep a {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-/* Icon backgrounds (puedes eliminar estos si usas Font Awesome) */
-.bi-house-door-fill-nav-menu,
-.bi-plus-square-fill-nav-menu,
-.bi-file-medical,
-.bi-heart-pulse,
-.bi-egg-fried,
-.bi-bandaid,
-.bi-brain,
-.bi-balloon-heart,
-.bi-person-walking,
-.bi-people-fill {
-    display: none; /* Ocultar estos ya que usamos Font Awesome */
-}
+            .nav-item ::deep a.active .nav-text {
+                color: #1a1a2e;
+            }
 
 @media (min-width: 769px) {
     .navbar-toggler {
@@ -136,37 +131,37 @@
     .nav-scrollable {
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
-        background-color: #f8f9fa;
+        background: linear-gradient(180deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
         padding: 0.5rem;
     }
 
-        /* Mejorar el scrollbar */
+        /* Scrollbar minimalista */
         .nav-scrollable::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         .nav-scrollable::-webkit-scrollbar-thumb {
-            background-color: #cbd5e0;
+            background-color: rgba(255, 255, 255, 0.3);
             border-radius: 3px;
         }
 
         .nav-scrollable::-webkit-scrollbar-track {
-            background-color: #e2e8f0;
+            background-color: rgba(0, 0, 0, 0.1);
         }
 }
 
 /* Para dispositivos móviles */
 @media (max-width: 768px) {
     .nav-scrollable {
-        background-color: #ffffff;
-        border-top: 1px solid #e9ecef;
+        background: linear-gradient(180deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .nav-item ::deep a {
-        margin: 0.1rem 0.25rem;
+        margin: 0.15rem 0.5rem;
     }
 
     .nav-link-content {
-        gap: 0.5rem !important; /* Menos espacio en móviles */
+        gap: 0.6rem !important;
     }
 }

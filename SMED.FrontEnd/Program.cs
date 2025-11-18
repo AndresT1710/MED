@@ -160,7 +160,6 @@ builder.Services.AddScoped<TypeOfActivityService>();
 builder.Services.AddScoped<PsychologySessionsService>();
 
 
-
 builder.Services.AddLogging();
 
 

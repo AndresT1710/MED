@@ -63,6 +63,27 @@ namespace SMED.BackEnd.Repositories.Implementations
             return true;
         }
 
+
+        public async Task<string> GetDiagnosticTypeNameByIdAsync(int id)
+        {
+            try
+            {
+                // Usamos Select para obtener solo el nombre y mejorar el performance
+                var diagnosticTypeName = await _context.DiagnosticTypes
+                    .Where(dt => dt.Id == id)
+                    .Select(dt => dt.Name)
+                    .FirstOrDefaultAsync();
+
+                return diagnosticTypeName ?? "Tipo no encontrado";
+            }
+            catch (Exception ex)
+            {
+                // Log del error (podrías usar un logger profesional aquí)
+                Console.WriteLine($"Error en repositorio al obtener nombre del tipo de diagnóstico: {ex.Message}");
+                return "Error al cargar";
+            }
+        }
+
         private static DiagnosticTypeDTO MapToDto(DiagnosticType diagnosticType) => new DiagnosticTypeDTO
         {
             Id = diagnosticType.Id,

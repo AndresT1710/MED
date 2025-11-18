@@ -60,5 +60,13 @@ namespace SMED.Shared.DTOs
         public List<ForbiddenFoodDTO>? ForbiddenFoods { get; set; }
         public List<IdentifiedDiseaseDTO>? IdentifiedDiseases { get; set; }
         public MeasurementsDTO? Measurements { get; set; }
+
+
+        // PSICOLOGÍA
+        public List<PsychologicalDiagnosisDTO>? PsychologicalDiagnoses { get; set; }
+        public List<TherapeuticPlanDTO>? TherapeuticPlans { get; set; }
+        public List<PsychologySessionsDTO>? PsychologySessions { get; set; }
+        public List<ActivityDTO>? Activities { get; set; }
+        public List<AdvanceDTO>? Advances { get; set; }
     }
 }

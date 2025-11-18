@@ -1,0 +1,601 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+@using SMED.FrontEnd.Services
+@inject ReasonForConsultationService ReasonForConsultationService
+@inject PsychologicalDiagnosisService PsychologicalDiagnosisService
+@inject DiagnosticTypeService DiagnosticTypeService
+@inject TherapeuticPlanService TherapeuticPlanService
+@inject PsychologySessionsService PsychologySessionsService
+@inject ActivityService ActivityService
+@inject TypeOfActivityService TypeOfActivityService
+@inject AdvanceService AdvanceService
+@inject IJSRuntime JS
+
+<div class="psychology-care-detail">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalle de Atención de Psicología</h4>
+                <div>
+                    <ImprimirPdf Tipo="psychology" Id="@MedicalCare.CareId" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Atención:</strong> @MedicalCare?.CareId</p>
+                            <p><strong>Paciente:</strong> @MedicalCare?.NamePatient</p>
+                            <p><strong>ID Paciente:</strong> @MedicalCare?.PatientId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Área:</strong> @(MedicalCare?.Area ?? "Psicología")</p>
+                            <p><strong>Ubicación:</strong> @MedicalCare?.NamePlace</p>
+                            <p><strong>Psicólogo:</strong> @MedicalCare?.NameHealthProfessional</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Fecha de Atención:</strong> @MedicalCare?.CareDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (reasonForConsultation != null)
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-comment-medical me-2"></i>Motivo de Consulta</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@reasonForConsultation.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (psychologicalDiagnoses.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-stethoscope me-2"></i>Diagnósticos Psicológicos (@psychologicalDiagnoses.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>CIE10</th>
+                                        <th>Denominación</th>
+                                        <th>Tipo de Diagnóstico</th>
+                                        <th>Motivación del Diagnóstico</th>
+                                        <th>Diagnóstico Diferencial</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var diagnosis in psychologicalDiagnoses)
+                                    {
+                                        <tr>
+                                            <td>@(diagnosis.CIE10 ?? "N/A")</td>
+                                            <td>@(diagnosis.Denomination ?? "N/A")</td>
+                                            <td>@(diagnosis.DiagnosticTypeName ?? "N/A")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(diagnosis.DiagnosisMotivation))
+                                                {
+                                                    <span title="@diagnosis.DiagnosisMotivation">
+                                                        @(diagnosis.DiagnosisMotivation.Length > 100 ? diagnosis.DiagnosisMotivation.Substring(0, 100) + "..." : diagnosis.DiagnosisMotivation)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(diagnosis.DifferentialDiagnosis))
+                                                {
+                                                    <span title="@diagnosis.DifferentialDiagnosis">
+                                                        @(diagnosis.DifferentialDiagnosis.Length > 100 ? diagnosis.DifferentialDiagnosis.Substring(0, 100) + "..." : diagnosis.DifferentialDiagnosis)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (therapeuticPlans.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Planes Terapéuticos (@therapeuticPlans.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Resumen del Caso</th>
+                                        <th>Objetivos Terapéuticos</th>
+                                        <th>Estrategia y Enfoque</th>
+                                        <th>Número de Sesiones</th>
+                                        <th>Tareas Asignadas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var plan in therapeuticPlans)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(plan.CaseSummary))
+                                                {
+                                                    <span title="@plan.CaseSummary">
+                                                        @(plan.CaseSummary.Length > 100 ? plan.CaseSummary.Substring(0, 100) + "..." : plan.CaseSummary)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(plan.TherapeuticObjective))
+                                                {
+                                                    <span title="@plan.TherapeuticObjective">
+                                                        @(plan.TherapeuticObjective.Length > 100 ? plan.TherapeuticObjective.Substring(0, 100) + "..." : plan.TherapeuticObjective)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(plan.StrategyApproach))
+                                                {
+                                                    <span title="@plan.StrategyApproach">
+                                                        @(plan.StrategyApproach.Length > 100 ? plan.StrategyApproach.Substring(0, 100) + "..." : plan.StrategyApproach)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>@(plan.NumberOfSessions.ToString() ?? "N/A")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(plan.AssignedTasks))
+                                                {
+                                                    <span title="@plan.AssignedTasks">
+                                                        @(plan.AssignedTasks.Length > 100 ? plan.AssignedTasks.Substring(0, 100) + "..." : plan.AssignedTasks)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (psychologySessions.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Sesiones de Terapia (@psychologySessions.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th>Fecha</th>
+                                        <th>Resumen de la Sesión</th>
+                                        <th>Alta Médica</th>
+                                        <th>Observaciones</th>
+                                        <th>Link de Alta Voluntaria</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var session in psychologySessions)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(session.Description))
+                                                {
+                                                    <span title="@session.Description">
+                                                        @(session.Description.Length > 50 ? session.Description.Substring(0, 50) + "..." : session.Description)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>@(session.Date?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(session.SummarySession))
+                                                {
+                                                    <span title="@session.SummarySession">
+                                                        @(session.SummarySession.Length > 100 ? session.SummarySession.Substring(0, 100) + "..." : session.SummarySession)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @((session.MedicalDischarge ?? false) ? "bg-success" : "bg-secondary")">
+                                                    @((session.MedicalDischarge ?? false) ? "Sí" : "No")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(session.Observations))
+                                                {
+                                                    <span title="@session.Observations">
+                                                        @(session.Observations.Length > 50 ? session.Observations.Substring(0, 50) + "..." : session.Observations)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(session.VoluntaryRegistrationLink))
+                                                {
+                                                    <a href="@session.VoluntaryRegistrationLink" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-external-link-alt me-1"></i>Ver Link
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (activities.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Actividades Terapéuticas (@activities.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre de la Actividad</th>
+                                        <th>Fecha</th>
+                                        <th>Tipo de Actividad</th>
+                                        <th>Sesión Asociada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var activity in activities)
+                                    {
+                                        <tr>
+                                            <td>@(activity.NameActivity ?? "N/A")</td>
+                                            <td>@(activity.DateActivity?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                                            <td>@(activity.TypeOfActivityName ?? "N/A")</td>
+                                            <td>
+                                                @{
+                                                    var associatedSession = psychologySessions.FirstOrDefault(s => s.PsychologySessionsId == activity.PsychologySessionId);
+                                                    var sessionDescription = associatedSession?.Description ?? "N/A";
+                                                }
+                                                @if (sessionDescription.Length > 50)
+                                                {
+                                                    <span title="@sessionDescription">@sessionDescription.Substring(0, 50)...</span>
+                                                }
+                                                else
+                                                {
+                                                    @sessionDescription
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (advances.Any())
+        {
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Avances del Paciente (@advances.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th>Fecha</th>
+                                        <th>Indicaciones</th>
+                                        <th>Sesión Asociada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var advance in advances)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(advance.Description))
+                                                {
+                                                    <span title="@advance.Description">
+                                                        @(advance.Description.Length > 100 ? advance.Description.Substring(0, 100) + "..." : advance.Description)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>@advance.Date.ToString("dd/MM/yyyy")</td>
+                                            <td>@(advance.Indications ?? "N/A")</td>
+                                            <td>
+                                                @{
+                                                    var associatedSession = psychologySessions.FirstOrDefault(s => s.PsychologySessionsId == advance.PsychologySessionId);
+                                                    var sessionDescription = associatedSession?.Description ?? "N/A";
+                                                }
+                                                @if (sessionDescription.Length > 50)
+                                                {
+                                                    <span title="@sessionDescription">@sessionDescription.Substring(0, 50)...</span>
+                                                }
+                                                else
+                                                {
+                                                    @sessionDescription
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Resumen de Atención de Psicología</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Diagnósticos</h6>
+                                    <p class="card-text display-6">@psychologicalDiagnoses.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Planes Terapéuticos</h6>
+                                    <p class="card-text display-6">@therapeuticPlans.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Sesiones</h6>
+                                    <p class="card-text display-6">@psychologySessions.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Actividades</h6>
+                                    <p class="card-text display-6">@activities.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Avances</h6>
+                                    <p class="card-text display-6">@advances.Count</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Sesiones con Alta</h6>
+                                    <p class="card-text display-6">@psychologySessions.Count(s => s.MedicalDischarge == true)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Total Evaluaciones</h6>
+                                    <p class="card-text display-6">@GetTotalEvaluations()</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!HasAnyData())
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta atención de psicología no tiene datos adicionales registrados más allá de la información básica.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
+
+    private ReasonForConsultationDTO? reasonForConsultation;
+    private List<PsychologicalDiagnosisDTO> psychologicalDiagnoses = new();
+    private List<TherapeuticPlanDTO> therapeuticPlans = new();
+    private List<PsychologySessionsDTO> psychologySessions = new();
+    private List<ActivityDTO> activities = new();
+    private List<AdvanceDTO> advances = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MedicalCare != null)
+        {
+            await LoadDetails();
+        }
+    }
+
+    private async Task LoadDetails()
+    {
+        if (MedicalCare == null) return;
+
+        try
+        {
+            // Cargar motivo de consulta
+            var reasons = await ReasonForConsultationService.GetByCareIdAsync(MedicalCare.CareId);
+            reasonForConsultation = reasons?.FirstOrDefault();
+
+            // Cargar diagnósticos psicológicos
+            var allDiagnoses = await PsychologicalDiagnosisService.GetAllAsync();
+            psychologicalDiagnoses = allDiagnoses?
+                .Where(d => d.MedicalCareId == MedicalCare.CareId)
+                .ToList() ?? new List<PsychologicalDiagnosisDTO>();
+
+            // Cargar nombres de tipos de diagnóstico
+            foreach (var diagnosis in psychologicalDiagnoses)
+            {
+                if (diagnosis.DiagnosticTypeId > 0)
+                {
+                    diagnosis.DiagnosticTypeName = await DiagnosticTypeService.GetDiagnosticTypeNameByIdAsync(diagnosis.DiagnosticTypeId);
+                }
+            }
+
+            // Cargar planes terapéuticos
+            therapeuticPlans = await TherapeuticPlanService.GetByMedicalCareIdAsync(MedicalCare.CareId) ?? new List<TherapeuticPlanDTO>();
+
+            // Cargar sesiones de psicología
+            psychologySessions = await PsychologySessionsService.GetByMedicalCareIdAsync(MedicalCare.CareId) ?? new List<PsychologySessionsDTO>();
+
+            // Cargar actividades
+            var allActivities = new List<ActivityDTO>();
+            foreach (var session in psychologySessions)
+            {
+                var sessionActivities = await ActivityService.GetByPsychologySessionIdAsync(session.PsychologySessionsId);
+                allActivities.AddRange(sessionActivities);
+            }
+            activities = allActivities;
+
+            // Cargar nombres de tipos de actividad
+            var activityTypes = await TypeOfActivityService.GetAllAsync();
+            foreach (var activity in activities)
+            {
+                if (activity.TypeOfActivityId.HasValue)
+                {
+                    var activityType = activityTypes.FirstOrDefault(t => t.TypeOfActivityId == activity.TypeOfActivityId);
+                    activity.TypeOfActivityName = activityType?.Name ?? "N/A";
+                }
+            }
+
+            // Cargar avances
+            var allAdvances = new List<AdvanceDTO>();
+            foreach (var session in psychologySessions)
+            {
+                var sessionAdvances = await AdvanceService.GetByPsychologySessionIdAsync(session.PsychologySessionsId);
+                allAdvances.AddRange(sessionAdvances);
+            }
+            advances = allAdvances;
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error loading psychology care details: {ex.Message}");
+        }
+    }
+
+    private int GetTotalEvaluations()
+    {
+        return psychologicalDiagnoses.Count +
+               therapeuticPlans.Count +
+               psychologySessions.Count +
+               activities.Count +
+               advances.Count;
+    }
+
+    private bool HasAnyData()
+    {
+        return reasonForConsultation != null ||
+               psychologicalDiagnoses.Any() ||
+               therapeuticPlans.Any() ||
+               psychologySessions.Any() ||
+               activities.Any() ||
+               advances.Any();
+    }
+}

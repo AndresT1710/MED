@@ -69,6 +69,21 @@ namespace SMED.BackEnd.Controllers
             }
         }
 
+        [HttpGet("psychology")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetPsychologyCare()
+        {
+            try
+            {
+                var result = await _medicalCareRepository.GetPsychologyCareAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de psicología");
+                return BadRequest($"Error al obtener atenciones de psicología: {ex.Message}");
+            }
+        }
+
         [HttpGet("physiotherapy")]
         public async Task<ActionResult<List<MedicalCareDTO>>> GetPhysiotherapyCare()
         {

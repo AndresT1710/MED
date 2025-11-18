@@ -32,6 +32,14 @@ namespace SMED.BackEnd.Controllers
         private readonly GenderRepository _genderService;
         private readonly MaritalStatusRepository _maritalStatusService;
 
+        private readonly PsychologicalDiagnosisRepository _psychologicalDiagnosisService;
+        private readonly DiagnosticTypeRepository _diagnosticTypeService;
+        private readonly TherapeuticPlanRepository _therapeuticPlanService;
+        private readonly PsychologySessionsRepository _psychologySessionsService;
+        private readonly ActivityRepository _activityService;
+        private readonly TypeOfActivityRepository _typeOfActivityService;
+        private readonly AdvanceRepository _advanceService;
+
         public PdfController(
             PdfService pdfService,
             PersonRepository personRepository,
@@ -53,7 +61,14 @@ namespace SMED.BackEnd.Controllers
             EarlyStimulationEvolutionTestRepository earlyStimulationEvolutionTestService,
             DocumentTypeRepository documentTypeService,
             GenderRepository genderService,
-            MaritalStatusRepository maritalStatusService)
+            MaritalStatusRepository maritalStatusService,
+            PsychologicalDiagnosisRepository psychologicalDiagnosisService,
+            DiagnosticTypeRepository diagnosticTypeService,
+            TherapeuticPlanRepository therapeuticPlanService,
+            PsychologySessionsRepository psychologySessionsService,
+            ActivityRepository activityService,
+            TypeOfActivityRepository typeOfActivityService,
+            AdvanceRepository advanceService)
         {
             _pdfService = pdfService;
             _personRepository = personRepository;
@@ -76,6 +91,13 @@ namespace SMED.BackEnd.Controllers
             _documentTypeService = documentTypeService;
             _genderService = genderService;
             _maritalStatusService = maritalStatusService;
+            _psychologicalDiagnosisService = psychologicalDiagnosisService;
+            _diagnosticTypeService = diagnosticTypeService;
+            _therapeuticPlanService = therapeuticPlanService;
+            _psychologySessionsService = psychologySessionsService;
+            _activityService = activityService;
+            _typeOfActivityService = typeOfActivityService;
+            _advanceService = advanceService;
         }
 
         [HttpGet("person/{id}")]
@@ -419,5 +441,105 @@ namespace SMED.BackEnd.Controllers
                 agent.MaritalStatusName = maritalStatuses?.FirstOrDefault(m => m.Id == agent.MaritalStatusId)?.Name ?? "N/A";
             }
         }
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        // PSYCHOLOGY PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+        [HttpGet("psychology/{id}")]
+        public async Task<IActionResult> GetPsychologyPdf(int id)
+        {
+            try
+            {
+                // Obtener la atención de psicología completa
+                var psychologyCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (psychologyCare == null)
+                {
+                    return NotFound($"Atención de psicología con ID {id} no encontrada");
+                }
+
+                // Cargar datos específicos de psicología
+                await LoadPsychologyData(psychologyCare);
+
+                // Generar PDF específico para psicología
+                var pdfBytes = await _pdfService.GeneratePsychologyPdfAsync(psychologyCare);
+                var fileName = $"Atencion_Psicologia_{psychologyCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error generando PDF de psicología: {ex.Message}");
+            }
+        }
+
+        private async Task LoadPsychologyData(MedicalCareDTO psychologyCare)
+        {
+            try
+            {
+                // Cargar motivo de consulta
+                var reasons = await _reasonForConsultationService.GetByCareIdAsync(psychologyCare.CareId);
+                psychologyCare.ReasonForConsultation = reasons?.FirstOrDefault();
+
+                // Cargar diagnósticos psicológicos
+                var allDiagnoses = await _psychologicalDiagnosisService.GetAllAsync();
+                psychologyCare.PsychologicalDiagnoses = allDiagnoses?
+                    .Where(d => d.MedicalCareId == psychologyCare.CareId)
+                    .ToList() ?? new List<PsychologicalDiagnosisDTO>();
+
+                // Cargar nombres de tipos de diagnóstico
+                foreach (var diagnosis in psychologyCare.PsychologicalDiagnoses)
+                {
+                    if (diagnosis.DiagnosticTypeId > 0)
+                    {
+                        diagnosis.DiagnosticTypeName = await _diagnosticTypeService.GetDiagnosticTypeNameByIdAsync(diagnosis.DiagnosticTypeId);
+                    }
+                }
+
+                // Cargar planes terapéuticos
+                psychologyCare.TherapeuticPlans = await _therapeuticPlanService.GetByMedicalCareIdAsync(psychologyCare.CareId) ?? new List<TherapeuticPlanDTO>();
+
+                // Cargar sesiones de psicología
+                psychologyCare.PsychologySessions = await _psychologySessionsService.GetByMedicalCareIdAsync(psychologyCare.CareId) ?? new List<PsychologySessionsDTO>();
+
+                // Cargar actividades
+                var allActivities = new List<ActivityDTO>();
+                foreach (var session in psychologyCare.PsychologySessions)
+                {
+                    var sessionActivities = await _activityService.GetByPsychologySessionIdAsync(session.PsychologySessionsId);
+                    allActivities.AddRange(sessionActivities);
+                }
+                psychologyCare.Activities = allActivities;
+
+                // Cargar nombres de tipos de actividad
+                var activityTypes = await _typeOfActivityService.GetAllAsync();
+                foreach (var activity in psychologyCare.Activities)
+                {
+                    if (activity.TypeOfActivityId.HasValue)
+                    {
+                        var activityType = activityTypes.FirstOrDefault(t => t.TypeOfActivityId == activity.TypeOfActivityId);
+                        activity.TypeOfActivityName = activityType?.Name ?? "N/A";
+                    }
+                }
+
+                // Cargar avances
+                var allAdvances = new List<AdvanceDTO>();
+                foreach (var session in psychologyCare.PsychologySessions)
+                {
+                    var sessionAdvances = await _advanceService.GetByPsychologySessionIdAsync(session.PsychologySessionsId);
+                    allAdvances.AddRange(sessionAdvances);
+                }
+                psychologyCare.Advances = allAdvances;
+
+                Console.WriteLine($"[PSYCHOLOGY PDF] Datos cargados - Diagnósticos: {psychologyCare.PsychologicalDiagnoses.Count}, " +
+                                 $"Planes: {psychologyCare.TherapeuticPlans.Count}, Sesiones: {psychologyCare.PsychologySessions.Count}, " +
+                                 $"Actividades: {psychologyCare.Activities.Count}, Avances: {psychologyCare.Advances.Count}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando datos de psicología: {ex.Message}");
+                throw;
+            }
+        }
+
     }
 }

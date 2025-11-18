@@ -16,14 +16,14 @@ namespace SMED.FrontEnd.Services
         // Mapeo de roles a módulos permitidos
         private readonly Dictionary<string, List<string>> _roleModules = new()
         {
-            ["Admin"] = new() { "Personas", "Historia Clínica", "Atención Médica", "Nutrición", "Enfermería", "Psicología", "Estimulación Temprana", "Fisioterapia", "Usuarios" },
+            ["Admin"] = new() { "Personas", "Historia Clínica", "Atención Médica", "Nutrición", "Enfermería", "Psicología", "Estimulación Temprana", "Fisioterapia", "Usuarios", "Reportes" },
             ["Enfermero"] = new() { "Personas", "Historia Clínica", "Enfermería" },
             ["Médico General"] = new() { "Personas", "Historia Clínica", "Atención Médica" },
             ["Nutricionista"] = new() { "Personas", "Historia Clínica", "Nutrición" },
             ["Psicólogo"] = new() { "Personas", "Historia Clínica", "Psicología" },
             ["Psicólogo Clínico"] = new() { "Personas", "Historia Clínica", "Psicología" },
             ["Fisioterapeuta"] = new() { "Personas", "Historia Clínica", "Fisioterapia" },
-            ["Pediatra"] = new() { "Personas", "Historia Clínica", "Atención Médica" }
+            ["Pediatra"] = new() { "Personas", "Historia Clínica", "Estimulación Temprana" }
         };
 
         public AuthorizationService(IJSRuntime jsRuntime, HttpClient httpClient)

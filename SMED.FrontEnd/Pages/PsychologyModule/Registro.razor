@@ -220,7 +220,7 @@
     {
         try
         {
-            var result = await MedicalCareService.GetAllAsync();
+            var result = await MedicalCareService.GetPsychologyCareAsync();
             await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} psychology records");
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
 

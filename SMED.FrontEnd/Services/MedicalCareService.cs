@@ -52,6 +52,24 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<List<MedicalCareDTO>?> GetPsychologyCareAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalCare/psychology");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+                _logger.LogWarning("Error al obtener atenciones de psicología: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener atenciones de psicología");
+                return new List<MedicalCareDTO>();
+            }
+        }
         public async Task<List<MedicalCareDTO>?> GetNutritionCareAsync()
         {
             try

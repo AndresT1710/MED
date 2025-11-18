@@ -230,6 +230,7 @@ builder.Services.AddScoped<IRepository<TherapeuticPlanDTO, int>, TherapeuticPlan
 builder.Services.AddScoped<TherapeuticPlanRepository>();
 builder.Services.AddScoped<IRepository<PsychologySessionsDTO, int>, PsychologySessionsRepository>();
 builder.Services.AddScoped<PsychologySessionsRepository>();
+builder.Services.AddScoped<DiagnosticTypeRepository>();
 
 //PDF
 builder.Services.AddScoped<PdfService>();

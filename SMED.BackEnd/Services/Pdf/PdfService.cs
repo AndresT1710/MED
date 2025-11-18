@@ -3395,6 +3395,530 @@ namespace SMED.BackEnd.Services
 
 
         //---------------------------------------------------------------------------------------------------------------------------------------------
+        // PSYCHOLOGY PDF Generation
+        //---------------------------------------------------------------------------------------------------------------------------------------------
+
+        public async Task<byte[]> GeneratePsychologyPdfAsync(MedicalCareDTO psychologyCare)
+        {
+            try
+            {
+                using var memoryStream = new MemoryStream();
+
+                // Configurar documento A4 con márgenes
+                var document = new Document(PageSize.A4, 40, 40, 50, 40);
+                PdfWriter.GetInstance(document, memoryStream);
+
+                document.Open();
+
+                // Colores corporativos de la universidad
+                var universityRed = new BaseColor(109, 19, 18);
+                var universityWhite = new BaseColor(255, 255, 254);
+                var darkGray = new BaseColor(64, 64, 64);
+                var mediumGray = new BaseColor(128, 128, 128);
+                var lightGray = new BaseColor(240, 240, 240);
+
+                // Configurar fuentes
+                var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
+                var titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityRed);
+                var subtitleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, darkGray);
+                var textFont = FontFactory.GetFont(FontFactory.HELVETICA, 10, darkGray);
+                var labelFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10, darkGray);
+                var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
+                var tableHeaderFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, universityWhite);
+
+                // ===== ENCABEZADO CON LOGO =====
+                var headerTable = new PdfPTable(3)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+                // Celda para el logo (izquierda)
+                var logoCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 8,
+                    BackgroundColor = universityRed
+                };
+
+                // Cargar logo
+                try
+                {
+                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                    if (File.Exists(logoPath))
+                    {
+                        var logo = Image.GetInstance(logoPath);
+                        logo.ScaleToFit(70, 70);
+                        logo.Alignment = Image.ALIGN_CENTER;
+                        logoCell.AddElement(logo);
+                    }
+                    else
+                    {
+                        var fallbackLogo = new Paragraph("UTA",
+                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                        {
+                            Alignment = Element.ALIGN_CENTER
+                        };
+                        logoCell.AddElement(fallbackLogo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error cargando logo: {ex.Message}");
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+
+                var textCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER,
+                    VerticalAlignment = Element.ALIGN_MIDDLE,
+                    Padding = 10,
+                    BackgroundColor = universityRed
+                };
+
+                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                var systemName = new Paragraph("SISTEMA MÉDICO - PSICOLOGÍA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+                {
+                    SpacingBefore = 5f,
+                    Alignment = Element.ALIGN_CENTER
+                };
+
+                textCell.AddElement(universityName);
+                textCell.AddElement(systemName);
+
+                var emptyCell = new PdfPCell()
+                {
+                    Border = Rectangle.NO_BORDER,
+                    BackgroundColor = universityRed
+                };
+
+                headerTable.AddCell(logoCell);
+                headerTable.AddCell(textCell);
+                headerTable.AddCell(emptyCell);
+
+                document.Add(headerTable);
+
+                // ===== SUBTÍTULO DE LA FICHA =====
+                var subtitle = new Paragraph("REPORTE DE ATENCIÓN DE PSICOLOGÍA", subtitleFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 8f
+                };
+                document.Add(subtitle);
+
+                // Fecha de generación
+                var dateGenerated = new Paragraph($"Fecha de generación: {DateTime.Now:dd/MM/yyyy HH:mm}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER,
+                    SpacingAfter = 15f
+                };
+                document.Add(dateGenerated);
+
+                // ===== LÍNEA SEPARADORA =====
+                var line = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(2f, 100f, universityRed, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingAfter = 20f
+                };
+                document.Add(line);
+
+                // ===== INFORMACIÓN GENERAL =====
+                AddPsychologyInfoSection(document, psychologyCare, titleFont, labelFont, textFont, lightGray, universityRed);
+
+                // ===== MOTIVO DE CONSULTA =====
+                AddPsychologyReasonForConsultationSection(document, psychologyCare, titleFont, textFont, lightGray);
+
+                // ===== DIAGNÓSTICOS PSICOLÓGICOS =====
+                AddPsychologicalDiagnosesSection(document, psychologyCare, titleFont, textFont, darkGray, universityRed, tableHeaderFont);
+
+                // ===== PLANES TERAPÉUTICOS =====
+                AddTherapeuticPlansSection(document, psychologyCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== SESIONES DE TERAPIA =====
+                AddPsychologySessionsSection(document, psychologyCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== ACTIVIDADES TERAPÉUTICAS =====
+                AddActivitiesSection(document, psychologyCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== AVANCES DEL PACIENTE =====
+                AddAdvancesSection(document, psychologyCare, titleFont, textFont, lightGray, universityRed, tableHeaderFont);
+
+                // ===== RESUMEN DE ATENCIÓN =====
+                AddPsychologySummarySection(document, psychologyCare, titleFont, textFont, lightGray, universityRed);
+
+                // ===== PIE DE PÁGINA =====
+                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+                {
+                    SpacingBefore = 20f,
+                    SpacingAfter = 10f
+                };
+                document.Add(footerLine);
+
+                var footer = new Paragraph($"Documento generado automáticamente por el Sistema Médico\nUniversidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                document.Add(footer);
+
+                document.Close();
+                return memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generando PDF de psicología: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private void AddPsychologyInfoSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("INFORMACIÓN GENERAL", titleFont)
+            {
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var infoTable = new PdfPTable(2)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            infoTable.SetWidths(new float[] { 35, 65 });
+
+            AddTableRow(infoTable, "ID Atención:", psychologyCare.CareId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Paciente:", psychologyCare.NamePatient ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "ID Paciente:", psychologyCare.PatientId.ToString(), labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Área:", psychologyCare.Area ?? "Psicología", labelFont, textFont);
+            AddTableRow(infoTable, "Ubicación:", psychologyCare.NamePlace ?? "No disponible", labelFont, textFont, lightGray);
+            AddTableRow(infoTable, "Psicólogo:", psychologyCare.NameHealthProfessional ?? "No disponible", labelFont, textFont);
+            AddTableRow(infoTable, "Fecha de Atención:", psychologyCare.CareDate.ToString("dd/MM/yyyy HH:mm"), labelFont, textFont, lightGray);
+
+            document.Add(infoTable);
+        }
+
+        private void AddPsychologyReasonForConsultationSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray)
+        {
+            if (psychologyCare.ReasonForConsultation != null && !string.IsNullOrEmpty(psychologyCare.ReasonForConsultation.Description))
+            {
+                var sectionTitle = new Paragraph("MOTIVO DE CONSULTA", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var reasonTable = new PdfPTable(1)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+
+                var reasonCell = new PdfPCell(new Phrase(psychologyCare.ReasonForConsultation.Description, textFont))
+                {
+                    Border = Rectangle.BOX,
+                    BorderColor = lightGray,
+                    Padding = 10,
+                    BackgroundColor = BaseColor.White
+                };
+                reasonTable.AddCell(reasonCell);
+
+                document.Add(reasonTable);
+            }
+        }
+
+        private void AddPsychologicalDiagnosesSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor darkGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (psychologyCare.PsychologicalDiagnoses != null && psychologyCare.PsychologicalDiagnoses.Any())
+            {
+                var sectionTitle = new Paragraph($"DIAGNÓSTICOS PSICOLÓGICOS ({psychologyCare.PsychologicalDiagnoses.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                foreach (var diagnosis in psychologyCare.PsychologicalDiagnoses)
+                {
+                    var diagnosisTable = new PdfPTable(2)
+                    {
+                        WidthPercentage = 100,
+                        SpacingAfter = 15f
+                    };
+                    diagnosisTable.SetWidths(new float[] { 30, 70 });
+
+                    AddTableRow(diagnosisTable, "CIE10:", diagnosis.CIE10 ?? "N/A", tableHeaderFont, textFont, darkGray);
+                    AddTableRow(diagnosisTable, "Denominación:", diagnosis.Denomination ?? "N/A", tableHeaderFont, textFont);
+                    AddTableRow(diagnosisTable, "Tipo de Diagnóstico:", diagnosis.DiagnosticTypeName ?? "N/A", tableHeaderFont, textFont, darkGray);
+
+                    if (!string.IsNullOrEmpty(diagnosis.DiagnosisMotivation))
+                    {
+                        AddTableRow(diagnosisTable, "Motivación del Diagnóstico:", diagnosis.DiagnosisMotivation, tableHeaderFont, textFont);
+                    }
+
+                    if (!string.IsNullOrEmpty(diagnosis.DifferentialDiagnosis))
+                    {
+                        AddTableRow(diagnosisTable, "Diagnóstico Diferencial:", diagnosis.DifferentialDiagnosis, tableHeaderFont, textFont, darkGray);
+                    }
+
+                    document.Add(diagnosisTable);
+
+                    // Línea separadora entre diagnósticos
+                    var separator = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(0.5f, 100f, darkGray, Element.ALIGN_CENTER, -1f)))
+                    {
+                        SpacingBefore = 5f,
+                        SpacingAfter = 10f
+                    };
+                    document.Add(separator);
+                }
+            }
+        }
+
+        private void AddTherapeuticPlansSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (psychologyCare.TherapeuticPlans != null && psychologyCare.TherapeuticPlans.Any())
+            {
+                var sectionTitle = new Paragraph($"PLANES TERAPÉUTICOS ({psychologyCare.TherapeuticPlans.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var plansTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                plansTable.SetWidths(new float[] { 25, 25, 25, 25 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(plansTable, "RESUMEN DEL CASO", tableHeaderFont, universityRed);
+                AddTableHeaderCell(plansTable, "OBJETIVOS TERAPÉUTICOS", tableHeaderFont, universityRed);
+                AddTableHeaderCell(plansTable, "ESTRATEGIA Y ENFOQUE", tableHeaderFont, universityRed);
+                AddTableHeaderCell(plansTable, "NÚMERO DE SESIONES", tableHeaderFont, universityRed);
+
+                foreach (var plan in psychologyCare.TherapeuticPlans)
+                {
+                    AddTableCell(plansTable, TruncateText(plan.CaseSummary, 50), textFont);
+                    AddTableCell(plansTable, TruncateText(plan.TherapeuticObjective, 50), textFont);
+                    AddTableCell(plansTable, TruncateText(plan.StrategyApproach, 50), textFont);
+                    AddTableCell(plansTable, plan.NumberOfSessions.ToString() ?? "N/A", textFont);
+                }
+
+                document.Add(plansTable);
+            }
+        }
+
+        private void AddPsychologySessionsSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (psychologyCare.PsychologySessions != null && psychologyCare.PsychologySessions.Any())
+            {
+                var sectionTitle = new Paragraph($"SESIONES DE TERAPIA ({psychologyCare.PsychologySessions.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var sessionsTable = new PdfPTable(6)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                sessionsTable.SetWidths(new float[] { 20, 15, 20, 15, 15, 15 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(sessionsTable, "DESCRIPCIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "RESUMEN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "ALTA MÉDICA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "OBSERVACIONES", tableHeaderFont, universityRed);
+                AddTableHeaderCell(sessionsTable, "LINK VOLUNTARIO", tableHeaderFont, universityRed);
+
+                foreach (var session in psychologyCare.PsychologySessions)
+                {
+                    AddTableCell(sessionsTable, TruncateText(session.Description, 30), textFont);
+                    AddTableCell(sessionsTable, session.Date?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    AddTableCell(sessionsTable, TruncateText(session.SummarySession, 30), textFont);
+
+                    // Celda de alta médica
+                    var dischargeCell = new PdfPCell(new Phrase((session.MedicalDischarge ?? false) ? "Sí" : "No", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = (session.MedicalDischarge ?? false) ? new BaseColor(40, 167, 69) : new BaseColor(108, 117, 125),
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
+                    dischargeCell.Phrase.Font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9, BaseColor.White);
+                    sessionsTable.AddCell(dischargeCell);
+
+                    AddTableCell(sessionsTable, TruncateText(session.Observations, 20), textFont);
+
+                    // Celda de link voluntario
+                    var linkCell = new PdfPCell(new Phrase(!string.IsNullOrWhiteSpace(session.VoluntaryRegistrationLink) ? "Disponible" : "No disponible", textFont))
+                    {
+                        Border = Rectangle.BOX,
+                        BorderColor = lightGray,
+                        Padding = 5,
+                        BackgroundColor = !string.IsNullOrWhiteSpace(session.VoluntaryRegistrationLink) ? new BaseColor(220, 248, 198) : new BaseColor(255, 243, 205),
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
+                    sessionsTable.AddCell(linkCell);
+                }
+
+                document.Add(sessionsTable);
+            }
+        }
+
+        private void AddActivitiesSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (psychologyCare.Activities != null && psychologyCare.Activities.Any())
+            {
+                var sectionTitle = new Paragraph($"ACTIVIDADES TERAPÉUTICAS ({psychologyCare.Activities.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var activitiesTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                activitiesTable.SetWidths(new float[] { 40, 20, 20, 20 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(activitiesTable, "NOMBRE DE LA ACTIVIDAD", tableHeaderFont, universityRed);
+                AddTableHeaderCell(activitiesTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(activitiesTable, "TIPO DE ACTIVIDAD", tableHeaderFont, universityRed);
+                AddTableHeaderCell(activitiesTable, "SESIÓN ASOCIADA", tableHeaderFont, universityRed);
+
+                foreach (var activity in psychologyCare.Activities)
+                {
+                    AddTableCell(activitiesTable, TruncateText(activity.NameActivity, 50), textFont);
+                    AddTableCell(activitiesTable, activity.DateActivity?.ToString("dd/MM/yyyy") ?? "N/A", textFont);
+                    AddTableCell(activitiesTable, activity.TypeOfActivityName ?? "N/A", textFont);
+
+                    // Obtener descripción de la sesión asociada
+                    var sessionDescription = "N/A";
+                    if (activity.PsychologySessionId.HasValue && psychologyCare.PsychologySessions != null)
+                    {
+                        var associatedSession = psychologyCare.PsychologySessions.FirstOrDefault(s => s.PsychologySessionsId == activity.PsychologySessionId);
+                        sessionDescription = TruncateText(associatedSession?.Description, 30) ?? "N/A";
+                    }
+                    AddTableCell(activitiesTable, sessionDescription, textFont);
+                }
+
+                document.Add(activitiesTable);
+            }
+        }
+
+        private void AddAdvancesSection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed, Font tableHeaderFont)
+        {
+            if (psychologyCare.Advances != null && psychologyCare.Advances.Any())
+            {
+                var sectionTitle = new Paragraph($"AVANCES DEL PACIENTE ({psychologyCare.Advances.Count})", titleFont)
+                {
+                    SpacingBefore = 15f,
+                    SpacingAfter = 10f
+                };
+                document.Add(sectionTitle);
+
+                var advancesTable = new PdfPTable(4)
+                {
+                    WidthPercentage = 100,
+                    SpacingAfter = 20f
+                };
+                advancesTable.SetWidths(new float[] { 40, 15, 20, 25 });
+
+                // Encabezados de la tabla
+                AddTableHeaderCell(advancesTable, "DESCRIPCIÓN", tableHeaderFont, universityRed);
+                AddTableHeaderCell(advancesTable, "FECHA", tableHeaderFont, universityRed);
+                AddTableHeaderCell(advancesTable, "INDICACIONES", tableHeaderFont, universityRed);
+                AddTableHeaderCell(advancesTable, "SESIÓN ASOCIADA", tableHeaderFont, universityRed);
+
+                foreach (var advance in psychologyCare.Advances)
+                {
+                    AddTableCell(advancesTable, TruncateText(advance.Description, 50), textFont);
+                    AddTableCell(advancesTable, advance.Date.ToString("dd/MM/yyyy"), textFont);
+                    AddTableCell(advancesTable, TruncateText(advance.Indications, 30), textFont);
+
+                    // Obtener descripción de la sesión asociada
+                    var sessionDescription = "N/A";
+                    if (advance.PsychologySessionId.HasValue && psychologyCare.PsychologySessions != null)
+                    {
+                        var associatedSession = psychologyCare.PsychologySessions.FirstOrDefault(s => s.PsychologySessionsId == advance.PsychologySessionId);
+                        sessionDescription = TruncateText(associatedSession?.Description, 30) ?? "N/A";
+                    }
+                    AddTableCell(advancesTable, sessionDescription, textFont);
+                }
+
+                document.Add(advancesTable);
+            }
+        }
+
+        private void AddPsychologySummarySection(Document document, MedicalCareDTO psychologyCare, Font titleFont, Font textFont, BaseColor lightGray, BaseColor universityRed)
+        {
+            var sectionTitle = new Paragraph("RESUMEN DE ATENCIÓN PSICOLÓGICA", titleFont)
+            {
+                SpacingBefore = 15f,
+                SpacingAfter = 10f
+            };
+            document.Add(sectionTitle);
+
+            var summaryTable = new PdfPTable(6)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            summaryTable.SetWidths(new float[] { 17, 17, 17, 17, 16, 16 });
+
+            var diagnosesCount = psychologyCare.PsychologicalDiagnoses?.Count ?? 0;
+            var plansCount = psychologyCare.TherapeuticPlans?.Count ?? 0;
+            var sessionsCount = psychologyCare.PsychologySessions?.Count ?? 0;
+            var activitiesCount = psychologyCare.Activities?.Count ?? 0;
+            var advancesCount = psychologyCare.Advances?.Count ?? 0;
+            var sessionsWithDischarge = psychologyCare.PsychologySessions?.Count(s => s.MedicalDischarge == true) ?? 0;
+
+            AddSummaryCard(summaryTable, "DIAGNÓSTICOS", diagnosesCount.ToString(), universityRed, textFont, diagnosesCount > 0);
+            AddSummaryCard(summaryTable, "PLANES TERAPÉUTICOS", plansCount.ToString(), universityRed, textFont, plansCount > 0);
+            AddSummaryCard(summaryTable, "SESIONES", sessionsCount.ToString(), universityRed, textFont, sessionsCount > 0);
+            AddSummaryCard(summaryTable, "ACTIVIDADES", activitiesCount.ToString(), universityRed, textFont, activitiesCount > 0);
+            AddSummaryCard(summaryTable, "AVANCES", advancesCount.ToString(), universityRed, textFont, advancesCount > 0);
+            AddSummaryCard(summaryTable, "ALTAS MÉDICAS", sessionsWithDischarge.ToString(), universityRed, textFont, sessionsWithDischarge > 0);
+
+            document.Add(summaryTable);
+        }
+
+        // Método auxiliar para truncar texto
+        private string TruncateText(string text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text)) return "N/A";
+            return text.Length > maxLength ? text.Substring(0, maxLength) + "..." : text;
+        }
+
+
+
+
+
+
+
+        //---------------------------------------------------------------------------------------------------------------------------------------------
         // NUTRITION PDF Generation
         //---------------------------------------------------------------------------------------------------------------------------------------------
 

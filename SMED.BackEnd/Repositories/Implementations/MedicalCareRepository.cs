@@ -462,6 +462,170 @@ namespace SMED.BackEnd.Repositories.Implementations
             }
         }
 
+
+        public async Task<List<MedicalCareDTO>> GetPsychologyCareAsync()
+        {
+            try
+            {
+                // Primero obtenemos el LocationId para psicología por nombre
+                var psychologyLocationIds = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => l.Name.ToLower().Contains("psicología") ||
+                               l.Name.ToLower().Contains("psicologia") ||
+                               l.Name.ToLower().Contains("psychology"))
+                    .Select(l => l.Id)
+                    .ToListAsync();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPsychology] LocationIds encontrados: {string.Join(", ", psychologyLocationIds)}");
+
+                if (!psychologyLocationIds.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetPsychology] No se encontró ubicación de psicología");
+                    return new List<MedicalCareDTO>();
+                }
+
+                // Primero obtenemos solo los IDs y datos básicos
+                var medicalCaresData = await _context.MedicalCares
+                    .AsNoTracking()
+                    .Where(m => psychologyLocationIds.Contains(m.LocationId))
+                    .OrderByDescending(m => m.CareDate)
+                    .Select(m => new
+                    {
+                        m.CareId,
+                        m.LocationId,
+                        m.PlaceOfAttentionId,
+                        m.PatientId,
+                        m.HealthProfessionalId,
+                        m.CareDate
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPsychology] Total registros obtenidos: {medicalCaresData.Count}");
+
+                if (!medicalCaresData.Any())
+                {
+                    Console.WriteLine("[BACKEND DEBUG GetPsychology] No se encontraron registros de Psicología");
+                    return new List<MedicalCareDTO>();
+                }
+
+                // Obtener los IDs únicos para las consultas
+                var locationIds = medicalCaresData.Select(m => m.LocationId).Distinct().ToList();
+                var placeOfAttentionIds = medicalCaresData.Select(m => m.PlaceOfAttentionId).Distinct().ToList();
+                var patientIds = medicalCaresData.Select(m => m.PatientId).Distinct().ToList();
+                var healthProfessionalIds = medicalCaresData.Select(m => m.HealthProfessionalId).Distinct().ToList();
+
+                // Cargar Locations en un diccionario
+                var locations = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => locationIds.Contains(l.Id))
+                    .ToDictionaryAsync(l => l.Id, l => l.Name);
+
+                // Cargar PlaceOfAttentions en un diccionario
+                var placeOfAttentions = await _context.PlaceOfAttentions
+                    .AsNoTracking()
+                    .Where(p => placeOfAttentionIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+                Console.WriteLine($"[BACKEND DEBUG GetPsychology] PlaceOfAttentions cargados desde BD:");
+                foreach (var place in placeOfAttentions)
+                {
+                    Console.WriteLine($"[BACKEND DEBUG GetPsychology] Id: {place.Key}, Name: {place.Value}");
+                }
+
+                // Cargar Patients
+                var patients = await _context.Patients
+                    .AsNoTracking()
+                    .Where(p => patientIds.Contains(p.PersonId))
+                    .ToListAsync();
+
+                var patientPersonIds = patients.Select(p => p.PersonId).ToList();
+                var patientPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => patientPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var patientNames = patients
+                    .Join(patientPersons,
+                        patient => patient.PersonId,
+                        person => person.Id,
+                        (patient, person) => new
+                        {
+                            PersonId = patient.PersonId,
+                            FullName = string.Join(" ", new[] {
+                    person.FirstName,
+                    person.MiddleName,
+                    person.LastName,
+                    person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(p => p.PersonId, p => p.FullName);
+
+                // Cargar HealthProfessionals
+                var healthProfessionals = await _context.HealthProfessionals
+                    .AsNoTracking()
+                    .Where(hp => healthProfessionalIds.Contains(hp.HealthProfessionalId))
+                    .ToListAsync();
+
+                var hpPersonIds = healthProfessionals.Select(hp => hp.HealthProfessionalId).ToList();
+                var hpPersons = await _context.Persons
+                    .AsNoTracking()
+                    .Where(p => hpPersonIds.Contains(p.Id))
+                    .ToListAsync();
+
+                var healthProfessionalNames = healthProfessionals
+                    .Join(hpPersons,
+                        hp => hp.HealthProfessionalId,
+                        person => person.Id,
+                        (hp, person) => new
+                        {
+                            HealthProfessionalId = hp.HealthProfessionalId,
+                            FullName = string.Join(" ", new[] {
+                    person.FirstName,
+                    person.MiddleName,
+                    person.LastName,
+                    person.SecondLastName
+                            }.Where(n => !string.IsNullOrWhiteSpace(n)))
+                        })
+                    .ToDictionary(hp => hp.HealthProfessionalId, hp => hp.FullName);
+
+                // Construir el resultado final
+                var result = medicalCaresData.Select(m =>
+                {
+                    var placeName = placeOfAttentions.ContainsKey(m.PlaceOfAttentionId)
+                        ? placeOfAttentions[m.PlaceOfAttentionId]
+                        : "Sin ubicación";
+
+                    Console.WriteLine($"[BACKEND DEBUG GetPsychology] CareId: {m.CareId}, " +
+                                    $"PlaceOfAttentionId: {m.PlaceOfAttentionId}, " +
+                                    $"PlaceName from Dictionary: {placeName}");
+
+                    return new MedicalCareDTO
+                    {
+                        CareId = m.CareId,
+                        LocationId = m.LocationId,
+                        PlaceOfAttentionId = m.PlaceOfAttentionId,
+                        Area = locations.ContainsKey(m.LocationId) ? locations[m.LocationId] : "Sin área",
+                        NamePlace = placeName,
+                        NamePatient = patientNames.ContainsKey(m.PatientId) ? patientNames[m.PatientId] : string.Empty,
+                        PatientId = m.PatientId,
+                        HealthProfessionalId = m.HealthProfessionalId,
+                        NameHealthProfessional = healthProfessionalNames.ContainsKey(m.HealthProfessionalId)
+                            ? healthProfessionalNames[m.HealthProfessionalId]
+                            : string.Empty,
+                        CareDate = m.CareDate
+                    };
+                }).ToList();
+
+                Console.WriteLine($"[BACKEND DEBUG GetPsychology] Total DTOs creados: {result.Count}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BACKEND ERROR GetPsychology] Error: {ex.Message}");
+                return new List<MedicalCareDTO>();
+            }
+        }
+
         public async Task<List<MedicalCareDTO>> GetByAreaAndDateAsync(string area, DateTime? date = null)
         {
             var query = _context.MedicalCares
@@ -1484,6 +1648,119 @@ person.SecondLastName
 
                 Console.WriteLine($"[DEBUG] IdentifiedDiseases cargados: {identifiedDiseases.Count}");
 
+                // <ADD> 19) OBTENER DATOS DE PSICOLOGÍA
+                var psychologicalDiagnoses = await _context.PsychologicalDiagnoses
+                    .Where(pd => pd.MedicalCareId == id)
+                    .Select(pd => new PsychologicalDiagnosisDTO
+                    {
+                        PsychologicalDiagnosisId = pd.PsychologicalDiagnosisId,
+                        CIE10 = pd.CIE10,
+                        Denomination = pd.Denomination,
+                        DiagnosticTypeId = pd.DiagnosticTypeId,
+                        DiagnosisMotivation = pd.DiagnosisMotivation,
+                        DifferentialDiagnosis = pd.DifferentialDiagnosis,
+                        MedicalCareId = pd.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] PsychologicalDiagnoses cargados: {psychologicalDiagnoses.Count}");
+
+                // Cargar nombres de tipos de diagnóstico
+                var diagnosticTypePIds = psychologicalDiagnoses.Select(pd => pd.DiagnosticTypeId).Distinct().ToList();
+                var diagnosticTypesP = await _context.DiagnosticTypes
+                    .Where(dt => diagnosticTypeIds.Contains(dt.Id))
+                    .ToDictionaryAsync(dt => dt.Id, dt => dt.Name);
+
+                foreach (var diagnosis in psychologicalDiagnoses)
+                {
+                    diagnosis.DiagnosticTypeName = diagnosticTypesP.ContainsKey(diagnosis.DiagnosticTypeId)
+                        ? diagnosticTypesP[diagnosis.DiagnosticTypeId] : null;
+                }
+
+                // Obtener TherapeuticPlans
+                var therapeuticPlans = await _context.TherapeuticPlans
+                    .Where(tp => tp.PsychologicalDiagnosis.MedicalCareId == id)
+                    .Select(tp => new TherapeuticPlanDTO
+                    {
+                        TherapeuticPlanId = tp.TherapeuticPlanId,
+                        CaseSummary = tp.CaseSummary,
+                        TherapeuticObjective = tp.TherapeuticObjective,
+                        StrategyApproach = tp.StrategyApproach,
+                        NumberOfSessions = tp.NumberOfSessions,
+                        MedicalCareId = tp.PsychologicalDiagnosis.MedicalCareId,
+                        PsychologicalDiagnosisId = tp.PsychologicalDiagnosisId
+                    })
+                    .ToListAsync();
+
+
+                // Obtener PsychologySessions
+                var psychologySessions = await _context.PsychologySessions
+                    .Where(ps => ps.MedicalCareId == id)
+                    .Select(ps => new PsychologySessionsDTO
+                    {
+                        PsychologySessionsId = ps.PsychologySessionsId,
+                        Description = ps.Description,
+                        Date = ps.Date,
+                        SummarySession = ps.SummarySession,
+                        MedicalDischarge = ps.MedicalDischarge,
+                        Observations = ps.Observations,
+                        VoluntaryRegistrationLink = ps.VoluntaryRegistrationLink,
+                        MedicalCareId = ps.MedicalCareId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] PsychologySessions cargadas: {psychologySessions.Count}");
+
+                // Obtener Activities
+                var activities = await _context.Activities
+                    .Where(a => a.PsychologySessionId.HasValue &&
+                               psychologySessions.Select(ps => ps.PsychologySessionsId).Contains(a.PsychologySessionId.Value))
+                    .Select(a => new ActivityDTO
+                    {
+                        ActivityId = a.ActivityId,
+                        NameActivity = a.NameActivity,
+                        DateActivity = a.DateActivity,
+                        TypeOfActivityId = a.TypeOfActivityId,
+                        PsychologySessionId = a.PsychologySessionId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] Activities cargadas: {activities.Count}");
+
+                // Cargar nombres de tipos de actividad
+                var activityTypeIds = activities.Where(a => a.TypeOfActivityId.HasValue)
+                    .Select(a => a.TypeOfActivityId.Value).Distinct().ToList();
+                var activityTypes = await _context.TypeOfActivities
+                    .Where(ta => activityTypeIds.Contains(ta.TypeOfActivityId))
+                    .ToDictionaryAsync(ta => ta.TypeOfActivityId, ta => ta.Name);
+
+                foreach (var activity in activities)
+                {
+                    if (activity.TypeOfActivityId.HasValue && activityTypes.ContainsKey(activity.TypeOfActivityId.Value))
+                    {
+                        activity.TypeOfActivityName = activityTypes[activity.TypeOfActivityId.Value];
+                    }
+                }
+
+                // Obtener Advances
+                var advances = await _context.Advances
+                    .Where(adv => adv.PsychologySessionId.HasValue &&
+                                 psychologySessions.Select(ps => ps.PsychologySessionsId).Contains(adv.PsychologySessionId.Value))
+                    .Select(adv => new AdvanceDTO
+                    {
+                        AdvanceId = adv.AdvanceId,
+                        Description = adv.Description,
+                        Date = adv.Date,
+                        Indications = adv.Indications,
+                        PsychologySessionId = adv.PsychologySessionId
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG] Advances cargados: {advances.Count}");
+
+
+
+
                 // <ADD> OBTENER FORBIDDEN FOODS
                 var forbiddenFoods = await _context.ForbiddenFoods
                     .Where(ff => ff.CareId == id)
@@ -1570,6 +1847,13 @@ person.SecondLastName
                     Measurements = measurements,
                     ExamResults = examResults,
                     IdentifiedDiseases = identifiedDiseases,
+
+                    //Psicoología
+                    PsychologicalDiagnoses = psychologicalDiagnoses,
+                    TherapeuticPlans = therapeuticPlans,
+                    PsychologySessions = psychologySessions,
+                    Activities = activities,
+                    Advances = advances,
 
                     // En la creación del DTO final
                     ForbiddenFoods = forbiddenFoods,

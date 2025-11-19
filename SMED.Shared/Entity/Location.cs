@@ -22,5 +22,9 @@ namespace SMED.Shared.Entity
 
         [InverseProperty("LocationNavigation")]
         public virtual ICollection<MedicalProcedure> MedicalProcedures { get; set; } = new List<MedicalProcedure>();
+
+        // Nueva colección para MedicalReferrals
+        [InverseProperty("Location")]
+        public virtual ICollection<MedicalReferral> MedicalReferrals { get; set; } = new List<MedicalReferral>();
     }
 }

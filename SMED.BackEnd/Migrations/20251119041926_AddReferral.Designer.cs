@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SGIS.Models;
 
@@ -11,9 +12,11 @@ using SGIS.Models;
 namespace SMED.BackEnd.Migrations
 {
     [DbContext(typeof(SGISContext))]
-    partial class SGISContextModelSnapshot : ModelSnapshot
+    [Migration("20251119041926_AddReferral")]
+    partial class AddReferral
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1817,9 +1820,6 @@ namespace SMED.BackEnd.Migrations
                     b.Property<bool>("IsUrgent")
                         .HasColumnType("bit");
 
-                    b.Property<int>("LocationId")
-                        .HasColumnType("int");
-
                     b.Property<int>("MedicalCareId")
                         .HasColumnType("int");
 
@@ -1829,8 +1829,6 @@ namespace SMED.BackEnd.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AttendedByProfessionalId");
-
-                    b.HasIndex("LocationId");
 
                     b.HasIndex("MedicalCareId");
 
@@ -5015,12 +5013,6 @@ namespace SMED.BackEnd.Migrations
                         .WithMany("AttendedMedicalReferrals")
                         .HasForeignKey("AttendedByProfessionalId");
 
-                    b.HasOne("SMED.Shared.Entity.Location", "Location")
-                        .WithMany("MedicalReferrals")
-                        .HasForeignKey("LocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SMED.Shared.Entity.MedicalCare", "MedicalCare")
                         .WithMany("MedicalReferrals")
                         .HasForeignKey("MedicalCareId")
@@ -5028,8 +5020,6 @@ namespace SMED.BackEnd.Migrations
                         .IsRequired();
 
                     b.Navigation("AttendedByProfessional");
-
-                    b.Navigation("Location");
 
                     b.Navigation("MedicalCare");
                 });
@@ -6226,8 +6216,6 @@ namespace SMED.BackEnd.Migrations
                     b.Navigation("MedicalCares");
 
                     b.Navigation("MedicalProcedures");
-
-                    b.Navigation("MedicalReferrals");
                 });
 
             modelBuilder.Entity("SMED.Shared.Entity.MaritalStatus", b =>

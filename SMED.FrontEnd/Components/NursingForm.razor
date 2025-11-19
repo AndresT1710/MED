@@ -13,6 +13,7 @@
 @inject ReasonForConsultationService ReasonForConsultationService
 @inject LocationService LocationService
 @inject AuthorizationService AuthorizationService
+@inject MedicalReferralService MedicalReferralService
 @inject IJSRuntime JS
 
 <div class="medical-care-form">
@@ -72,6 +73,20 @@
                 <small class="text-muted ms-1">(Opcional)</small>
             </button>
         </li>
+        <!-- Nuevo Tab de Derivación -->
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "referral" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("referral"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete())">
+                <i class="fas fa-share me-2"></i>Derivación
+                @if (IsReferralTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -83,7 +98,6 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user me-2"></i>Selección de Paciente
                         <span class="badge bg-danger ms-2">Obligatorio</span>
-                        <!-- Badge para mostrar el área fija -->
                         <span class="badge bg-success ms-2">
                             <i class="fas fa-hospital me-1"></i>Área: Enfermería
                         </span>
@@ -302,7 +316,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("peso")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 99.99 para decimal(4,2) -->
                                 <small class="form-text text-muted">Rango válido: 0.1 - 99.99 kg</small>
                             </div>
 
@@ -320,7 +333,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("talla")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 250 cm para decimal(5,2) -->
                                 <small class="form-text text-muted">Rango válido: 1 - 250 cm</small>
                             </div>
 
@@ -349,7 +361,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("perimetroAbdominal")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 99.99 para decimal(4,2) -->
                                 <small class="form-text text-muted">Rango válido: 1 - 99.99 cm</small>
                             </div>
 
@@ -402,7 +413,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("pam")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 180 para decimal(5,2) -->
                                 <small class="form-text text-muted">Rango válido: 40 - 180 mmHg</small>
                             </div>
 
@@ -437,7 +447,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("saturacionOxigeno")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 100 para decimal(5,2) -->
                                 <small class="form-text text-muted">Rango válido: 70 - 100%</small>
                             </div>
 
@@ -472,7 +481,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("glucosaCapilar")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 999.99 para decimal(5,2) -->
                                 <small class="form-text text-muted">Rango válido: 50 - 999.99 mg/dl</small>
                             </div>
 
@@ -490,7 +498,6 @@
                                         <i class="fas fa-exclamation-triangle me-1"></i>@GetVitalSignError("hemoglobina")
                                     </div>
                                 }
-                                <!-- Ajustado el rango máximo a 20 para decimal(4,2) -->
                                 <small class="form-text text-muted">Rango válido: 5 - 20 g/dl</small>
                             </div>
                         </div>
@@ -774,7 +781,151 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("services"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver a Servicios
                             </button>
+                            <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("referral"))">
+                                Ir a Derivación <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe completar y guardar los datos básicos del paciente antes de agregar procedimientos.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- NUEVO TAB DE DERIVACIÓN -->
+        <div class="tab-pane @(activeTab == "referral" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-share me-2"></i>Derivación
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Derivación a módulos y especialidades</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples derivaciones para esta atención médica.
+                        </div>
+
+                        <EditableTable Title="Derivaciones"
+                                       ColumnHeaders="@referralHeaders"
+                                       Rows="@referralRows"
+                                       RowIds="@referralIds"
+                                       EmptyMessage="No se han registrado derivaciones"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddReferralRequested"
+                                       OnEditRequested="@OnEditReferralRequested"
+                                       OnDeleteRequested="@OnDeleteReferralRequested"
+                                       OnSaveRequested="@OnSaveReferralRequested"
+                                       IsValidForm="@IsReferralFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Módulo/Especialidad de Destino <span class="text-danger">*</span></label>
+                                        <select class="form-select @(referralErrors.ContainsKey("LocationId") ? "is-invalid" : "")"
+                                                @bind="selectedLocationDId">
+                                            <option value="0">Seleccione un módulo o especialidad</option>
+                                            @foreach (var location in availableLocationsForReferral)
+                                            {
+                                                <option value="@location.Id">@location.Name</option>
+                                            }
+                                        </select>
+                                        @if (referralErrors.ContainsKey("LocationId"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["LocationId"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Fecha de Derivación <span class="text-danger">*</span></label>
+                                        <input type="datetime-local"
+                                               class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
+                                               @bind="currentReferral.DateOfReferral"
+                                               @bind:format="yyyy-MM-ddTHH:mm" />
+                                        @if (referralErrors.ContainsKey("DateOfReferral"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["DateOfReferral"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                   @bind="currentReferral.IsUrgent" />
+                                            <label class="form-check-label fw-bold">Derivación Urgente</label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Marque esta opción si la derivación requiere atención prioritaria.
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivo de Derivación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                                  @bind="currentReferral.Description"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
+                                                  style="resize: vertical; min-height: 120px;"></textarea>
+                                        @if (referralErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentReferral.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Notas Adicionales</label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("AdditionalNotes") ? "is-invalid" : "")"
+                                                  @bind="currentReferral.AdditionalNotes"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Observaciones adicionales, recomendaciones, etc..."
+                                                  style="resize: vertical; min-height: 100px;"></textarea>
+                                        @if (referralErrors.ContainsKey("AdditionalNotes"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["AdditionalNotes"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentReferral.AdditionalNotes?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(referralFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @referralFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("procedures"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver a Procedimientos
+                            </button>
                             <div>
+                                @if (hasUnsavedReferralData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
                                 <button class="btn btn-outline-secondary me-2" @onclick="OnCancel">
                                     <i class="fas fa-times me-2"></i>Cancelar
                                 </button>
@@ -789,7 +940,7 @@
                                     else
                                     {
                                         <span>
-                                            <i class="fas fa-save me-2"></i>Guardar Atención Médica
+                                            <i class="fas fa-save me-2"></i>Guardar Atención de Enfermería
                                         </span>
                                     }
                                 </button>
@@ -800,7 +951,7 @@
                     {
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            Debe completar y guardar los datos básicos del paciente antes de agregar procedimientos.
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
                         </div>
                     }
                 </div>
@@ -808,8 +959,6 @@
         </div>
     </div>
 </div>
-
-
 
 @code {
     [Parameter] public MedicalCareDTO? MedicalCare { get; set; }
@@ -824,15 +973,13 @@
     private string motivoConsulta = "";
     private bool isEditMode = false;
     private string lugarSeleccionada = "";
-    private int enfermerialLocationId = 0; // Added to store dynamic LocationId
+    private int enfermerialLocationId = 0;
     private int selectedHealthProfessionalId = 0;
     private HealthProfessionalDTO? currentProfessional = null;
     private HealthProfessionalDTO? profesionalLogueado;
     private bool profesionalCargado = false;
     private List<HealthProfessionalDTO> especialistasEnfermeria = new();
     private string imcInput = "";
-
-
 
     private bool showValidationErrors = false;
     private bool isSaving = false;
@@ -888,7 +1035,6 @@
     private List<LocationDTO> availableLocations = new();
     private string? procedureFormError;
 
-
     // Variables para Services
     private List<string> serviceColumnHeaders = new() { "Fecha", "Tipo", "Diagnóstico", "Observaciones" };
     private List<List<string>> serviceRows = new();
@@ -896,8 +1042,6 @@
     private Dictionary<string, string> serviceErrors = new();
     private string? serviceFormError;
     private List<TypeOfServiceDTO> availableServiceTypes = new();
-
-
 
     // Para edición
     private VitalSignsDTO? existingVitalSigns;
@@ -908,10 +1052,22 @@
     private MedicalServiceDTO? currentService;
     private int? createdCareId = null;
 
-    @* Added properties for EditableTable integration *@
+    // Added properties for EditableTable integration
     private List<string> procedureColumnHeaders = new() { "Fecha", "Tipo", "Procedimiento", "Observaciones" };
     private List<List<string>> procedureRows = new();
     private List<int> procedureRowIds = new();
+
+    // Variables para Derivación
+    private List<LocationDTO> availableLocationsForReferral = new();
+    private List<MedicalReferralDTO> referralsList = new();
+    private MedicalReferralDTO currentReferral = new();
+    private List<string> referralHeaders = new() { "Módulo/Especialidad", "Fecha", "Motivo", "Urgente", "Estado" };
+    private List<List<string>> referralRows = new();
+    private List<int> referralIds = new();
+    private Dictionary<string, string> referralErrors = new();
+    private string referralFormError = "";
+    private int? selectedLocationDId = null;
+    private bool hasUnsavedReferralData = false;
 
     //Location
     private async Task LoadEnfermeriaLocationId()
@@ -922,7 +1078,7 @@
             if (locationId.HasValue)
             {
                 enfermerialLocationId = locationId.Value;
-                selectedLocationId = locationId.Value; // ¡IMPORTANTE! Asignar también a selectedLocationId
+                selectedLocationId = locationId.Value;
             }
             else
             {
@@ -951,9 +1107,12 @@
         //SERVICIos
         await LoadAvailableServiceTypes();
 
-        // CARGAR DATOS DE PROCEDIMIENTOS (AÑADIR ESTO)
+        // CARGAR DATOS DE PROCEDIMIENTOS
         await LoadAvailableTypesOfProcedures();
         await LoadAvailableProcedures();
+
+        // CARGAR DATOS DE DERIVACIÓN
+        await LoadReferralData();
 
         // Si es modo edición, cargar los datos existentes
         if (MedicalCare != null && MedicalCare.CareId > 0)
@@ -964,7 +1123,6 @@
         else
         {
             await AsignarProfesionalLogueado();
-
         }
     }
 
@@ -1145,6 +1303,7 @@
             serviceFormError = $"Error al cargar el servicio: {ex.Message}";
         }
     }
+
     private async Task OnDeleteServiceRequested(int serviceId)
     {
         var service = serviciosList.FirstOrDefault(s => s.ServiceId == serviceId);
@@ -1234,14 +1393,14 @@
         foreach (var servicio in serviciosList)
         {
             var row = new List<string>
-        {
-            servicio.ServiceDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
-            servicio.ServiceType ?? "Sin especificar",
-            servicio.Diagnosis ?? "N/A",
-            servicio.Observations?.Length > 50 ?
-                servicio.Observations.Substring(0, 50) + "..." :
-                servicio.Observations ?? "N/A"
-        };
+                {
+                    servicio.ServiceDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
+                    servicio.ServiceType ?? "Sin especificar",
+                    servicio.Diagnosis ?? "N/A",
+                    servicio.Observations?.Length > 50 ?
+                        servicio.Observations.Substring(0, 50) + "..." :
+                        servicio.Observations ?? "N/A"
+                };
 
             serviceRows.Add(row);
             serviceRowIds.Add(servicio.ServiceId);
@@ -1259,10 +1418,6 @@
             await UpdateServiceTableData();
         }
     }
-
-
-
-
 
     // MÉTODOS DE VALIDACIÓN PARA SIGNOS VITALES
     private void InitializeVitalSignsErrors()
@@ -1491,7 +1646,6 @@
         }
     }
 
-
     // Método para obtener clases CSS de inputs
     private string GetVitalSignInputClass(string field)
     {
@@ -1541,7 +1695,7 @@
         return selectedPatientId > 0 &&
                !string.IsNullOrWhiteSpace(lugarSeleccionada) &&
                !string.IsNullOrWhiteSpace(motivoConsulta) &&
-               selectedHealthProfessionalId > 0; 
+               selectedHealthProfessionalId > 0;
     }
 
     private void ValidateAndShowErrors()
@@ -1564,14 +1718,48 @@
             await SaveMedicalCareRecord();
         }
 
-        if ((tab == "procedures" || tab == "services") && createdCareId.HasValue)
+        if ((tab == "procedures" || tab == "services" || tab == "referral") && createdCareId.HasValue)
         {
             currentMedicalCareId = createdCareId.Value;
             await JS.InvokeVoidAsync("console.log", "[v0] Set currentMedicalCareId to:", currentMedicalCareId);
         }
 
+        // Verificar datos sin guardar antes de cambiar de pestaña
+        if (activeTab == "referral" && tab != "referral")
+        {
+            await CheckUnsavedData();
+            if (hasUnsavedReferralData)
+            {
+                bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                    "Hay cambios sin guardar en la sección de Derivación. " +
+                    "Para continuar con el siguiente módulo, primero presione el botón 'Guardar' en la tabla. " +
+                    "¿Desea continuar sin guardar? (Se perderán los cambios)");
+
+                if (!confirmed)
+                {
+                    return;
+                }
+            }
+        }
+
         activeTab = tab;
         StateHasChanged();
+    }
+
+    private async Task CheckUnsavedData()
+    {
+        if (currentMedicalCareId > 0)
+        {
+            try
+            {
+                var referralData = await JS.InvokeAsync<string>("localStorage.getItem", $"referral_data_{currentMedicalCareId}");
+                hasUnsavedReferralData = !string.IsNullOrEmpty(referralData);
+            }
+            catch
+            {
+                hasUnsavedReferralData = false;
+            }
+        }
     }
 
     private async Task SaveMedicalCareRecord()
@@ -1651,7 +1839,6 @@
         if (createdCareId.HasValue)
         {
             await LoadServices();
-
         }
 
         await JS.InvokeVoidAsync("console.log", "[v0] Editing existing care with professional:",
@@ -1683,16 +1870,31 @@
             temperatura = temperaturaInput;
             pamInput = existingVitalSigns.MeanArterialPressure?.ToString() ?? "";
             pam = pamInput;
+
+            // ✅ CORRECCIÓN: Agregar estas líneas faltantes
             frecuenciaCardiacaInput = existingVitalSigns.HeartRate?.ToString() ?? "";
             frecuenciaCardiaca = frecuenciaCardiacaInput;
+
             saturacionOxigenoInput = existingVitalSigns.OxygenSaturation?.ToString() ?? "";
             saturacionOxigeno = saturacionOxigenoInput;
+
             frecuenciaRespiratoriaInput = existingVitalSigns.RespiratoryRate?.ToString() ?? "";
             frecuenciaRespiratoria = frecuenciaRespiratoriaInput;
+
             glucosaCapilarInput = existingVitalSigns.BloodGlucose?.ToString() ?? "";
             glucosaCapilar = glucosaCapilarInput;
             hemoglobinaInput = existingVitalSigns.Hemoglobin?.ToString() ?? "";
             hemoglobina = hemoglobinaInput;
+
+            // Debug para verificar que se cargaron los valores
+            await JS.InvokeVoidAsync("console.log", "✅ Signos vitales cargados:",
+            new Dictionary<string, object?>
+                {
+                { "HeartRate", frecuenciaCardiacaInput },
+                { "RespiratoryRate", frecuenciaRespiratoriaInput }
+                }
+            );
+
         }
 
         var existingServices = await MedicalServiceService.GetByCareIdAsync(MedicalCare.CareId);
@@ -1701,7 +1903,15 @@
         var existingProcedures = await MedicalProcedureService.GetAllAsync();
         procedimientosList = existingProcedures?.Where(p => p.CareId == MedicalCare.CareId).ToList() ?? new List<MedicalProcedureDTO>();
 
-        // ¡IMPORTANTE! Actualizar la tabla de procedimientos
+        // Cargar derivaciones existentes
+        var referralsResult = await MedicalReferralService.GetByMedicalCareIdAsync(MedicalCare.CareId);
+        if (referralsResult.Success && referralsResult.Data != null)
+        {
+            referralsList = referralsResult.Data;
+            await RefreshReferralsTable();
+        }
+
+        // Actualizar la tabla de procedimientos
         await UpdateProcedureTableData();
 
         StateHasChanged();
@@ -1727,7 +1937,6 @@
         tiposProcedimientos = await TypeOfProceduresService.GetAllAsync();
     }
 
-
     private async Task LoadProcedures()
     {
         todosProcedimientos = await ProceduresService.GetAllAsync();
@@ -1745,73 +1954,6 @@
         StateHasChanged();
         return Task.CompletedTask;
     }
-
-    // Métodos para servicios
-   
-    private async Task OnServiceSaved(MedicalServiceDTO servicio)
-    {
-        try
-        {
-            // Asegurar que el servicio tenga todos los datos necesarios
-            servicio.PatientId = selectedPatientId;
-            servicio.HealthProfessionalId = selectedHealthProfessionalId;
-            servicio.CareId = createdCareId.Value;
-
-            MedicalServiceDTO savedService;
-
-            if (servicio.ServiceId > 0)
-            {
-                // Actualizar servicio existente - AHORA USA LA NUEVA FIRMA
-                var updateResult = await MedicalServiceService.UpdateAsync(servicio);
-                if (!updateResult.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al actualizar servicio: {updateResult.Error}");
-                    return;
-                }
-                savedService = updateResult.Data; // ← AHORA Data ESTÁ DISPONIBLE
-            }
-            else
-            {
-                // Crear nuevo servicio
-                var createResult = await MedicalServiceService.CreateAsync(servicio);
-                if (!createResult.Success)
-                {
-                    await JS.InvokeVoidAsync("alert", $"Error al crear servicio: {createResult.Error}");
-                    return;
-                }
-                savedService = createResult.Data;
-            }
-
-            // Validar que tenemos el servicio guardado
-            if (savedService == null)
-            {
-                await JS.InvokeVoidAsync("alert", "Error: No se pudo obtener el servicio guardado.");
-                return;
-            }
-
-            // Actualizar la lista local
-            var existing = serviciosList.FirstOrDefault(s => s.ServiceId == savedService.ServiceId);
-            if (existing != null)
-            {
-                var index = serviciosList.IndexOf(existing);
-                serviciosList[index] = savedService;
-            }
-            else
-            {
-                serviciosList.Add(savedService);
-            }
-
-            StateHasChanged();
-
-            await JS.InvokeVoidAsync("console.log", "Servicio guardado exitosamente:", savedService);
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", "Error al guardar servicio:", ex);
-            await JS.InvokeVoidAsync("alert", $"Error al guardar servicio: {ex.Message}");
-        }
-    }
-
 
     //Procedimientos
 
@@ -1840,12 +1982,6 @@
         {
             await JS.InvokeVoidAsync("console.error", "Error loading procedures:", ex.Message);
         }
-    }
-
-    private bool IsNursingLocation()
-    {
-        var location = availableLocations.FirstOrDefault(l => l.Id == selectedLocationId);
-        return location?.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     private bool IsProcedureFormValid()
@@ -1883,13 +2019,6 @@
         procedureErrors.Clear();
         procedureFormError = "";
 
-        // Debug logging
-        JS.InvokeVoidAsync("console.log", "Validating procedure form:");
-        JS.InvokeVoidAsync("console.log", $"ProcedureDate: {currentProcedure?.ProcedureDate}");
-        JS.InvokeVoidAsync("console.log", $"TypeOfProcedureId: {selectedTypeOfProcedureId}");
-        JS.InvokeVoidAsync("console.log", $"SpecificProcedureId: {currentProcedure?.SpecificProcedureId}");
-        JS.InvokeVoidAsync("console.log", $"LocationId: {currentProcedure?.LocationId}"); // Para verificar
-
         if (currentProcedure?.ProcedureDate == default)
         {
             procedureErrors["ProcedureDate"] = "Debe seleccionar una fecha";
@@ -1905,11 +2034,8 @@
             procedureErrors["SpecificProcedureId"] = "Debe seleccionar un procedimiento específico";
         }
 
-        JS.InvokeVoidAsync("console.log", $"Validation errors: {procedureErrors.Count}");
         return procedureErrors.Count == 0;
     }
-
-    @* Updated procedure management methods to work with EditableTable *@
 
     private async Task LoadProcedureData()
     {
@@ -1968,7 +2094,6 @@
 
         StateHasChanged();
     }
-
 
     private async Task OnEditProcedureRequested(int procedureId)
     {
@@ -2075,12 +2200,12 @@
     {
         procedureRows = procedimientosList
             .Select(p => new List<string>
-                        {
-                p?.ProcedureDate.ToShortDateString() ?? "",
-                p?.TypeOfProcedureName ?? "Sin especificar",
-                p?.SpecificProcedureName ?? "Sin especificar",
-                p?.Observations ?? ""
-                        }).ToList();
+                    {
+                    p?.ProcedureDate.ToShortDateString() ?? "",
+                    p?.TypeOfProcedureName ?? "Sin especificar",
+                    p?.SpecificProcedureName ?? "Sin especificar",
+                    p?.Observations ?? ""
+                    }).ToList();
 
         procedureRowIds = procedimientosList.Select(p => p.ProcedureId).ToList();
 
@@ -2180,8 +2305,6 @@
         StateHasChanged();
     }
 
-
-    @* Removed old methods and added new method to update table data *@
     private async Task UpdateProcedureTableData()
     {
         procedureRows.Clear();
@@ -2194,12 +2317,12 @@
         foreach (var procedimiento in procedimientosList)
         {
             var row = new List<string>
-        {
-            procedimiento.ProcedureDate.ToString("dd/MM/yyyy HH:mm"),
-            procedimiento.TypeOfProcedureName ?? "Sin especificar",
-            procedimiento.SpecificProcedureName ?? "Sin especificar",
-            procedimiento.Observations ?? ""
-        };
+                {
+                    procedimiento.ProcedureDate.ToString("dd/MM/yyyy HH:mm"),
+                    procedimiento.TypeOfProcedureName ?? "Sin especificar",
+                    procedimiento.SpecificProcedureName ?? "Sin especificar",
+                    procedimiento.Observations ?? ""
+                };
 
             procedureRows.Add(row);
             procedureRowIds.Add(procedimiento.ProcedureId);
@@ -2255,7 +2378,7 @@
                 }
             }
 
-            // Recargar la tabla desde la base de datos
+            // Recargar la tabla
             await CargarProcedimientos();
 
             // Cerrar modal y limpiar
@@ -2494,5 +2617,282 @@
     private int? ParseInt(string value)
     {
         return int.TryParse(value, out var result) ? result : null;
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA DERIVACIÓN
+    // ============================================================================
+    private async Task LoadReferralData()
+    {
+        try
+        {
+            availableLocations = await LocationService.GetAllAsync();
+
+            // Filtrar módulos disponibles para derivación desde Enfermería
+            // Excluir Enfermería (área actual) y otros módulos que no sean destinos válidos
+            availableLocationsForReferral = availableLocations
+                .Where(l => !l.Name.Contains("Enfermería", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(l => l.Name)
+                .ToList();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Loaded {availableLocationsForReferral.Count} locations for referrals from Nursing: {string.Join(", ", availableLocationsForReferral.Select(l => l.Name))}");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error loading referral data: {ex.Message}");
+            availableLocationsForReferral = new List<LocationDTO>();
+        }
+    }
+
+    private bool IsReferralTabComplete()
+    {
+        return referralsList.Any();
+    }
+
+    private async Task RefreshReferralsTable()
+    {
+        referralRows.Clear();
+        referralIds.Clear();
+
+        foreach (var referral in referralsList)
+        {
+            // Obtener el nombre del módulo desde la relación Location
+            var locationName = "N/A";
+            if (referral.LocationId.HasValue)
+            {
+                var location = availableLocationsForReferral.FirstOrDefault(l => l.Id == referral.LocationId.Value);
+                locationName = location?.Name ?? "Módulo no encontrado";
+            }
+
+            var dateOfReferral = referral.DateOfReferral?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha";
+            var description = !string.IsNullOrEmpty(referral.Description)
+                ? (referral.Description.Length > 30 ? referral.Description.Substring(0, 30) + "..." : referral.Description)
+                : "Sin motivo";
+            var isUrgent = referral.IsUrgent ? "Sí" : "No";
+            var status = referral.Status ?? "Pendiente";
+
+            referralRows.Add(new List<string> { locationName, dateOfReferral, description, isUrgent, status });
+            referralIds.Add(referral.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<string> GetLocationNameById(int locationId)
+    {
+        try
+        {
+            var location = await LocationService.GetByIdAsync(locationId);
+            return location?.Name ?? "Ubicación no encontrada";
+        }
+        catch
+        {
+            return "Error al obtener ubicación";
+        }
+    }
+
+    private async Task OnAddReferralRequested()
+    {
+        currentReferral = new MedicalReferralDTO
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                DateOfReferral = DateTime.Now,
+                Description = "",
+                AdditionalNotes = "",
+                Status = "Pendiente",
+                IsUrgent = false,
+                LocationId = null // Inicializar como null
+            };
+
+        selectedLocationDId = null; // Resetear selección
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnEditReferralRequested(int id)
+    {
+        var existing = referralsList.FirstOrDefault(r => r.Id == id);
+        if (existing != null)
+        {
+            currentReferral = new MedicalReferralDTO
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    DateOfReferral = existing.DateOfReferral,
+                    Description = existing.Description ?? "",
+                    AdditionalNotes = existing.AdditionalNotes,
+                    Status = existing.Status ?? "Pendiente",
+                    IsUrgent = existing.IsUrgent,
+                    LocationId = existing.LocationId // CARGAR EL LOCATION_ID EXISTENTE
+                };
+
+            // Asignar el LocationId al selector
+            selectedLocationDId = existing.LocationId;
+        }
+
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnDeleteReferralRequested(int id)
+    {
+        try
+        {
+            bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                "¿Está seguro que desea eliminar esta derivación?");
+
+            if (!confirmed) return;
+
+            var result = await MedicalReferralService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = referralsList.FirstOrDefault(r => r.Id == id);
+                if (toRemove != null)
+                {
+                    referralsList.Remove(toRemove);
+                    await RefreshReferralsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Derivación eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveReferralRequested()
+    {
+        try
+        {
+            if (!ValidateReferralForm())
+            {
+                return;
+            }
+
+            // Asegurar que tenemos el MedicalCareId correcto
+            currentReferral.MedicalCareId = currentMedicalCareId;
+
+            // ASIGNAR EL LOCATION_ID SELECCIONADO - ESTO ES LO QUE FALTA
+            currentReferral.LocationId = selectedLocationDId;
+
+            if (currentReferral.Id == 0)
+            {
+                // Crear nuevo
+                var result = await MedicalReferralService.CreateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    referralsList.Add(result.Data);
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación creada exitosamente.");
+
+                    // Limpiar localStorage después de guardar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al crear derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {referralFormError}");
+                    return;
+                }
+            }
+            else
+            {
+                // Actualizar existente
+                var result = await MedicalReferralService.UpdateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    var index = referralsList.FindIndex(r => r.Id == currentReferral.Id);
+                    if (index >= 0)
+                    {
+                        referralsList[index] = result.Data;
+                    }
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación actualizada exitosamente.");
+
+                    // Limpiar localStorage después de actualizar exitosamente
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al actualizar derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {referralFormError}");
+                    return;
+                }
+            }
+
+            // Limpiar el formulario
+            currentReferral = new MedicalReferralDTO();
+            selectedLocationDId = null;
+            referralErrors.Clear();
+            referralFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            referralFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", referralFormError);
+        }
+    }
+
+    private bool ValidateReferralForm()
+    {
+        referralErrors.Clear();
+        referralFormError = "";
+        bool isValid = true;
+
+        // CORREGIR: Usar HasValue y Value para nullable int
+        if (!selectedLocationDId.HasValue || selectedLocationDId.Value <= 0)
+        {
+            referralErrors["LocationId"] = "Debe seleccionar un módulo o especialidad de destino.";
+            isValid = false;
+        }
+
+        if (!currentReferral.DateOfReferral.HasValue)
+        {
+            referralErrors["DateOfReferral"] = "La fecha de derivación es obligatoria.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentReferral.Description))
+        {
+            referralErrors["Description"] = "El motivo de derivación es obligatorio.";
+            isValid = false;
+        }
+        else if (currentReferral.Description.Length > 1000)
+        {
+            referralErrors["Description"] = "El motivo de derivación no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentReferral.AdditionalNotes) && currentReferral.AdditionalNotes.Length > 500)
+        {
+            referralErrors["AdditionalNotes"] = "Las notas adicionales no pueden exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            referralFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsReferralFormValid()
+    {
+        return selectedLocationDId.HasValue && selectedLocationDId.Value > 0 &&
+               currentReferral.DateOfReferral.HasValue &&
+               !string.IsNullOrWhiteSpace(currentReferral.Description) &&
+               (currentReferral.Description?.Length ?? 0) <= 1000 &&
+               (currentReferral.AdditionalNotes?.Length ?? 0) <= 500;
     }
 }

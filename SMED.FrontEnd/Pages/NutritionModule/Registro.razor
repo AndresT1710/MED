@@ -5,6 +5,10 @@
 @using SMED.Shared.DTOs
 @using SMED.FrontEnd.Services
 @inject MedicalCareService MedicalCareService
+@inject MedicalReferralService MedicalReferralService
+@inject HealthProfessionalService HealthProfessionalService
+@inject LocationService LocationService
+@inject AuthorizationService AuthorizationService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
@@ -12,121 +16,310 @@
 <TabContainerE OnSave="GuardarDatos">
     <h3 class="mb-4">Gestión de Atenciones de Nutrición</h3>
 
-    <!-- Filtros de búsqueda mejorados -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Filtro por fecha -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Filtrar por fecha</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-calendar"></i>
-                        </span>
-                        <input type="date"
-                               class="form-control"
-                               @bind="selectedDate" />
-                        <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
-                            <i class="fas fa-times"></i> Limpiar
+    <!-- Tabs de navegación -->
+    <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeMainTab == "medical-care" ? "active" : "")"
+                    @onclick="@(() => SetActiveMainTab("medical-care"))"
+                    type="button" role="tab">
+                <i class="fas fa-apple-alt me-2"></i>Atenciones
+                <span class="badge bg-secondary ms-1">@filteredMedicalCareList.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeMainTab == "referrals" ? "active" : "")"
+                    @onclick="@(() => SetActiveMainTab("referrals"))"
+                    type="button" role="tab">
+                <i class="fas fa-share-square me-2"></i>Derivaciones Recibidas
+                @if (HasPendingReferrals)
+                {
+                    <span class="badge bg-warning ms-1">@PendingReferralsCount</span>
+                }
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenido de Atenciones -->
+    @if (activeMainTab == "medical-care")
+    {
+        <div class="tab-pane show active" role="tabpanel">
+            <!-- Filtros de búsqueda mejorados -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Filtro por fecha -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Filtrar por fecha</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                                <input type="date"
+                                       class="form-control"
+                                       @bind="selectedDate" />
+                                <button class="btn btn-outline-secondary" @onclick="ClearDateFilter">
+                                    <i class="fas fa-times"></i> Limpiar
+                                </button>
+                            </div>
+                            <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
+                        </div>
+                    </div>
+
+                    <!-- Búsqueda por paciente usando PersonSearchComponent -->
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Buscar por paciente</label>
+                            <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
+                                                   OnPersonSelected="HandlePersonSelected"
+                                                   OnPersonCleared="HandlePersonCleared" />
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            @if (hasActiveFilters)
+                            {
+                                <span class="badge bg-info me-2">
+                                    <i class="fas fa-filter me-1"></i>Filtros activos
+                                </span>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
+                                    <i class="fas fa-times me-1"></i>Limpiar todos los filtros
+                                </button>
+                            }
+                        </div>
+                        <button class="btn btn-primary" @onclick="CreateNewMedicalCare">
+                            <i class="fas fa-plus me-1"></i>Nueva Atención
                         </button>
                     </div>
-                    <small class="text-muted">Seleccione una fecha para ver las atenciones de ese día</small>
                 </div>
             </div>
 
-            <!-- Búsqueda por paciente usando PersonSearchComponent -->
-            <div class="row">
+            @if (showNoMedicalCareAlert)
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@searchMessage</strong>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
+                                <i class="fas fa-plus"></i> Crear Nueva Atención
+                            </button>
+                            <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Información de filtros activos -->
+            <div class="row mb-3">
                 <div class="col-12">
-                    <label class="form-label fw-bold">Buscar por paciente</label>
-                    <PersonSearchComponent @bind-SelectedPerson="selectedPerson"
-                                           OnPersonSelected="HandlePersonSelected"
-                                           OnPersonCleared="HandlePersonCleared" />
-                </div>
-            </div>
-
-            <!-- Botones de acción -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div>
-                    @if (hasActiveFilters)
-                    {
-                        <span class="badge bg-info me-2">
-                            <i class="fas fa-filter me-1"></i>Filtros activos
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-success">
+                            <i class="fas fa-apple-alt me-1"></i>Nutrición
                         </span>
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="ClearAllFilters">
-                            <i class="fas fa-times me-1"></i>Limpiar todos los filtros
-                        </button>
-                    }
+                        @if (selectedDate.HasValue)
+                        {
+                            <span class="badge bg-primary">
+                                <i class="fas fa-calendar me-1"></i>Fecha: @selectedDate.Value.ToString("dd/MM/yyyy")
+                            </span>
+                        }
+                        @if (selectedPerson != null)
+                        {
+                            <span class="badge bg-info">
+                                <i class="fas fa-user me-1"></i>Paciente: @selectedPerson.FirstName @selectedPerson.LastName
+                            </span>
+                        }
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-list me-1"></i>Total: @filteredMedicalCareList.Count registros
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    @if (showNoMedicalCareAlert)
-    {
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>@searchMessage</strong>
+            <!-- Tabla de atenciones -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Lista de Atenciones - Nutrición
+                    </h5>
                 </div>
-                <div>
-                    <button type="button" class="btn btn-primary me-2" @onclick="CreateNewMedicalCare">
-                        <i class="fas fa-plus"></i> Crear Nueva Atención
-                    </button>
-                    <button type="button" class="btn-close" @onclick="() => showNoMedicalCareAlert = false" aria-label="Close"></button>
+                <div class="card-body">
+                    <ManagementTableR TableTitle=""
+                                      Columns="MedicalCareColumns"
+                                      DocumentTypes="documentTypeList"
+                                      RenderActions="RenderMedicalCareActions"
+                                      AddCallback="AddMedicalCare"
+                                      @ref="table" />
                 </div>
             </div>
         </div>
     }
 
-    <!-- Información de filtros activos -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-success">
-                    <i class="fas fa-apple-alt me-1"></i>Área: Nutrición
-                </span>
-                @if (selectedDate.HasValue)
-                {
-                    <span class="badge bg-primary">
-                        <i class="fas fa-calendar me-1"></i>Fecha: @selectedDate.Value.ToString("dd/MM/yyyy")
-                    </span>
-                }
-                @if (selectedPerson != null)
-                {
-                    <span class="badge bg-info">
-                        <i class="fas fa-user me-1"></i>Paciente: @selectedPerson.FirstName @selectedPerson.LastName
-                    </span>
-                }
-                <span class="badge bg-secondary">
-                    <i class="fas fa-list me-1"></i>Total: @filteredMedicalCareList.Count registros
-                </span>
+    <!-- Contenido de Derivaciones -->
+    @if (activeMainTab == "referrals")
+    {
+        <div class="tab-pane show active" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-share-square me-2"></i>Derivaciones Recibidas
+                        @if (HasPendingReferrals)
+                        {
+                            <span class="badge bg-warning ms-2">@PendingReferralsCount pendientes</span>
+                        }
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (isLoadingReferrals)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando derivaciones...</span>
+                            </div>
+                            <p class="mt-2">Cargando derivaciones...</p>
+                        </div>
+                    }
+                    else if (!referralsList.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No hay derivaciones pendientes para nutrición.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Historia Clínica</th>
+                                        <th>Fecha Derivación</th>
+                                        <th>Área Origen</th>
+                                        <th>Motivo</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var referral in filteredReferralsList)
+                                    {
+                                        <tr class="@(referral.Status == "Pendiente" ? "table-warning" : "table-success")">
+                                            <td>
+                                                <strong>@referral.PatientName</strong>
+                                                @if (referral.IsUrgent)
+                                                {
+                                                    <span class="badge bg-danger ms-1">Urgente</span>
+                                                }
+                                            </td>
+                                            <td>@referral.MedicalRecordNumber</td>
+                                            <td>@referral.DateOfReferral?.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <span class="badge bg-info">@referral.ReferringArea</span>
+                                                <br />
+                                                <small class="text-muted">@referral.ReferringProfessional</small>
+                                            </td>
+                                            <td>
+                                                <div class="referral-reason">
+                                                    @if (!string.IsNullOrEmpty(referral.Description))
+                                                    {
+                                                        if (referral.Description.Length > 100)
+                                                        {
+                                                            <span title="@referral.Description">
+                                                                @referral.Description.Substring(0, 100)...
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            @referral.Description
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Sin motivo especificado</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(referral.Status)">
+                                                    @referral.Status
+                                                </span>
+                                                @if (referral.Status == "Atendido" && referral.AttendedDate.HasValue)
+                                                {
+                                                    <br />
+                                                    <small class="text-muted">
+                                                        @referral.AttendedDate.Value.ToString("dd/MM/yyyy")
+                                                    </small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-outline-primary"
+                                                            @onclick="() => ShowReferralDetails(referral)"
+                                                            title="Ver detalles">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    @if (referral.Status == "Pendiente")
+                                                    {
+                                                        <button class="btn btn-outline-success"
+                                                                @onclick="() => MarkAsAttended(referral)"
+                                                                title="Marcar como atendido">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Filtros y estadísticas -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="btn-group" role="group">
+                                    <button type="button"
+                                            class="btn @(referralFilter == "all" ? "btn-primary" : "btn-outline-primary")"
+                                            @onclick="@(() => FilterReferrals("all"))">
+                                        Todas (@referralsList.Count)
+                                    </button>
+                                    <button type="button"
+                                            class="btn @(referralFilter == "pending" ? "btn-warning" : "btn-outline-warning")"
+                                            @onclick="@(() => FilterReferrals("pending"))">
+                                        Pendientes (@referralsList.Count(r => r.Status == "Pendiente"))
+                                    </button>
+                                    <button type="button"
+                                            class="btn @(referralFilter == "attended" ? "btn-success" : "btn-outline-success")"
+                                            @onclick="@(() => FilterReferrals("attended"))">
+                                        Atendidas (@referralsList.Count(r => r.Status == "Atendido"))
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    Actualizado: @lastUpdateTime.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                                <button class="btn btn-outline-secondary btn-sm ms-2" @onclick="RefreshReferrals">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
-    </div>
+    }
 
-    <!-- Tabla de atenciones médicas -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Lista de Atenciones - Nutrición
-            </h5>
-        </div>
-        <div class="card-body">
-            <ManagementTableR TableTitle=""
-                              Columns="MedicalCareColumns"
-                              DocumentTypes="documentTypeList"
-                              RenderActions="RenderMedicalCareActions"
-                              AddCallback="AddMedicalCare"
-                              @ref="table" />
-        </div>
-    </div>
-
-    <!-- Modal de detalle -->
+    <!-- Modal de detalle de atención -->
     @if (showDetail && selectedMedicalCare != null)
     {
         <div class="modal fade show d-flex align-items-center justify-content-center"
@@ -150,7 +343,7 @@
         </div>
     }
 
-    <!-- Modal de formulario -->
+    <!-- Modal de formulario de atención -->
     @if (showForm)
     {
         <div class="modal-backdrop fade show"></div>
@@ -166,8 +359,118 @@
                     </div>
                     <div class="modal-body">
                         <NutritionMedicalCareForm MedicalCare="selectedMedicalCare"
-                                         OnSaved="OnMedicalCareSaved"
-                                         OnCancel="HideForm" />
+                                                  OnSaved="OnMedicalCareSaved"
+                                                  OnCancel="HideForm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal de detalles de derivación -->
+    @if (showReferralDetailModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-file-medical-alt me-2"></i>
+                            Detalles de Derivación
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CloseReferralDetailModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (selectedReferral != null)
+                        {
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Información del Paciente</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p><strong>Nombre:</strong> @selectedReferral.PatientName</p>
+                                            <p><strong>Historia Clínica:</strong> @selectedReferral.MedicalRecordNumber</p>
+                                            <p><strong>Edad:</strong> @selectedReferral.PatientAge años</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">Información de Derivación</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p><strong>Fecha:</strong> @selectedReferral.DateOfReferral?.ToString("dd/MM/yyyy")</p>
+                                            <p><strong>Área Origen:</strong> @selectedReferral.ReferringArea</p>
+                                            <p><strong>Profesional:</strong> @selectedReferral.ReferringProfessional</p>
+                                            <p>
+                                                <strong>Estado:</strong>
+                                                <span class="badge @GetStatusBadgeClass(selectedReferral.Status)">
+                                                    @selectedReferral.Status
+                                                </span>
+                                            </p>
+                                            @if (selectedReferral.IsUrgent)
+                                            {
+                                                <p>
+                                                    <strong>Prioridad:</strong>
+                                                    <span class="badge bg-danger">Urgente</span>
+                                                </p>
+                                            }
+                                            @if (selectedReferral.Status == "Atendido" && selectedReferral.AttendedDate.HasValue)
+                                            {
+                                                <p><strong>Atendido el:</strong> @selectedReferral.AttendedDate.Value.ToString("dd/MM/yyyy")</p>
+                                                <p><strong>Atendido por:</strong> @selectedReferral.AttendedBy</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Motivo de Derivación</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="bg-light p-3 rounded">
+                                        @if (!string.IsNullOrEmpty(selectedReferral.Description))
+                                        {
+                                            @selectedReferral.Description
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No se especificó motivo de derivación</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(selectedReferral.AdditionalNotes))
+                            {
+                                <div class="card mt-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Notas Adicionales</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="bg-light p-3 rounded">
+                                            @selectedReferral.AdditionalNotes
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        @if (selectedReferral?.Status == "Pendiente")
+                        {
+                            <button class="btn btn-success" @onclick="() => MarkAsAttended(selectedReferral)">
+                                <i class="fas fa-check me-2"></i>Marcar como Atendido
+                            </button>
+                        }
+                        <button class="btn btn-secondary" @onclick="CloseReferralDetailModal">
+                            Cerrar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -185,6 +488,17 @@
     private List<MedicalCareDTO> allMedicalCareList = new();
     private List<MedicalCareDTO> filteredMedicalCareList = new();
     private List<List<string>> MedicalCareData = new();
+
+    // Variables para gestión de derivaciones
+    private List<MedicalReferralDTO> referralsList = new();
+    private List<MedicalReferralDTO> filteredReferralsList = new();
+    private MedicalReferralDTO? selectedReferral;
+    private bool isLoadingReferrals = false;
+    private bool showReferralDetailModal = false;
+    private string referralFilter = "all";
+    private DateTime lastUpdateTime = DateTime.Now;
+    private string activeMainTab = "medical-care";
+    private int nutritionLocationId = 3; // Ajusta este ID según tu configuración
 
     // Filtros
     private DateTime? _selectedDate;
@@ -204,6 +518,10 @@
         }
     }
 
+    // Propiedades computadas
+    private bool HasPendingReferrals => referralsList.Any(r => r.Status == "Pendiente");
+    private int PendingReferralsCount => referralsList.Count(r => r.Status == "Pendiente");
+
     // Columnas de la tabla (sin ID)
     private List<string> MedicalCareColumns = new()
     {
@@ -214,6 +532,7 @@
     {
         documentTypeList = await Http.GetFromJsonAsync<List<DocumentTypeDTO>>("api/Complements/document-types") ?? new();
         await LoadNutritionCareData();
+        await LoadReferrals();
     }
 
     private async Task LoadNutritionCareData()
@@ -224,6 +543,7 @@
             await JS.InvokeVoidAsync("console.log", $"Loaded {result?.Count ?? 0} nutrition records");
             allMedicalCareList = result ?? new List<MedicalCareDTO>();
 
+            totalMedicalCareCount = allMedicalCareList.Count;
             ApplyFilters();
         }
         catch (Exception ex)
@@ -232,6 +552,174 @@
             allMedicalCareList = new List<MedicalCareDTO>();
             filteredMedicalCareList = new List<MedicalCareDTO>();
         }
+    }
+
+    private async Task LoadReferrals()
+    {
+        isLoadingReferrals = true;
+        StateHasChanged();
+
+        try
+        {
+            // Obtener derivaciones para nutrición
+            var referralsResult = await MedicalReferralService.GetByLocationAsync(nutritionLocationId);
+            if (referralsResult.Success && referralsResult.Data != null)
+            {
+                referralsList = referralsResult.Data;
+                ApplyReferralFilter();
+            }
+            else
+            {
+                referralsList = new List<MedicalReferralDTO>();
+                await JS.InvokeVoidAsync("console.error", "Error loading referrals:", referralsResult.Error);
+            }
+
+            lastUpdateTime = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error loading referrals:", ex.Message);
+            await JS.InvokeVoidAsync("alert", "Error al cargar las derivaciones");
+            referralsList = new List<MedicalReferralDTO>();
+        }
+        finally
+        {
+            isLoadingReferrals = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshReferrals()
+    {
+        await LoadReferrals();
+    }
+
+    private void ApplyReferralFilter()
+    {
+        switch (referralFilter)
+        {
+            case "pending":
+                filteredReferralsList = referralsList.Where(r => r.Status == "Pendiente").ToList();
+                break;
+            case "attended":
+                filteredReferralsList = referralsList.Where(r => r.Status == "Atendido").ToList();
+                break;
+            default:
+                filteredReferralsList = referralsList;
+                break;
+        }
+    }
+
+    private async Task FilterReferrals(string filter)
+    {
+        referralFilter = filter;
+        ApplyReferralFilter();
+        StateHasChanged();
+    }
+
+    private async Task ShowReferralDetails(MedicalReferralDTO referral)
+    {
+        selectedReferral = referral;
+        showReferralDetailModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseReferralDetailModal()
+    {
+        showReferralDetailModal = false;
+        selectedReferral = null;
+        StateHasChanged();
+    }
+
+    private async Task MarkAsAttended(MedicalReferralDTO referral)
+    {
+        try
+        {
+            // Obtener el profesional logueado actual
+            var currentProfessional = await HealthProfessionalService.GetCurrentHealthProfessionalAsync(AuthorizationService);
+            if (currentProfessional == null)
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo identificar al profesional actual");
+                return;
+            }
+
+            // Actualizar la derivación
+            referral.Status = "Atendido";
+            referral.AttendedDate = DateTime.Now;
+            referral.AttendedByProfessionalId = currentProfessional.HealthProfessionalId;
+            referral.AttendedBy = currentProfessional.FullName;
+
+            var updateResult = await MedicalReferralService.UpdateAsync(referral);
+            if (updateResult.Success)
+            {
+                await JS.InvokeVoidAsync("alert", "Derivación marcada como atendida exitosamente");
+
+                // Recargar la lista
+                await LoadReferrals();
+                CloseReferralDetailModal();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al actualizar: {updateResult.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+
+    private async Task ViewMedicalCareFromReferral(MedicalReferralDTO referral)
+    {
+        if (referral.MedicalCareId > 0)
+        {
+            // Buscar la atención en la lista actual
+            var medicalCare = allMedicalCareList.FirstOrDefault(mc => mc.CareId == referral.MedicalCareId);
+            if (medicalCare != null)
+            {
+                selectedMedicalCare = medicalCare;
+                showDetail = true;
+                activeMainTab = "medical-care"; // Cambiar a la pestaña de atenciones
+                StateHasChanged();
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "No se pudo encontrar la atención relacionada");
+            }
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Esta derivación no tiene una atención asociada");
+        }
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pendiente" => "bg-warning",
+            "Atendido" => "bg-success",
+            "Cancelado" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task SetActiveMainTab(string tab)
+    {
+        activeMainTab = tab;
+
+        // Si regresamos a la pestaña de atenciones, recargar datos
+        if (tab == "medical-care")
+        {
+            await LoadNutritionCareData();
+        }
+        // Si vamos a la pestaña de derivaciones, recargar derivaciones
+        else if (tab == "referrals")
+        {
+            await LoadReferrals();
+        }
+
+        StateHasChanged();
     }
 
     private void ApplyFilters()
@@ -294,7 +782,7 @@
             mc.NamePatient ?? "N/A",
             mc.NamePlace ?? "N/A",
             mc.NameHealthProfessional ?? "N/A",
-            mc.CareId.ToString() // Para las acciones, pero no se muestra en la tabla
+            mc.CareId.ToString()
         }).ToList();
 
         if (table != null)
@@ -343,9 +831,9 @@
     private void CreateNewMedicalCare()
     {
         selectedMedicalCare = new MedicalCareDTO
-        {
-            CareId = 0
-        };
+            {
+                CareId = 0
+            };
         showForm = true;
         showNoMedicalCareAlert = false;
     }
@@ -471,7 +959,6 @@
     {
         showForm = false;
         await LoadNutritionCareData();
-        await InvokeAsync(StateHasChanged);
 
         var message = savedMedicalCare.CareId == 0
             ? "Atención de nutrición creada exitosamente"

@@ -293,12 +293,23 @@
                         !string.IsNullOrWhiteSpace(person.Address[0]?.SecondaryStreet1) &&
                         !string.IsNullOrWhiteSpace(person.Address[0]?.Reference);
 
-        var hasPhone = !string.IsNullOrWhiteSpace(person.Phone?.Mobile);
+        var hasPhone = !string.IsNullOrWhiteSpace(person.Phone?.Mobile) &&
+                       IsValidMobileNumber(person.Phone.Mobile); // Nueva validación
 
         var hasResidence = person.Residence?.ProvinceId.HasValue == true &&
                           person.Residence?.CityId.HasValue == true;
 
         return hasAddress && hasPhone && hasResidence;
+    }
+
+    private bool IsValidMobileNumber(string mobile)
+    {
+        if (string.IsNullOrWhiteSpace(mobile)) return false;
+
+        // Debe tener exactamente 10 dígitos y empezar con 09
+        return mobile.Length == 10 &&
+               mobile.All(char.IsDigit) &&
+               mobile.StartsWith("09");
     }
 
     private bool IsComplementsTabComplete()

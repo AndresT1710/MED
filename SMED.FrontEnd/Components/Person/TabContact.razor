@@ -189,12 +189,21 @@
         return baseClass;
     }
 
-    // Validación para teléfono fijo
+    //Validacion telefono fijo
     private void OnLandlineInput(ChangeEventArgs e)
     {
         var input = e.Value?.ToString() ?? "";
 
-        // Filtrar solo números
+        // ✅ PRIMERO validar si hay caracteres no numéricos
+        if (!string.IsNullOrEmpty(input) && !input.All(char.IsDigit))
+        {
+            landlineError = "Solo se permiten números";
+            landlineInput = input; // Mantenemos el input original para mostrar el error
+            StateHasChanged();
+            return;
+        }
+
+        // Filtrar solo números (por si acaso)
         var numericInput = new string(input.Where(char.IsDigit).ToArray());
 
         // Limitar a 9 dígitos
@@ -204,7 +213,7 @@
         landlineInput = numericInput;
         Landline = numericInput;
 
-        // Validar
+        // Validar formato
         ValidateLandline(numericInput);
         StateHasChanged();
     }
@@ -214,6 +223,13 @@
         if (string.IsNullOrEmpty(phone))
         {
             landlineError = "";
+            return;
+        }
+
+        // Ya validamos que sean solo dígitos en OnLandlineInput, pero por seguridad:
+        if (!phone.All(char.IsDigit))
+        {
+            landlineError = "Solo se permiten números";
             return;
         }
 
@@ -238,6 +254,15 @@
     {
         var input = e.Value?.ToString() ?? "";
 
+        // ✅ PRIMERO validar si hay caracteres no numéricos
+        if (!string.IsNullOrEmpty(input) && !input.All(char.IsDigit))
+        {
+            mobileError = "Solo se permiten números";
+            mobileInput = input; // Mantenemos el input original para mostrar el error
+            StateHasChanged();
+            return;
+        }
+
         // Filtrar solo números
         var numericInput = new string(input.Where(char.IsDigit).ToArray());
 
@@ -253,11 +278,19 @@
         StateHasChanged();
     }
 
+
     private void ValidateMobile(string mobile)
     {
         if (string.IsNullOrEmpty(mobile))
         {
             mobileError = "El número de celular es obligatorio";
+            return;
+        }
+
+        // Ya validamos que sean solo dígitos en OnMobileInput, pero por seguridad:
+        if (!mobile.All(char.IsDigit))
+        {
+            mobileError = "Solo se permiten números";
             return;
         }
 
@@ -276,6 +309,7 @@
         mobileError = "";
     }
 
+
     protected override async Task OnInitializedAsync()
     {
         Person.Address ??= new() { new PersonAddressDTO() };
@@ -285,6 +319,13 @@
         // Inicializar valores de teléfonos si existen
         landlineInput = Person.Phone?.Landline ?? "";
         mobileInput = Person.Phone?.Mobile ?? "";
+
+        // Validar teléfonos existentes al inicializar
+        if (!string.IsNullOrEmpty(landlineInput))
+            ValidateLandline(landlineInput);
+
+        if (!string.IsNullOrEmpty(mobileInput))
+            ValidateMobile(mobileInput);
 
         await LoadProvinces();
 
@@ -456,7 +497,12 @@
         {
             if (Person.Phone == null)
                 Person.Phone = new PersonPhoneDTO();
-            Person.Phone.Landline = value;
+
+            // Solo asignar si pasa validación básica
+            if (string.IsNullOrEmpty(value) || IsValidPhoneNumber(value))
+            {
+                Person.Phone.Landline = value;
+            }
         }
     }
 
@@ -467,7 +513,17 @@
         {
             if (Person.Phone == null)
                 Person.Phone = new PersonPhoneDTO();
-            Person.Phone.Mobile = value;
+
+            // Solo asignar si pasa validación básica
+            if (string.IsNullOrEmpty(value) || IsValidPhoneNumber(value))
+            {
+                Person.Phone.Mobile = value;
+            }
         }
+    }
+
+    private bool IsValidPhoneNumber(string phone)
+    {
+        return !string.IsNullOrEmpty(phone) && phone.All(char.IsDigit);
     }
 }

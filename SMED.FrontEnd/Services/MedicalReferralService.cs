@@ -49,6 +49,74 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<ServiceResult<List<MedicalReferralDTO>>> GetByLocationAsync(int locationId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/MedicalReferral/location/{locationId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var referrals = await response.Content.ReadFromJsonAsync<List<MedicalReferralDTO>>();
+                    return new ServiceResult<List<MedicalReferralDTO>>
+                    {
+                        Success = true,
+                        Data = referrals ?? new List<MedicalReferralDTO>()
+                    };
+                }
+
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = $"Error al obtener derivaciones por ubicación: {response.StatusCode}",
+                    Data = new List<MedicalReferralDTO>()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener derivaciones por ubicación: {LocationId}", locationId);
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    Data = new List<MedicalReferralDTO>()
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<MedicalReferralDTO>>> GetPendingReferralsAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("api/MedicalReferral/pending");
+                if (response.IsSuccessStatusCode)
+                {
+                    var referrals = await response.Content.ReadFromJsonAsync<List<MedicalReferralDTO>>();
+                    return new ServiceResult<List<MedicalReferralDTO>>
+                    {
+                        Success = true,
+                        Data = referrals ?? new List<MedicalReferralDTO>()
+                    };
+                }
+
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = $"Error al obtener derivaciones pendientes: {response.StatusCode}",
+                    Data = new List<MedicalReferralDTO>()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener derivaciones pendientes");
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    Data = new List<MedicalReferralDTO>()
+                };
+            }
+        }
+
         public async Task<ServiceResult<MedicalReferralDTO>> GetByIdAsync(int id)
         {
             try
@@ -81,24 +149,76 @@ namespace SMED.FrontEnd.Services
             }
         }
 
-        public async Task<List<MedicalReferralDTO>> GetByMedicalCareIdAsync(int medicalCareId)
+        public async Task<ServiceResult<List<MedicalReferralDTO>>> GetByMedicalCareIdAsync(int medicalCareId)
         {
             try
             {
-                var allReferrals = await GetAllAsync();
-                if (allReferrals.Success && allReferrals.Data != null)
+                var response = await _httpClient.GetAsync($"api/MedicalReferral/medical-care/{medicalCareId}");
+                if (response.IsSuccessStatusCode)
                 {
-                    return allReferrals.Data.Where(r => r.MedicalCareId == medicalCareId).ToList();
+                    var referrals = await response.Content.ReadFromJsonAsync<List<MedicalReferralDTO>>();
+                    return new ServiceResult<List<MedicalReferralDTO>>
+                    {
+                        Success = true,
+                        Data = referrals ?? new List<MedicalReferralDTO>()
+                    };
                 }
-                return new List<MedicalReferralDTO>();
+
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = $"Error al obtener derivaciones por atención médica: {response.StatusCode}",
+                    Data = new List<MedicalReferralDTO>()
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener derivaciones médicas por MedicalCareId: {MedicalCareId}", medicalCareId);
-                return new List<MedicalReferralDTO>();
+                _logger.LogError(ex, "Error al obtener derivaciones por MedicalCareId: {MedicalCareId}", medicalCareId);
+                return new ServiceResult<List<MedicalReferralDTO>>
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    Data = new List<MedicalReferralDTO>()
+                };
             }
         }
 
+
+        public async Task<ServiceResult<bool>> UpdateStatusAsync(int id, string status, int? attendedByProfessionalId = null)
+        {
+            try
+            {
+                var request = new { Status = status, AttendedByProfessionalId = attendedByProfessionalId };
+                var response = await _httpClient.PutAsJsonAsync($"api/MedicalReferral/{id}/status", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new ServiceResult<bool>
+                    {
+                        Success = true,
+                        Data = true
+                    };
+                }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return new ServiceResult<bool>
+                {
+                    Success = false,
+                    Error = $"Error al actualizar estado: {response.StatusCode} - {errorContent}",
+                    Data = false
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar estado de derivación con ID: {Id}", id);
+                return new ServiceResult<bool>
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    Data = false
+                };
+            }
+        }
         public async Task<ServiceResult<MedicalReferralDTO>> CreateAsync(MedicalReferralDTO referralDto)
         {
             try
@@ -198,6 +318,8 @@ namespace SMED.FrontEnd.Services
                 };
             }
         }
+
+
     }
 
     // Clase auxiliar para manejar respuestas del servicio

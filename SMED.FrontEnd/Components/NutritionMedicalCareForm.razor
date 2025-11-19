@@ -17,6 +17,7 @@
 @inject FoodPlanService FoodPlanService
 @inject ForbiddenFoodService ForbiddenFoodService
 @inject FoodService FoodService
+@inject MedicalReferralService MedicalReferralService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -98,6 +99,19 @@
                     disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-utensils me-2"></i>Plan Alimentación
                 @if (IsPlanComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "referral" ? "active" : "")"
+                    @onclick="@(() => SetActiveTab("referral"))"
+                    type="button" role="tab"
+                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-share me-2"></i>Derivación
+                @if (IsReferralTabComplete())
                 {
                     <span class="badge bg-success ms-1">✓</span>
                 }
@@ -769,13 +783,159 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("diametros"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-success" @onclick="FinalizarAtencionNutricion" disabled="@isSaving">
-                                @if (isSaving)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
-                                }
-                                <i class="fas fa-check me-2"></i>Finalizar Atención
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("referral"))">
+                                Continuar a Derivación <i class="fas fa-arrow-right ms-2"></i>
                             </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña: Derivación -->
+        <div class="tab-pane @(activeTab == "referral" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-share me-2"></i>Derivación
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Derivación a módulos y especialidades</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples derivaciones para esta atención de psicología.
+                        </div>
+
+                        <EditableTable Title="Derivaciones"
+                                       ColumnHeaders="@referralHeaders"
+                                       Rows="@referralRows"
+                                       RowIds="@referralIds"
+                                       EmptyMessage="No se han registrado derivaciones"
+                                       DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
+                                       ShowAddButton="true"
+                                       ShowEditButton="true"
+                                       ShowDeleteButton="true"
+                                       ShowActions="true"
+                                       OnAddRequested="@OnAddReferralRequested"
+                                       OnEditRequested="@OnEditReferralRequested"
+                                       OnDeleteRequested="@OnDeleteReferralRequested"
+                                       OnSaveRequested="@OnSaveReferralRequested"
+                                       IsValidForm="@IsReferralFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Módulo/Especialidad de Destino <span class="text-danger">*</span></label>
+                                        <select class="form-select @(referralErrors.ContainsKey("LocationId") ? "is-invalid" : "")"
+                                                @bind="selectedLocationDId">
+                                            <option value="0">Seleccione un módulo o especialidad</option>
+                                            @foreach (var location in availableLocationsForReferral)
+                                            {
+                                                <option value="@location.Id">@location.Name</option>
+                                            }
+                                        </select>
+                                        @if (referralErrors.ContainsKey("LocationId"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["LocationId"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Fecha de Derivación <span class="text-danger">*</span></label>
+                                        <input type="datetime-local"
+                                               class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
+                                               @bind="currentReferral.DateOfReferral"
+                                               @bind:format="yyyy-MM-ddTHH:mm" />
+                                        @if (referralErrors.ContainsKey("DateOfReferral"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["DateOfReferral"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                   @bind="currentReferral.IsUrgent" />
+                                            <label class="form-check-label fw-bold">Derivación Urgente</label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Marque esta opción si la derivación requiere atención prioritaria.
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivo de Derivación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                                  @bind="currentReferral.Description"
+                                                  rows="4"
+                                                  maxlength="1000"
+                                                  placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
+                                                  style="resize: vertical; min-height: 120px;"></textarea>
+                                        @if (referralErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentReferral.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Notas Adicionales</label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("AdditionalNotes") ? "is-invalid" : "")"
+                                                  @bind="currentReferral.AdditionalNotes"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="Observaciones adicionales, recomendaciones, etc..."
+                                                  style="resize: vertical; min-height: 100px;"></textarea>
+                                        @if (referralErrors.ContainsKey("AdditionalNotes"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["AdditionalNotes"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentReferral.AdditionalNotes?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(referralFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @referralFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("plan"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                @if (hasUnsavedReferralData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-success" @onclick="FinalizarAtencionNutricion" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="fas fa-check me-2"></i>Finalizar Atención
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -856,11 +1016,25 @@
     private List<ForbiddenFoodDTO> currentForbiddenFoods = new();
     private ForbiddenFoodDTO editingForbiddenFood = new ForbiddenFoodDTO();
 
+    // Variables para Derivación
+    private List<LocationDTO> availableLocationsForReferral = new();
+    private List<MedicalReferralDTO> referralsList = new();
+    private MedicalReferralDTO currentReferral = new();
+    private List<string> referralHeaders = new() { "Módulo/Especialidad", "Fecha", "Motivo", "Urgente", "Estado" };
+    private List<List<string>> referralRows = new();
+    private List<int> referralIds = new();
+    private Dictionary<string, string> referralErrors = new();
+    private string referralFormError = "";
+    private int? selectedLocationDId = null;
+    private bool hasUnsavedReferralData = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
         await ObtenerProfesionalLogueado();
+        await LoadReferralData();
+
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -874,6 +1048,8 @@
             await AsignarProfesionalLogueado();
         }
     }
+
+    // ========== MÉTODOS PARA PESTAÑAS ==========
 
     // ========== MÉTODOS PARA PESTAÑAS ==========
 
@@ -892,92 +1068,35 @@
             return;
         }
 
-        // Cargar datos específicos cuando se activa la pestaña de Pliegues
-        if (tab == "pliegues" && currentMedicalCareId > 0 && !skinFoldsLoaded)
+        // Cargar datos específicos de la pestaña cuando se activa
+        if (tab == "pliegues" && currentMedicalCareId > 0)
         {
-            currentMeasurementsId = await GetOrCreateMeasurementsId();
-            if (currentMeasurementsId != null)
-            {
-                await LoadSkinFoldsData();
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
-                return;
-            }
+            await LoadSkinFoldsData();
         }
-
-        // Cargar datos específicos cuando se activa la pestaña de Bioimpedancia
-        if (tab == "bioimpedancia" && currentMedicalCareId > 0 && !bioImpedanceLoaded)
+        else if (tab == "bioimpedancia" && currentMedicalCareId > 0)
         {
-            if (currentMeasurementsId == null)
-            {
-                currentMeasurementsId = await GetOrCreateMeasurementsId();
-            }
-
-            if (currentMeasurementsId != null)
-            {
-                await LoadBioImpedanceData();
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
-                return;
-            }
+            await LoadBioImpedanceData();
         }
-
-        // Cargar datos específicos cuando se activa la pestaña de Perímetros
-        if (tab == "perimetros" && currentMedicalCareId > 0 && !perimetersLoaded)
+        else if (tab == "perimetros" && currentMedicalCareId > 0)
         {
-            if (currentMeasurementsId == null)
-            {
-                currentMeasurementsId = await GetOrCreateMeasurementsId();
-            }
-
-            if (currentMeasurementsId != null)
-            {
-                await LoadPerimetersData();
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
-                return;
-            }
+            await LoadPerimetersData();
         }
-
-        // Cargar datos específicos cuando se activa la pestaña de Diámetros
-        if (tab == "diametros" && currentMedicalCareId > 0 && !diametersLoaded)
+        else if (tab == "diametros" && currentMedicalCareId > 0)
         {
-            if (currentMeasurementsId == null)
-            {
-                currentMeasurementsId = await GetOrCreateMeasurementsId();
-            }
-
-            if (currentMeasurementsId != null)
-            {
-                await LoadDiametersData();
-            }
-            else
-            {
-                await JS.InvokeVoidAsync("alert", "Error al inicializar las mediciones. Intente nuevamente.");
-                return;
-            }
+            await LoadDiametersData();
         }
-
-        // Cargar datos específicos cuando se activa la pestaña de Plan Alimentación
-        if (tab == "plan" && currentMedicalCareId > 0 && !foodsLoaded)
+        else if (tab == "plan" && currentMedicalCareId > 0)
         {
-            await LoadFoodsData();
             await LoadFoodPlansData();
-            await LoadForbiddenFoodsData();
+        }
+        else if (tab == "referral" && currentMedicalCareId > 0)
+        {
+            await LoadReferralData();
         }
 
         activeTab = tab;
         StateHasChanged();
     }
-
-
-
 
 
     private bool IsPatientTabComplete()
@@ -1979,6 +2098,270 @@
         {
             isSaving = false;
         }
+    }
+
+    // ============================================================================
+    // MÉTODOS PARA DERIVACIÓN
+    // ============================================================================
+
+    private async Task LoadReferralData()
+    {
+        try
+        {
+            var allLocations = await LocationService.GetAllAsync();
+
+            // Filtrar módulos disponibles para derivación (excluir Psicología)
+            availableLocationsForReferral = allLocations
+                .Where(l => !l.Name.Contains("Nutrición", StringComparison.OrdinalIgnoreCase) &&
+                           !l.Name.Contains("Nutrición", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(l => l.Name)
+                .ToList();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Loaded {availableLocationsForReferral.Count} locations for referrals");
+
+            if (currentMedicalCareId > 0)
+            {
+                var referralsResult = await MedicalReferralService.GetByMedicalCareIdAsync(currentMedicalCareId);
+                if (referralsResult.Success && referralsResult.Data != null)
+                {
+                    referralsList = referralsResult.Data;
+                    await RefreshReferralsTable();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error loading referral data: {ex.Message}");
+            availableLocationsForReferral = new List<LocationDTO>();
+        }
+    }
+
+    private async Task RefreshReferralsTable()
+    {
+        referralRows.Clear();
+        referralIds.Clear();
+
+        foreach (var referral in referralsList)
+        {
+            var locationName = "N/A";
+            if (referral.LocationId.HasValue)
+            {
+                var location = availableLocationsForReferral.FirstOrDefault(l => l.Id == referral.LocationId.Value);
+                locationName = location?.Name ?? "Módulo no encontrado";
+            }
+
+            var dateOfReferral = referral.DateOfReferral?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha";
+            var description = !string.IsNullOrEmpty(referral.Description)
+                ? (referral.Description.Length > 30 ? referral.Description.Substring(0, 30) + "..." : referral.Description)
+                : "Sin motivo";
+            var isUrgent = referral.IsUrgent ? "Sí" : "No";
+            var status = referral.Status ?? "Pendiente";
+
+            referralRows.Add(new List<string> { locationName, dateOfReferral, description, isUrgent, status });
+            referralIds.Add(referral.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddReferralRequested()
+    {
+        currentReferral = new MedicalReferralDTO
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                DateOfReferral = DateTime.Now,
+                Description = "",
+                AdditionalNotes = "",
+                Status = "Pendiente",
+                IsUrgent = false,
+                LocationId = null
+            };
+
+        selectedLocationDId = null;
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnEditReferralRequested(int id)
+    {
+        var existing = referralsList.FirstOrDefault(r => r.Id == id);
+        if (existing != null)
+        {
+            currentReferral = new MedicalReferralDTO
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    DateOfReferral = existing.DateOfReferral,
+                    Description = existing.Description ?? "",
+                    AdditionalNotes = existing.AdditionalNotes,
+                    Status = existing.Status ?? "Pendiente",
+                    IsUrgent = existing.IsUrgent,
+                    LocationId = existing.LocationId
+                };
+
+            selectedLocationDId = existing.LocationId;
+        }
+
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnDeleteReferralRequested(int id)
+    {
+        try
+        {
+            bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                "¿Está seguro que desea eliminar esta derivación?");
+
+            if (!confirmed) return;
+
+            var result = await MedicalReferralService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = referralsList.FirstOrDefault(r => r.Id == id);
+                if (toRemove != null)
+                {
+                    referralsList.Remove(toRemove);
+                    await RefreshReferralsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Derivación eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveReferralRequested()
+    {
+        try
+        {
+            if (!ValidateReferralForm())
+            {
+                return;
+            }
+
+            currentReferral.MedicalCareId = currentMedicalCareId;
+            currentReferral.LocationId = selectedLocationDId;
+
+            if (currentReferral.Id == 0)
+            {
+                var result = await MedicalReferralService.CreateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    referralsList.Add(result.Data);
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación creada exitosamente.");
+
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al crear derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {referralFormError}");
+                    return;
+                }
+            }
+            else
+            {
+                var result = await MedicalReferralService.UpdateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    var index = referralsList.FindIndex(r => r.Id == currentReferral.Id);
+                    if (index >= 0)
+                    {
+                        referralsList[index] = result.Data;
+                    }
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación actualizada exitosamente.");
+
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al actualizar derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {referralFormError}");
+                    return;
+                }
+            }
+
+            currentReferral = new MedicalReferralDTO();
+            selectedLocationDId = null;
+            referralErrors.Clear();
+            referralFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            referralFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", referralFormError);
+        }
+    }
+
+    private bool ValidateReferralForm()
+    {
+        referralErrors.Clear();
+        referralFormError = "";
+        bool isValid = true;
+
+        if (!selectedLocationDId.HasValue || selectedLocationDId <= 0)
+        {
+            referralErrors["LocationId"] = "Debe seleccionar un módulo o especialidad de destino.";
+            isValid = false;
+        }
+
+        if (!currentReferral.DateOfReferral.HasValue)
+        {
+            referralErrors["DateOfReferral"] = "La fecha de derivación es obligatoria.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentReferral.Description))
+        {
+            referralErrors["Description"] = "El motivo de derivación es obligatorio.";
+            isValid = false;
+        }
+        else if (currentReferral.Description.Length > 1000)
+        {
+            referralErrors["Description"] = "El motivo de derivación no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentReferral.AdditionalNotes) && currentReferral.AdditionalNotes.Length > 500)
+        {
+            referralErrors["AdditionalNotes"] = "Las notas adicionales no pueden exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            referralFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsReferralFormValid()
+    {
+        return selectedLocationDId.HasValue && selectedLocationDId > 0 &&
+               currentReferral.DateOfReferral.HasValue &&
+               !string.IsNullOrWhiteSpace(currentReferral.Description) &&
+               (currentReferral.Description?.Length ?? 0) <= 1000 &&
+               (currentReferral.AdditionalNotes?.Length ?? 0) <= 500;
+    }
+
+    private bool IsReferralTabComplete()
+    {
+        return referralsList.Any();
     }
 
     public void Dispose()

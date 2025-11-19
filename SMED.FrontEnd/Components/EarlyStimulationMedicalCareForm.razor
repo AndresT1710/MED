@@ -15,6 +15,8 @@
 @inject DocumentTypeService DocumentTypeService
 @inject GenderService GenderService
 @inject MaritalStatusService MaritalStatusService
+@inject MedicalReferralService MedicalReferralService
+@inject PersonService PersonService
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -24,8 +26,8 @@
     <ul class="nav nav-tabs" id="earlyStimulationTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "patient" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("patient"))"
-                    type="button" role="tab">
+            @onclick="@(() => SetActiveTab("patient"))"
+            type="button" role="tab">
                 <i class="fas fa-user me-2"></i>Selección de Paciente
                 @if (IsPatientTabComplete())
                 {
@@ -39,9 +41,9 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "representatives" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("representatives"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("representatives"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-users me-2"></i>Representantes
                 @if (IsRepresentativesComplete())
                 {
@@ -51,10 +53,23 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link @(activeTab == "referral" ? "active" : "")"
+            @onclick="@(() => SetActiveTab("referral"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+                <i class="fas fa-share me-2"></i>Derivación
+                @if (IsReferralTabComplete())
+                {
+                    <span class="badge bg-success ms-1">✓</span>
+                }
+                <small class="text-muted ms-1">(Opcional)</small>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link @(activeTab == "evaluation" ? "active" : "")"
-                    @onclick="@(() => SetActiveTab("evaluation"))"
-                    type="button" role="tab"
-                    disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
+            @onclick="@(() => SetActiveTab("evaluation"))"
+            type="button" role="tab"
+            disabled="@(!IsPatientTabComplete() || currentMedicalCareId == 0)">
                 <i class="fas fa-clipboard-check me-2"></i>Evaluación/Desarrollo
                 @if (IsEvaluationComplete())
                 {
@@ -84,7 +99,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Paciente *</label>
                             <PatientSelector @bind-Value="clinicalHistoryId"
-                                             OnPatientSelected="HandlePatientSelected" />
+                            OnPatientSelected="HandlePatientSelected" />
                             @if (showValidationErrors && selectedPatientId <= 0)
                             {
                                 <div class="text-danger mt-1">
@@ -123,7 +138,7 @@
                             <div class="col-md-12 mb-3">
                                 <label class="form-label fw-bold">Lugar de Atención *</label>
                                 <select class="form-select @(showValidationErrors && string.IsNullOrEmpty(lugarSeleccionada) ? "is-invalid" : "")"
-                                        @bind="lugarSeleccionada">
+                                @bind="lugarSeleccionada">
                                     <option value="">Seleccione el lugar de Atención</option>
                                     @foreach (var lugar in lugaresAtencion)
                                     {
@@ -142,10 +157,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Motivo de la Consulta *</label>
                             <textarea class="form-control @(showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta) ? "is-invalid" : "")"
-                                      @bind="motivoConsulta"
-                                      rows="3"
-                                      placeholder="Describa el motivo principal de la consulta de estimulación temprana..."
-                                      maxlength="500"></textarea>
+                            @bind="motivoConsulta"
+                            rows="3"
+                            placeholder="Describa el motivo principal de la consulta de estimulación temprana..."
+                            maxlength="500"></textarea>
                             @if (showValidationErrors && string.IsNullOrWhiteSpace(motivoConsulta))
                             {
                                 <div class="invalid-feedback">
@@ -181,7 +196,7 @@
                                         <strong>No se pudo identificar su perfil profesional.</strong>
                                         <div class="mt-2">
                                             <select class="form-select @(showValidationErrors && selectedHealthProfessionalId <= 0 ? "is-invalid" : "")"
-                                                    @bind="selectedHealthProfessionalId">
+                                            @bind="selectedHealthProfessionalId">
                                                 <option value="0">Seleccione un especialista manualmente</option>
                                                 @foreach (var profesional in especialistasEstimulacion)
                                                 {
@@ -268,35 +283,83 @@
                         <!-- Datos del Representante -->
                         <div class="mb-5">
                             <EditableTable Title="Datos del Representante"
-                                           ColumnHeaders="@agentHeaders"
-                                           Rows="@agentRows"
-                                           RowIds="@agentIds"
-                                           ShowAddButton="@CanAddAgent()"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarAgent"
-                                           OnEditRequested="@EditarAgent"
-                                           OnDeleteRequested="@EliminarAgent"
-                                           OnSaveRequested="@GuardarAgent"
-                                           IsValidForm="@ValidarFormularioAgent">
+                            ColumnHeaders="@agentHeaders"
+                            Rows="@agentRows"
+                            RowIds="@agentIds"
+                            ShowAddButton="@CanAddAgent()"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarAgent"
+                            OnEditRequested="@EditarAgent"
+                            OnDeleteRequested="@EliminarAgent"
+                            OnSaveRequested="@GuardarAgent"
+                            IsValidForm="@ValidarFormularioAgent">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">Tipo de Documento *</label>
-                                            <select class="form-select" @bind="editingAgent.DocumentType">
+                                            <select class="form-select @GetInputClass(editingAgent.DocumentType <= 0)"
+                                            @bind="editingAgent.DocumentType">
                                                 <option value="0">Seleccione el tipo de documento</option>
                                                 @foreach (var docType in documentTypes)
                                                 {
                                                     <option value="@docType.Id">@docType.Name</option>
                                                 }
                                             </select>
+                                            @if (showValidationErrors && editingAgent.DocumentType <= 0)
+                                            {
+                                                <div class="invalid-feedback">Debe seleccionar un tipo de documento</div>
+                                            }
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Número de Identificación *</label>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.IdentificationNumber"
-                                                   placeholder="Ingrese el número de identificación" />
+                                            <div class="input-group">
+                                                <input type="text"
+                                                @ref="documentInput"
+                                                value="@editingAgent.IdentificationNumber"
+                                                @oninput="OnDocumentNumberInput"
+                                                class="@GetDocumentNumberClass()"
+                                                placeholder="@GetDocumentPlaceholder()"
+                                                maxlength="@GetMaxLength()"
+                                                autocomplete="off"
+                                                inputmode="@GetInputMode()" />
+                                                @if (isValidatingDocument)
+                                                {
+                                                    <span class="input-group-text">
+                                                        <div class="spinner-border spinner-border-sm" role="status">
+                                                            <span class="visually-hidden">Validando...</span>
+                                                        </div>
+                                                    </span>
+                                                }
+                                                else if (IsDocumentValid && !string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber))
+                                                {
+                                                    <span class="input-group-text text-success">
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
+                                                }
+                                            </div>
+                                            <!-- Contador de caracteres -->
+                                            @if (!string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber))
+                                            {
+                                                <small class="form-text text-muted">
+                                                    @editingAgent.IdentificationNumber.Length / @GetMaxLength() caracteres
+                                                </small>
+                                            }
+                                            @if (showValidationErrors && string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber))
+                                            {
+                                                <div class="invalid-feedback d-block">El número de documento es obligatorio</div>
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(documentValidationError))
+                                            {
+                                                <div class="invalid-feedback d-block">@documentValidationError</div>
+                                            }
+                                            else if (IsDocumentValid && !string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber))
+                                            {
+                                                <div class="valid-feedback d-block">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    @GetValidationSuccessMessage()
+                                                </div>
+                                            }
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Género *</label>
@@ -321,50 +384,67 @@
                                         <div class="col-md-6">
                                             <label class="form-label">Primer Nombre *</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.FirstName"
-                                                   placeholder="Ingrese el primer nombre" />
+                                            class="form-control"
+                                            @bind="editingAgent.FirstName"
+                                            placeholder="Ingrese el primer nombre" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Segundo Nombre</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.MiddleName"
-                                                   placeholder="Ingrese el segundo nombre (opcional)" />
+                                            class="form-control"
+                                            @bind="editingAgent.MiddleName"
+                                            placeholder="Ingrese el segundo nombre (opcional)" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Primer Apellido *</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.LastName"
-                                                   placeholder="Ingrese el primer apellido" />
+                                            class="form-control"
+                                            @bind="editingAgent.LastName"
+                                            placeholder="Ingrese el primer apellido" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Segundo Apellido</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.SecondLastName"
-                                                   placeholder="Ingrese el segundo apellido (opcional)" />
+                                            class="form-control"
+                                            @bind="editingAgent.SecondLastName"
+                                            placeholder="Ingrese el segundo apellido (opcional)" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Teléfono Convencional</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.PhoneNumber"
-                                                   @oninput="(e) => HandlePhoneInput(e, nameof(editingAgent.PhoneNumber), 9)"
+                                                   class="@GetPhoneInputClass("landline")"
+                                                   @bind="landlineInput"
+                                                   @oninput="OnLandlineInput"
                                                    placeholder="Ej: 032521273 (9 dígitos)"
                                                    maxlength="9" />
-                                            <small class="text-muted">Máximo 9 dígitos (prefijo + 7 dígitos)</small>
+                                            @if (!string.IsNullOrEmpty(landlineError))
+                                            {
+                                                <div class="invalid-feedback" style="display: block;">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>@landlineError
+                                                </div>
+                                            }
+                                            <small class="form-text text-muted">Formato: código de área + número (9 dígitos total)</small>
                                         </div>
+
                                         <div class="col-md-6">
                                             <label class="form-label">Teléfono Celular *</label>
                                             <input type="text"
-                                                   class="form-control"
-                                                   @bind="editingAgent.CellphoneNumber"
-                                                   @oninput="(e) => HandlePhoneInput(e, nameof(editingAgent.CellphoneNumber), 10)"
+                                                   class="@GetPhoneInputClass("mobile")"
+                                                   @bind="mobileInput"
+                                                   @oninput="OnMobileInput"
                                                    placeholder="Ej: 0991234567 (10 dígitos)"
                                                    maxlength="10" />
-                                            <small class="text-muted">Máximo 10 dígitos</small>
+                                            @if (!string.IsNullOrEmpty(mobileError))
+                                            {
+                                                <div class="invalid-feedback" style="display: block;">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>@mobileError
+                                                </div>
+                                            }
+                                            @if (showValidationErrors && string.IsNullOrEmpty(mobileInput))
+                                            {
+                                                <div class="invalid-feedback">El número de celular es obligatorio</div>
+                                            }
+                                            <small class="form-text text-muted">Formato: 09XXXXXXXX (10 dígitos, debe empezar con 09)</small>
                                         </div>
                                     </div>
                                 </EditModalContent>
@@ -382,9 +462,155 @@
                             <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("patient"))">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
                             </button>
-                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
-                                Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
+                            <button class="btn btn-primary" @onclick="@(() => SetActiveTab("referral"))">
+                                Continuar a Derivación <i class="fas fa-arrow-right ms-2"></i>
                             </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Debe guardar primero los datos básicos del paciente para acceder a esta sección.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña: Derivación -->
+        <div class="tab-pane @(activeTab == "referral" ? "show active" : "")" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-share me-2"></i>Derivación
+                        <span class="badge bg-info ms-2">Opcional</span>
+                    </h5>
+                    <small class="text-muted">Derivación a módulos y especialidades</small>
+                </div>
+                <div class="card-body">
+                    @if (currentMedicalCareId > 0)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Información:</strong> Puede registrar múltiples derivaciones para esta atención de psicología.
+                        </div>
+
+                        <EditableTable Title="Derivaciones"
+                        ColumnHeaders="@referralHeaders"
+                        Rows="@referralRows"
+                        RowIds="@referralIds"
+                        EmptyMessage="No se han registrado derivaciones"
+                        DeleteConfirmationMessage="¿Está seguro que desea eliminar esta derivación?"
+                        ShowAddButton="true"
+                        ShowEditButton="true"
+                        ShowDeleteButton="true"
+                        ShowActions="true"
+                        OnAddRequested="@OnAddReferralRequested"
+                        OnEditRequested="@OnEditReferralRequested"
+                        OnDeleteRequested="@OnDeleteReferralRequested"
+                        OnSaveRequested="@OnSaveReferralRequested"
+                        IsValidForm="@IsReferralFormValid">
+                            <EditModalContent>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Módulo/Especialidad de Destino <span class="text-danger">*</span></label>
+                                        <select class="form-select @(referralErrors.ContainsKey("LocationId") ? "is-invalid" : "")"
+                                        @bind="selectedLocationDId">
+                                            <option value="0">Seleccione un módulo o especialidad</option>
+                                            @foreach (var location in availableLocationsForReferral)
+                                            {
+                                                <option value="@location.Id">@location.Name</option>
+                                            }
+                                        </select>
+                                        @if (referralErrors.ContainsKey("LocationId"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["LocationId"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Fecha de Derivación <span class="text-danger">*</span></label>
+                                        <input type="datetime-local"
+                                        class="form-control @(referralErrors.ContainsKey("DateOfReferral") ? "is-invalid" : "")"
+                                        @bind="currentReferral.DateOfReferral"
+                                        @bind:format="yyyy-MM-ddTHH:mm" />
+                                        @if (referralErrors.ContainsKey("DateOfReferral"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["DateOfReferral"]</div>
+                                        }
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                            @bind="currentReferral.IsUrgent" />
+                                            <label class="form-check-label fw-bold">Derivación Urgente</label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Marque esta opción si la derivación requiere atención prioritaria.
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motivo de Derivación <span class="text-danger">*</span></label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                        @bind="currentReferral.Description"
+                                        rows="4"
+                                        maxlength="1000"
+                                        placeholder="Describa detalladamente el motivo de la derivación, síntomas relevantes, tratamientos previos, etc..."
+                                        style="resize: vertical; min-height: 120px;"></textarea>
+                                        @if (referralErrors.ContainsKey("Description"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["Description"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 1000 caracteres. Restantes: @(1000 - (currentReferral.Description?.Length ?? 0))
+                                        </small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Notas Adicionales</label>
+                                        <textarea class="form-control @(referralErrors.ContainsKey("AdditionalNotes") ? "is-invalid" : "")"
+                                        @bind="currentReferral.AdditionalNotes"
+                                        rows="3"
+                                        maxlength="500"
+                                        placeholder="Observaciones adicionales, recomendaciones, etc..."
+                                        style="resize: vertical; min-height: 100px;"></textarea>
+                                        @if (referralErrors.ContainsKey("AdditionalNotes"))
+                                        {
+                                            <div class="invalid-feedback">@referralErrors["AdditionalNotes"]</div>
+                                        }
+                                        <small class="form-text text-muted">
+                                            Máximo 500 caracteres. Restantes: @(500 - (currentReferral.AdditionalNotes?.Length ?? 0))
+                                        </small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(referralFormError))
+                                {
+                                    <div class="alert alert-danger mt-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        @referralFormError
+                                    </div>
+                                }
+                            </EditModalContent>
+                        </EditableTable>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="@(() => SetActiveTab("representatives"))">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </button>
+                            <div>
+                                @if (hasUnsavedReferralData)
+                                {
+                                    <div class="alert alert-warning d-inline-block me-2 mb-0 py-1 px-2">
+                                        <small><i class="fas fa-exclamation-triangle me-1"></i>Hay cambios sin guardar</small>
+                                    </div>
+                                }
+                                <button class="btn btn-primary" @onclick="@(() => SetActiveTab("evaluation"))">
+                                    Continuar a Evaluación <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
                         </div>
                     }
                     else
@@ -413,33 +639,33 @@
                         <!-- Sesiones de Estimulación Temprana -->
                         <div class="mb-5">
                             <EditableTable Title="Sesiones de Estimulación Temprana"
-                                           ColumnHeaders="@sessionsHeaders"
-                                           Rows="@sessionsRows"
-                                           RowIds="@sessionsIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarSession"
-                                           OnEditRequested="@EditarSession"
-                                           OnDeleteRequested="@EliminarSession"
-                                           OnSaveRequested="@GuardarSession"
-                                           IsValidForm="@ValidarFormularioSession">
+                            ColumnHeaders="@sessionsHeaders"
+                            Rows="@sessionsRows"
+                            RowIds="@sessionsIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarSession"
+                            OnEditRequested="@EditarSession"
+                            OnDeleteRequested="@EliminarSession"
+                            OnSaveRequested="@GuardarSession"
+                            IsValidForm="@ValidarFormularioSession">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-12">
                                             <label class="form-label">Descripción *</label>
                                             <textarea class="form-control"
-                                                      @bind="editingSession.Description"
-                                                      rows="3"
-                                                      style="resize: vertical; min-height: 80px;"
-                                                      placeholder="Describa la sesión de estimulación temprana..."></textarea>
+                                            @bind="editingSession.Description"
+                                            rows="3"
+                                            style="resize: vertical; min-height: 80px;"
+                                            placeholder="Describa la sesión de estimulación temprana..."></textarea>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Fecha *</label>
                                             <input type="date"
-                                                   class="form-control"
-                                                   @bind="editingSession.Date"
-                                                   @bind:format="yyyy-MM-dd" />
+                                            class="form-control"
+                                            @bind="editingSession.Date"
+                                            @bind:format="yyyy-MM-dd" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Alta Médica *</label>
@@ -451,18 +677,18 @@
                                         <div class="col-md-12">
                                             <label class="form-label">Tratamiento *</label>
                                             <textarea class="form-control"
-                                                      @bind="editingSession.Treatment"
-                                                      rows="3"
-                                                      style="resize: vertical; min-height: 80px;"
-                                                      placeholder="Describa el tratamiento aplicado..."></textarea>
+                                            @bind="editingSession.Treatment"
+                                            rows="3"
+                                            style="resize: vertical; min-height: 80px;"
+                                            placeholder="Describa el tratamiento aplicado..."></textarea>
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label">Observaciones</label>
                                             <textarea class="form-control"
-                                                      @bind="editingSession.Observations"
-                                                      rows="3"
-                                                      style="resize: vertical; min-height: 80px;"
-                                                      placeholder="Ingrese observaciones adicionales..."></textarea>
+                                            @bind="editingSession.Observations"
+                                            rows="3"
+                                            style="resize: vertical; min-height: 80px;"
+                                            placeholder="Ingrese observaciones adicionales..."></textarea>
                                         </div>
                                     </div>
                                 </EditModalContent>
@@ -472,86 +698,86 @@
                         <!-- Test de Evolución -->
                         <div class="mt-5">
                             <EditableTable Title="Test de Evolución - Estimulación Temprana"
-                                           ColumnHeaders="@evolutionTestHeaders"
-                                           Rows="@evolutionTestRows"
-                                           RowIds="@evolutionTestIds"
-                                           ShowAddButton="true"
-                                           ShowEditButton="true"
-                                           ShowDeleteButton="true"
-                                           OnAddRequested="@AbrirModalAgregarEvolutionTest"
-                                           OnEditRequested="@EditarEvolutionTest"
-                                           OnDeleteRequested="@EliminarEvolutionTest"
-                                           OnSaveRequested="@GuardarEvolutionTest"
-                                           IsValidForm="@ValidarFormularioEvolutionTest">
+                            ColumnHeaders="@evolutionTestHeaders"
+                            Rows="@evolutionTestRows"
+                            RowIds="@evolutionTestIds"
+                            ShowAddButton="true"
+                            ShowEditButton="true"
+                            ShowDeleteButton="true"
+                            OnAddRequested="@AbrirModalAgregarEvolutionTest"
+                            OnEditRequested="@EditarEvolutionTest"
+                            OnDeleteRequested="@EliminarEvolutionTest"
+                            OnSaveRequested="@GuardarEvolutionTest"
+                            IsValidForm="@ValidarFormularioEvolutionTest">
                                 <EditModalContent>
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label class="form-label">Edad Meses (De) *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.Age"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age))"
-                                                   min="0"
-                                                   max="120"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.Age"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age))"
+                                            min="0"
+                                            max="120"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Edad Meses (A) *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.Age1"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age1))"
-                                                   min="0"
-                                                   max="120"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.Age1"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.Age1))"
+                                            min="0"
+                                            max="120"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Motricidad Gruesa *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.GrossMotorSkills"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.GrossMotorSkills))"
-                                                   min="0"
-                                                   max="100"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.GrossMotorSkills"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.GrossMotorSkills))"
+                                            min="0"
+                                            max="100"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Motricidad Fina *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.FineMotorSkills"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.FineMotorSkills))"
-                                                   min="0"
-                                                   max="100"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.FineMotorSkills"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.FineMotorSkills))"
+                                            min="0"
+                                            max="100"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Audición y Lenguaje *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.HearingAndLanguage"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.HearingAndLanguage))"
-                                                   min="0"
-                                                   max="100"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.HearingAndLanguage"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.HearingAndLanguage))"
+                                            min="0"
+                                            max="100"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Personal Social *</label>
                                             <input type="number"
-                                                   class="form-control"
-                                                   value="@editingEvolutionTest.SocialPerson"
-                                                   @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.SocialPerson))"
-                                                   min="0"
-                                                   max="100"
-                                                   placeholder="0" />
+                                            class="form-control"
+                                            value="@editingEvolutionTest.SocialPerson"
+                                            @oninput="(e) => HandleNumberInput(e, nameof(editingEvolutionTest.SocialPerson))"
+                                            min="0"
+                                            max="100"
+                                            placeholder="0" />
                                         </div>
                                         <div class="col-md-12">
                                             <label class="form-label fw-bold">Total</label>
                                             <input type="number"
-                                                   class="form-control bg-light"
-                                                   value="@editingEvolutionTest.Total"
-                                                   disabled
-                                                   placeholder="Se calculará automáticamente" />
+                                            class="form-control bg-light"
+                                            value="@editingEvolutionTest.Total"
+                                            disabled
+                                            placeholder="Se calculará automáticamente" />
                                             <small class="text-muted">Total calculado automáticamente: Suma de todos los puntajes</small>
                                         </div>
                                     </div>
@@ -643,6 +869,31 @@
     private List<GenderDTO> genders = new();
     private List<MaritalStatusDTO> maritalStatuses = new();
 
+    // Variables para Derivación
+    private List<LocationDTO> availableLocationsForReferral = new();
+    private List<MedicalReferralDTO> referralsList = new();
+    private MedicalReferralDTO currentReferral = new();
+    private List<string> referralHeaders = new() { "Módulo/Especialidad", "Fecha", "Motivo", "Urgente", "Estado" };
+    private List<List<string>> referralRows = new();
+    private List<int> referralIds = new();
+    private Dictionary<string, string> referralErrors = new();
+    private string referralFormError = "";
+    private int? selectedLocationDId = null;
+    private bool hasUnsavedReferralData = false;
+
+    // Variables para validación de documento
+    private string documentValidationError = string.Empty;
+    private bool documentAlreadyExists = false;
+    private bool isValidatingDocument = false;
+    private Timer validationTimer;
+    private ElementReference documentInput;
+
+    // Variables para validación de teléfonos en representantes
+    private string landlineInput = "";
+    private string mobileInput = "";
+    private string landlineError = "";
+    private string mobileError = "";
+
 
 
     protected override async Task OnInitializedAsync()
@@ -650,7 +901,9 @@
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
         await ObtenerProfesionalLogueado();
-        await LoadDropdownData(); // ← Agregar esta línea
+        await LoadDropdownData();
+        await LoadReferralData();
+
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -667,7 +920,7 @@
         }
     }
 
-    // ========== MÉTODOS NUEVOS PARA PESTAÑAS ==========
+    // ========== MÉTODOS PARA PESTAÑAS ==========
 
     private async Task SetActiveTab(string tab)
     {
@@ -684,14 +937,21 @@
             return;
         }
 
-        activeTab = tab;
-
         // Cargar datos específicos de la pestaña cuando se activa
-        if (tab == "representatives")
+        if (tab == "representatives" && currentMedicalCareId > 0)
         {
-            await OnRepresentativesTabActivated();
+            await LoadRepresentativesData();
+        }
+        else if (tab == "referral" && currentMedicalCareId > 0)
+        {
+            await LoadReferralData();
+        }
+        else if (tab == "evaluation" && currentMedicalCareId > 0)
+        {
+            await LoadEvaluationData();
         }
 
+        activeTab = tab;
         StateHasChanged();
     }
 
@@ -858,11 +1118,14 @@
         }
 
         editingAgent = new AgentDTO
-        {
-            DocumentType = 0,
-            GenderId = 0,
-            MaritalStatusId = 0
-        };
+            {
+                DocumentType = 0,
+                GenderId = 0,
+                MaritalStatusId = 0
+            };
+
+        // Inicializar inputs de teléfono
+        InitializePhoneInputs();
     }
 
     private void EditarAgent(int id)
@@ -871,19 +1134,22 @@
         if (agent != null)
         {
             editingAgent = new AgentDTO
-            {
-                AgentId = agent.AgentId,
-                DocumentType = agent.DocumentType,
-                IdentificationNumber = agent.IdentificationNumber,
-                GenderId = agent.GenderId,
-                MaritalStatusId = agent.MaritalStatusId,
-                FirstName = agent.FirstName,
-                MiddleName = agent.MiddleName,
-                LastName = agent.LastName,
-                SecondLastName = agent.SecondLastName,
-                PhoneNumber = agent.PhoneNumber,
-                CellphoneNumber = agent.CellphoneNumber
-            };
+                {
+                    AgentId = agent.AgentId,
+                    DocumentType = agent.DocumentType,
+                    IdentificationNumber = agent.IdentificationNumber,
+                    GenderId = agent.GenderId,
+                    MaritalStatusId = agent.MaritalStatusId,
+                    FirstName = agent.FirstName,
+                    MiddleName = agent.MiddleName,
+                    LastName = agent.LastName,
+                    SecondLastName = agent.SecondLastName,
+                    PhoneNumber = agent.PhoneNumber,
+                    CellphoneNumber = agent.CellphoneNumber
+                };
+
+            // Inicializar inputs de teléfono
+            InitializePhoneInputs();
         }
     }
 
@@ -891,21 +1157,80 @@
     {
         try
         {
-            // Validar longitud de teléfonos
-            if (!string.IsNullOrEmpty(editingAgent.PhoneNumber) && editingAgent.PhoneNumber.Length != 9)
+            // Validar campos básicos
+            if (editingAgent.DocumentType <= 0)
             {
-                await JS.InvokeVoidAsync("alert",
-                    "El teléfono convencional debe tener exactamente 9 dígitos.");
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un tipo de documento.");
                 return;
             }
 
-            if (string.IsNullOrEmpty(editingAgent.CellphoneNumber) || editingAgent.CellphoneNumber.Length != 10)
+            if (string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber))
             {
-                await JS.InvokeVoidAsync("alert",
-                    "El teléfono celular debe tener exactamente 10 dígitos.");
+                await JS.InvokeVoidAsync("alert", "El número de identificación es obligatorio.");
                 return;
             }
 
+            if (editingAgent.GenderId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un género.");
+                return;
+            }
+
+            if (editingAgent.MaritalStatusId <= 0)
+            {
+                await JS.InvokeVoidAsync("alert", "Debe seleccionar un estado civil.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(editingAgent.FirstName))
+            {
+                await JS.InvokeVoidAsync("alert", "El primer nombre es obligatorio.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(editingAgent.LastName))
+            {
+                await JS.InvokeVoidAsync("alert", "El primer apellido es obligatorio.");
+                return;
+            }
+
+            // Validar teléfono fijo (si se ingresó)
+            if (!string.IsNullOrEmpty(editingAgent.PhoneNumber) && !string.IsNullOrEmpty(landlineError))
+            {
+                await JS.InvokeVoidAsync("alert", $"Error en teléfono fijo: {landlineError}");
+                return;
+            }
+
+            // Validar teléfono celular (obligatorio)
+            if (string.IsNullOrEmpty(editingAgent.CellphoneNumber))
+            {
+                await JS.InvokeVoidAsync("alert", "El teléfono celular es obligatorio.");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(mobileError))
+            {
+                await JS.InvokeVoidAsync("alert", $"Error en teléfono celular: {mobileError}");
+                return;
+            }
+
+            // Validar formato de documento si es cédula
+            if (IsCedulaType && !string.IsNullOrEmpty(documentValidationError))
+            {
+                await JS.InvokeVoidAsync("alert", $"Error en cédula: {documentValidationError}");
+                return;
+            }
+
+            // Verificar si ya existe un representante (solo para crear nuevo)
+            if (editingAgent.AgentId == 0 && agents.Count >= 1)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "Ya existe un representante registrado para este paciente. " +
+                    "Solo se permite un representante por paciente.");
+                return;
+            }
+
+            // Guardar en base de datos
             if (editingAgent.AgentId > 0)
             {
                 // Actualizar agente existente
@@ -919,15 +1244,6 @@
             }
             else
             {
-                // Verificar nuevamente antes de crear (doble validación)
-                if (agents.Count >= 1)
-                {
-                    await JS.InvokeVoidAsync("alert",
-                        "Ya existe un representante registrado para este paciente. " +
-                        "Solo se permite un representante por paciente.");
-                    return;
-                }
-
                 // Crear nuevo agente
                 var createResult = await AgentService.CreateAsync(editingAgent);
                 if (!createResult.Success)
@@ -955,12 +1271,21 @@
                 }
             }
 
-            await LoadAgents(); // Recargar la lista
+            // Limpiar formulario y recargar datos
+            await LoadAgents();
+
+            // Limpiar variables de teléfono
+            landlineInput = "";
+            mobileInput = "";
+            landlineError = "";
+            mobileError = "";
+
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error al guardar: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al guardar: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"Error en GuardarAgent: {ex.Message}\n{ex.StackTrace}");
         }
     }
 
@@ -1043,11 +1368,13 @@
                !string.IsNullOrWhiteSpace(editingAgent.LastName) &&
                !string.IsNullOrWhiteSpace(editingAgent.CellphoneNumber);
 
-        // Validar longitud de teléfonos
+        // Usar las nuevas validaciones de teléfonos
         var phoneValidation = string.IsNullOrEmpty(editingAgent.PhoneNumber) ||
-                             editingAgent.PhoneNumber.Length == 9;
+                             (editingAgent.PhoneNumber.Length == 9 && string.IsNullOrEmpty(landlineError));
+
         var cellphoneValidation = !string.IsNullOrEmpty(editingAgent.CellphoneNumber) &&
-                                 editingAgent.CellphoneNumber.Length == 10;
+                                 editingAgent.CellphoneNumber.Length == 10 &&
+                                 string.IsNullOrEmpty(mobileError);
 
         return basicValidation && phoneValidation && cellphoneValidation;
     }
@@ -1750,8 +2077,769 @@
         }
     }
 
+    // ============================================================================
+    // MÉTODOS PARA DERIVACIÓN
+    // ============================================================================
+
+    private async Task LoadReferralData()
+    {
+        try
+        {
+            var allLocations = await LocationService.GetAllAsync();
+
+            // Filtrar módulos disponibles para derivación (excluir Psicología)
+            availableLocationsForReferral = allLocations
+                .Where(l => !l.Name.Contains("Estimulación Temprana", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(l => l.Name)
+                .ToList();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"✅ Loaded {availableLocationsForReferral.Count} locations for referrals");
+
+            if (currentMedicalCareId > 0)
+            {
+                var referralsResult = await MedicalReferralService.GetByMedicalCareIdAsync(currentMedicalCareId);
+                if (referralsResult.Success && referralsResult.Data != null)
+                {
+                    referralsList = referralsResult.Data;
+                    await RefreshReferralsTable();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"❌ Error loading referral data: {ex.Message}");
+            availableLocationsForReferral = new List<LocationDTO>();
+        }
+    }
+
+    private async Task RefreshReferralsTable()
+    {
+        referralRows.Clear();
+        referralIds.Clear();
+
+        foreach (var referral in referralsList)
+        {
+            var locationName = "N/A";
+            if (referral.LocationId.HasValue)
+            {
+                var location = availableLocationsForReferral.FirstOrDefault(l => l.Id == referral.LocationId.Value);
+                locationName = location?.Name ?? "Módulo no encontrado";
+            }
+
+            var dateOfReferral = referral.DateOfReferral?.ToString("dd/MM/yyyy HH:mm") ?? "Sin fecha";
+            var description = !string.IsNullOrEmpty(referral.Description)
+                ? (referral.Description.Length > 30 ? referral.Description.Substring(0, 30) + "..." : referral.Description)
+                : "Sin motivo";
+            var isUrgent = referral.IsUrgent ? "Sí" : "No";
+            var status = referral.Status ?? "Pendiente";
+
+            referralRows.Add(new List<string> { locationName, dateOfReferral, description, isUrgent, status });
+            referralIds.Add(referral.Id);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnAddReferralRequested()
+    {
+        currentReferral = new MedicalReferralDTO
+            {
+                Id = 0,
+                MedicalCareId = currentMedicalCareId,
+                DateOfReferral = DateTime.Now,
+                Description = "",
+                AdditionalNotes = "",
+                Status = "Pendiente",
+                IsUrgent = false,
+                LocationId = null
+            };
+
+        selectedLocationDId = null;
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnEditReferralRequested(int id)
+    {
+        var existing = referralsList.FirstOrDefault(r => r.Id == id);
+        if (existing != null)
+        {
+            currentReferral = new MedicalReferralDTO
+                {
+                    Id = existing.Id,
+                    MedicalCareId = existing.MedicalCareId,
+                    DateOfReferral = existing.DateOfReferral,
+                    Description = existing.Description ?? "",
+                    AdditionalNotes = existing.AdditionalNotes,
+                    Status = existing.Status ?? "Pendiente",
+                    IsUrgent = existing.IsUrgent,
+                    LocationId = existing.LocationId
+                };
+
+            selectedLocationDId = existing.LocationId;
+        }
+
+        referralErrors.Clear();
+        referralFormError = "";
+    }
+
+    private async Task OnDeleteReferralRequested(int id)
+    {
+        try
+        {
+            bool confirmed = await JS.InvokeAsync<bool>("confirm",
+                "¿Está seguro que desea eliminar esta derivación?");
+
+            if (!confirmed) return;
+
+            var result = await MedicalReferralService.DeleteAsync(id);
+            if (result.Success)
+            {
+                var toRemove = referralsList.FirstOrDefault(r => r.Id == id);
+                if (toRemove != null)
+                {
+                    referralsList.Remove(toRemove);
+                    await RefreshReferralsTable();
+                }
+                await JS.InvokeVoidAsync("alert", "Derivación eliminada exitosamente.");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Error al eliminar: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error inesperado al eliminar: {ex.Message}");
+        }
+    }
+
+    private async Task OnSaveReferralRequested()
+    {
+        try
+        {
+            if (!ValidateReferralForm())
+            {
+                return;
+            }
+
+            currentReferral.MedicalCareId = currentMedicalCareId;
+            currentReferral.LocationId = selectedLocationDId;
+
+            if (currentReferral.Id == 0)
+            {
+                var result = await MedicalReferralService.CreateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    referralsList.Add(result.Data);
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación creada exitosamente.");
+
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al crear derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al crear: {referralFormError}");
+                    return;
+                }
+            }
+            else
+            {
+                var result = await MedicalReferralService.UpdateAsync(currentReferral);
+                if (result.Success && result.Data != null)
+                {
+                    var index = referralsList.FindIndex(r => r.Id == currentReferral.Id);
+                    if (index >= 0)
+                    {
+                        referralsList[index] = result.Data;
+                    }
+                    await RefreshReferralsTable();
+                    await JS.InvokeVoidAsync("alert", "Derivación actualizada exitosamente.");
+
+                    await JS.InvokeVoidAsync("localStorage.removeItem", $"referral_data_{currentMedicalCareId}");
+                    hasUnsavedReferralData = false;
+                }
+                else
+                {
+                    referralFormError = result.Error ?? "Error desconocido al actualizar derivación";
+                    await JS.InvokeVoidAsync("alert", $"Error al actualizar: {referralFormError}");
+                    return;
+                }
+            }
+
+            currentReferral = new MedicalReferralDTO();
+            selectedLocationDId = null;
+            referralErrors.Clear();
+            referralFormError = "";
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            referralFormError = $"Error inesperado: {ex.Message}";
+            await JS.InvokeVoidAsync("alert", referralFormError);
+        }
+    }
+
+    private bool ValidateReferralForm()
+    {
+        referralErrors.Clear();
+        referralFormError = "";
+        bool isValid = true;
+
+        if (!selectedLocationDId.HasValue || selectedLocationDId <= 0)
+        {
+            referralErrors["LocationId"] = "Debe seleccionar un módulo o especialidad de destino.";
+            isValid = false;
+        }
+
+        if (!currentReferral.DateOfReferral.HasValue)
+        {
+            referralErrors["DateOfReferral"] = "La fecha de derivación es obligatoria.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentReferral.Description))
+        {
+            referralErrors["Description"] = "El motivo de derivación es obligatorio.";
+            isValid = false;
+        }
+        else if (currentReferral.Description.Length > 1000)
+        {
+            referralErrors["Description"] = "El motivo de derivación no puede exceder 1000 caracteres.";
+            isValid = false;
+        }
+
+        if (!string.IsNullOrEmpty(currentReferral.AdditionalNotes) && currentReferral.AdditionalNotes.Length > 500)
+        {
+            referralErrors["AdditionalNotes"] = "Las notas adicionales no pueden exceder 500 caracteres.";
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            referralFormError = "Por favor, corrija los errores antes de continuar.";
+        }
+
+        return isValid;
+    }
+
+    private bool IsReferralFormValid()
+    {
+        return selectedLocationDId.HasValue && selectedLocationDId > 0 &&
+               currentReferral.DateOfReferral.HasValue &&
+               !string.IsNullOrWhiteSpace(currentReferral.Description) &&
+               (currentReferral.Description?.Length ?? 0) <= 1000 &&
+               (currentReferral.AdditionalNotes?.Length ?? 0) <= 500;
+    }
+
+    private bool IsReferralTabComplete()
+    {
+        return referralsList.Any();
+    }
+
+    //VALIDACION DE DOCUMENTO
+    private string SelectedDocumentTypeName
+    {
+        get
+        {
+            var docType = documentTypes.FirstOrDefault(dt => dt.Id == editingAgent.DocumentType);
+            return docType?.Name?.ToLower() ?? "";
+        }
+    }
+
+    private bool IsCedulaType => SelectedDocumentTypeName.Contains("cédula") ||
+                               SelectedDocumentTypeName.Contains("cedula");
+
+    private bool IsPasaporteType => SelectedDocumentTypeName.Contains("pasaporte");
+
+    private bool IsDocumentValid => string.IsNullOrWhiteSpace(documentValidationError);
+
+    // Métodos helper para configuración dinámica
+    private string GetInputMode()
+    {
+        return IsCedulaType ? "numeric" : "text";
+    }
+
+    private int GetMaxLength()
+    {
+        if (IsCedulaType) return 10;
+        if (IsPasaporteType) return 20;
+        return 15;
+    }
+
+    private string GetDocumentPlaceholder()
+    {
+        if (IsCedulaType) return "Ingrese 10 dígitos de la cédula";
+        if (IsPasaporteType) return "Ingrese número de pasaporte";
+        return "Ingrese el número de documento";
+    }
+
+    private string GetValidationSuccessMessage()
+    {
+        if (IsCedulaType) return "Cédula válida";
+        if (IsPasaporteType) return "Formato de pasaporte válido";
+        return "Documento válido";
+    }
+
+    private string GetInputClass(bool hasError)
+    {
+        return $"form-control {(showValidationErrors && hasError ? "is-invalid" : "")}";
+    }
+
+    private string GetDocumentNumberClass()
+    {
+        var hasError = (showValidationErrors && string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber)) ||
+                       !string.IsNullOrWhiteSpace(documentValidationError);
+        // Eliminamos: || (documentAlreadyExists && IsCedulaType)
+
+        var isValid = !string.IsNullOrWhiteSpace(editingAgent.IdentificationNumber) &&
+                      string.IsNullOrWhiteSpace(documentValidationError);
+        // Eliminamos: && !(documentAlreadyExists && IsCedulaType)
+
+        return $"form-control {(hasError ? "is-invalid" : "")} {(isValid ? "is-valid" : "")}";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && documentInput.Context != null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("setupDocumentInput", documentInput, IsCedulaType);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting up document input: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task OnDocumentNumberInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+
+        // Aplicar filtros según el tipo de documento
+        string filteredValue = ApplyInputFilters(value);
+
+        // Actualizar el valor filtrado
+        if (filteredValue != value)
+        {
+            await JS.InvokeVoidAsync("setInputValue", documentInput, filteredValue);
+        }
+
+        editingAgent.IdentificationNumber = filteredValue;
+
+        // Limpiar validaciones anteriores
+        documentValidationError = string.Empty;
+        documentAlreadyExists = false;
+
+        // Cancelar timer anterior
+        validationTimer?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(filteredValue))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        // Validación según el tipo de documento
+        if (!ValidateDocumentFormat(filteredValue))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        // Si el formato es válido y es cédula, verificar si existe (con delay)
+        if (IsCedulaType && filteredValue.Length == 10)
+        {
+            validationTimer = new Timer(async _ => await ValidateDocumentExists(filteredValue), null, 800, Timeout.Infinite);
+        }
+
+        StateHasChanged();
+    }
+
+    private string ApplyInputFilters(string value)
+    {
+        if (IsCedulaType)
+        {
+            // Solo números, máximo 10 dígitos
+            return new string(value.Where(char.IsDigit).Take(10).ToArray());
+        }
+        else if (IsPasaporteType)
+        {
+            // Letras, números y algunos caracteres especiales comunes en pasaportes
+            var allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>";
+            return new string(value.Where(c => allowedChars.Contains(c)).Take(20).ToArray()).ToUpper();
+        }
+        else
+        {
+            // Para otros documentos, permitir números y letras
+            var allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
+            return new string(value.Where(c => allowedChars.Contains(c)).Take(15).ToArray()).ToUpper();
+        }
+    }
+
+    private bool ValidateDocumentFormat(string documentNumber)
+    {
+        if (string.IsNullOrWhiteSpace(documentNumber))
+            return true;
+
+        if (IsCedulaType)
+        {
+            return ValidateCedulaFormat(documentNumber);
+        }
+        else if (IsPasaporteType)
+        {
+            return ValidatePasaporteFormat(documentNumber);
+        }
+        else
+        {
+            // Validación básica para otros documentos
+            return documentNumber.Length >= 3 && documentNumber.Length <= GetMaxLength();
+        }
+    }
+
+    private bool ValidateCedulaFormat(string cedula)
+    {
+        if (string.IsNullOrWhiteSpace(cedula) || cedula.Length != 10)
+        {
+            if (cedula.Length < 10)
+            {
+                // No mostrar error hasta que complete los 10 dígitos
+                return true;
+            }
+            documentValidationError = "La cédula debe tener exactamente 10 dígitos";
+            return false;
+        }
+
+        // Verificar que todos sean dígitos
+        if (!cedula.All(char.IsDigit))
+        {
+            documentValidationError = "La cédula debe contener solo números";
+            return false;
+        }
+
+        // Obtener los dígitos
+        var digits = cedula.Select(c => int.Parse(c.ToString())).ToArray();
+
+        // Verificar provincia (primeros 2 dígitos)
+        var provincia = digits[0] * 10 + digits[1];
+        if (provincia < 1 || provincia > 24)
+        {
+            documentValidationError = "Cédula inválida: código de provincia no válido";
+            return false;
+        }
+
+        // Verificar tercer dígito (debe ser menor a 6 para personas naturales)
+        if (digits[2] >= 6)
+        {
+            documentValidationError = "Cédula inválida: tercer dígito no válido";
+            return false;
+        }
+
+        // Algoritmo de validación del dígito verificador
+        var coeficientes = new[] { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
+        var suma = 0;
+
+        for (int i = 0; i < 9; i++)
+        {
+            var producto = digits[i] * coeficientes[i];
+            if (producto >= 10)
+                producto = producto - 9;
+            suma += producto;
+        }
+
+        var digitoVerificador = suma % 10;
+        if (digitoVerificador != 0)
+            digitoVerificador = 10 - digitoVerificador;
+
+        if (digitoVerificador != digits[9])
+        {
+            documentValidationError = "Cédula inválida: dígito verificador incorrecto";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidatePasaporteFormat(string pasaporte)
+    {
+        if (string.IsNullOrWhiteSpace(pasaporte))
+        {
+            documentValidationError = "El número de pasaporte es requerido";
+            return false;
+        }
+
+        // Longitud mínima y máxima para pasaporte
+        if (pasaporte.Length < 6 || pasaporte.Length > 20)
+        {
+            documentValidationError = "El pasaporte debe tener entre 6 y 20 caracteres";
+            return false;
+        }
+
+        // Formato básico: generalmente combina letras y números
+        var passportRegex = new System.Text.RegularExpressions.Regex(@"^[A-Z0-9<]{6,20}$");
+        if (!passportRegex.IsMatch(pasaporte))
+        {
+            documentValidationError = "Formato de pasaporte inválido. Use solo letras mayúsculas y números";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task ValidateDocumentExists(string documentNumber)
+    {
+        // SOLO validar formato, NO existencia para representantes
+        if (!IsCedulaType) return;
+
+        await InvokeAsync(async () =>
+        {
+            isValidatingDocument = true;
+            StateHasChanged();
+
+            try
+            {
+                // COMENTADO: No validar existencia para representantes
+                // var existingPerson = await PersonService.GetPersonByDocumentAsync(documentNumber);
+                // documentAlreadyExists = existingPerson != null;
+
+                // Siempre establecer como falso ya que no nos importa si existe
+                documentAlreadyExists = false;
+
+                // Opcional: Solo log para debugging
+                await JS.InvokeVoidAsync("console.log",
+                    $"✅ Cédula válida: {documentNumber}. No se verifica existencia para representantes.");
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("console.error", $"Error validating document: {ex.Message}");
+                documentAlreadyExists = false;
+            }
+            finally
+            {
+                isValidatingDocument = false;
+                StateHasChanged();
+            }
+        });
+    }
+
+    // ========== MÉTODOS PARA VALIDACIÓN DE TELÉFONOS (REPRESENTANTES) ==========
+
+    // Método específico para inputs de teléfono
+    private string GetPhoneInputClass(string phoneType)
+    {
+        var baseClass = "form-control";
+        var hasError = phoneType == "landline" ? !string.IsNullOrEmpty(landlineError) : !string.IsNullOrEmpty(mobileError);
+
+        if (hasError)
+            baseClass += " is-invalid";
+        else if ((phoneType == "landline" && !string.IsNullOrEmpty(landlineInput)) ||
+                 (phoneType == "mobile" && !string.IsNullOrEmpty(mobileInput)))
+            baseClass += " is-valid";
+
+        return baseClass;
+    }
+
+    // Validación teléfono fijo
+    private void OnLandlineInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // ✅ PRIMERO validar si hay caracteres no numéricos
+        if (!string.IsNullOrEmpty(input) && !input.All(char.IsDigit))
+        {
+            landlineError = "Solo se permiten números";
+            landlineInput = input; // Mantenemos el input original para mostrar el error
+            StateHasChanged();
+            return;
+        }
+
+        // Filtrar solo números (por si acaso)
+        var numericInput = new string(input.Where(char.IsDigit).ToArray());
+
+        // Limitar a 9 dígitos
+        if (numericInput.Length > 9)
+            numericInput = numericInput.Substring(0, 9);
+
+        landlineInput = numericInput;
+        editingAgent.PhoneNumber = numericInput;
+
+        // Validar formato
+        ValidateLandline(numericInput);
+        StateHasChanged();
+    }
+
+    private void ValidateLandline(string phone)
+    {
+        if (string.IsNullOrEmpty(phone))
+        {
+            landlineError = "";
+            return;
+        }
+
+        // Ya validamos que sean solo dígitos en OnLandlineInput, pero por seguridad:
+        if (!phone.All(char.IsDigit))
+        {
+            landlineError = "Solo se permiten números";
+            return;
+        }
+
+        if (phone.Length != 9)
+        {
+            landlineError = "Debe tener exactamente 9 dígitos (ej: 032445388)";
+            return;
+        }
+
+        // Verificar código de área válido (02, 03, 04, 05, 06, 07)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^0[2-7]"))
+        {
+            landlineError = "Debe empezar con un código de área válido (02, 03, 04, 05, 06, 07)";
+            return;
+        }
+
+        landlineError = "";
+    }
+
+    // Validación para celular
+    private void OnMobileInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? "";
+
+        // ✅ PRIMERO validar si hay caracteres no numéricos
+        if (!string.IsNullOrEmpty(input) && !input.All(char.IsDigit))
+        {
+            mobileError = "Solo se permiten números";
+            mobileInput = input; // Mantenemos el input original para mostrar el error
+            StateHasChanged();
+            return;
+        }
+
+        // Filtrar solo números
+        var numericInput = new string(input.Where(char.IsDigit).ToArray());
+
+        // Limitar a 10 dígitos
+        if (numericInput.Length > 10)
+            numericInput = numericInput.Substring(0, 10);
+
+        mobileInput = numericInput;
+        editingAgent.CellphoneNumber = numericInput;
+
+        // Validar
+        ValidateMobile(numericInput);
+        StateHasChanged();
+    }
+
+    private void ValidateMobile(string mobile)
+    {
+        if (string.IsNullOrEmpty(mobile))
+        {
+            mobileError = "El número de celular es obligatorio";
+            return;
+        }
+
+        // Ya validamos que sean solo dígitos en OnMobileInput, pero por seguridad:
+        if (!mobile.All(char.IsDigit))
+        {
+            mobileError = "Solo se permiten números";
+            return;
+        }
+
+        if (mobile.Length != 10)
+        {
+            mobileError = "Debe tener exactamente 10 dígitos";
+            return;
+        }
+
+        if (!mobile.StartsWith("09"))
+        {
+            mobileError = "Debe empezar con 09";
+            return;
+        }
+
+        mobileError = "";
+    }
+
+    // Método para inicializar los valores de teléfono cuando se edita
+    private void InitializePhoneInputs()
+    {
+        landlineInput = editingAgent.PhoneNumber ?? "";
+        mobileInput = editingAgent.CellphoneNumber ?? "";
+
+        // Validar teléfonos existentes al inicializar
+        if (!string.IsNullOrEmpty(landlineInput))
+            ValidateLandline(landlineInput);
+
+        if (!string.IsNullOrEmpty(mobileInput))
+            ValidateMobile(mobileInput);
+    }
+
     public void Dispose()
     {
         // Cleanup si es necesario
     }
 }
+
+<script>
+    window.setupDocumentInput = function(element, isNumeric) {
+        if (!element) return;
+
+        if (isNumeric) {
+            // Prevenir entrada de caracteres no numéricos
+            element.addEventListener('keydown', function(e) {
+                // Permitir: backspace, delete, tab, escape, enter
+                if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                    // Permitir: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                    // Permitir: home, end, left, right
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+                // Asegurar que es un número y detener el keypress
+                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+
+            // Filtrar caracteres pegados
+            element.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let paste = (e.clipboardData || window.clipboardData).getData('text');
+                let numericValue = paste.replace(/[^0-9]/g, '');
+                element.value = numericValue;
+                element.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+
+            // Filtrar entrada directa
+            element.addEventListener('input', function(e) {
+                let value = e.target.value;
+                let numericValue = value.replace(/[^0-9]/g, '');
+                if (value !== numericValue) {
+                    e.target.value = numericValue;
+                }
+            });
+        } else {
+            // Para inputs de texto, permitir más caracteres pero con límites
+            element.addEventListener('input', function(e) {
+                let value = e.target.value;
+                // Convertir a mayúsculas automáticamente
+                if (value !== value.toUpperCase()) {
+                    e.target.value = value.toUpperCase();
+                }
+            });
+        }
+    };
+
+    window.setInputValue = function(element, value) {
+        if (element) {
+            element.value = value;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    };
+</script>

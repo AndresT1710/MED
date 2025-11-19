@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SMED.BackEnd.Repositories.Implementations;
 using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 
@@ -46,6 +47,63 @@ namespace SMED.BackEnd.Controllers
         {
             var deleted = await _repository.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
+        }
+
+        // En MedicalReferralController.cs, agrega estos endpoints:
+        [HttpGet("medical-care/{medicalCareId}")]
+        public async Task<ActionResult<List<MedicalReferralDTO>>> GetByMedicalCareId(int medicalCareId)
+        {
+            var repository = _repository as MedicalReferralRepository;
+            if (repository == null) return BadRequest("Repository type not supported");
+
+            var referrals = await repository.GetByMedicalCareIdAsync(medicalCareId);
+            return Ok(referrals);
+        }
+
+        [HttpGet("pending")]
+        public async Task<ActionResult<List<MedicalReferralDTO>>> GetPendingReferrals()
+        {
+            var repository = _repository as MedicalReferralRepository;
+            if (repository == null) return BadRequest("Repository type not supported");
+
+            var referrals = await repository.GetPendingReferralsAsync();
+            return Ok(referrals);
+        }
+
+        [HttpGet("urgent")]
+        public async Task<ActionResult<List<MedicalReferralDTO>>> GetUrgentReferrals()
+        {
+            var repository = _repository as MedicalReferralRepository;
+            if (repository == null) return BadRequest("Repository type not supported");
+
+            var referrals = await repository.GetUrgentReferralsAsync();
+            return Ok(referrals);
+        }
+
+        [HttpGet("location/{locationId}")]
+        public async Task<ActionResult<List<MedicalReferralDTO>>> GetByLocation(int locationId)
+        {
+            var repository = _repository as MedicalReferralRepository;
+            if (repository == null) return BadRequest("Repository type not supported");
+
+            var referrals = await repository.GetByLocationAsync(locationId);
+            return Ok(referrals);
+        }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateReferralStatusRequest request)
+        {
+            var repository = _repository as MedicalReferralRepository;
+            if (repository == null) return BadRequest("Repository type not supported");
+
+            var updated = await repository.UpdateStatusAsync(id, request.Status, request.AttendedByProfessionalId);
+            return updated ? Ok() : NotFound();
+        }
+
+        public class UpdateReferralStatusRequest
+        {
+            public string Status { get; set; } = null!;
+            public int? AttendedByProfessionalId { get; set; }
         }
     }
 

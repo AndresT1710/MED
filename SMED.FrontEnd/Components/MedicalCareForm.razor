@@ -1044,7 +1044,7 @@
                                                 <td>@diagnosis.Denomination</td>
                                                 <td>
                                                     <button class="btn btn-success btn-sm" @onclick="() => OpenTreatmentModal(diagnosis.Id)">
-                                                        <i class="fas fa-eye me-1"></i>Ver o Editar
+                                                     Gestionar Tratamientos
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1519,7 +1519,7 @@
     private List<List<string>> procedureRows = new();
     private List<int> procedureRowIds = new();
     private string? procedureFormError;
-    private List<string> procedureColumnHeaders = new() { "Fecha", "Tipo", "Procedimiento", "Observaciones" };
+    private List<string> procedureColumnHeaders = new() { "Fecha", "Departamento", "Tipo", "Procedimiento", "Observaciones" };
     private bool showProcedureModal = false;
 
 
@@ -2334,40 +2334,163 @@
         }
     }
 
-    private void ActualizarTablaProcedimientos()
+    private async Task ActualizarTablaProcedimientos()
     {
-        procedureRows = procedimientosList
-            .Select(p => new List<string>
+        try
+        {
+            Console.WriteLine($"[ActualizarTablaProcedimientos] Actualizando tabla con {procedimientosList.Count} procedimientos");
+
+            procedureRows = new List<List<string>>();
+            procedureRowIds = new List<int>();
+
+            if (!procedimientosList.Any())
+            {
+                Console.WriteLine("[ActualizarTablaProcedimientos] No hay procedimientos para mostrar en la tabla");
+                StateHasChanged();
+                return;
+            }
+
+            // Obtener todos los IDs de departamentos únicos para optimizar las llamadas a la API
+            var locationIds = procedimientosList
+                .Where(p => p.LocationId.HasValue && p.LocationId.Value > 0)
+                .Select(p => p.LocationId.Value)
+                .Distinct()
+                .ToList();
+
+            Console.WriteLine($"[ActualizarTablaProcedimientos] IDs de departamentos únicos: {string.Join(", ", locationIds)}");
+
+            // Cargar todos los departamentos de una vez para mejor performance
+            var departamentosDict = new Dictionary<int, string>();
+            foreach (var locationId in locationIds)
+            {
+                try
+                {
+                    var location = await LocationService.GetByIdAsync(locationId);
+                    departamentosDict[locationId] = location?.Name ?? "Departamento no encontrado";
+                    Console.WriteLine($"[ActualizarTablaProcedimientos] Departamento cargado: {locationId} -> {departamentosDict[locationId]}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ActualizarTablaProcedimientos] Error cargando departamento {locationId}: {ex.Message}");
+                    departamentosDict[locationId] = "Error al cargar";
+                }
+            }
+
+            // Construir las filas de la tabla
+            foreach (var procedimiento in procedimientosList)
+            {
+                string departamentoNombre = "Sin departamento";
+
+                if (procedimiento.LocationId.HasValue)
+                {
+                    if (departamentosDict.ContainsKey(procedimiento.LocationId.Value))
                     {
-                p?.ProcedureDate.ToShortDateString() ?? "",
-                p?.TypeOfProcedureName ?? "Sin especificar",
-                p?.SpecificProcedureName ?? "Sin especificar",
-                p?.Observations ?? ""
-                    }).ToList();
+                        departamentoNombre = departamentosDict[procedimiento.LocationId.Value];
+                    }
+                    else
+                    {
+                        departamentoNombre = "Departamento no cargado";
+                    }
+                }
 
-        procedureRowIds = procedimientosList.Select(p => p.ProcedureId).ToList();
+                var fila = new List<string>
+            {
+                // Fecha formateada
+                procedimiento.ProcedureDate.ToString("dd/MM/yyyy HH:mm"),
 
-        StateHasChanged();
+                // Departamento (nueva columna)
+                departamentoNombre,
+
+                // Tipo de procedimiento
+                procedimiento.TypeOfProcedureName ?? "Sin tipo",
+
+                // Procedimiento específico
+                procedimiento.SpecificProcedureName ?? "Sin especificar",
+
+                // Observaciones (truncar si es muy largo)
+                !string.IsNullOrEmpty(procedimiento.Observations)
+                    ? (procedimiento.Observations.Length > 50
+                        ? procedimiento.Observations.Substring(0, 50) + "..."
+                        : procedimiento.Observations)
+                    : "Sin observaciones"
+            };
+
+                procedureRows.Add(fila);
+                procedureRowIds.Add(procedimiento.ProcedureId);
+
+                Console.WriteLine($"[ActualizarTablaProcedimientos] Fila agregada: {string.Join(" | ", fila)}");
+            }
+
+            Console.WriteLine($"[ActualizarTablaProcedimientos] Tabla actualizada con {procedureRows.Count} filas");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ActualizarTablaProcedimientos] Error crítico: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"[ActualizarTablaProcedimientos] Error: {ex.Message}");
+
+            // En caso de error, limpiar la tabla
+            procedureRows = new List<List<string>>();
+            procedureRowIds = new List<int>();
+            StateHasChanged();
+        }
     }
 
     private async Task CargarProcedimientos()
-{
-    try
     {
-        var existingProcedures = await MedicalProcedureService.GetAllAsync();
-        procedimientosList = existingProcedures?
-            .Where(p => p.CareId == currentMedicalCareId)
-            .ToList() ?? new();
+        try
+        {
+            Console.WriteLine($"[CargarProcedimientos] Iniciando carga para CareId: {currentMedicalCareId}");
 
-        ActualizarTablaProcedimientos();
-        
-        await JS.InvokeVoidAsync("console.log", $"[CargarProcedimientos] Se cargaron {procedimientosList.Count} procedimientos para CareId: {currentMedicalCareId}");
+            // Obtener todos los procedimientos
+            var existingProcedures = await MedicalProcedureService.GetAllAsync();
+
+            if (existingProcedures == null)
+            {
+                Console.WriteLine("[CargarProcedimientos] No se encontraron procedimientos (lista nula)");
+                procedimientosList = new List<MedicalProcedureDTO>();
+            }
+            else
+            {
+                // Filtrar por el CareId actual
+                procedimientosList = existingProcedures
+                    .Where(p => p.CareId == currentMedicalCareId)
+                    .ToList();
+
+                Console.WriteLine($"[CargarProcedimientos] Se encontraron {procedimientosList.Count} procedimientos para CareId: {currentMedicalCareId}");
+            }
+
+            // Actualizar la tabla con los departamentos
+            await ActualizarTablaProcedimientos();
+
+            // Log para debugging
+            if (procedimientosList.Any())
+            {
+                foreach (var proc in procedimientosList)
+                {
+                    Console.WriteLine($"[CargarProcedimientos] Procedimiento: {proc.SpecificProcedureName}, LocationId: {proc.LocationId}, CareId: {proc.CareId}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[CargarProcedimientos] No hay procedimientos para mostrar");
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CargarProcedimientos] Error: {ex.Message}");
+            await JS.InvokeVoidAsync("console.error", $"[CargarProcedimientos] Error: {ex.Message}");
+
+            // En caso de error, limpiar las listas
+            procedimientosList = new List<MedicalProcedureDTO>();
+            procedureRows = new List<List<string>>();
+            procedureRowIds = new List<int>();
+
+            StateHasChanged();
+        }
     }
-    catch (Exception ex)
-    {
-        await JS.InvokeVoidAsync("console.error", $"[CargarProcedimientos] Error: {ex.Message}");
-    }
-}
 
     private async Task OnProcedureSaved(MedicalProcedureDTO procedimiento)
     {
@@ -2419,6 +2542,23 @@
         currentProcedure = null;
         showProcedureModal = false;
         StateHasChanged();
+    }
+
+    private async Task<string> ObtenerNombreDepartamento(int? locationId)
+    {
+        if (!locationId.HasValue || locationId.Value <= 0)
+            return "Sin departamento";
+
+        try
+        {
+            var location = await LocationService.GetByIdAsync(locationId.Value);
+            return location?.Name ?? "Departamento no encontrado";
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", "Error obteniendo nombre de departamento:", ex.Message);
+            return "Error al cargar";
+        }
     }
 
     // ============================================================================

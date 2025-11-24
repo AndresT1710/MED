@@ -13,10 +13,13 @@ namespace SMED.FrontEnd.Services
         private readonly HttpClient _httpClient;
         private UserSessionInfo? _currentUser;
 
+
+
         // Mapeo de roles a módulos permitidos
         private readonly Dictionary<string, List<string>> _roleModules = new()
         {
-            ["Admin"] = new() { "Personas", "Historia Clínica", "Atención Médica", "Nutrición", "Enfermería", "Psicología", "Estimulación Temprana", "Fisioterapia", "Usuarios", "Reportes" },
+            //["Admin"] = new() { "Personas", "Historia Clínica", "Atención Médica", "Nutrición", "Enfermería", "Psicología", "Estimulación Temprana", "Fisioterapia", "Usuarios", "Reportes" },
+            ["Admin"] = new() { "Personas","Usuarios", "Reportes" },
             ["Enfermero"] = new() { "Personas", "Historia Clínica", "Enfermería" },
             ["Médico General"] = new() { "Personas", "Historia Clínica", "Atención Médica" },
             ["Nutricionista"] = new() { "Personas", "Historia Clínica", "Nutrición" },
@@ -25,6 +28,35 @@ namespace SMED.FrontEnd.Services
             ["Fisioterapeuta"] = new() { "Personas", "Historia Clínica", "Fisioterapia" },
             ["Pediatra"] = new() { "Personas", "Historia Clínica", "Estimulación Temprana" }
         };
+
+
+
+        // Metodo Historia clinica roles
+        public async Task<bool> HasAccessToMedicalHistoryTabAsync(string tabKey)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return false;
+            if (user.IsAdmin) return true;
+
+            // Mapeo de tabs a roles permitidos
+            var tabPermissions = new Dictionary<string, List<string>>
+            {
+                ["Registro"] = new() {"Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["General"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["Obstétrico"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["Ginecológico"] = new() {"Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["Nutrición"] = new() { "Nutricionista" },
+                ["Psicológico"] = new() {"Psicólogo", "Psicólogo Clínico" },
+                ["Fisioterapia"] = new() { "Fisioterapeuta" },
+                ["Estimulación temprana"] = new() { "Pediatra" }
+            };
+
+            if (!tabPermissions.ContainsKey(tabKey))
+                return false;
+
+            var userRoles = await GetUserRolesAsync();
+            return userRoles.Any(role => tabPermissions[tabKey].Contains(role));
+        }
 
         public AuthorizationService(IJSRuntime jsRuntime, HttpClient httpClient)
         {

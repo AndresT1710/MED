@@ -52,5 +52,6 @@ namespace SMED.Shared.DTOs
         public ObstetricHistoryDTO? ObstetricHistory { get; set; }
 
         public List<ToxicHabitHistoryDTO>? ToxicHabitHistories { get; set; } = new();
+
     }
 }

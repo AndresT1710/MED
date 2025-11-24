@@ -1,9 +1,11 @@
 ﻿@inject NavigationManager NavigationManager
+@using SMED.FrontEnd.Services
+@inject AuthorizationService AuthorizationService
 
 <div class="tab-container-wrapper">
     <div class="tab-container">
         <ul class="tab-header nav nav-tabs">
-            @foreach (var tab in Tabs)
+            @foreach (var tab in VisibleTabs)
             {
                 <li class="nav-item">
                     <a class="nav-link @(IsActive(tab.Url) ? "active" : "")"
@@ -15,15 +17,6 @@
         <div class="tab-body">
             @ChildContent
         </div>
-
-        @* Se comenta el botón de guardar para evitar confusión, cada EditableTable guarda sus datos *@
-        @*
-        <div class="tab-actions">
-            <button class="btn btn-primary save-button" @onclick="OnSaveClick">
-                <i class="fas fa-save"></i> Guardar
-            </button>
-        </div>
-        *@
     </div>
 </div>
 
@@ -31,7 +24,7 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
 
-    private List<TabItem> Tabs = new()
+    private List<TabItem> AllTabs = new()
     {
         new TabItem("Registro", "/medical-history/registro"),
         new TabItem("General", "/medical-history/general"),
@@ -42,6 +35,28 @@
         new TabItem("Fisioterapia", "/medical-history/physiotherapy"),
         new TabItem("Estimulación temprana", "/medical-history/earlystimulation"),
     };
+
+    private List<TabItem> VisibleTabs { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVisibleTabs();
+    }
+
+    private async Task LoadVisibleTabs()
+    {
+        VisibleTabs.Clear();
+
+        foreach (var tab in AllTabs)
+        {
+            if (await AuthorizationService.HasAccessToMedicalHistoryTabAsync(tab.Title))
+            {
+                VisibleTabs.Add(tab);
+            }
+        }
+
+        StateHasChanged();
+    }
 
     private bool IsActive(string url) => NavigationManager.Uri.Contains(url, StringComparison.OrdinalIgnoreCase);
 

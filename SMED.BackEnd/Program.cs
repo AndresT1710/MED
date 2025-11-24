@@ -11,6 +11,7 @@ using SGIS.Models;
 using SMED.Shared.Entity;
 using SMED.BackEnd.Repositories;
 using SMED.BackEnd.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,7 +62,7 @@ builder.Services.AddScoped<IRepository<MedicationHistoryDTO, int>, MedicationHis
 builder.Services.AddScoped<IRepository<PsychopsychiatricHistoryDTO, int>, PsychopsychiatricHistoryRepository>();
 builder.Services.AddScoped<IRepository<CurrentProblemHistoryDTO, int>, CurrentProblemHistoryRepository>();
 builder.Services.AddScoped<IRepository<WorkHistoryDTO, int>, WorkHistoryRepository>();
-builder.Services.AddScoped<IRepository<PsychosexualHistoryDTO, int>,PsychosexualHistoryRepository>();
+builder.Services.AddScoped<IRepository<PsychosexualHistoryDTO, int>, PsychosexualHistoryRepository>();
 builder.Services.AddScoped<IRepository<PrenatalHistoryDTO, int>, PrenatalHistoryRepository>();
 builder.Services.AddScoped<IRepository<PostnatalHistoryDTO, int>, PostnatalHistoryRepository>();
 builder.Services.AddScoped<IRepository<PerinatalHistoryDTO, int>, PerinatalHistoryRepository>();
@@ -238,7 +239,6 @@ builder.Services.AddScoped<ReportRepository>();
 builder.Services.AddScoped<PdfService>();
 builder.Services.AddHttpClient();
 
-
 // 4. Authentication
 builder.Services.AddAuthentication(options =>
 {
@@ -258,7 +258,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 5. CORS - CONFIGURACIÓN TEMPORAL PARA DESARROLLO
+// 5. CORS - CONFIGURACIÓN PARA PRODUCCIÓN
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -269,19 +269,56 @@ builder.Services.AddCors(options =>
     });
 });
 
+// 6. Swagger configuration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "SMED API",
+        Version = "v1",
+        Description = "Sistema Médico API"
+    });
+
+    // Add JWT Authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// CONFIGURACIÓN DEL PIPELINE - SIEMPRE ACTIVO
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SMED API v1");
+    c.RoutePrefix = "swagger"; // Accesible en /swagger
+    c.DisplayRequestDuration();
+});
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // CORS debe ir ANTES que todo lo demás
 app.UseCors();
@@ -291,5 +328,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Redirigir la raíz a Swagger
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
+// Health check endpoint
+app.MapGet("/health", () => "SMED API is running!");
+app.MapGet("/api/health", () => "SMED API is running!");
 
 app.Run();

@@ -15,8 +15,7 @@
         </div>
     </div>
 
-
-    
+    <!-- INFORMACIÓN BÁSICA ACTUALIZADA -->
     <div class="row mb-3">
         <div class="col-md-6">
             <h5>Información Básica</h5>
@@ -30,23 +29,50 @@
                 <dt class="col-sm-4">Estado:</dt>
                 <dd class="col-sm-8">
                     <span class="badge @(History.IsActive == true ? "bg-success" : "bg-secondary")">
-                        @(History.IsActive == true ? "Activo" : "Inactivo")
+                        @(History.IsActive == true ? "Activa" : "Inactiva")
                     </span>
                 </dd>
             </dl>
         </div>
 
+        <!-- INFORMACIÓN DEL PACIENTE ACTUALIZADA -->
         <div class="col-md-6">
             <h5>Paciente</h5>
             <dl class="row">
                 <dt class="col-sm-4">Nombre:</dt>
-                <dd class="col-sm-8">@History.Patient?.Person?.FirstName @History.Patient?.Person?.LastName</dd>
+                <dd class="col-sm-8">
+                    @History.Patient?.Person?.FirstName
+                    @History.Patient?.Person?.MiddleName
+                    @History.Patient?.Person?.LastName
+                    @History.Patient?.Person?.SecondLastName
+                </dd>
 
                 <dt class="col-sm-4">Cédula:</dt>
                 <dd class="col-sm-8">@(History.Patient?.Person?.Document?.DocumentNumber ?? "N/A")</dd>
 
                 <dt class="col-sm-4">Fecha Nac.:</dt>
-                <dd class="col-sm-8">@History.Patient?.Person?.BirthDate?.ToString("dd/MM/yyyy")</dd>
+                <dd class="col-sm-8">
+                    @History.Patient?.Person?.BirthDate?.ToString("dd/MM/yyyy")
+                    @if (History.Patient?.Person?.BirthDate.HasValue == true)
+                    {
+                        <small class="text-muted">
+                            (@CalculateAge(History.Patient.Person.BirthDate.Value) años)
+                        </small>
+                    }
+                </dd>
+
+                <!-- NUEVO: Email del paciente -->
+                <dt class="col-sm-4">Email:</dt>
+                <dd class="col-sm-8">
+                    @if (!string.IsNullOrWhiteSpace(History.Patient?.Person?.Email))
+                    {
+                        @History.Patient.Person.Email
+                    }
+                    else
+                    {
+                        <span class="text-muted">No registrado</span>
+                    }
+                </dd>
             </dl>
         </div>
     </div>
@@ -55,7 +81,7 @@
         <h4 class="text-center">Generales</h4>
     </div>
 
-
+    <!-- OBSERVACIONES GENERALES -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Observaciones Generales</h5>
@@ -74,6 +100,7 @@
         </div>
     </div>
 
+    <!-- NUEVA SECCIÓN: ANTECEDENTES PERSONALES -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Personales</h5>
@@ -88,7 +115,7 @@
                                     <strong>Enfermedad:</strong> @item.DiseaseName <br />
                                     <strong>Tipo:</strong> @item.DiseaseTypeName <br />
                                     <strong>Descripción:</strong> @item.Description <br />
-									<strong>Fecha:</strong> @item.RegistrationDate <br />
+                                    <strong>Fecha:</strong> @item.RegistrationDate?.ToString("dd/MM/yyyy") <br />
                                 </li>
                             }
                         </ul>
@@ -102,6 +129,7 @@
         </div>
     </div>
 
+    <!-- NUEVA SECCIÓN: ANTECEDENTES QUIRÚRGICOS -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Quirúrgicos</h5>
@@ -115,8 +143,8 @@
                                 <li class="list-group-item">
                                     <strong>Nombre de Cirugía:</strong> @surgery.SurgeryName <br />
                                     <strong>Descripción:</strong> @surgery.Description <br />
-                                    <strong>Fecha de Registro:</strong> @surgery.RegistrationDate?.ToShortDateString() <br />
-                                    <strong>Fecha de Cirugía:</strong> @surgery.SurgeryDate?.ToShortDateString()
+                                    <strong>Fecha de Registro:</strong> @surgery.RegistrationDate?.ToString("dd/MM/yyyy") <br />
+                                    <strong>Fecha de Cirugía:</strong> @surgery.SurgeryDate?.ToString("dd/MM/yyyy")
                                 </li>
                             }
                         </ul>
@@ -130,6 +158,7 @@
         </div>
     </div>
 
+    <!-- NUEVA SECCIÓN: ANTECEDENTES DE ALERGIAS -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes de Alergias</h5>
@@ -142,7 +171,7 @@
                             {
                                 <li class="list-group-item">
                                     <strong>Nombre de Alergia:</strong> @allergy.AllergyName <br />
-                                    <strong>Fecha de Registro:</strong> @allergy.RegistrationDate?.ToShortDateString()
+                                    <strong>Fecha de Registro:</strong> @allergy.RegistrationDate?.ToString("dd/MM/yyyy")
                                 </li>
                             }
                         </ul>
@@ -156,6 +185,7 @@
         </div>
     </div>
 
+    <!-- NUEVA SECCIÓN: ANTECEDENTES DE HÁBITOS -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes de Hábitos</h5>
@@ -168,7 +198,7 @@
                             {
                                 <li class="list-group-item">
                                     <strong>Nombre de Hábito:</strong> @habit.HabitName <br />
-                                    <strong>Fecha de Registro:</strong> @habit.RecordDate?.ToShortDateString()
+                                    <strong>Fecha de Registro:</strong> @habit.RecordDate?.ToString("dd/MM/yyyy")
                                 </li>
                             }
                         </ul>
@@ -182,6 +212,7 @@
         </div>
     </div>
 
+    <!-- NUEVA SECCIÓN: ANTECEDENTES FAMILIARES -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Familiares</h5>
@@ -198,7 +229,7 @@
                                     <strong>Tipo de Enfermedad:</strong> @family.DiseaseTypeName <br />
                                     <strong>Edad de Aparición:</strong> @family.appearanceAge <br />
                                     <strong>Descripción:</strong> @family.Description <br />
-                                    <strong>Fecha de Registro:</strong> @family.RegistrationDate?.ToShortDateString()
+                                    <strong>Fecha de Registro:</strong> @family.RegistrationDate?.ToString("dd/MM/yyyy")
                                 </li>
                             }
                         </ul>
@@ -206,6 +237,113 @@
                     else
                     {
                         <span class="text-muted">No hay antecedentes familiares registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORIAL DE TRANSFUSIONES -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Historial de Transfusiones</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.TransfusionsHistories != null && History.TransfusionsHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var transfusion in History.TransfusionsHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Razón:</strong> @transfusion.TransfusionReason <br />
+                                    <strong>Fecha:</strong> @transfusion.TransfusionDate?.ToString("dd/MM/yyyy") <br />
+                                    <strong>Observaciones:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(transfusion.Observations))
+                                    {
+                                        @transfusion.Observations
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin observaciones</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay historial de transfusiones registrado</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANTECEDENTE DE HOSPITALIZACIONES -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedente de Hospitalizaciones</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.HospitalizationsHistories != null && History.HospitalizationsHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var hospitalization in History.HospitalizationsHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Razón:</strong> @hospitalization.HospitalizationReason <br />
+                                    <strong>Fecha:</strong> @hospitalization.HospitalizationDate?.ToString("dd/MM/yyyy") <br />
+                                    <strong>Lugar:</strong> @hospitalization.HospitalizationPlace <br />
+                                    <strong>Observaciones:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(hospitalization.Observations))
+                                    {
+                                        @hospitalization.Observations
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin observaciones</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes de hospitalizaciones registrados</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA SECCIÓN: ANTECEDENTES TRAUMATOLÓGICOS -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <h5>Antecedentes Traumatológicos</h5>
+            <div class="card">
+                <div class="card-body">
+                    @if (History.TraumaticHistories != null && History.TraumaticHistories.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var traumatic in History.TraumaticHistories)
+                            {
+                                <li class="list-group-item">
+                                    <strong>Descripción:</strong>
+                                    @if (!string.IsNullOrWhiteSpace(traumatic.Description))
+                                    {
+                                        @traumatic.Description
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin descripción</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">No hay antecedentes traumatológicos registrados</span>
                     }
                 </div>
             </div>
@@ -235,7 +373,7 @@
                                 <strong>Hijos Vivos:</strong> @(History.ObstetricHistory.LivingChildren.HasValue && History.ObstetricHistory.LivingChildren.Value > 0 ? "Sí" : "No")<br />
                                 <strong>Lactancia:</strong> @(History.ObstetricHistory.Breastfeeding.HasValue && History.ObstetricHistory.Breastfeeding.Value ? "Sí" : "No")<br />
                                 <strong>Edad Gestacional:</strong> @History.ObstetricHistory.GestionalAge semanas<br />
-                                <strong>Fecha Estimada de Parto:</strong> @History.ObstetricHistory.ExpectedDeliveryDate?.ToShortDateString()
+                                <strong>Fecha Estimada de Parto:</strong> @History.ObstetricHistory.ExpectedDeliveryDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -262,10 +400,10 @@
                         <ul class="list-group">
                             <li class="list-group-item">
                                 <strong>Desarrollo Ginecológico:</strong> @History.GynecologicalHistory.GynecologicalDevelopment <br />
-                                <strong>Menarquia:</strong> @(History.GynecologicalHistory.Menarche.HasValue ? History.GynecologicalHistory.Menarche.Value.ToShortDateString() : "No registrado") <br />
-                                <strong>Pubarquia:</strong> @(History.GynecologicalHistory.Pubarche.HasValue ? History.GynecologicalHistory.Pubarche.Value.ToShortDateString() : "No registrado") <br />
+                                <strong>Menarquia:</strong> @(History.GynecologicalHistory.Menarche.HasValue ? History.GynecologicalHistory.Menarche.Value.ToString("dd/MM/yyyy") : "No registrado") <br />
+                                <strong>Pubarquia:</strong> @(History.GynecologicalHistory.Pubarche.HasValue ? History.GynecologicalHistory.Pubarche.Value.ToString("dd/MM/yyyy") : "No registrado") <br />
                                 <strong>Ciclos Menstruales:</strong> @History.GynecologicalHistory.MenstrualCycles <br />
-                                <strong>Última Menstruación:</strong> @(History.GynecologicalHistory.LastMenstruation.HasValue ? History.GynecologicalHistory.LastMenstruation.Value.ToShortDateString() : "No registrado") <br />
+                                <strong>Última Menstruación:</strong> @(History.GynecologicalHistory.LastMenstruation.HasValue ? History.GynecologicalHistory.LastMenstruation.Value.ToString("dd/MM/yyyy") : "No registrado") <br />
                                 <strong>Métodos Anticonceptivos:</strong> @History.GynecologicalHistory.ContraceptiveMethods
                             </li>
                         </ul>
@@ -295,8 +433,8 @@
                                 <strong>Descripción:</strong> @History.SportsActivitiesHistory.Description <br />
                                 <strong>Minutos por Día:</strong> @History.SportsActivitiesHistory.MinutesPerDay minutos <br />
                                 <strong>Número de Días por Semana:</strong> @History.SportsActivitiesHistory.NumberOfDays días <br />
-                                <strong>Fecha de Registro:</strong> @History.SportsActivitiesHistory.RegistrationDate?.ToShortDateString() <br />
-								<strong>Actividad Física:</strong> @History.SportsActivitiesHistory.SportActivityName <br />
+                                <strong>Fecha de Registro:</strong> @History.SportsActivitiesHistory.RegistrationDate?.ToString("dd/MM/yyyy") <br />
+                                <strong>Actividad Física:</strong> @History.SportsActivitiesHistory.SportActivityName <br />
                             </li>
                         </ul>
                     }
@@ -308,6 +446,7 @@
             </div>
         </div>
     </div>
+
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Estilo de Vida</h5>
@@ -319,7 +458,7 @@
                             <li class="list-group-item">
                                 <strong>Estilo de Vida:</strong> @History.LifeStyleHistory.LifeStyleName <br />
                                 <strong>Descripción:</strong> @History.LifeStyleHistory.Description <br />
-                                <strong>Fecha de Registro:</strong> @History.LifeStyleHistory.RegistrationDate?.ToShortDateString()
+                                <strong>Fecha de Registro:</strong> @History.LifeStyleHistory.RegistrationDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -331,6 +470,7 @@
             </div>
         </div>
     </div>
+
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Hábitos Dietéticos</h5>
@@ -341,7 +481,7 @@
                         <ul class="list-group">
                             <li class="list-group-item">
                                 <strong>Descripción:</strong> @History.DietaryHabitsHistory.Description <br />
-                                <strong>Fecha de Registro:</strong> @History.DietaryHabitsHistory.RegistrationDate?.ToShortDateString()
+                                <strong>Fecha de Registro:</strong> @History.DietaryHabitsHistory.RegistrationDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -365,7 +505,7 @@
                             <li class="list-group-item">
                                 <strong>Hábito de Sueño:</strong> @History.SleepHabitHistory.SleepHabitName <br />
                                 <strong>Descripción:</strong> @History.SleepHabitHistory.Description <br />
-                                <strong>Fecha de Registro:</strong> @History.SleepHabitHistory.RecordDate?.ToShortDateString()
+                                <strong>Fecha de Registro:</strong> @History.SleepHabitHistory.RecordDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -392,7 +532,7 @@
                                 <strong>Lugar:</strong> @History.FoodConsumptionHistory.Place <br />
                                 <strong>Cantidad:</strong> @History.FoodConsumptionHistory.Amount <br />
                                 <strong>Descripción:</strong> @History.FoodConsumptionHistory.Description <br />
-                                <strong>Fecha de Registro:</strong> @History.FoodConsumptionHistory.RegistrationDate?.ToShortDateString()
+                                <strong>Fecha de Registro:</strong> @History.FoodConsumptionHistory.RegistrationDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -415,9 +555,9 @@
                         <ul class="list-group">
                             <li class="list-group-item">
                                 <strong>Cantidad:</strong> @History.WaterConsumptionHistory.Amount <br />
-								<strong>Frecuencia:</strong> @History.WaterConsumptionHistory.Frequency <br />
+                                <strong>Frecuencia:</strong> @History.WaterConsumptionHistory.Frequency <br />
                                 <strong>Descripción:</strong> @History.WaterConsumptionHistory.Description <br />
-                                <strong>Fecha de Registro:</strong> @History.WaterConsumptionHistory.RegistrationDate?.ToShortDateString()
+                                <strong>Fecha de Registro:</strong> @History.WaterConsumptionHistory.RegistrationDate?.ToString("dd/MM/yyyy")
                             </li>
                         </ul>
                     }
@@ -429,12 +569,12 @@
             </div>
         </div>
     </div>
-    <!-- NUEVA SECCIÓN: PSICOLOGÍA -->
+
+    <!-- SECCIÓN: PSICOLOGÍA -->
     <div class="row mb-3">
         <h4 class="text-center">Psicología</h4>
     </div>
 
-    <!-- Antecedente de Medicamentos -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedente de Medicamentos</h5>
@@ -461,7 +601,6 @@
         </div>
     </div>
 
-    <!-- Antecedente Psicopsiquiátrico -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedente Psicopsiquiátrico</h5>
@@ -490,7 +629,6 @@
         </div>
     </div>
 
-    <!-- Historial de Problema Actual -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Historial de Problema Actual</h5>
@@ -573,7 +711,6 @@
         </div>
     </div>
 
-    <!-- Hábitos Tóxicos -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Hábitos Tóxicos</h5>
@@ -600,7 +737,6 @@
         </div>
     </div>
 
-    <!-- Antecedente Psicosexual -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedente Psicosexual</h5>
@@ -631,7 +767,6 @@
         </div>
     </div>
 
-    <!-- Historial Laboral -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Historial Laboral</h5>
@@ -697,12 +832,11 @@
         </div>
     </div>
 
-    <!-- NUEVA SECCIÓN: FISIOTERAPIA -->
+    <!-- SECCIÓN: FISIOTERAPIA -->
     <div class="row mb-3">
         <h4 class="text-center">Fisioterapia</h4>
     </div>
 
-    <!-- Antecedentes Traumatológicos -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Traumatológicos</h5>
@@ -732,7 +866,6 @@
         <h4 class="text-center">Estimulación Temprana</h4>
     </div>
 
-    <!-- Antecedentes Prenatales -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Prenatales</h5>
@@ -852,7 +985,6 @@
         </div>
     </div>
 
-    <!-- Antecedentes Perinatales -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Perinatales</h5>
@@ -992,7 +1124,6 @@
         </div>
     </div>
 
-    <!-- Antecedentes Postnatales -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Postnatales</h5>
@@ -1085,7 +1216,6 @@
         </div>
     </div>
 
-    <!-- Antecedentes Neuropsicológicos -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Antecedentes Neuropsicológicos</h5>
@@ -1259,7 +1389,6 @@
         </div>
     </div>
 
-    <!-- Hitos de Desarrollo -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Hitos de Desarrollo</h5>
@@ -1295,7 +1424,6 @@
         </div>
     </div>
 
-    <!-- Exámenes Neurológicos -->
     <div class="row mb-3">
         <div class="col-md-12">
             <h5>Exámenes Neurológicos</h5>
@@ -1323,7 +1451,7 @@
                                     {
                                         <br />
                                         <strong>Enlace PDF:</strong>
-                                        <a href="@exam.LinkPdf" target="_blank" class="btn btn-sm btn-outline-primary">Ver PDF</a>
+                                        <a href="@exam.LinkPdf" target="_blank" class="text-primary">@exam.LinkPdf</a>
                                     }
                                 </li>
                             }
@@ -1337,13 +1465,50 @@
             </div>
         </div>
     </div>
-
-
-
-
-
 </div>
 
 @code {
     [Parameter] public ClinicalHistoryDTO History { get; set; }
+    
+    private int CalculateAge(DateTime birthDate)
+    {
+        var today = DateTime.Today;
+        var age = today.Year - birthDate.Year;
+        if (birthDate.Date > today.AddYears(-age)) age--;
+        return age;
+    }
+
+    // Métodos para manejar las hospitalizaciones
+    private bool HasHospitalizationsData()
+    {
+        // Verificar diferentes nombres de propiedades posibles
+        return (History.HospitalizationsHistories != null && History.HospitalizationsHistories.Any()) ||
+               (History.HospitalizationsHistories != null && History.HospitalizationsHistories.Any()) ||
+               (GetHospitalizationsData()?.Any() == true);
+    }
+
+    private IEnumerable<dynamic> GetHospitalizationsData()
+    {
+        // Intentar con diferentes nombres de propiedades
+        if (History.HospitalizationsHistories != null && History.HospitalizationsHistories.Any())
+            return History.HospitalizationsHistories;
+
+        if (History.HospitalizationsHistories != null && History.HospitalizationsHistories.Any())
+            return History.HospitalizationsHistories;
+
+        // Si no hay propiedades específicas, buscar en propiedades genéricas
+        var properties = History.GetType().GetProperties();
+        var hospitalizationProperty = properties.FirstOrDefault(p =>
+            p.Name.Contains("Hospitalization", StringComparison.OrdinalIgnoreCase) &&
+            p.PropertyType.IsGenericType);
+
+        if (hospitalizationProperty != null)
+        {
+            var value = hospitalizationProperty.GetValue(History);
+            if (value is IEnumerable<object> enumerable && enumerable.Any())
+                return enumerable.Cast<dynamic>();
+        }
+
+        return Enumerable.Empty<dynamic>();
+    }
 }

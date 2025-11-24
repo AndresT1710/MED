@@ -16,12 +16,15 @@ builder.Services.AddScoped(sp =>
 {
     var httpClient = new HttpClient
     {
-        BaseAddress = new Uri("https://localhost:59166/"),
-        //BaseAddress = new Uri("https://localhost:7009/"),
-        
+        //BaseAddress = new Uri("https://localhost:59166/"),
+        BaseAddress = new Uri("https://localhost:7009/"),
+
+
+        //IIS
+        //BaseAddress = new Uri("http://10.79.22.36:5000/"),
         //Dirección para Docker
         //BaseAddress = new Uri("http://localhost:2023/"),
-        
+
         Timeout = TimeSpan.FromSeconds(30)
     };
 

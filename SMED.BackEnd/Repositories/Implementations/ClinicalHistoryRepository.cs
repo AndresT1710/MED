@@ -78,6 +78,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.NeurologicalExams)
                     .ThenInclude(ne => ne.NeurologicalExamType)
                 .Include(ch => ch.DevelopmentRecords)
+                .Include(ch => ch.HospitalizationsHistories)
+                .Include(ch => ch.TransfusionsHistories)
                 .FirstOrDefaultAsync(ch => ch.PatientId == personId && ch.IsActive == true);
 
             return history == null ? null : MapToDTO(history);
@@ -213,6 +215,8 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(ch => ch.NeurologicalExams)
                     .ThenInclude(ne => ne.NeurologicalExamType)
                 .Include(ch => ch.DevelopmentRecords)
+                .Include(ch => ch.HospitalizationsHistories)
+                .Include(ch => ch.TransfusionsHistories)
                 .ToListAsync();
 
             return histories.Select(MapToDTO).ToList();
@@ -422,6 +426,25 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Description = fh.Description,
                     RegistrationDate = fh.RegistrationDate
                 }).ToList(),
+                HospitalizationsHistories = entity.HospitalizationsHistories.Select(hh => new HospitalizationsHistoryDTO
+                {
+                    HospitalizationsHistoryId = hh.HospitalizationsHistoryId,
+                    HistoryNumber = hh.HistoryNumber,
+                    ClinicalHistoryId = hh.ClinicalHistoryId,
+                    HospitalizationReason = hh.HospitalizationReason,
+                    HospitalizationDate = hh.HospitalizationDate,
+                    HospitalizationPlace = hh.HospitalizationPlace,
+                    Observations = hh.Observations
+                }).ToList(),
+                TransfusionsHistories = entity.TransfusionsHistories.Select(th => new TransfusionsHistoryDTO
+                {
+                    TransfusionsHistoryId = th.TransfusionsHistoryId,
+                    HistoryNumber = th.HistoryNumber,
+                    ClinicalHistoryId = th.ClinicalHistoryId,
+                    TransfusionReason = th.TransfusionReason,
+                    TransfusionDate = th.TransfusionDate,
+                    Observations = th.Observations
+                }).ToList(),
                 ObstetricHistory = entity.ObstetricHistories.FirstOrDefault() != null ? new ObstetricHistoryDTO
                 {
                     ObstetricHistoryId = entity.ObstetricHistories.First().ObstetricHistoryId,
@@ -565,7 +588,6 @@ namespace SMED.BackEnd.Repositories.Implementations
                     Description = ps.Description
                 }).ToList(),
 
-                // Agregar esto en el método MapToDTO del ClinicalHistoryRepository, después de las colecciones existentes:
 
                 PrenatalHistories = entity.PrenatalHistories.Select(ph => new PrenatalHistoryDTO
                 {

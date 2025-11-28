@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SGIS.Models;
 using SMED.BackEnd.Repositories.Interface;
+using SMED.BackEnd.Services.Interface;
 using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
 using System.Collections.Generic;
@@ -12,9 +13,12 @@ namespace SMED.BackEnd.Repositories.Implementations
     public class UserRepository : IRepository<UserDTO, int>
     {
         private readonly SGISContext _context;
-        public UserRepository(SGISContext context)
+        private readonly IPasswordService _passwordService;
+
+        public UserRepository(SGISContext context, IPasswordService passwordService)
         {
             _context = context;
+            _passwordService = passwordService;
         }
 
         public async Task<List<UserDTO>> GetAllAsync()
@@ -47,15 +51,18 @@ namespace SMED.BackEnd.Repositories.Implementations
 
         public async Task<UserDTO> AddAsync(UserDTO dto)
         {
+            var hashedPassword = _passwordService.HashPassword(dto.Password);
+
             var user = new User
             {
                 PersonId = dto.PersonId,
-                Password = dto.Password,
+                Password = hashedPassword,
                 IsActive = dto.IsActive
             };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             dto.Id = user.Id;
+            dto.Password = null;
             return dto;
         }
 
@@ -65,11 +72,20 @@ namespace SMED.BackEnd.Repositories.Implementations
                 .Include(u => u.PersonNavigation)
                 .FirstOrDefaultAsync(u => u.Id == dto.Id);
             if (user == null) return null;
+
             user.PersonId = dto.PersonId;
-            user.Password = dto.Password;
+
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                user.Password = _passwordService.HashPassword(dto.Password);
+            }
+
             user.IsActive = dto.IsActive;
             await _context.SaveChangesAsync();
-            return MapToDTO(user);
+
+            var result = MapToDTO(user);
+            result.Password = null;
+            return result;
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -87,7 +103,7 @@ namespace SMED.BackEnd.Repositories.Implementations
             {
                 Id = user.Id,
                 PersonId = user.PersonId,
-                Password = user.Password,
+                Password = null,
                 IsActive = user.IsActive,
                 Email = user.PersonNavigation?.Email,
                 Name = user.PersonNavigation != null ? $"{user.PersonNavigation.FirstName} {user.PersonNavigation.LastName}" : null,

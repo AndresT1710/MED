@@ -20,15 +20,19 @@ namespace SMED.BackEnd.Services.Implementations
         private readonly IRepository<UserDTO, int> _userRepository;
         private readonly IConfiguration _configuration;
         private readonly SGISContext _context;
+        private readonly IPasswordService _passwordService;
+
 
         public AuthService(
             IRepository<UserDTO, int> userRepository,
             IConfiguration configuration,
-            SGISContext context)
+            SGISContext context,
+            IPasswordService passwordService)
         {
             _userRepository = userRepository;
             _configuration = configuration;
             _context = context;
+            _passwordService = passwordService;
         }
 
         public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequest)
@@ -60,8 +64,8 @@ namespace SMED.BackEnd.Services.Implementations
                     };
                 }
 
-                // Verificar contraseña (en producción usar hash)
-                if (user.Password != loginRequest.Password)
+                // ✅ VERIFICAR CONTRASEÑA CON BCRYPT
+                if (!_passwordService.VerifyPassword(loginRequest.Password, user.Password))
                 {
                     return new LoginResponseDTO
                     {
@@ -70,10 +74,9 @@ namespace SMED.BackEnd.Services.Implementations
                     };
                 }
 
-                // Determinar si es admin (no tiene registro en HealthProfessional)
+                // Resto del código permanece igual...
                 bool isAdmin = user.PersonNavigation?.HealthProfessional == null;
 
-                // Crear UserDTO con información completa
                 var userDto = new UserDTO
                 {
                     Id = user.Id,
@@ -86,7 +89,7 @@ namespace SMED.BackEnd.Services.Implementations
                         }.Where(s => !string.IsNullOrWhiteSpace(s)))
                         : "Usuario",
                     IsActive = user.IsActive,
-                    Password = null
+                    Password = null // No enviar la contraseña al frontend
                 };
 
                 Console.WriteLine($"[Backend AuthService] UserDto Name before token generation: '{userDto.Name}'");

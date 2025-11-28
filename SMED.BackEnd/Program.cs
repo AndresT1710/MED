@@ -234,6 +234,8 @@ builder.Services.AddScoped<PsychologySessionsRepository>();
 builder.Services.AddScoped<DiagnosticTypeRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<ReportRepository>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+
 
 //PDF
 builder.Services.AddScoped<PdfService>();

@@ -1,93 +1,184 @@
 ﻿@using Microsoft.JSInterop
+@using SMED.FrontEnd.Services
 @inject IJSRuntime JS
-@inject HttpClient Http
+@inject AuthorizedHttpHandler AuthorizedHttpHandler
 
-<button class="btn btn-primary" @onclick="ImprimirConFuncionInline" disabled="@isLoading">
-    <i class="fas fa-print me-2"></i>
+<button class="btn btn-primary"
+        @onclick="GenerarPdf"
+        disabled="@isLoading">
+    <i class="@(isLoading ? "fas fa-spinner fa-spin" : "fas fa-file-pdf")"></i>
     @(isLoading ? "Generando PDF..." : "Imprimir PDF")
 </button>
 
 @code {
     [Parameter] public string Tipo { get; set; } = "person";
     [Parameter] public int Id { get; set; }
+    [Parameter] public string NombreArchivo { get; set; }
+    [Parameter] public string NumeroHistoria { get; set; }
+    [Parameter] public string NombrePaciente { get; set; }
 
     private bool isLoading = false;
 
-    private async Task ImprimirConFuncionInline()
+    private async Task GenerarPdf()
     {
         isLoading = true;
         StateHasChanged();
 
         try
         {
+            Console.WriteLine($"🔵 [PDF COMPONENT] Iniciando generación - Tipo: {Tipo}, ID: {Id}");
+
+            // Obtener HttpClient autorizado
+            var httpClient = await AuthorizedHttpHandler.GetAuthorizedClient();
             var url = $"api/pdf/{Tipo}/{Id}";
-            Console.WriteLine($"Solicitando PDF desde: {url}");
 
-            var pdfBytes = await Http.GetByteArrayAsync(url);
-            Console.WriteLine($"PDF recibido: {pdfBytes.Length} bytes");
+            Console.WriteLine($"🌐 [PDF COMPONENT] URL: {url}");
 
-            if (pdfBytes.Length == 0)
+            // Request al backend
+            var response = await httpClient.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("No se recibieron datos del PDF");
-                await JS.InvokeVoidAsync("alert", "No se pudo generar el PDF");
-                return;
-            }
+                var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+                Console.WriteLine($"✅ [PDF COMPONENT] PDF recibido: {pdfBytes.Length:N0} bytes");
 
-            var base64Pdf = Convert.ToBase64String(pdfBytes);
-
-            // JavaScript inline
-            var jsFunction = @"
-                function abrirPdf(base64Str) {
-                    try {
-                        console.log('Abriendo PDF...');
-                        const byteCharacters = atob(base64Str);
-                        const byteNumbers = new Array(byteCharacters.length);
-
-                        for (let i = 0; i < byteCharacters.length; i++) {
-                            byteNumbers[i] = byteCharacters.charCodeAt(i);
-                        }
-
-                        const byteArray = new Uint8Array(byteNumbers);
-                        const blob = new Blob([byteArray], { type: 'application/pdf' });
-                        const url = URL.createObjectURL(blob);
-
-                        // Abrir en nueva pestaña
-                        const newWindow = window.open(url, '_blank');
-
-                        if (!newWindow) {
-                            // Fallback: descarga directa
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'ficha_persona.pdf';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }
-
-                        // Limpiar memoria después de 10 segundos
-                        setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-                    } catch (err) {
-                        console.error('Error abriendo PDF:', err);
-                        alert('Error al abrir el PDF: ' + err.message);
-                    }
+                if (pdfBytes.Length == 0)
+                {
+                    await JS.InvokeVoidAsync("alert", "❌ No se generaron datos del PDF");
+                    return;
                 }
 
-                // Ejecutar
-                abrirPdf('" + base64Pdf + @"');
-            ";
-
-            await JS.InvokeVoidAsync("eval", jsFunction);
+                // Procesar y abrir PDF
+                await ProcesarYAbrirPdf(pdfBytes);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Console.WriteLine("⚠️ [PDF COMPONENT] Usuario no autorizado");
+                await JS.InvokeVoidAsync("alert", "⚠️ No tienes permisos para generar este PDF");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("⚠️ [PDF COMPONENT] Recurso no encontrado");
+                await JS.InvokeVoidAsync("alert", "⚠️ No se encontró el registro solicitado");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"❌ [PDF COMPONENT] Error {response.StatusCode}: {errorContent}");
+                await JS.InvokeVoidAsync("alert", $"❌ Error del servidor: {response.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] {ex.Message}");
-            await JS.InvokeVoidAsync("alert", $"Error generando PDF: {ex.Message}");
+            Console.WriteLine($"❌ [PDF COMPONENT] Excepción: {ex.Message}");
+            Console.WriteLine($"Stack: {ex.StackTrace}");
+            await JS.InvokeVoidAsync("alert", $"❌ Error: {ex.Message}");
         }
         finally
         {
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private async Task ProcesarYAbrirPdf(byte[] pdfBytes)
+    {
+        try
+        {
+            // Convertir a base64
+            var base64String = Convert.ToBase64String(pdfBytes);
+            var dataUrl = $"data:application/pdf;base64,{base64String}";
+
+            // Generar nombre de archivo
+            var fileName = GenerarNombreArchivo();
+
+            Console.WriteLine($"📄 [PDF COMPONENT] Nombre archivo generado: '{fileName}'");
+            Console.WriteLine($"📄 [PDF COMPONENT] Termina con .pdf: {fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)}");
+            Console.WriteLine($"📄 [PDF COMPONENT] Longitud nombre: {fileName.Length}");
+
+            // Verificar el nombre en JavaScript antes de procesarlo
+            try
+            {
+                var nombreVerificado = await JS.InvokeAsync<string>("verificarNombrePdf", fileName);
+                Console.WriteLine($"📄 [PDF COMPONENT] Nombre verificado por JS: '{nombreVerificado}'");
+                fileName = nombreVerificado;
+            }
+            catch (Exception verifyEx)
+            {
+                Console.WriteLine($"⚠️ [PDF COMPONENT] No se pudo verificar nombre: {verifyEx.Message}");
+            }
+
+            // ===== LLAMAR A LA FUNCIÓN JS QUE ABRE EN NUEVA PESTAÑA =====
+            try
+            {
+                await JS.InvokeVoidAsync("abrirPdfEnNuevaPestana", dataUrl, fileName);
+                Console.WriteLine("✅ [PDF COMPONENT] PDF procesado exitosamente");
+            }
+            catch (Exception jsEx)
+            {
+                Console.WriteLine($"⚠️ [PDF COMPONENT] Advertencia JS: {jsEx.Message}");
+                // Continuar de todos modos, el PDF probablemente se abrió
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [PDF COMPONENT] Error procesando PDF: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error al abrir PDF: {ex.Message}");
+        }
+    }
+
+    private string GenerarNombreArchivo()
+    {
+        string fileName;
+
+        // Si ya se proporcionó un nombre
+        if (!string.IsNullOrEmpty(NombreArchivo))
+        {
+            fileName = NombreArchivo;
+        }
+        // Para historia clínica
+        else if (Tipo == "clinicalhistory")
+        {
+            var historyNumber = NumeroHistoria ?? "N001";
+            var patientName = LimpiarNombre(NombrePaciente ?? "Paciente");
+            fileName = $"Historia_Clinica_{historyNumber}_{patientName}_{DateTime.Now:yyyyMMdd_HHmm}";
+        }
+        // Nombres por defecto según tipo
+        else
+        {
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmm");
+            fileName = Tipo switch
+            {
+                "person" => $"Ficha_Paciente_{Id}_{timestamp}",
+                "nursing" => $"Atencion_Enfermeria_{Id}_{timestamp}",
+                "nutrition" => $"Atencion_Nutricion_{Id}_{timestamp}",
+                "medical-care" => $"Atencion_Medica_{Id}_{timestamp}",
+                "physiotherapy" => $"Atencion_Fisioterapia_{Id}_{timestamp}",
+                "early-stimulation" => $"Atencion_Estimulacion_Temprana_{Id}_{timestamp}",
+                "psychology" => $"Atencion_Psicologia_{Id}_{timestamp}",
+                _ => $"Documento_{Id}_{timestamp}"
+            };
+        }
+
+        // ASEGURAR que termine con .pdf
+        if (!fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            fileName += ".pdf";
+        }
+
+        Console.WriteLine($"✅ [PDF COMPONENT] Nombre generado: '{fileName}'");
+        return fileName;
+    }
+
+    private string LimpiarNombre(string nombre)
+    {
+        if (string.IsNullOrEmpty(nombre)) return "Paciente";
+
+        // Remover caracteres especiales
+        return System.Text.RegularExpressions.Regex.Replace(
+            nombre,
+            @"[^a-zA-Z0-9_\-]",
+            "_"
+        );
     }
 }

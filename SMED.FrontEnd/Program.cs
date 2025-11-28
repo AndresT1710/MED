@@ -162,6 +162,7 @@ builder.Services.AddScoped<ActivityService>();
 builder.Services.AddScoped<TypeOfActivityService>();
 builder.Services.AddScoped<PsychologySessionsService>();
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<AuthorizedHttpHandler>();
 
 
 builder.Services.AddLogging();

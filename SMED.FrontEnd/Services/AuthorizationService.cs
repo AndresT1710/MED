@@ -161,6 +161,117 @@ namespace SMED.FrontEnd.Services
             }
         }
 
+        public async Task<bool> CanViewClinicalHistorySectionAsync(string sectionKey)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return false;
+            if (user.IsAdmin) return true;
+
+            var sectionPermissions = new Dictionary<string, List<string>>
+            {
+                // Información básica - todos los profesionales médicos
+                ["BasicInfo"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Secciones generales - todos los profesionales médicos
+                ["GeneralObservations"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["PersonalHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["SurgeryHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["AllergyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HabitHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["FamilyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TransfusionsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HospitalizationsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TraumaticHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Obstétricos y Ginecológicos
+                ["ObstetricHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["GynecologicalHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Nutrición
+                ["SportsActivitiesHistory"] = new() { "Nutricionista" },
+                ["LifeStyleHistory"] = new() { "Nutricionista" },
+                ["DietaryHabitsHistory"] = new() { "Nutricionista" },
+                ["SleepHabitHistory"] = new() { "Nutricionista" },
+                ["FoodConsumptionHistory"] = new() { "Nutricionista" },
+                ["WaterConsumptionHistory"] = new() { "Nutricionista" },
+
+                // Psicología
+                ["MedicationHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychopsychiatricHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["CurrentProblemHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["ToxicHabitHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychosexualHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["WorkHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+
+                // Fisioterapia
+                ["TraumaticHistoriesPhysio"] = new() { "Fisioterapeuta" },
+
+                // Estimulación Temprana
+                ["PrenatalHistories"] = new() { "Pediatra" },
+                ["PerinatalHistories"] = new() { "Pediatra" },
+                ["PostnatalHistories"] = new() { "Pediatra" },
+                ["NeuropsychologicalHistories"] = new() { "Pediatra" },
+                ["DevelopmentRecords"] = new() { "Pediatra" },
+                ["NeurologicalExams"] = new() { "Pediatra" }
+            };
+
+            if (!sectionPermissions.ContainsKey(sectionKey))
+                return false;
+
+            var userRoles = await GetUserRolesAsync();
+            return userRoles.Any(role => sectionPermissions[sectionKey].Contains(role));
+        }
+
+        public Dictionary<string, List<string>> GetSectionPermissions()
+        {
+            return new Dictionary<string, List<string>>
+            {
+                // Secciones Generales
+                ["GeneralObservations"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["PersonalHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["SurgeryHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["AllergyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HabitHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["FamilyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TransfusionsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HospitalizationsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TraumaticHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Obstétricos
+                ["ObstetricHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Ginecológicos
+                ["GynecologicalHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Nutrición
+                ["SportsActivitiesHistory"] = new() { "Nutricionista" },
+                ["LifeStyleHistory"] = new() { "Nutricionista" },
+                ["DietaryHabitsHistory"] = new() { "Nutricionista" },
+                ["SleepHabitHistory"] = new() { "Nutricionista" },
+                ["FoodConsumptionHistory"] = new() { "Nutricionista" },
+                ["WaterConsumptionHistory"] = new() { "Nutricionista" },
+
+                // Psicología
+                ["MedicationHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychopsychiatricHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["CurrentProblemHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["ToxicHabitHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychosexualHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["WorkHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+
+                // Fisioterapia
+                ["TraumaticHistoriesPhysio"] = new() { "Fisioterapeuta" },
+
+                // Estimulación Temprana
+                ["PrenatalHistories"] = new() { "Pediatra" },
+                ["PerinatalHistories"] = new() { "Pediatra" },
+                ["PostnatalHistories"] = new() { "Pediatra" },
+                ["NeuropsychologicalHistories"] = new() { "Pediatra" },
+                ["DevelopmentRecords"] = new() { "Pediatra" },
+                ["NeurologicalExams"] = new() { "Pediatra" }
+            };
+        }
+
         public async Task<bool> HasAccessToModuleAsync(string moduleKey)
         {
             var user = await GetCurrentUserAsync();

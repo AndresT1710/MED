@@ -3,11 +3,15 @@ using SMED.BackEnd.Services;
 using SMED.BackEnd.Repositories.Implementations;
 using SMED.Shared.DTOs;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SMED.BackEnd.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Asegurar que todos los endpoints requieren autenticación
     public class PdfController : ControllerBase
     {
         private readonly PdfService _pdfService;
@@ -31,7 +35,6 @@ namespace SMED.BackEnd.Controllers
         private readonly DocumentTypeRepository _documentTypeService;
         private readonly GenderRepository _genderService;
         private readonly MaritalStatusRepository _maritalStatusService;
-
         private readonly PsychologicalDiagnosisRepository _psychologicalDiagnosisService;
         private readonly DiagnosticTypeRepository _diagnosticTypeService;
         private readonly TherapeuticPlanRepository _therapeuticPlanService;
@@ -100,334 +103,63 @@ namespace SMED.BackEnd.Controllers
             _advanceService = advanceService;
         }
 
-        [HttpGet("person/{id}")]
-        public async Task<IActionResult> GetPersonPdf(int id)
+        #region Métodos Auxiliares
+
+        /// <summary>
+        /// Obtiene el rol del usuario desde el token JWT
+        /// </summary>
+        private string GetCurrentUserRole()
         {
             try
             {
-                var persona = await _personRepository.GetByIdAsync(id);
-                if (persona == null)
+                Console.WriteLine($"[PDF CONTROLLER] 🔐 Verificando permisos...");
+
+                // Verificar si es Admin
+                var isAdminClaim = User.FindFirst("IsAdmin")?.Value;
+                if (isAdminClaim == "true")
                 {
-                    return NotFound($"Persona con ID {id} no encontrada");
+                    Console.WriteLine($"[PDF CONTROLLER] ✅ Usuario Admin - acceso completo");
+                    return "Admin";
                 }
 
-                var pdfBytes = await _pdfService.GeneratePersonPdfAsync(persona);
-                var fileName = $"Ficha_Paciente_{ObtenerNombreArchivo(persona)}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
+                // Obtener tipo de profesional
+                var professionalTypeName = User.FindFirst("ProfessionalTypeName")?.Value;
+                Console.WriteLine($"[PDF CONTROLLER] 👤 ProfessionalTypeName: {professionalTypeName}");
+
+                // Mapear rol
+                var role = professionalTypeName?.ToLower() switch
+                {
+                    "médico general" or "medico general" => "Médico General",
+                    "enfermero" or "enfermera" => "Enfermero",
+                    "nutricionista" => "Nutricionista",
+                    "psicólogo" or "psicologo" or "psicólogo clínico" or "psicologo clinico" => "Psicólogo",
+                    "fisioterapeuta" => "Fisioterapeuta",
+                    "pediatra" => "Pediatra",
+                    _ => "Unknown"
+                };
+
+                Console.WriteLine($"[PDF CONTROLLER] 🎭 Rol asignado: {role}");
+                return role;
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error generando PDF: {ex.Message}");
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error obteniendo rol: {ex.Message}");
+                return "Unknown";
             }
         }
 
-        [HttpGet("clinicalhistory/{id}")]
-        public async Task<IActionResult> GetClinicalHistoryPdf(int id)
+        /// <summary>
+        /// Limpia el nombre para usar en archivos
+        /// </summary>
+        private string LimpiarNombreArchivo(string nombre)
         {
-            try
-            {
-                // Obtener la historia clínica completa
-                var clinicalHistory = await _clinicalHistoryRepository.GetByIdAsync(id);
-                if (clinicalHistory == null)
-                {
-                    return NotFound($"Historia clínica con ID {id} no encontrada");
-                }
-
-                // Generar PDF de la historia clínica
-                var pdfBytes = await GenerateClinicalHistoryPdfAsync(clinicalHistory);
-                var fileName = $"Historia_Clinica_{clinicalHistory.HistoryNumber}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de historia clínica: {ex.Message}");
-            }
+            if (string.IsNullOrEmpty(nombre)) return "Documento";
+            return System.Text.RegularExpressions.Regex.Replace(nombre, @"[^a-zA-Z0-9_-]", "_");
         }
 
-        private async Task<byte[]> GenerateClinicalHistoryPdfAsync(ClinicalHistoryDTO clinicalHistory)
-        {
-            // Aquí implementarías la generación del PDF específico para historias clínicas
-            // Por ahora, vamos a usar el mismo servicio pero adaptado
-            return await _pdfService.GenerateClinicalHistoryPdfAsync(clinicalHistory);
-        }
-
-        private string ObtenerNombreArchivo(PersonDTO persona)
-        {
-            var nombre = $"{persona.FirstName}_{persona.LastName}";
-            return System.Text.RegularExpressions.Regex.Replace(nombre, @"[^a-zA-Z0-9_-]", "");
-        }
-
-        [HttpGet("nursing/{id}")]
-        public async Task<IActionResult> GetNursingPdf(int id)
-        {
-            try
-            {
-                // Obtener la atención de enfermería completa
-                var nursingCare = await _medicalCareRepository.GetByIdAsync(id);
-                if (nursingCare == null)
-                {
-                    return NotFound($"Atención de enfermería con ID {id} no encontrada");
-                }
-
-                // Generar PDF específico para enfermería
-                var pdfBytes = await _pdfService.GenerateNursingPdfAsync(nursingCare);
-                var fileName = $"Atencion_Enfermeria_{nursingCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de enfermería: {ex.Message}");
-            }
-        }
-
-        [HttpGet("nutrition/{id}")]
-        public async Task<IActionResult> GetNutritionPdf(int id)
-        {
-            try
-            {
-                // Obtener la atención de nutrición completa
-                var nutritionCare = await _medicalCareRepository.GetByIdAsync(id);
-                if (nutritionCare == null)
-                {
-                    return NotFound($"Atención de nutrición con ID {id} no encontrada");
-                }
-
-                // Verificar que sea una atención de nutrición
-                var isNutritionCare = nutritionCare.Area?.ToLower().Contains("nutrición") == true ||
-                                     nutritionCare.Area?.ToLower().Contains("nutricion") == true ||
-                                     nutritionCare.LocationId == 3; // ID de nutrición según tu BD
-
-                if (!isNutritionCare)
-                {
-                    return BadRequest($"La atención con ID {id} no pertenece al área de nutrición");
-                }
-
-                // Generar PDF específico para nutrición
-                var pdfBytes = await _pdfService.GenerateNutritionPdfAsync(nutritionCare);
-                var fileName = $"Atencion_Nutricion_{nutritionCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de nutrición: {ex.Message}");
-            }
-        }
-
-        [HttpGet("medical-care/{id}")]
-        public async Task<IActionResult> GetMedicalCarePdf(int id)
-        {
-            try
-            {
-                // Obtener la atención médica completa con todos sus detalles
-                var medicalCare = await _medicalCareRepository.GetByIdAsync(id);
-                if (medicalCare == null)
-                {
-                    return NotFound($"Atención médica con ID {id} no encontrada");
-                }
-
-                // Generar PDF específico para atención médica
-                var pdfBytes = await _pdfService.GenerateMedicalCarePdfAsync(medicalCare);
-
-                var fileName = $"Atencion_Medica_{medicalCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de atención médica: {ex.Message}");
-            }
-        }
-
-        //---------------------------------------------------------------------------------------------------------------------------------------------
-        // PHYSIOTHERAPY PDF Generation
-        //---------------------------------------------------------------------------------------------------------------------------------------------
-        [HttpGet("physiotherapy/{id}")]
-        public async Task<IActionResult> GetPhysiotherapyPdf(int id)
-        {
-            try
-            {
-                // Obtener la atención de fisioterapia completa
-                var physioCare = await _medicalCareRepository.GetByIdAsync(id);
-                if (physioCare == null)
-                {
-                    return NotFound($"Atención de fisioterapia con ID {id} no encontrada");
-                }
-
-                // Cargar datos específicos de fisioterapia
-                await LoadPhysiotherapyData(physioCare);
-
-                // Generar PDF específico para fisioterapia
-                var pdfBytes = await _pdfService.GeneratePhysiotherapyPdfAsync(physioCare);
-                var fileName = $"Atencion_Fisioterapia_{physioCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de fisioterapia: {ex.Message}");
-            }
-        }
-
-        private async Task LoadPhysiotherapyData(MedicalCareDTO physioCare)
-        {
-            try
-            {
-                // Cargar motivo de consulta
-                var reasons = await _reasonForConsultationService.GetByCareIdAsync(physioCare.CareId);
-                physioCare.ReasonForConsultation = reasons?.FirstOrDefault();
-
-                // Cargar enfermedad actual
-                var illnesses = await _currentIllnessService.GetByCareIdAsync(physioCare.CareId);
-                physioCare.CurrentIllnesses = illnesses ?? new List<CurrentIllnessDTO>();
-
-                // Cargar escalas de dolor
-                physioCare.PainScales = await _painScaleService.GetByCareIdAsync(physioCare.CareId) ?? new List<PainScaleDTO>();
-
-                // Cargar evaluaciones de piel
-                physioCare.SkinEvaluations = await _skinEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<SkinEvaluationDTO>();
-
-                // Cargar evaluaciones osteoarticulares
-                physioCare.OsteoarticularEvaluations = await _osteoarticularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<OsteoarticularEvaluationDTO>();
-
-                // Cargar evaluaciones médicas (articular/muscular)
-                physioCare.MedicalEvaluations = await _medicalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<MedicalEvaluationDTO>();
-
-                // Cargar evaluaciones neuromusculares
-                physioCare.NeuromuscularEvaluations = await _neuromuscularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<NeuromuscularEvaluationDTO>();
-
-                // Cargar evaluaciones posturales
-                physioCare.PosturalEvaluations = await _posturalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<PosturalEvaluationDTO>();
-
-                // Cargar pruebas especiales
-                physioCare.SpecialTests = await _specialTestService.GetByCareIdAsync(physioCare.CareId) ?? new List<SpecialTestDTO>();
-
-                // Cargar exámenes complementarios
-                physioCare.ComplementaryExams = await _complementaryExamsService.GetByCareIdAsync(physioCare.CareId) ?? new List<ComplementaryExamsDTO>();
-
-                // Cargar sesiones
-                physioCare.Sessions = await _sessionsService.GetByCareIdAsync(physioCare.CareId) ?? new List<SessionsDTO>();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error cargando datos de fisioterapia: {ex.Message}");
-            }
-        }
-
-
-        //---------------------------------------------------------------------------------------------------------------------------------------------
-        // EARLY STIMULATION PDF Generation
-        //---------------------------------------------------------------------------------------------------------------------------------------------
-        [HttpGet("early-stimulation/{id}")]
-        public async Task<IActionResult> GetEarlyStimulationPdf(int id)
-        {
-            try
-            {
-                // Obtener la atención de estimulación temprana completa
-                var earlyStimCare = await _medicalCareRepository.GetByIdAsync(id);
-                if (earlyStimCare == null)
-                {
-                    return NotFound($"Atención de estimulación temprana con ID {id} no encontrada");
-                }
-
-                // Cargar datos específicos de estimulación temprana
-                await LoadEarlyStimulationData(earlyStimCare);
-
-                // Generar PDF específico para estimulación temprana
-                var pdfBytes = await _pdfService.GenerateEarlyStimulationPdfAsync(earlyStimCare);
-                var fileName = $"Atencion_Estimulacion_Temprana_{earlyStimCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error generando PDF de estimulación temprana: {ex.Message}");
-            }
-        }
-
-        private async Task LoadEarlyStimulationData(MedicalCareDTO earlyStimCare)
-        {
-            try
-            {
-                if (earlyStimCare == null)
-                    throw new ArgumentNullException(nameof(earlyStimCare));
-
-                Console.WriteLine($"[CONTROLLER DEBUG] ===== INICIO CARGA DATOS =====");
-                Console.WriteLine($"[CONTROLLER DEBUG] CareId: {earlyStimCare.CareId}");
-                Console.WriteLine($"[CONTROLLER DEBUG] PatientId: {earlyStimCare.PatientId}");
-                Console.WriteLine($"[CONTROLLER DEBUG] Patient from repo: {earlyStimCare.Patient != null}");
-                Console.WriteLine($"[CONTROLLER DEBUG] Agent from repo: {earlyStimCare.Patient?.Agent != null}");
-                Console.WriteLine($"[CONTROLLER DEBUG] AgentId from repo: {earlyStimCare.Patient?.AgentId}");
-
-                // Cargar motivo de consulta
-                if (earlyStimCare.CareId > 0)
-                {
-                    var reasons = await _reasonForConsultationService.GetByCareIdAsync(earlyStimCare.CareId);
-                    earlyStimCare.ReasonForConsultation = reasons?.FirstOrDefault();
-                    Console.WriteLine($"[CONTROLLER DEBUG] ReasonForConsultation cargado: {earlyStimCare.ReasonForConsultation != null}");
-                }
-
-                // Asegurar que Patient no sea nulo
-                earlyStimCare.Patient ??= new PatientDTO();
-
-                // **CORRECCIÓN: Cargar Agent desde el servicio como hace el componente Blazor**
-                if (earlyStimCare.Patient?.Agent == null)
-                {
-                    Console.WriteLine($"[CONTROLLER DEBUG] Cargando Agent desde AgentService...");
-
-                    // Opción 1: Si tienes el AgentId, cargar por ID
-                    if (earlyStimCare.Patient.AgentId.HasValue)
-                    {
-                        Console.WriteLine($"[CONTROLLER DEBUG] Buscando Agent por ID: {earlyStimCare.Patient.AgentId}");
-                        var agentById = await _agentService.GetByIdAsync(earlyStimCare.Patient.AgentId.Value);
-                        earlyStimCare.Patient.Agent = agentById;
-                        Console.WriteLine($"[CONTROLLER DEBUG] Agent cargado por ID: {agentById != null}");
-                    }
-
-                    // Opción 2: Cargar todos y tomar el primero (como hace tu componente Blazor)
-                    if (earlyStimCare.Patient.Agent == null)
-                    {
-                        Console.WriteLine($"[CONTROLLER DEBUG] Cargando todos los Agents...");
-                        var allAgents = await _agentService.GetAllAsync() ?? new List<AgentDTO>();
-
-                        // Buscar el Agent que corresponda a este Patient
-                        var agentForPatient = allAgents.FirstOrDefault(a => a.AgentId == earlyStimCare.Patient.AgentId);
-                        if (agentForPatient == null)
-                        {
-                            // Si no encuentra por ID, tomar el primero (como hace tu componente)
-                            agentForPatient = allAgents.FirstOrDefault();
-                        }
-
-                        earlyStimCare.Patient.Agent = agentForPatient;
-                        Console.WriteLine($"[CONTROLLER DEBUG] Agent cargado desde GetAll: {agentForPatient != null}");
-                    }
-                }
-
-                // Enriquecer datos del Agent si existe
-                if (earlyStimCare.Patient?.Agent != null)
-                {
-                    Console.WriteLine($"[CONTROLLER DEBUG] Enriqueciendo datos del Agent...");
-                    var agentsList = new List<AgentDTO> { earlyStimCare.Patient.Agent };
-                    await EnrichAgentsData(agentsList);
-                }
-
-                // Cargar sesiones de estimulación temprana
-                earlyStimCare.EarlyStimulationSessions = await _earlyStimulationSessionsService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
-                    ?? new List<EarlyStimulationSessionsDTO>();
-
-                // Cargar tests de evolución
-                earlyStimCare.EarlyStimulationEvolutionTests = await _earlyStimulationEvolutionTestService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
-                    ?? new List<EarlyStimulationEvolutionTestDTO>();
-
-                Console.WriteLine($"[CONTROLLER DEBUG] ===== FIN CARGA DATOS =====");
-                Console.WriteLine($"[CONTROLLER DEBUG] Agent final: {earlyStimCare.Patient?.Agent != null}");
-                Console.WriteLine($"[CONTROLLER DEBUG] AgentId final: {earlyStimCare.Patient?.AgentId}");
-                Console.WriteLine($"[CONTROLLER DEBUG] Agent Name: {earlyStimCare.Patient?.Agent?.FirstName} {earlyStimCare.Patient?.Agent?.LastName}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error cargando datos de estimulación temprana: {ex.Message}");
-                throw;
-            }
-        }
-
+        /// <summary>
+        /// Enriquece los datos de agentes con información adicional
+        /// </summary>
         private async Task EnrichAgentsData(List<AgentDTO> agents)
         {
             var documentTypes = await _documentTypeService.GetAllAsync();
@@ -442,32 +174,365 @@ namespace SMED.BackEnd.Controllers
             }
         }
 
+        #endregion
 
-        //---------------------------------------------------------------------------------------------------------------------------------------------
-        // PSYCHOLOGY PDF Generation
-        //---------------------------------------------------------------------------------------------------------------------------------------------
+        #region Endpoints PDF
+
+        /// <summary>
+        /// Genera PDF de Ficha de Paciente
+        /// </summary>
+        [HttpGet("person/{id}")]
+        public async Task<IActionResult> GetPersonPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 📄 Generando PDF de Persona ID: {id}");
+
+                var persona = await _personRepository.GetByIdAsync(id);
+                if (persona == null)
+                {
+                    return NotFound($"Persona con ID {id} no encontrada");
+                }
+
+                var pdfBytes = await _pdfService.GeneratePersonPdfAsync(persona);
+                var fileName = $"Ficha_Paciente_{LimpiarNombreArchivo($"{persona.FirstName}_{persona.LastName}")}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName} ({pdfBytes.Length:N0} bytes)");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Genera PDF de Historia Clínica (con control de permisos por rol)
+        /// </summary>
+        [HttpGet("clinicalhistory/{id}")]
+        public async Task<IActionResult> GetClinicalHistoryPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 📋 Generando PDF de Historia Clínica ID: {id}");
+
+                var clinicalHistory = await _clinicalHistoryRepository.GetByIdAsync(id);
+                if (clinicalHistory == null)
+                {
+                    return NotFound($"Historia clínica con ID {id} no encontrada");
+                }
+
+                var userRole = GetCurrentUserRole();
+                var pdfBytes = await _pdfService.GenerateClinicalHistoryPdfAsync(clinicalHistory, userRole);
+                var fileName = $"Historia_Clinica_{clinicalHistory.HistoryNumber}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de historia clínica: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Genera PDF de Atención de Enfermería
+        /// </summary>
+        [HttpGet("nursing/{id}")]
+        public async Task<IActionResult> GetNursingPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 💉 Generando PDF de Enfermería ID: {id}");
+
+                var nursingCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (nursingCare == null)
+                {
+                    return NotFound($"Atención de enfermería con ID {id} no encontrada");
+                }
+
+                var pdfBytes = await _pdfService.GenerateNursingPdfAsync(nursingCare);
+                var fileName = $"Atencion_Enfermeria_{nursingCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de enfermería: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Genera PDF de Atención de Nutrición
+        /// </summary>
+        [HttpGet("nutrition/{id}")]
+        public async Task<IActionResult> GetNutritionPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 🥗 Generando PDF de Nutrición ID: {id}");
+
+                var nutritionCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (nutritionCare == null)
+                {
+                    return NotFound($"Atención de nutrición con ID {id} no encontrada");
+                }
+
+                // Verificar que sea nutrición
+                var isNutritionCare = nutritionCare.Area?.ToLower().Contains("nutrición") == true ||
+                                     nutritionCare.Area?.ToLower().Contains("nutricion") == true ||
+                                     nutritionCare.LocationId == 3;
+
+                if (!isNutritionCare)
+                {
+                    return BadRequest($"La atención con ID {id} no pertenece al área de nutrición");
+                }
+
+                var pdfBytes = await _pdfService.GenerateNutritionPdfAsync(nutritionCare);
+                var fileName = $"Atencion_Nutricion_{nutritionCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de nutrición: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Genera PDF de Atención Médica General
+        /// </summary>
+        [HttpGet("medical-care/{id}")]
+        public async Task<IActionResult> GetMedicalCarePdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ⚕️ Generando PDF de Atención Médica ID: {id}");
+
+                var medicalCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (medicalCare == null)
+                {
+                    return NotFound($"Atención médica con ID {id} no encontrada");
+                }
+
+                var pdfBytes = await _pdfService.GenerateMedicalCarePdfAsync(medicalCare);
+                var fileName = $"Atencion_Medica_{medicalCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de atención médica: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Fisioterapia
+
+        /// <summary>
+        /// Genera PDF de Atención de Fisioterapia
+        /// </summary>
+        [HttpGet("physiotherapy/{id}")]
+        public async Task<IActionResult> GetPhysiotherapyPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 🏃 Generando PDF de Fisioterapia ID: {id}");
+
+                var physioCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (physioCare == null)
+                {
+                    return NotFound($"Atención de fisioterapia con ID {id} no encontrada");
+                }
+
+                await LoadPhysiotherapyData(physioCare);
+
+                var pdfBytes = await _pdfService.GeneratePhysiotherapyPdfAsync(physioCare);
+                var fileName = $"Atencion_Fisioterapia_{physioCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de fisioterapia: {ex.Message}");
+            }
+        }
+
+        private async Task LoadPhysiotherapyData(MedicalCareDTO physioCare)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 📥 Cargando datos de fisioterapia...");
+
+                var reasons = await _reasonForConsultationService.GetByCareIdAsync(physioCare.CareId);
+                physioCare.ReasonForConsultation = reasons?.FirstOrDefault();
+
+                var illnesses = await _currentIllnessService.GetByCareIdAsync(physioCare.CareId);
+                physioCare.CurrentIllnesses = illnesses ?? new List<CurrentIllnessDTO>();
+
+                physioCare.PainScales = await _painScaleService.GetByCareIdAsync(physioCare.CareId) ?? new List<PainScaleDTO>();
+                physioCare.SkinEvaluations = await _skinEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<SkinEvaluationDTO>();
+                physioCare.OsteoarticularEvaluations = await _osteoarticularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<OsteoarticularEvaluationDTO>();
+                physioCare.MedicalEvaluations = await _medicalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<MedicalEvaluationDTO>();
+                physioCare.NeuromuscularEvaluations = await _neuromuscularEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<NeuromuscularEvaluationDTO>();
+                physioCare.PosturalEvaluations = await _posturalEvaluationService.GetByCareIdAsync(physioCare.CareId) ?? new List<PosturalEvaluationDTO>();
+                physioCare.SpecialTests = await _specialTestService.GetByCareIdAsync(physioCare.CareId) ?? new List<SpecialTestDTO>();
+                physioCare.ComplementaryExams = await _complementaryExamsService.GetByCareIdAsync(physioCare.CareId) ?? new List<ComplementaryExamsDTO>();
+                physioCare.Sessions = await _sessionsService.GetByCareIdAsync(physioCare.CareId) ?? new List<SessionsDTO>();
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ Datos de fisioterapia cargados");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error cargando datos fisioterapia: {ex.Message}");
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Estimulación Temprana
+
+        /// <summary>
+        /// Genera PDF de Atención de Estimulación Temprana
+        /// </summary>
+        [HttpGet("early-stimulation/{id}")]
+        public async Task<IActionResult> GetEarlyStimulationPdf(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[PDF CONTROLLER] 👶 Generando PDF de Estimulación Temprana ID: {id}");
+
+                var earlyStimCare = await _medicalCareRepository.GetByIdAsync(id);
+                if (earlyStimCare == null)
+                {
+                    return NotFound($"Atención de estimulación temprana con ID {id} no encontrada");
+                }
+
+                await LoadEarlyStimulationData(earlyStimCare);
+
+                var pdfBytes = await _pdfService.GenerateEarlyStimulationPdfAsync(earlyStimCare);
+                var fileName = $"Atencion_Estimulacion_Temprana_{earlyStimCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
+                return StatusCode(500, $"Error generando PDF de estimulación temprana: {ex.Message}");
+            }
+        }
+
+        private async Task LoadEarlyStimulationData(MedicalCareDTO earlyStimCare)
+        {
+            try
+            {
+                if (earlyStimCare == null) throw new ArgumentNullException(nameof(earlyStimCare));
+
+                Console.WriteLine($"[PDF CONTROLLER] 📥 Cargando datos de estimulación temprana...");
+
+                // Motivo de consulta
+                if (earlyStimCare.CareId > 0)
+                {
+                    var reasons = await _reasonForConsultationService.GetByCareIdAsync(earlyStimCare.CareId);
+                    earlyStimCare.ReasonForConsultation = reasons?.FirstOrDefault();
+                }
+
+                // Inicializar Patient si es nulo
+                earlyStimCare.Patient ??= new PatientDTO();
+
+                // Cargar Agent
+                if (earlyStimCare.Patient?.Agent == null)
+                {
+                    Console.WriteLine($"[PDF CONTROLLER] 🔍 Buscando Agent...");
+
+                    if (earlyStimCare.Patient.AgentId.HasValue)
+                    {
+                        var agentById = await _agentService.GetByIdAsync(earlyStimCare.Patient.AgentId.Value);
+                        earlyStimCare.Patient.Agent = agentById;
+                    }
+
+                    if (earlyStimCare.Patient.Agent == null)
+                    {
+                        var allAgents = await _agentService.GetAllAsync() ?? new List<AgentDTO>();
+                        earlyStimCare.Patient.Agent = allAgents.FirstOrDefault(a => a.AgentId == earlyStimCare.Patient.AgentId)
+                                                   ?? allAgents.FirstOrDefault();
+                    }
+                }
+
+                // Enriquecer datos del Agent
+                if (earlyStimCare.Patient?.Agent != null)
+                {
+                    var agentsList = new List<AgentDTO> { earlyStimCare.Patient.Agent };
+                    await EnrichAgentsData(agentsList);
+                }
+
+                // Sesiones y tests
+                earlyStimCare.EarlyStimulationSessions = await _earlyStimulationSessionsService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
+                                                       ?? new List<EarlyStimulationSessionsDTO>();
+                earlyStimCare.EarlyStimulationEvolutionTests = await _earlyStimulationEvolutionTestService.GetByMedicalCareIdAsync(earlyStimCare.CareId)
+                                                             ?? new List<EarlyStimulationEvolutionTestDTO>();
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ Datos de estimulación temprana cargados");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error cargando datos estimulación temprana: {ex.Message}");
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Psicología
+
+        /// <summary>
+        /// Genera PDF de Atención de Psicología
+        /// </summary>
         [HttpGet("psychology/{id}")]
         public async Task<IActionResult> GetPsychologyPdf(int id)
         {
             try
             {
-                // Obtener la atención de psicología completa
+                Console.WriteLine($"[PDF CONTROLLER] 🧠 Generando PDF de Psicología ID: {id}");
+
                 var psychologyCare = await _medicalCareRepository.GetByIdAsync(id);
                 if (psychologyCare == null)
                 {
                     return NotFound($"Atención de psicología con ID {id} no encontrada");
                 }
 
-                // Cargar datos específicos de psicología
                 await LoadPsychologyData(psychologyCare);
 
-                // Generar PDF específico para psicología
                 var pdfBytes = await _pdfService.GeneratePsychologyPdfAsync(psychologyCare);
                 var fileName = $"Atencion_Psicologia_{psychologyCare.CareId}_{DateTime.Now:yyyyMMddHHmm}.pdf";
+
+                Console.WriteLine($"[PDF CONTROLLER] ✅ PDF generado: {fileName}");
+
                 return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error: {ex.Message}");
                 return StatusCode(500, $"Error generando PDF de psicología: {ex.Message}");
             }
         }
@@ -476,17 +541,19 @@ namespace SMED.BackEnd.Controllers
         {
             try
             {
-                // Cargar motivo de consulta
+                Console.WriteLine($"[PDF CONTROLLER] 📥 Cargando datos de psicología...");
+
+                // Motivo de consulta
                 var reasons = await _reasonForConsultationService.GetByCareIdAsync(psychologyCare.CareId);
                 psychologyCare.ReasonForConsultation = reasons?.FirstOrDefault();
 
-                // Cargar diagnósticos psicológicos
+                // Diagnósticos psicológicos
                 var allDiagnoses = await _psychologicalDiagnosisService.GetAllAsync();
                 psychologyCare.PsychologicalDiagnoses = allDiagnoses?
                     .Where(d => d.MedicalCareId == psychologyCare.CareId)
                     .ToList() ?? new List<PsychologicalDiagnosisDTO>();
 
-                // Cargar nombres de tipos de diagnóstico
+                // Nombres de tipos de diagnóstico
                 foreach (var diagnosis in psychologyCare.PsychologicalDiagnoses)
                 {
                     if (diagnosis.DiagnosticTypeId > 0)
@@ -495,13 +562,15 @@ namespace SMED.BackEnd.Controllers
                     }
                 }
 
-                // Cargar planes terapéuticos
-                psychologyCare.TherapeuticPlans = await _therapeuticPlanService.GetByMedicalCareIdAsync(psychologyCare.CareId) ?? new List<TherapeuticPlanDTO>();
+                // Planes terapéuticos
+                psychologyCare.TherapeuticPlans = await _therapeuticPlanService.GetByMedicalCareIdAsync(psychologyCare.CareId)
+                                                ?? new List<TherapeuticPlanDTO>();
 
-                // Cargar sesiones de psicología
-                psychologyCare.PsychologySessions = await _psychologySessionsService.GetByMedicalCareIdAsync(psychologyCare.CareId) ?? new List<PsychologySessionsDTO>();
+                // Sesiones
+                psychologyCare.PsychologySessions = await _psychologySessionsService.GetByMedicalCareIdAsync(psychologyCare.CareId)
+                                                  ?? new List<PsychologySessionsDTO>();
 
-                // Cargar actividades
+                // Actividades
                 var allActivities = new List<ActivityDTO>();
                 foreach (var session in psychologyCare.PsychologySessions)
                 {
@@ -510,7 +579,7 @@ namespace SMED.BackEnd.Controllers
                 }
                 psychologyCare.Activities = allActivities;
 
-                // Cargar nombres de tipos de actividad
+                // Nombres de tipos de actividad
                 var activityTypes = await _typeOfActivityService.GetAllAsync();
                 foreach (var activity in psychologyCare.Activities)
                 {
@@ -521,7 +590,7 @@ namespace SMED.BackEnd.Controllers
                     }
                 }
 
-                // Cargar avances
+                // Avances
                 var allAdvances = new List<AdvanceDTO>();
                 foreach (var session in psychologyCare.PsychologySessions)
                 {
@@ -530,16 +599,18 @@ namespace SMED.BackEnd.Controllers
                 }
                 psychologyCare.Advances = allAdvances;
 
-                Console.WriteLine($"[PSYCHOLOGY PDF] Datos cargados - Diagnósticos: {psychologyCare.PsychologicalDiagnoses.Count}, " +
-                                 $"Planes: {psychologyCare.TherapeuticPlans.Count}, Sesiones: {psychologyCare.PsychologySessions.Count}, " +
-                                 $"Actividades: {psychologyCare.Activities.Count}, Avances: {psychologyCare.Advances.Count}");
+                Console.WriteLine($"[PDF CONTROLLER] ✅ Datos de psicología cargados - " +
+                    $"Diagnósticos: {psychologyCare.PsychologicalDiagnoses.Count}, " +
+                    $"Planes: {psychologyCare.TherapeuticPlans.Count}, " +
+                    $"Sesiones: {psychologyCare.PsychologySessions.Count}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error cargando datos de psicología: {ex.Message}");
+                Console.WriteLine($"[PDF CONTROLLER] ❌ Error cargando datos psicología: {ex.Message}");
                 throw;
             }
         }
 
+        #endregion
     }
 }

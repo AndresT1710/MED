@@ -118,19 +118,25 @@ namespace SMED.BackEnd.Services.Implementations
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.PersonId.ToString()),
-                new Claim(ClaimTypes.Email, user.Email ?? ""),
-                new Claim(ClaimTypes.Name, user.Name ?? ""),
-                new Claim("PersonId", user.PersonId?.ToString() ?? ""),
-                new Claim("IsAdmin", isAdmin.ToString())
-            };
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.PersonId.ToString()),
+        new Claim(ClaimTypes.Email, user.Email ?? ""),
+        new Claim(ClaimTypes.Name, user.Name ?? ""),
+        new Claim("PersonId", user.PersonId?.ToString() ?? ""),
+        new Claim("IsAdmin", isAdmin.ToString().ToLower()) // Asegurar que sea lowercase
+    };
 
             if (healthProfessional != null)
             {
                 claims.Add(new Claim("HealthProfessionalTypeId", healthProfessional.HealthProfessionalTypeId?.ToString() ?? ""));
                 claims.Add(new Claim("ProfessionalTypeName", healthProfessional.HealthProfessionalTypeNavigation?.Name ?? ""));
                 claims.Add(new Claim("RegistrationNumber", healthProfessional.RegistrationNumber ?? ""));
+
+                Console.WriteLine($"[AuthService] Adding ProfessionalTypeName claim: {healthProfessional.HealthProfessionalTypeNavigation?.Name}");
+            }
+            else
+            {
+                Console.WriteLine($"[AuthService] User is Admin - no health professional data");
             }
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -144,7 +150,12 @@ namespace SMED.BackEnd.Services.Implementations
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+
+            // Log para verificar el token generado
+            var generatedToken = tokenHandler.WriteToken(token);
+            Console.WriteLine($"[AuthService] Token generated for user: {user.Name}, IsAdmin: {isAdmin}");
+
+            return generatedToken;
         }
     }
 }

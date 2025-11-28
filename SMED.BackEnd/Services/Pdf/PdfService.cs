@@ -7,6 +7,7 @@ using iTextSharp.text.pdf;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using SMED.Shared.DTOs;
+using SMED.BackEnd.Repositories.Implementations;
 
 namespace SMED.BackEnd.Services
 {
@@ -23,7 +24,7 @@ namespace SMED.BackEnd.Services
         //History Clinical PDF Generation
         //---------------------------------------------------------------------------------------------------------------------------------------------
 
-        public async Task<byte[]> GenerateClinicalHistoryPdfAsync(ClinicalHistoryDTO clinicalHistory)
+        public async Task<byte[]> GenerateClinicalHistoryPdfAsync(ClinicalHistoryDTO clinicalHistory, string userRole)
         {
             try
             {
@@ -41,7 +42,7 @@ namespace SMED.BackEnd.Services
                 var darkGray = new BaseColor(64, 64, 64);
                 var mediumGray = new BaseColor(128, 128, 128);
                 var lightGray = new BaseColor(240, 240, 240);
-
+                var WHITE = new BaseColor(255, 255, 255);
 
                 // Configurar fuentes
                 var headerFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16, universityWhite);
@@ -52,107 +53,16 @@ namespace SMED.BackEnd.Services
                 var smallFont = FontFactory.GetFont(FontFactory.HELVETICA, 8, mediumGray);
 
                 // ===== ENCABEZADO =====
-                var headerTable = new PdfPTable(3)
-                {
-                    WidthPercentage = 100,
-                    SpacingAfter = 20f
-                };
-                headerTable.SetWidths(new float[] { 20, 60, 20 });
-
-                // Logo
-                var logoCell = new PdfPCell()
-                {
-                    Border = Rectangle.NO_BORDER,
-                    HorizontalAlignment = Element.ALIGN_CENTER,
-                    VerticalAlignment = Element.ALIGN_MIDDLE,
-                    Padding = 8,
-                    BackgroundColor = universityRed
-                };
-
-                try
-                {
-                    var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
-                    if (File.Exists(logoPath))
-                    {
-                        var logo = Image.GetInstance(logoPath);
-                        logo.ScaleToFit(70, 70);
-                        logo.Alignment = Image.ALIGN_CENTER;
-                        logoCell.AddElement(logo);
-                    }
-                    else
-                    {
-                        var fallbackLogo = new Paragraph("UTA",
-                            FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
-                        {
-                            Alignment = Element.ALIGN_CENTER
-                        };
-                        logoCell.AddElement(fallbackLogo);
-                    }
-                }
-                catch
-                {
-                    var fallbackLogo = new Paragraph("UTA",
-                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
-                    {
-                        Alignment = Element.ALIGN_CENTER
-                    };
-                    logoCell.AddElement(fallbackLogo);
-                }
-
-                var textCell = new PdfPCell()
-                {
-                    Border = Rectangle.NO_BORDER,
-                    HorizontalAlignment = Element.ALIGN_CENTER,
-                    VerticalAlignment = Element.ALIGN_MIDDLE,
-                    Padding = 10,
-                    BackgroundColor = universityRed
-                };
-
-                var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
-                {
-                    Alignment = Element.ALIGN_CENTER
-                };
-                var systemName = new Paragraph("HISTORIA CLÍNICA",
-                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
-                {
-                    SpacingBefore = 5f,
-                    Alignment = Element.ALIGN_CENTER
-                };
-
-                textCell.AddElement(universityName);
-                textCell.AddElement(systemName);
-
-                var emptyCell = new PdfPCell()
-                {
-                    Border = Rectangle.NO_BORDER,
-                    BackgroundColor = universityRed
-                };
-
-                headerTable.AddCell(logoCell);
-                headerTable.AddCell(textCell);
-                headerTable.AddCell(emptyCell);
-
-                document.Add(headerTable);
+                AddHeaderHC(document, headerFont, universityRed, universityWhite);
 
                 // ===== INFORMACIÓN BÁSICA =====
-                AddClinicalHistoryBasicInfo(document, clinicalHistory, titleFont, labelFont, textFont, lightGray);
+                await AddClinicalHistoryBasicInfo(document, clinicalHistory, titleFont, labelFont, textFont, lightGray, userRole);
 
                 // ===== SECCIONES DE LA HISTORIA CLÍNICA =====
-                AddClinicalHistorySections(document, clinicalHistory, titleFont, subtitleFont, labelFont, textFont, lightGray);
+                await AddClinicalHistorySectionsByPermission(document, clinicalHistory, titleFont, subtitleFont, labelFont, textFont, lightGray, userRole);
 
                 // ===== PIE DE PÁGINA =====
-                var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
-                {
-                    SpacingBefore = 20f,
-                    SpacingAfter = 10f
-                };
-                document.Add(footerLine);
-
-                var footer = new Paragraph($"Historia Clínica generada automáticamente - Universidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
-                {
-                    Alignment = Element.ALIGN_CENTER
-                };
-                document.Add(footer);
+                AddFooter(document, mediumGray, smallFont);
 
                 document.Close();
                 return memoryStream.ToArray();
@@ -164,11 +74,96 @@ namespace SMED.BackEnd.Services
             }
         }
 
-
-
-
-        private void AddClinicalHistoryBasicInfo(Document document, ClinicalHistoryDTO clinicalHistory, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray)
+        private void AddHeaderHC(Document document, Font headerFont, BaseColor universityRed, BaseColor universityWhite)
         {
+            var headerTable = new PdfPTable(3)
+            {
+                WidthPercentage = 100,
+                SpacingAfter = 20f
+            };
+            headerTable.SetWidths(new float[] { 20, 60, 20 });
+
+            // Logo
+            var logoCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE,
+                Padding = 8,
+                BackgroundColor = universityRed
+            };
+
+            try
+            {
+                var logoPath = Path.Combine(_environment.ContentRootPath, "Resources", "Images", "logo-uta.jpg");
+                if (File.Exists(logoPath))
+                {
+                    var logo = Image.GetInstance(logoPath);
+                    logo.ScaleToFit(70, 70);
+                    logo.Alignment = Image.ALIGN_CENTER;
+                    logoCell.AddElement(logo);
+                }
+                else
+                {
+                    var fallbackLogo = new Paragraph("UTA",
+                        FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                    {
+                        Alignment = Element.ALIGN_CENTER
+                    };
+                    logoCell.AddElement(fallbackLogo);
+                }
+            }
+            catch
+            {
+                var fallbackLogo = new Paragraph("UTA",
+                    FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 18, universityWhite))
+                {
+                    Alignment = Element.ALIGN_CENTER
+                };
+                logoCell.AddElement(fallbackLogo);
+            }
+
+            var textCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                HorizontalAlignment = Element.ALIGN_CENTER,
+                VerticalAlignment = Element.ALIGN_MIDDLE,
+                Padding = 10,
+                BackgroundColor = universityRed
+            };
+
+            var universityName = new Paragraph("UNIVERSIDAD TÉCNICA DE AMBATO", headerFont)
+            {
+                Alignment = Element.ALIGN_CENTER
+            };
+            var systemName = new Paragraph("HISTORIA CLÍNICA",
+                FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12, universityWhite))
+            {
+                SpacingBefore = 5f,
+                Alignment = Element.ALIGN_CENTER
+            };
+
+            textCell.AddElement(universityName);
+            textCell.AddElement(systemName);
+
+            var emptyCell = new PdfPCell()
+            {
+                Border = Rectangle.NO_BORDER,
+                BackgroundColor = universityRed
+            };
+
+            headerTable.AddCell(logoCell);
+            headerTable.AddCell(textCell);
+            headerTable.AddCell(emptyCell);
+
+            document.Add(headerTable);
+        }
+
+        private async Task AddClinicalHistoryBasicInfo(Document document, ClinicalHistoryDTO clinicalHistory, Font titleFont, Font labelFont, Font textFont, BaseColor lightGray, string userRole)
+        {
+            if (!HasPermissionForSection("BasicInfo", userRole))
+                return;
+
             var sectionTitle = new Paragraph("INFORMACIÓN BÁSICA", titleFont)
             {
                 SpacingAfter = 10f
@@ -196,7 +191,7 @@ namespace SMED.BackEnd.Services
             document.Add(basicTable);
 
             // Observaciones Generales
-            if (!string.IsNullOrWhiteSpace(clinicalHistory.GeneralObservations))
+            if (HasPermissionForSection("GeneralObservations", userRole) && !string.IsNullOrWhiteSpace(clinicalHistory.GeneralObservations))
             {
                 AddSectionTitle(document, "OBSERVACIONES GENERALES", titleFont);
                 var observations = new Paragraph(clinicalHistory.GeneralObservations, textFont)
@@ -207,507 +202,726 @@ namespace SMED.BackEnd.Services
             }
         }
 
-
-        private void AddClinicalHistorySections(Document document, ClinicalHistoryDTO clinicalHistory, Font titleFont, Font subtitleFont, Font labelFont, Font textFont, BaseColor lightGray)
+        private async Task AddClinicalHistorySectionsByPermission(Document document, ClinicalHistoryDTO clinicalHistory, Font titleFont, Font subtitleFont, Font labelFont, Font textFont, BaseColor lightGray, string userRole)
         {
             // SECCIÓN: GENERALES
-            AddMainSectionTitle(document, "GENERALES", titleFont);
+            if ( HasAnyGeneralSectionPermission(userRole))
+            {
+                AddMainSectionTitle(document, "GENERALES", titleFont);
 
-            // Antecedentes Personales
-            if (clinicalHistory.PersonalHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES PERSONALES", subtitleFont);
-                foreach (var item in clinicalHistory.PersonalHistories)
+                // Antecedentes Personales
+                if (HasPermissionForSection("PersonalHistories", userRole) && clinicalHistory.PersonalHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Enfermedad: {item.DiseaseName}",
-                $"Tipo: {item.DiseaseTypeName}",
-                $"Descripción: {item.Description}",
-                $"Fecha: {item.RegistrationDate}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTES PERSONALES", subtitleFont);
+                    foreach (var item in clinicalHistory.PersonalHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Enfermedad: {item.DiseaseName}",
+                            $"Tipo: {item.DiseaseTypeName}",
+                            $"Descripción: {item.Description}",
+                            $"Fecha: {item.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Antecedentes Quirúrgicos
-            if (clinicalHistory.SurgeryHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES QUIRÚRGICOS", subtitleFont);
-                foreach (var surgery in clinicalHistory.SurgeryHistories)
+                // Antecedentes Quirúrgicos
+                if (HasPermissionForSection("SurgeryHistories", userRole) && clinicalHistory.SurgeryHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Nombre de Cirugía: {surgery.SurgeryName}",
-                $"Descripción: {surgery.Description}",
-                $"Fecha de Registro: {surgery.RegistrationDate?.ToShortDateString()}",
-                $"Fecha de Cirugía: {surgery.SurgeryDate?.ToShortDateString()}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTES QUIRÚRGICOS", subtitleFont);
+                    foreach (var surgery in clinicalHistory.SurgeryHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Nombre de Cirugía: {surgery.SurgeryName}",
+                            $"Descripción: {surgery.Description}",
+                            $"Fecha de Registro: {surgery.RegistrationDate?.ToString("dd/MM/yyyy")}",
+                            $"Fecha de Cirugía: {surgery.SurgeryDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Antecedentes de Alergias
-            if (clinicalHistory.AllergyHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES DE ALERGIAS", subtitleFont);
-                foreach (var allergy in clinicalHistory.AllergyHistories)
+                // Antecedentes de Alergias
+                if (HasPermissionForSection("AllergyHistories", userRole) && clinicalHistory.AllergyHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Nombre de Alergia: {allergy.AllergyName}",
-                $"Fecha de Registro: {allergy.RegistrationDate?.ToShortDateString()}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTES DE ALERGIAS", subtitleFont);
+                    foreach (var allergy in clinicalHistory.AllergyHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Nombre de Alergia: {allergy.AllergyName}",
+                            $"Fecha de Registro: {allergy.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Antecedentes de Hábitos
-            if (clinicalHistory.HabitHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES DE HÁBITOS", subtitleFont);
-                foreach (var habit in clinicalHistory.HabitHistories)
+                // Antecedentes de Hábitos
+                if (HasPermissionForSection("HabitHistories", userRole) && clinicalHistory.HabitHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Nombre de Hábito: {habit.HabitName}",
-                $"Fecha de Registro: {habit.RecordDate?.ToShortDateString()}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTES DE HÁBITOS", subtitleFont);
+                    foreach (var habit in clinicalHistory.HabitHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Nombre de Hábito: {habit.HabitName}",
+                            $"Fecha de Registro: {habit.RecordDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Antecedentes Familiares
-            if (clinicalHistory.FamilyHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES FAMILIARES", subtitleFont);
-                foreach (var family in clinicalHistory.FamilyHistories)
+                // Antecedentes Familiares
+                if (HasPermissionForSection("FamilyHistories", userRole) && clinicalHistory.FamilyHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Parentesco: {family.RelationshipName}",
-                $"Nombre de Enfermedad: {family.DiseaseName}",
-                $"Tipo de Enfermedad: {family.DiseaseTypeName}",
-                $"Edad de Aparición: {family.appearanceAge}",
-                $"Descripción: {family.Description}",
-                $"Fecha de Registro: {family.RegistrationDate?.ToShortDateString()}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTES FAMILIARES", subtitleFont);
+                    foreach (var family in clinicalHistory.FamilyHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Parentesco: {family.RelationshipName}",
+                            $"Nombre de Enfermedad: {family.DiseaseName}",
+                            $"Tipo de Enfermedad: {family.DiseaseTypeName}",
+                            $"Edad de Aparición: {family.appearanceAge}",
+                            $"Descripción: {family.Description}",
+                            $"Fecha de Registro: {family.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
+                }
+
+                // Historial de Transfusiones
+                if (HasPermissionForSection("TransfusionsHistories", userRole) && clinicalHistory.TransfusionsHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "HISTORIAL DE TRANSFUSIONES", subtitleFont);
+                    foreach (var transfusion in clinicalHistory.TransfusionsHistories)
+                    {
+                        var transfusionData = new List<string>
+                        {
+                            $"Razón: {transfusion.TransfusionReason}",
+                            $"Fecha: {transfusion.TransfusionDate?.ToString("dd/MM/yyyy")}"
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(transfusion.Observations))
+                            transfusionData.Add($"Observaciones: {transfusion.Observations}");
+                        else
+                            transfusionData.Add("Observaciones: Sin observaciones");
+
+                        AddDetailCard(document, transfusionData, labelFont, textFont, lightGray);
+                    }
+                }
+
+                // Antecedente de Hospitalizaciones
+                if (HasPermissionForSection("HospitalizationsHistories", userRole) && clinicalHistory.HospitalizationsHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "ANTECEDENTE DE HOSPITALIZACIONES", subtitleFont);
+                    foreach (var hospitalization in clinicalHistory.HospitalizationsHistories)
+                    {
+                        var hospitalizationData = new List<string>
+                        {
+                            $"Razón: {hospitalization.HospitalizationReason}",
+                            $"Fecha: {hospitalization.HospitalizationDate?.ToString("dd/MM/yyyy")}",
+                            $"Lugar: {hospitalization.HospitalizationPlace}"
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(hospitalization.Observations))
+                            hospitalizationData.Add($"Observaciones: {hospitalization.Observations}");
+                        else
+                            hospitalizationData.Add("Observaciones: Sin observaciones");
+
+                        AddDetailCard(document, hospitalizationData, labelFont, textFont, lightGray);
+                    }
+                }
+
+                // Antecedentes Traumatológicos
+                if (HasPermissionForSection("TraumaticHistories", userRole) && clinicalHistory.TraumaticHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "ANTECEDENTES TRAUMATOLÓGICOS", subtitleFont);
+                    foreach (var traumatic in clinicalHistory.TraumaticHistories)
+                    {
+                        var traumaticData = new List<string>();
+
+                        if (!string.IsNullOrWhiteSpace(traumatic.Description))
+                            traumaticData.Add($"Descripción: {traumatic.Description}");
+                        else
+                            traumaticData.Add("Descripción: Sin descripción");
+
+                        AddDetailCard(document, traumaticData, labelFont, textFont, lightGray);
+                    }
                 }
             }
 
             // SECCIÓN: OBSTÉTRICOS
-            AddMainSectionTitle(document, "OBSTÉTRICOS", titleFont);
-
-            // Antecedentes Obstétricos
-            if (clinicalHistory.ObstetricHistory != null)
+            if (HasPermissionForSection("ObstetricHistory", userRole) && clinicalHistory.ObstetricHistory != null)
             {
+                AddMainSectionTitle(document, "OBSTÉTRICOS", titleFont);
+
                 AddSubSectionTitle(document, "ANTECEDENTES OBSTÉTRICOS", subtitleFont);
                 var obstetricData = new List<string>
-        {
-            $"Embarazo Actual: {(clinicalHistory.ObstetricHistory.CurrentPregnancy == true ? "Sí" : "No")}",
-            $"Embarazos Anteriores: {(clinicalHistory.ObstetricHistory.PreviousPregnancies == true ? "Sí" : "No")}",
-            $"Partos: {(clinicalHistory.ObstetricHistory.Deliveries == true ? "Sí" : "No")}",
-            $"Abortos: {(clinicalHistory.ObstetricHistory.Abortions == true ? "Sí" : "No")}",
-            $"Cesáreas: {(clinicalHistory.ObstetricHistory.CSections == true ? "Sí" : "No")}",
-            $"Nacidos Vivos: {(clinicalHistory.ObstetricHistory.LiveBirths > 0 ? "Sí" : "No")}",
-            $"Nacidos Muertos: {(clinicalHistory.ObstetricHistory.Stillbirths > 0 ? "Sí" : "No")}",
-            $"Hijos Vivos: {(clinicalHistory.ObstetricHistory.LivingChildren > 0 ? "Sí" : "No")}",
-            $"Lactancia: {(clinicalHistory.ObstetricHistory.Breastfeeding == true ? "Sí" : "No")}",
-            $"Edad Gestacional: {clinicalHistory.ObstetricHistory.GestionalAge} semanas",
-            $"Fecha Estimada de Parto: {clinicalHistory.ObstetricHistory.ExpectedDeliveryDate?.ToShortDateString()}"
-        };
+                {
+                    $"Embarazo Actual: {(clinicalHistory.ObstetricHistory.CurrentPregnancy == true ? "Sí" : "No")}",
+                    $"Embarazos Anteriores: {(clinicalHistory.ObstetricHistory.PreviousPregnancies == true ? "Sí" : "No")}",
+                    $"Partos: {(clinicalHistory.ObstetricHistory.Deliveries == true ? "Sí" : "No")}",
+                    $"Abortos: {(clinicalHistory.ObstetricHistory.Abortions == true ? "Sí" : "No")}",
+                    $"Cesáreas: {(clinicalHistory.ObstetricHistory.CSections == true ? "Sí" : "No")}",
+                    $"Nacidos Vivos: {(clinicalHistory.ObstetricHistory.LiveBirths > 0 ? "Sí" : "No")}",
+                    $"Nacidos Muertos: {(clinicalHistory.ObstetricHistory.Stillbirths > 0 ? "Sí" : "No")}",
+                    $"Hijos Vivos: {(clinicalHistory.ObstetricHistory.LivingChildren > 0 ? "Sí" : "No")}",
+                    $"Lactancia: {(clinicalHistory.ObstetricHistory.Breastfeeding == true ? "Sí" : "No")}",
+                    $"Edad Gestacional: {clinicalHistory.ObstetricHistory.GestionalAge} semanas",
+                    $"Fecha Estimada de Parto: {clinicalHistory.ObstetricHistory.ExpectedDeliveryDate?.ToString("dd/MM/yyyy")}"
+                };
                 AddDetailCard(document, obstetricData, labelFont, textFont, lightGray);
             }
 
             // SECCIÓN: GINECOLÓGICOS
-            AddMainSectionTitle(document, "GINECOLÓGICOS", titleFont);
-
-            // Antecedentes Ginecológicos
-            if (clinicalHistory.GynecologicalHistory != null)
+            if (HasPermissionForSection("GynecologicalHistory", userRole) && clinicalHistory.GynecologicalHistory != null)
             {
+                AddMainSectionTitle(document, "GINECOLÓGICOS", titleFont);
+
                 AddSubSectionTitle(document, "ANTECEDENTES GINECOLÓGICOS", subtitleFont);
                 var gynecologicalData = new List<string>
-        {
-            $"Desarrollo Ginecológico: {clinicalHistory.GynecologicalHistory.GynecologicalDevelopment}",
-            $"Menarquia: {(clinicalHistory.GynecologicalHistory.Menarche.HasValue ? clinicalHistory.GynecologicalHistory.Menarche.Value.ToShortDateString() : "No registrado")}",
-            $"Pubarquia: {(clinicalHistory.GynecologicalHistory.Pubarche.HasValue ? clinicalHistory.GynecologicalHistory.Pubarche.Value.ToShortDateString() : "No registrado")}",
-            $"Ciclos Menstruales: {clinicalHistory.GynecologicalHistory.MenstrualCycles}",
-            $"Última Menstruación: {(clinicalHistory.GynecologicalHistory.LastMenstruation.HasValue ? clinicalHistory.GynecologicalHistory.LastMenstruation.Value.ToShortDateString() : "No registrado")}",
-            $"Métodos Anticonceptivos: {clinicalHistory.GynecologicalHistory.ContraceptiveMethods}"
-        };
+                {
+                    $"Desarrollo Ginecológico: {clinicalHistory.GynecologicalHistory.GynecologicalDevelopment}",
+                    $"Menarquia: {(clinicalHistory.GynecologicalHistory.Menarche.HasValue ? clinicalHistory.GynecologicalHistory.Menarche.Value.ToString("dd/MM/yyyy") : "No registrado")}",
+                    $"Pubarquia: {(clinicalHistory.GynecologicalHistory.Pubarche.HasValue ? clinicalHistory.GynecologicalHistory.Pubarche.Value.ToString("dd/MM/yyyy") : "No registrado")}",
+                    $"Ciclos Menstruales: {clinicalHistory.GynecologicalHistory.MenstrualCycles}",
+                    $"Última Menstruación: {(clinicalHistory.GynecologicalHistory.LastMenstruation.HasValue ? clinicalHistory.GynecologicalHistory.LastMenstruation.Value.ToString("dd/MM/yyyy") : "No registrado")}",
+                    $"Métodos Anticonceptivos: {clinicalHistory.GynecologicalHistory.ContraceptiveMethods}"
+                };
                 AddDetailCard(document, gynecologicalData, labelFont, textFont, lightGray);
             }
 
             // SECCIÓN: NUTRICIONISTAS
-            AddMainSectionTitle(document, "NUTRICIONISTAS", titleFont);
-
-            // Actividades Deportivas
-            if (clinicalHistory.SportsActivitiesHistory != null)
+            if (HasAnyNutritionSectionPermission(userRole))
             {
-                AddSubSectionTitle(document, "ACTIVIDADES DEPORTIVAS", subtitleFont);
-                var sportsData = new List<string>
-        {
-            $"Descripción: {clinicalHistory.SportsActivitiesHistory.Description}",
-            $"Minutos por Día: {clinicalHistory.SportsActivitiesHistory.MinutesPerDay} minutos",
-            $"Número de Días por Semana: {clinicalHistory.SportsActivitiesHistory.NumberOfDays} días",
-            $"Fecha de Registro: {clinicalHistory.SportsActivitiesHistory.RegistrationDate?.ToShortDateString()}",
-            $"Actividad Física: {clinicalHistory.SportsActivitiesHistory.SportActivityName}"
-        };
-                AddDetailCard(document, sportsData, labelFont, textFont, lightGray);
-            }
+                AddMainSectionTitle(document, "NUTRICIONISTAS", titleFont);
 
-            // Estilo de Vida
-            if (clinicalHistory.LifeStyleHistory != null)
-            {
-                AddSubSectionTitle(document, "ESTILO DE VIDA", subtitleFont);
-                var lifestyleData = new List<string>
-        {
-            $"Estilo de Vida: {clinicalHistory.LifeStyleHistory.LifeStyleName}",
-            $"Descripción: {clinicalHistory.LifeStyleHistory.Description}",
-            $"Fecha de Registro: {clinicalHistory.LifeStyleHistory.RegistrationDate?.ToShortDateString()}"
-        };
-                AddDetailCard(document, lifestyleData, labelFont, textFont, lightGray);
-            }
+                // Actividades Deportivas
+                if (HasPermissionForSection("SportsActivitiesHistory", userRole) && clinicalHistory.SportsActivitiesHistory != null)
+                {
+                    AddSubSectionTitle(document, "ACTIVIDADES DEPORTIVAS", subtitleFont);
+                    var sportsData = new List<string>
+                    {
+                        $"Descripción: {clinicalHistory.SportsActivitiesHistory.Description}",
+                        $"Minutos por Día: {clinicalHistory.SportsActivitiesHistory.MinutesPerDay} minutos",
+                        $"Número de Días por Semana: {clinicalHistory.SportsActivitiesHistory.NumberOfDays} días",
+                        $"Fecha de Registro: {clinicalHistory.SportsActivitiesHistory.RegistrationDate?.ToString("dd/MM/yyyy")}",
+                        $"Actividad Física: {clinicalHistory.SportsActivitiesHistory.SportActivityName}"
+                    };
+                    AddDetailCard(document, sportsData, labelFont, textFont, lightGray);
+                }
 
-            // Hábitos Dietéticos
-            if (clinicalHistory.DietaryHabitsHistory != null)
-            {
-                AddSubSectionTitle(document, "HÁBITOS DIETÉTICOS", subtitleFont);
-                var dietaryData = new List<string>
-        {
-            $"Descripción: {clinicalHistory.DietaryHabitsHistory.Description}",
-            $"Fecha de Registro: {clinicalHistory.DietaryHabitsHistory.RegistrationDate?.ToShortDateString()}"
-        };
-                AddDetailCard(document, dietaryData, labelFont, textFont, lightGray);
-            }
+                // Estilo de Vida
+                if (HasPermissionForSection("LifeStyleHistory", userRole) && clinicalHistory.LifeStyleHistory != null)
+                {
+                    AddSubSectionTitle(document, "ESTILO DE VIDA", subtitleFont);
+                    var lifestyleData = new List<string>
+                    {
+                        $"Estilo de Vida: {clinicalHistory.LifeStyleHistory.LifeStyleName}",
+                        $"Descripción: {clinicalHistory.LifeStyleHistory.Description}",
+                        $"Fecha de Registro: {clinicalHistory.LifeStyleHistory.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                    };
+                    AddDetailCard(document, lifestyleData, labelFont, textFont, lightGray);
+                }
 
-            // Hábitos de Sueño
-            if (clinicalHistory.SleepHabitHistory != null)
-            {
-                AddSubSectionTitle(document, "HÁBITOS DE SUEÑO", subtitleFont);
-                var sleepData = new List<string>
-        {
-            $"Hábito de Sueño: {clinicalHistory.SleepHabitHistory.SleepHabitName}",
-            $"Descripción: {clinicalHistory.SleepHabitHistory.Description}",
-            $"Fecha de Registro: {clinicalHistory.SleepHabitHistory.RecordDate?.ToShortDateString()}"
-        };
-                AddDetailCard(document, sleepData, labelFont, textFont, lightGray);
-            }
+                // Hábitos Dietéticos
+                if (HasPermissionForSection("DietaryHabitsHistory", userRole) && clinicalHistory.DietaryHabitsHistory != null)
+                {
+                    AddSubSectionTitle(document, "HÁBITOS DIETÉTICOS", subtitleFont);
+                    var dietaryData = new List<string>
+                    {
+                        $"Descripción: {clinicalHistory.DietaryHabitsHistory.Description}",
+                        $"Fecha de Registro: {clinicalHistory.DietaryHabitsHistory.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                    };
+                    AddDetailCard(document, dietaryData, labelFont, textFont, lightGray);
+                }
 
-            // Consumo de Alimentos
-            if (clinicalHistory.FoodConsumptionHistory != null)
-            {
-                AddSubSectionTitle(document, "CONSUMO DE ALIMENTOS", subtitleFont);
-                var foodData = new List<string>
-        {
-            $"Nombre del Alimento: {clinicalHistory.FoodConsumptionHistory.FoodName}",
-            $"Hora: {clinicalHistory.FoodConsumptionHistory.Hour}",
-            $"Lugar: {clinicalHistory.FoodConsumptionHistory.Place}",
-            $"Cantidad: {clinicalHistory.FoodConsumptionHistory.Amount}",
-            $"Descripción: {clinicalHistory.FoodConsumptionHistory.Description}",
-            $"Fecha de Registro: {clinicalHistory.FoodConsumptionHistory.RegistrationDate?.ToShortDateString()}"
-        };
-                AddDetailCard(document, foodData, labelFont, textFont, lightGray);
-            }
+                // Hábitos de Sueño
+                if (HasPermissionForSection("SleepHabitHistory", userRole) && clinicalHistory.SleepHabitHistory != null)
+                {
+                    AddSubSectionTitle(document, "HÁBITOS DE SUEÑO", subtitleFont);
+                    var sleepData = new List<string>
+                    {
+                        $"Hábito de Sueño: {clinicalHistory.SleepHabitHistory.SleepHabitName}",
+                        $"Descripción: {clinicalHistory.SleepHabitHistory.Description}",
+                        $"Fecha de Registro: {clinicalHistory.SleepHabitHistory.RecordDate?.ToString("dd/MM/yyyy")}"
+                    };
+                    AddDetailCard(document, sleepData, labelFont, textFont, lightGray);
+                }
 
-            // Consumo de Agua
-            if (clinicalHistory.WaterConsumptionHistory != null)
-            {
-                AddSubSectionTitle(document, "CONSUMO DE AGUA", subtitleFont);
-                var waterData = new List<string>
-        {
-            $"Cantidad: {clinicalHistory.WaterConsumptionHistory.Amount}",
-            $"Frecuencia: {clinicalHistory.WaterConsumptionHistory.Frequency}",
-            $"Descripción: {clinicalHistory.WaterConsumptionHistory.Description}",
-            $"Fecha de Registro: {clinicalHistory.WaterConsumptionHistory.RegistrationDate?.ToShortDateString()}"
-        };
-                AddDetailCard(document, waterData, labelFont, textFont, lightGray);
+                // Consumo de Alimentos
+                if (HasPermissionForSection("FoodConsumptionHistory", userRole) && clinicalHistory.FoodConsumptionHistory != null)
+                {
+                    AddSubSectionTitle(document, "CONSUMO DE ALIMENTOS", subtitleFont);
+                    var foodData = new List<string>
+                    {
+                        $"Nombre del Alimento: {clinicalHistory.FoodConsumptionHistory.FoodName}",
+                        $"Hora: {clinicalHistory.FoodConsumptionHistory.Hour}",
+                        $"Lugar: {clinicalHistory.FoodConsumptionHistory.Place}",
+                        $"Cantidad: {clinicalHistory.FoodConsumptionHistory.Amount}",
+                        $"Descripción: {clinicalHistory.FoodConsumptionHistory.Description}",
+                        $"Fecha de Registro: {clinicalHistory.FoodConsumptionHistory.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                    };
+                    AddDetailCard(document, foodData, labelFont, textFont, lightGray);
+                }
+
+                // Consumo de Agua
+                if (HasPermissionForSection("WaterConsumptionHistory", userRole) && clinicalHistory.WaterConsumptionHistory != null)
+                {
+                    AddSubSectionTitle(document, "CONSUMO DE AGUA", subtitleFont);
+                    var waterData = new List<string>
+                    {
+                        $"Cantidad: {clinicalHistory.WaterConsumptionHistory.Amount}",
+                        $"Frecuencia: {clinicalHistory.WaterConsumptionHistory.Frequency}",
+                        $"Descripción: {clinicalHistory.WaterConsumptionHistory.Description}",
+                        $"Fecha de Registro: {clinicalHistory.WaterConsumptionHistory.RegistrationDate?.ToString("dd/MM/yyyy")}"
+                    };
+                    AddDetailCard(document, waterData, labelFont, textFont, lightGray);
+                }
             }
 
             // SECCIÓN: PSICOLOGÍA
-            AddMainSectionTitle(document, "PSICOLOGÍA", titleFont);
-
-            // Antecedente de Medicamentos
-            if (clinicalHistory.MedicationHistories?.Any() == true)
+            if (HasAnyPsychologySectionPermission(userRole))
             {
-                AddSubSectionTitle(document, "ANTECEDENTE DE MEDICAMENTOS", subtitleFont);
-                foreach (var medication in clinicalHistory.MedicationHistories)
+                AddMainSectionTitle(document, "PSICOLOGÍA", titleFont);
+
+                // Antecedente de Medicamentos
+                if (HasPermissionForSection("MedicationHistories", userRole) && clinicalHistory.MedicationHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Medicamento: {medication.MedicineName}",
-                $"Fecha de Registro: {medication.ConsumptionDate?.ToString("dd/MM/yyyy")}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTE DE MEDICAMENTOS", subtitleFont);
+                    foreach (var medication in clinicalHistory.MedicationHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Medicamento: {medication.MedicineName}",
+                            $"Fecha de Registro: {medication.ConsumptionDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Antecedente Psicopsiquiátrico
-            if (clinicalHistory.PsychopsychiatricHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTE PSICOPSIQUIÁTRICO", subtitleFont);
-                foreach (var psych in clinicalHistory.PsychopsychiatricHistories)
+                // Antecedente Psicopsiquiátrico
+                if (HasPermissionForSection("PsychopsychiatricHistories", userRole) && clinicalHistory.PsychopsychiatricHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Tipo: {psych.Type}",
-                $"Actor: {psych.Actor}",
-                $"Fecha: {psych.HistoryDate?.ToString("dd/MM/yyyy")}",
-                $"Estado: {psych.HistoryState}"
-            }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "ANTECEDENTE PSICOPSIQUIÁTRICO", subtitleFont);
+                    foreach (var psych in clinicalHistory.PsychopsychiatricHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Tipo: {psych.Type}",
+                            $"Actor: {psych.Actor}",
+                            $"Fecha: {psych.HistoryDate?.ToString("dd/MM/yyyy")}",
+                            $"Estado: {psych.HistoryState}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Historial de Problema Actual
-            if (clinicalHistory.CurrentProblemHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "HISTORIAL DE PROBLEMA ACTUAL", subtitleFont);
-                var currentProblem = clinicalHistory.CurrentProblemHistories.FirstOrDefault();
-                var problemData = new List<string>();
-
-                if (!string.IsNullOrWhiteSpace(currentProblem?.AppearanceEvolution))
-                    problemData.Add($"Aparición y Evolución: {currentProblem.AppearanceEvolution}");
-
-                if (!string.IsNullOrWhiteSpace(currentProblem?.TriggeringFactors))
-                    problemData.Add($"Factores Desencadenantes: {currentProblem.TriggeringFactors}");
-
-                if (!string.IsNullOrWhiteSpace(currentProblem?.FrequencyIntensitySymptoms))
-                    problemData.Add($"Frecuencia e Intensidad de Síntomas: {currentProblem.FrequencyIntensitySymptoms}");
-
-                if (!string.IsNullOrWhiteSpace(currentProblem?.Impact))
-                    problemData.Add($"Impacto: {currentProblem.Impact}");
-
-                if (problemData.Any())
-                    AddDetailCard(document, problemData, labelFont, textFont, lightGray);
-            }
-
-            // Hábitos Tóxicos
-            if (clinicalHistory.ToxicHabitHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "HÁBITOS TÓXICOS", subtitleFont);
-                foreach (var habit in clinicalHistory.ToxicHabitHistories)
+                // Historial de Problema Actual
+                if (HasPermissionForSection("CurrentProblemHistories", userRole) && clinicalHistory.CurrentProblemHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string>
-            {
-                $"Hábito Tóxico: {habit.Description}",
-                $"Fecha de Registro: {habit.RecordDate?.ToString("dd/MM/yyyy")}"
-            }, labelFont, textFont, lightGray);
-                }
-            }
+                    AddSubSectionTitle(document, "HISTORIAL DE PROBLEMA ACTUAL", subtitleFont);
+                    var currentProblem = clinicalHistory.CurrentProblemHistories.FirstOrDefault();
+                    var problemData = new List<string>();
 
-            // Antecedente Psicosexual
-            if (clinicalHistory.PsychosexualHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTE PSICOSEXUAL", subtitleFont);
-                var psychosexual = clinicalHistory.PsychosexualHistories.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(psychosexual?.Description))
+                    if (!string.IsNullOrWhiteSpace(currentProblem?.AppearanceEvolution))
+                        problemData.Add($"Aparición y Evolución: {currentProblem.AppearanceEvolution}");
+
+                    if (!string.IsNullOrWhiteSpace(currentProblem?.TriggeringFactors))
+                        problemData.Add($"Factores Desencadenantes: {currentProblem.TriggeringFactors}");
+
+                    if (!string.IsNullOrWhiteSpace(currentProblem?.FrequencyIntensitySymptoms))
+                        problemData.Add($"Frecuencia e Intensidad de Síntomas: {currentProblem.FrequencyIntensitySymptoms}");
+
+                    if (!string.IsNullOrWhiteSpace(currentProblem?.Impact))
+                        problemData.Add($"Impacto: {currentProblem.Impact}");
+
+                    if (problemData.Any())
+                        AddDetailCard(document, problemData, labelFont, textFont, lightGray);
+                }
+
+                // Hábitos Tóxicos
+                if (HasPermissionForSection("ToxicHabitHistories", userRole) && clinicalHistory.ToxicHabitHistories?.Any() == true)
                 {
-                    AddDetailCard(document, new List<string> { $"Descripción: {psychosexual.Description}" }, labelFont, textFont, lightGray);
+                    AddSubSectionTitle(document, "HÁBITOS TÓXICOS", subtitleFont);
+                    foreach (var habit in clinicalHistory.ToxicHabitHistories)
+                    {
+                        AddDetailCard(document, new List<string>
+                        {
+                            $"Hábito Tóxico: {habit.Description}",
+                            $"Fecha de Registro: {habit.RecordDate?.ToString("dd/MM/yyyy")}"
+                        }, labelFont, textFont, lightGray);
+                    }
                 }
-            }
 
-            // Historial Laboral
-            if (clinicalHistory.WorkHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "HISTORIAL LABORAL", subtitleFont);
-                var workHistory = clinicalHistory.WorkHistories.FirstOrDefault();
-                var workData = new List<string>();
+                // Antecedente Psicosexual
+                if (HasPermissionForSection("PsychosexualHistories", userRole) && clinicalHistory.PsychosexualHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "ANTECEDENTE PSICOSEXUAL", subtitleFont);
+                    var psychosexual = clinicalHistory.PsychosexualHistories.FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(psychosexual?.Description))
+                    {
+                        AddDetailCard(document, new List<string> { $"Descripción: {psychosexual.Description}" }, labelFont, textFont, lightGray);
+                    }
+                }
 
-                if (!string.IsNullOrWhiteSpace(workHistory?.Experience))
-                    workData.Add($"Experiencia: {workHistory.Experience}");
+                // Historial Laboral
+                if (HasPermissionForSection("WorkHistories", userRole) && clinicalHistory.WorkHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "HISTORIAL LABORAL", subtitleFont);
+                    var workHistory = clinicalHistory.WorkHistories.FirstOrDefault();
+                    var workData = new List<string>();
 
-                if (!string.IsNullOrWhiteSpace(workHistory?.Stability))
-                    workData.Add($"Estabilidad: {workHistory.Stability}");
+                    if (!string.IsNullOrWhiteSpace(workHistory?.Experience))
+                        workData.Add($"Experiencia: {workHistory.Experience}");
 
-                if (!string.IsNullOrWhiteSpace(workHistory?.SatisfactionLevel))
-                    workData.Add($"Nivel de Satisfacción: {workHistory.SatisfactionLevel}");
+                    if (!string.IsNullOrWhiteSpace(workHistory?.Stability))
+                        workData.Add($"Estabilidad: {workHistory.Stability}");
 
-                if (workData.Any())
-                    AddDetailCard(document, workData, labelFont, textFont, lightGray);
+                    if (!string.IsNullOrWhiteSpace(workHistory?.SatisfactionLevel))
+                        workData.Add($"Nivel de Satisfacción: {workHistory.SatisfactionLevel}");
+
+                    if (workData.Any())
+                        AddDetailCard(document, workData, labelFont, textFont, lightGray);
+                }
             }
 
             // SECCIÓN: FISIOTERAPIA
-            AddMainSectionTitle(document, "FISIOTERAPIA", titleFont);
-
-            // Antecedentes Traumatológicos
-            if (clinicalHistory.TraumaticHistories?.Any() == true)
+            if (HasPermissionForSection("TraumaticHistoriesPhysio", userRole) && clinicalHistory.TraumaticHistories?.Any() == true)
             {
+                AddMainSectionTitle(document, "FISIOTERAPIA", titleFont);
+
                 AddSubSectionTitle(document, "ANTECEDENTES TRAUMATOLÓGICOS", subtitleFont);
                 foreach (var traumatic in clinicalHistory.TraumaticHistories)
                 {
                     AddDetailCard(document, new List<string>
-            {
-                $"Descripción: {traumatic.Description}"
-            }, labelFont, textFont, lightGray);
+                    {
+                        $"Descripción: {traumatic.Description}"
+                    }, labelFont, textFont, lightGray);
                 }
             }
 
             // SECCIÓN: ESTIMULACIÓN TEMPRANA
-            AddMainSectionTitle(document, "ESTIMULACIÓN TEMPRANA", titleFont);
-
-            // Antecedentes Prenatales
-            if (clinicalHistory.PrenatalHistories?.Any() == true)
+            if (HasAnyEarlyStimulationSectionPermission(userRole))
             {
-                AddSubSectionTitle(document, "ANTECEDENTES PRENATALES", subtitleFont);
-                var prenatal = clinicalHistory.PrenatalHistories.FirstOrDefault();
-                var prenatalData = new List<string>
-        {
-            $"Producto de Número de Gestas: {prenatal?.NumberOfDeeds ?? 0}",
-            $"Embarazo Planificado: {(prenatal?.PlannedPregnancy == true ? "Sí" : "No")}",
-            $"Exposición a Radiación: {(prenatal?.RadiationExposure == true ? "Sí" : "No")}",
-            $"Sufrimiento Fetal: {(prenatal?.FetalSuffering == true ? "Sí" : "No")}",
-            $"Número de Controles: {prenatal?.NumberOfControls ?? 0}",
-            $"Número de Ecografías: {prenatal?.NumberOfUltrasounds ?? 0}"
-        };
+                AddMainSectionTitle(document, "ESTIMULACIÓN TEMPRANA", titleFont);
 
-                if (!string.IsNullOrWhiteSpace(prenatal?.MedicationsOrVitamins))
-                    prenatalData.Add($"Medicamentos o Vitaminas: {prenatal.MedicationsOrVitamins}");
-
-                if (!string.IsNullOrWhiteSpace(prenatal?.ComplicationsDuringPregnancy))
-                    prenatalData.Add($"Complicaciones durante el Embarazo: {prenatal.ComplicationsDuringPregnancy}");
-
-                AddDetailCard(document, prenatalData, labelFont, textFont, lightGray);
-            }
-
-            // Antecedentes Perinatales
-            if (clinicalHistory.PerinatalHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES PERINATALES", subtitleFont);
-                var perinatal = clinicalHistory.PerinatalHistories.FirstOrDefault();
-                var perinatalData = new List<string>
-        {
-            $"Tipo de Parto: {perinatal?.TypeOfBirth}",
-            $"Número de Semanas: {perinatal?.NumberOfWeeks ?? 0}",
-            $"Lloró al nacer: {(perinatal?.BirthCry == true ? "Sí" : "No")}"
-        };
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.Apgar))
-                    perinatalData.Add($"Apgar: {perinatal.Apgar}");
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.AuditoryScreen))
-                    perinatalData.Add($"Tamiz Auditivo: {perinatal.AuditoryScreen}");
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.ResuscitationManeuvers))
-                    perinatalData.Add($"Maniobras de Reanimación: {perinatal.ResuscitationManeuvers}");
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.PlaceOfCare))
-                    perinatalData.Add($"Lugar de Atención: {perinatal.PlaceOfCare}");
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.MetabolicScreen))
-                    perinatalData.Add($"Tamiz Metabólico: {perinatal.MetabolicScreen}");
-
-                if (!string.IsNullOrWhiteSpace(perinatal?.ComplicationsDuringChildbirth))
-                    perinatalData.Add($"Complicaciones durante el Parto/Cesárea: {perinatal.ComplicationsDuringChildbirth}");
-
-                AddDetailCard(document, perinatalData, labelFont, textFont, lightGray);
-            }
-
-            // Antecedentes Postnatales
-            if (clinicalHistory.PostnatalHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES POSTNATALES", subtitleFont);
-                var postnatal = clinicalHistory.PostnatalHistories.FirstOrDefault();
-                var postnatalData = new List<string>();
-
-                if (!string.IsNullOrWhiteSpace(postnatal?.Description))
-                    postnatalData.Add($"Descripción: {postnatal.Description}");
-
-                // Inmunizaciones
-                postnatalData.Add("Inmunizaciones:");
-                postnatalData.Add($"• BCG: {(postnatal?.Bcg == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Rotavirus: {(postnatal?.Rotavirus == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Pentavalente: {(postnatal?.Pentavalente == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Influenza: {(postnatal?.Influenza == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Varicela: {(postnatal?.Varicela == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Hepatitis B: {(postnatal?.HepatitisB == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Triple Viral: {(postnatal?.TripleViral == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Polio Virus: {(postnatal?.PolioVirus == true ? "Sí" : "No")}");
-                postnatalData.Add($"• Neumococo: {(postnatal?.Neumococo == true ? "Sí" : "No")}");
-
-                if (!string.IsNullOrWhiteSpace(postnatal?.Observations))
-                    postnatalData.Add($"Observaciones: {postnatal.Observations}");
-
-                AddDetailCard(document, postnatalData, labelFont, textFont, lightGray);
-            }
-
-            // Antecedentes Neuropsicológicos
-            if (clinicalHistory.NeuropsychologicalHistories?.Any() == true)
-            {
-                AddSubSectionTitle(document, "ANTECEDENTES NEUROPSICOLÓGICOS", subtitleFont);
-                var neuropsychological = clinicalHistory.NeuropsychologicalHistories.FirstOrDefault();
-                var neuroData = new List<string>();
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.HomeConduct))
-                    neuroData.Add($"Conducta en Casa: {neuropsychological.HomeConduct}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.SchoolConduct))
-                    neuroData.Add($"Conducta en la Escuela: {neuropsychological.SchoolConduct}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.Leverage))
-                    neuroData.Add($"Aprovechamiento: {neuropsychological.Leverage}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.DreamObservation))
-                    neuroData.Add($"Observación Sueño: {neuropsychological.DreamObservation}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.SightObservation))
-                    neuroData.Add($"Observación Vista: {neuropsychological.SightObservation}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.SpeechObservation))
-                    neuroData.Add($"Observación Habla: {neuropsychological.SpeechObservation}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.HearingObservation))
-                    neuroData.Add($"Observación Escucha: {neuropsychological.HearingObservation}");
-
-                neuroData.Add($"Desmayos: {(neuropsychological?.Faintings == true ? "Sí" : "No")}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.ObservationDifferentAbility))
-                    neuroData.Add($"Observaciones de Capacidades Diferentes: {neuropsychological.ObservationDifferentAbility}");
-
-                if (!string.IsNullOrWhiteSpace(neuropsychological?.Observation))
-                    neuroData.Add($"Observaciones Generales: {neuropsychological.Observation}");
-
-                AddDetailCard(document, neuroData, labelFont, textFont, lightGray);
-            }
-
-            // Hitos de Desarrollo
-            if (clinicalHistory.DevelopmentRecords?.Any() == true)
-            {
-                AddSubSectionTitle(document, "HITOS DE DESARROLLO", subtitleFont);
-                foreach (var record in clinicalHistory.DevelopmentRecords)
+                // Antecedentes Prenatales
+                if (HasPermissionForSection("PrenatalHistories", userRole) && clinicalHistory.PrenatalHistories?.Any() == true)
                 {
-                    var developmentData = new List<string>
-            {
-                $"Hito: {record.DevelopmentMilestone}",
-                $"Rango de Edad: {record.AgeRange}"
-            };
+                    AddSubSectionTitle(document, "ANTECEDENTES PRENATALES", subtitleFont);
+                    var prenatal = clinicalHistory.PrenatalHistories.FirstOrDefault();
+                    var prenatalData = new List<string>
+                    {
+                        $"Producto de Número de Gestas: {prenatal?.NumberOfDeeds ?? 0}",
+                        $"Embarazo Planificado: {(prenatal?.PlannedPregnancy == true ? "Sí" : "No")}",
+                        $"Exposición a Radiación: {(prenatal?.RadiationExposure == true ? "Sí" : "No")}",
+                        $"Sufrimiento Fetal: {(prenatal?.FetalSuffering == true ? "Sí" : "No")}",
+                        $"Número de Controles: {prenatal?.NumberOfControls ?? 0}",
+                        $"Número de Ecografías: {prenatal?.NumberOfUltrasounds ?? 0}"
+                    };
 
-                    if (!string.IsNullOrWhiteSpace(record.Observations))
-                        developmentData.Add($"Observaciones: {record.Observations}");
+                    if (!string.IsNullOrWhiteSpace(prenatal?.MedicationsOrVitamins))
+                        prenatalData.Add($"Medicamentos o Vitaminas: {prenatal.MedicationsOrVitamins}");
 
-                    AddDetailCard(document, developmentData, labelFont, textFont, lightGray);
+                    if (!string.IsNullOrWhiteSpace(prenatal?.ComplicationsDuringPregnancy))
+                        prenatalData.Add($"Complicaciones durante el Embarazo: {prenatal.ComplicationsDuringPregnancy}");
+
+                    AddDetailCard(document, prenatalData, labelFont, textFont, lightGray);
                 }
-            }
 
-            // Exámenes Neurológicos
-            if (clinicalHistory.NeurologicalExams?.Any() == true)
-            {
-                AddSubSectionTitle(document, "EXÁMENES NEUROLÓGICOS", subtitleFont);
-                foreach (var exam in clinicalHistory.NeurologicalExams)
+                // Antecedentes Perinatales
+                if (HasPermissionForSection("PerinatalHistories", userRole) && clinicalHistory.PerinatalHistories?.Any() == true)
                 {
-                    var examData = new List<string>
-            {
-                $"Tipo de Examen: {exam.NeurologicalExamTypeName}",
-                $"Examen: {exam.Name}",
-                $"Fecha: {exam.ExamDate?.ToString("dd/MM/yyyy")}"
-            };
+                    AddSubSectionTitle(document, "ANTECEDENTES PERINATALES", subtitleFont);
+                    var perinatal = clinicalHistory.PerinatalHistories.FirstOrDefault();
+                    var perinatalData = new List<string>
+                    {
+                        $"Tipo de Parto: {perinatal?.TypeOfBirth}",
+                        $"Número de Semanas: {perinatal?.NumberOfWeeks ?? 0}",
+                        $"Lloró al nacer: {(perinatal?.BirthCry == true ? "Sí" : "No")}"
+                    };
 
-                    if (!string.IsNullOrWhiteSpace(exam.Description))
-                        examData.Add($"Descripción: {exam.Description}");
+                    if (!string.IsNullOrWhiteSpace(perinatal?.Apgar))
+                        perinatalData.Add($"Apgar: {perinatal.Apgar}");
 
-                    if (!string.IsNullOrWhiteSpace(exam.LinkPdf))
-                        examData.Add($"Enlace PDF: {exam.LinkPdf}");
+                    if (!string.IsNullOrWhiteSpace(perinatal?.AuditoryScreen))
+                        perinatalData.Add($"Tamiz Auditivo: {perinatal.AuditoryScreen}");
 
-                    AddDetailCard(document, examData, labelFont, textFont, lightGray);
+                    if (!string.IsNullOrWhiteSpace(perinatal?.ResuscitationManeuvers))
+                        perinatalData.Add($"Maniobras de Reanimación: {perinatal.ResuscitationManeuvers}");
+
+                    if (!string.IsNullOrWhiteSpace(perinatal?.PlaceOfCare))
+                        perinatalData.Add($"Lugar de Atención: {perinatal.PlaceOfCare}");
+
+                    if (!string.IsNullOrWhiteSpace(perinatal?.MetabolicScreen))
+                        perinatalData.Add($"Tamiz Metabólico: {perinatal.MetabolicScreen}");
+
+                    if (!string.IsNullOrWhiteSpace(perinatal?.ComplicationsDuringChildbirth))
+                        perinatalData.Add($"Complicaciones durante el Parto/Cesárea: {perinatal.ComplicationsDuringChildbirth}");
+
+                    AddDetailCard(document, perinatalData, labelFont, textFont, lightGray);
+                }
+
+                // Antecedentes Postnatales
+                if (HasPermissionForSection("PostnatalHistories", userRole) && clinicalHistory.PostnatalHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "ANTECEDENTES POSTNATALES", subtitleFont);
+                    var postnatal = clinicalHistory.PostnatalHistories.FirstOrDefault();
+                    var postnatalData = new List<string>();
+
+                    if (!string.IsNullOrWhiteSpace(postnatal?.Description))
+                        postnatalData.Add($"Descripción: {postnatal.Description}");
+
+                    // Inmunizaciones
+                    postnatalData.Add("Inmunizaciones:");
+                    postnatalData.Add($"• BCG: {(postnatal?.Bcg == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Rotavirus: {(postnatal?.Rotavirus == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Pentavalente: {(postnatal?.Pentavalente == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Influenza: {(postnatal?.Influenza == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Varicela: {(postnatal?.Varicela == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Hepatitis B: {(postnatal?.HepatitisB == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Triple Viral: {(postnatal?.TripleViral == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Polio Virus: {(postnatal?.PolioVirus == true ? "Sí" : "No")}");
+                    postnatalData.Add($"• Neumococo: {(postnatal?.Neumococo == true ? "Sí" : "No")}");
+
+                    if (!string.IsNullOrWhiteSpace(postnatal?.Observations))
+                        postnatalData.Add($"Observaciones: {postnatal.Observations}");
+
+                    AddDetailCard(document, postnatalData, labelFont, textFont, lightGray);
+                }
+
+                // Antecedentes Neuropsicológicos
+                if (HasPermissionForSection("NeuropsychologicalHistories", userRole) && clinicalHistory.NeuropsychologicalHistories?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "ANTECEDENTES NEUROPSICOLÓGICOS", subtitleFont);
+                    var neuropsychological = clinicalHistory.NeuropsychologicalHistories.FirstOrDefault();
+                    var neuroData = new List<string>();
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.HomeConduct))
+                        neuroData.Add($"Conducta en Casa: {neuropsychological.HomeConduct}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.SchoolConduct))
+                        neuroData.Add($"Conducta en la Escuela: {neuropsychological.SchoolConduct}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.Leverage))
+                        neuroData.Add($"Aprovechamiento: {neuropsychological.Leverage}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.DreamObservation))
+                        neuroData.Add($"Observación Sueño: {neuropsychological.DreamObservation}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.SightObservation))
+                        neuroData.Add($"Observación Vista: {neuropsychological.SightObservation}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.SpeechObservation))
+                        neuroData.Add($"Observación Habla: {neuropsychological.SpeechObservation}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.HearingObservation))
+                        neuroData.Add($"Observación Escucha: {neuropsychological.HearingObservation}");
+
+                    neuroData.Add($"Desmayos: {(neuropsychological?.Faintings == true ? "Sí" : "No")}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.ObservationDifferentAbility))
+                        neuroData.Add($"Observaciones de Capacidades Diferentes: {neuropsychological.ObservationDifferentAbility}");
+
+                    if (!string.IsNullOrWhiteSpace(neuropsychological?.Observation))
+                        neuroData.Add($"Observaciones Generales: {neuropsychological.Observation}");
+
+                    AddDetailCard(document, neuroData, labelFont, textFont, lightGray);
+                }
+
+                // Hitos de Desarrollo
+                if (HasPermissionForSection("DevelopmentRecords", userRole) && clinicalHistory.DevelopmentRecords?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "HITOS DE DESARROLLO", subtitleFont);
+                    foreach (var record in clinicalHistory.DevelopmentRecords)
+                    {
+                        var developmentData = new List<string>
+                        {
+                            $"Hito: {record.DevelopmentMilestone}",
+                            $"Rango de Edad: {record.AgeRange}"
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(record.Observations))
+                            developmentData.Add($"Observaciones: {record.Observations}");
+
+                        AddDetailCard(document, developmentData, labelFont, textFont, lightGray);
+                    }
+                }
+
+                // Exámenes Neurológicos
+                if (HasPermissionForSection("NeurologicalExams", userRole) && clinicalHistory.NeurologicalExams?.Any() == true)
+                {
+                    AddSubSectionTitle(document, "EXÁMENES NEUROLÓGICOS", subtitleFont);
+                    foreach (var exam in clinicalHistory.NeurologicalExams)
+                    {
+                        var examData = new List<string>
+                        {
+                            $"Tipo de Examen: {exam.NeurologicalExamTypeName}",
+                            $"Examen: {exam.Name}",
+                            $"Fecha: {exam.ExamDate?.ToString("dd/MM/yyyy")}"
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(exam.Description))
+                            examData.Add($"Descripción: {exam.Description}");
+
+                        if (!string.IsNullOrWhiteSpace(exam.LinkPdf))
+                            examData.Add($"Enlace PDF: {exam.LinkPdf}");
+
+                        AddDetailCard(document, examData, labelFont, textFont, lightGray);
+                    }
                 }
             }
         }
 
-        // Métodos auxiliares
+        private void AddFooter(Document document, BaseColor mediumGray, Font smallFont)
+        {
+            var footerLine = new Paragraph(new Chunk(new iTextSharp.text.pdf.draw.LineSeparator(1f, 100f, mediumGray, Element.ALIGN_CENTER, -2f)))
+            {
+                SpacingBefore = 20f,
+                SpacingAfter = 10f
+            };
+            document.Add(footerLine);
+
+            var footer = new Paragraph($"Historia Clínica generada automáticamente - Universidad Técnica de Ambato © {DateTime.Now.Year}", smallFont)
+            {
+                Alignment = Element.ALIGN_CENTER
+            };
+            document.Add(footer);
+        }
+
+        // Métodos auxiliares de permisos
+        // En tu PdfService - Métodos de permisos (igual que en frontend)
+        private bool HasPermissionForSection(string sectionKey, string userRole)
+        {
+            if (string.IsNullOrEmpty(userRole)) return false;
+
+            // Si es admin, tiene acceso a todo
+            if (userRole == "Admin") return true;
+
+            // Mismo mapeo que en tu AuthorizationService del frontend
+            var sectionPermissions = new Dictionary<string, List<string>>
+            {
+                // Información básica - todos los profesionales médicos
+                ["BasicInfo"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Secciones generales - todos los profesionales médicos
+                ["GeneralObservations"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["PersonalHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["SurgeryHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["AllergyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HabitHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["FamilyHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TransfusionsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["HospitalizationsHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["TraumaticHistories"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Obstétricos y Ginecológicos
+                ["ObstetricHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+                ["GynecologicalHistory"] = new() { "Enfermero", "Médico General", "Nutricionista", "Psicólogo", "Psicólogo Clínico", "Fisioterapeuta", "Pediatra" },
+
+                // Nutrición
+                ["SportsActivitiesHistory"] = new() { "Nutricionista" },
+                ["LifeStyleHistory"] = new() { "Nutricionista" },
+                ["DietaryHabitsHistory"] = new() { "Nutricionista" },
+                ["SleepHabitHistory"] = new() { "Nutricionista" },
+                ["FoodConsumptionHistory"] = new() { "Nutricionista" },
+                ["WaterConsumptionHistory"] = new() { "Nutricionista" },
+
+                // Psicología
+                ["MedicationHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychopsychiatricHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["CurrentProblemHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["ToxicHabitHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["PsychosexualHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+                ["WorkHistories"] = new() { "Psicólogo", "Psicólogo Clínico" },
+
+                // Fisioterapia
+                ["TraumaticHistoriesPhysio"] = new() { "Fisioterapeuta" },
+
+                // Estimulación Temprana
+                ["PrenatalHistories"] = new() { "Pediatra" },
+                ["PerinatalHistories"] = new() { "Pediatra" },
+                ["PostnatalHistories"] = new() { "Pediatra" },
+                ["NeuropsychologicalHistories"] = new() { "Pediatra" },
+                ["DevelopmentRecords"] = new() { "Pediatra" },
+                ["NeurologicalExams"] = new() { "Pediatra" }
+            };
+
+            if (!sectionPermissions.ContainsKey(sectionKey))
+            {
+                Console.WriteLine($"[PDF SERVICE] Sección no encontrada: {sectionKey}");
+                return false;
+            }
+
+            var hasPermission = sectionPermissions[sectionKey].Contains(userRole);
+            Console.WriteLine($"[PDF SERVICE] Permiso para {sectionKey}: {hasPermission} (Rol: {userRole})");
+
+            return hasPermission;
+        }
+
+        private bool HasAnyGeneralSectionPermission(string userRole)
+        {
+            var generalSections = new[]
+            {
+        "GeneralObservations", "PersonalHistories", "SurgeryHistories",
+        "AllergyHistories", "HabitHistories", "FamilyHistories",
+        "TransfusionsHistories", "HospitalizationsHistories", "TraumaticHistories"
+    };
+
+            foreach (var section in generalSections)
+            {
+                if (HasPermissionForSection(section, userRole))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool HasAnyNutritionSectionPermission(string userRole)
+        {
+            var nutritionSections = new[]
+            {
+        "SportsActivitiesHistory", "LifeStyleHistory", "DietaryHabitsHistory",
+        "SleepHabitHistory", "FoodConsumptionHistory", "WaterConsumptionHistory"
+    };
+
+            foreach (var section in nutritionSections)
+            {
+                if (HasPermissionForSection(section, userRole))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool HasAnyPsychologySectionPermission(string userRole)
+        {
+            var psychologySections = new[]
+            {
+        "MedicationHistories", "PsychopsychiatricHistories", "CurrentProblemHistories",
+        "ToxicHabitHistories", "PsychosexualHistories", "WorkHistories"
+    };
+
+            foreach (var section in psychologySections)
+            {
+                if (HasPermissionForSection(section, userRole))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool HasAnyEarlyStimulationSectionPermission(string userRole)
+        {
+            var earlyStimulationSections = new[]
+            {
+        "PrenatalHistories", "PerinatalHistories", "PostnatalHistories",
+        "NeuropsychologicalHistories", "DevelopmentRecords", "NeurologicalExams"
+    };
+
+            foreach (var section in earlyStimulationSections)
+            {
+                if (HasPermissionForSection(section, userRole))
+                    return true;
+            }
+            return false;
+        }
+
+        // Métodos auxiliares de PDF (existentes)
         private void AddMainSectionTitle(Document document, string title, Font titleFont)
         {
             var section = new Paragraph(title, titleFont)
@@ -718,6 +932,7 @@ namespace SMED.BackEnd.Services
             };
             document.Add(section);
         }
+
         private void AddSubSectionTitle(Document document, string title, Font subtitleFont)
         {
             var section = new Paragraph(title, subtitleFont)
@@ -754,7 +969,6 @@ namespace SMED.BackEnd.Services
             table.AddCell(cell);
             document.Add(table);
         }
-
 
         private void AddSectionTitle(Document document, string title, Font titleFont)
         {

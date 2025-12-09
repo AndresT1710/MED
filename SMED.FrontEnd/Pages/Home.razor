@@ -16,7 +16,7 @@
     </div>
 
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-        @if (allowedModules.Contains("Personas") || isAdmin)
+        @if (allowedModules.Contains("Personas"))
         {
             <div class="col">
                 <Card Title="Personas"
@@ -26,7 +26,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Historia Clínica") || isAdmin)
+        @if (allowedModules.Contains("Historia Clínica"))
         {
             <div class="col">
                 <Card Title="Historia Clínica"
@@ -36,7 +36,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Atención Médica") || isAdmin)
+        @if (allowedModules.Contains("Atención Médica"))
         {
             <div class="col">
                 <Card Title="Atención Médica"
@@ -46,7 +46,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Nutrición") || isAdmin)
+        @if (allowedModules.Contains("Nutrición"))
         {
             <div class="col">
                 <Card Title="Nutrición"
@@ -56,7 +56,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Enfermería") || isAdmin)
+        @if (allowedModules.Contains("Enfermería"))
         {
             <div class="col">
                 <Card Title="Enfermería"
@@ -66,7 +66,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Psicología") || isAdmin)
+        @if (allowedModules.Contains("Psicología"))
         {
             <div class="col">
                 <Card Title="Psicología"
@@ -76,7 +76,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Estimulación Temprana") || isAdmin)
+        @if (allowedModules.Contains("Estimulación Temprana"))
         {
             <div class="col">
                 <Card Title="Estimulación Temprana"
@@ -86,7 +86,7 @@
             </div>
         }
 
-        @if (allowedModules.Contains("Fisioterapia") || isAdmin)
+        @if (allowedModules.Contains("Fisioterapia"))
         {
             <div class="col">
                 <Card Title="Fisioterapia"
@@ -96,7 +96,7 @@
             </div>
         }
 
-        @if (isAdmin)
+        @if (allowedModules.Contains("Usuarios"))
         {
             <div class="col">
                 <Card Title="Usuarios"
@@ -105,7 +105,8 @@
                       Route="/users" />
             </div>
         }
-        @if (isAdmin)
+
+        @if (allowedModules.Contains("Reportes"))
         {
             <div class="col">
                 <Card Title="Reportes"
@@ -119,7 +120,6 @@
 
 @code {
     private List<string> allowedModules = new();
-    private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,6 +132,5 @@
 
         // Obtener módulos permitidos para el usuario
         allowedModules = await AuthService.GetUserModulesAsync();
-        isAdmin = await AuthService.IsAdminAsync();
     }
 }

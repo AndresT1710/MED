@@ -1,6 +1,8 @@
 ﻿@page "/reports"
 @using SMED.FrontEnd.Services
 @using SMED.Shared.DTOs
+@using System.Text.Json
+@using System.Globalization
 @inject ReportService ReportService
 @inject HealthProfessionalService HealthProfessionalService
 @inject LocationService LocationService
@@ -8,6 +10,7 @@
 @inject PersonService PersonService
 @inject MedicalReferralService MedicalReferralService
 @inject MedicalServiceService MedicalServiceService
+@inject MedicalCareService MedicalCareService
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Reportes del Sistema</PageTitle>
@@ -247,7 +250,7 @@
                     <div class="card-body">
                         @if (LocationViewMode == "table")
                         {
-                            @if (AttentionsByProvince.Any())
+                            @if (AttentionsByLocation.Any())
                             {
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped">
@@ -255,26 +258,78 @@
                                             <tr>
                                                 <th>Provincia</th>
                                                 <th>Ciudad</th>
-                                                <th>Cantidad</th>
+                                                <th>Departamento/Área</th>
+                                                <th class="text-end">Cantidad</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach (var item in AttentionsByProvince.OrderByDescending(x => x.Count))
+                                            @{
+                                                var currentProvince = "";
+                                                var rowCount = 0;
+                                            }
+                                            @foreach (var item in AttentionsByLocation)
                                             {
+                                                rowCount++;
+                                                var isNewProvince = currentProvince != item.Province;
+                                                currentProvince = item.Province;
+
                                                 <tr>
-                                                    <td>@item.Province</td>
+                                                    <td>
+                                                        @if (isNewProvince)
+                                                        {
+                                                            <strong>@item.Province</strong>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted"></span>
+                                                        }
+                                                    </td>
                                                     <td>@item.City</td>
-                                                    <td><span class="badge bg-success">@item.Count</span></td>
+                                                    <td>@item.Department</td>
+                                                    <td class="text-end">
+                                                        <span class="badge bg-success">@item.Count</span>
+                                                    </td>
                                                 </tr>
+
+                                                @if (rowCount >= 50) // Limitar a 50 filas para mejor rendimiento
+                                                {
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted">
+                                                            <small>Mostrando las primeras 50 ubicaciones. Use filtros para resultados específicos.</small>
+                                                        </td>
+                                                    </tr>
+                                                    break;
+                                                }
                                             }
                                         </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr>
+                                                <td colspan="3"><strong>TOTAL ATENCIONES</strong></td>
+                                                <td class="text-end">
+                                                    <strong>
+                                                        <span class="badge bg-dark">
+                                                            @AttentionsByLocation.Sum(x => x.Count)
+                                                        </span>
+                                                    </strong>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="4" class="text-muted">
+                                                    <small>
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Mostrando @AttentionsByLocation.Count combinaciones únicas de ubicación/área
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             }
                             else
                             {
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-info-circle me-2"></i>No hay datos disponibles
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p class="mb-0">No hay datos de atenciones por ubicación</p>
                                 </div>
                             }
                         }
@@ -379,8 +434,8 @@
                                     <table class="table table-sm table-striped">
                                         <thead class="table-dark">
                                             <tr>
-                                                <th>Desde (Departamento)</th>
                                                 <th>Hacia (Departamento)</th>
+                                                <th>Desde (Departamento)</th>
                                                 <th>Cantidad de Derivaciones</th>
                                                 <th>Porcentaje</th>
                                             </tr>
@@ -423,7 +478,7 @@
             <div class="col-12 mb-4">
                 <div class="card">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0"><i class="fas fa-briefcase-medical me-2"></i>Servicios Realizados por Departamento</h6>
+                        <h6 class="mb-0"><i class="fas fa-briefcase-medical me-2"></i>Servicios Realizados por Profesional</h6>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm @(ServiceViewMode == "table" ? "btn-light" : "btn-outline-light")"
                                     @onclick='async () => await SetServiceViewMode("table")'>
@@ -444,7 +499,7 @@
                                     <table class="table table-sm table-striped">
                                         <thead class="table-dark">
                                             <tr>
-                                                <th>Departamento</th>
+                                                <th>Profesional</th>
                                                 <th>Total Servicios</th>
                                                 <th>Tipos de Servicios</th>
                                             </tr>
@@ -479,6 +534,198 @@
                             <canvas id="serviceChart" style="height: 400px; width: 100%;"></canvas>
                         }
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA: Atenciones por Área -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-hospital-alt me-2"></i>Atenciones por Área Médica</h6>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm btn-outline-light me-2" @onclick="ToggleAreaFilters">
+                                <i class="fas fa-filter"></i> Filtros
+                            </button>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm @(AreaViewMode == "table" ? "btn-light" : "btn-outline-light")"
+                                        @onclick='async () => await SetAreaViewMode("table")'>
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button class="btn btn-sm @(AreaViewMode == "chart" ? "btn-light" : "btn-outline-light")"
+                                        @onclick='async () => await SetAreaViewMode("chart")'>
+                                    <i class="fas fa-chart-bar"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros de área -->
+                    @if (ShowAreaFilters)
+                    {
+                        <div class="card-body border-bottom">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha Inicio</label>
+                                    <input type="date" @bind="AreaFilterStartDate" @bind:format="yyyy-MM-dd" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Fecha Fin</label>
+                                    <input type="date" @bind="AreaFilterEndDate" @bind:format="yyyy-MM-dd" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-purple w-100" @onclick="ApplyAreaFilters">
+                                        <i class="fas fa-check me-2"></i>Aplicar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                            @if (AreaFilterStartDate.HasValue && AreaFilterEndDate.HasValue)
+                            {
+                                <div class="mt-2 text-center">
+                                    <small class="text-muted">
+                                        Mostrando datos desde @AreaFilterStartDate.Value.ToString("dd/MM/yyyy") hasta @AreaFilterEndDate.Value.ToString("dd/MM/yyyy")
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="card-body">
+                        @if (AreaViewMode == "table")
+                        {
+                            @if (AttentionsByArea.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Área Médica</th>
+                                                <th class="text-center">Total Atenciones</th>
+                                                <th class="text-center">Pacientes Únicos</th>
+                                                <th class="text-center">Prom. Atenciones/Paciente</th>
+                                                <th class="text-center">Tendencia</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in AttentionsByArea)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <strong>@item.Area</strong>
+                                                        @if (item.ConsultationsByMonth.Any(x => x.Value > 0))
+                                                        {
+                                                            <br />
+                                                            <small class="text-muted">
+                                                                Último mes: @item.ConsultationsByMonth.OrderByDescending(x => x.Key).FirstOrDefault(x => x.Value > 0).Value atenciones
+                                                            </small>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-primary fs-6">@item.TotalConsultations</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-info fs-6">@item.UniquePatients</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-secondary fs-6">@item.AverageConsultationsPerPatient.ToString("F1")</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="d-flex justify-content-center">
+                                                            <div class="mini-chart-container" style="width: 150px; height: 40px;">
+                                                                <canvas id="miniChart-@item.Area.Replace(" ", "-").Replace("/", "-")"></canvas>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="table-secondary">
+                                            <tr>
+                                                <td><strong>TOTAL GENERAL</strong></td>
+                                                <td class="text-center">
+                                                    <strong><span class="badge bg-dark fs-6">@AttentionsByArea.Sum(x => x.TotalConsultations)</span></strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong><span class="badge bg-dark fs-6">@AttentionsByArea.Sum(x => x.UniquePatients)</span></strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong>
+                                                        <span class="badge bg-dark fs-6">
+                                                            @{
+                                                                var totalPatients = AttentionsByArea.Sum(x => x.UniquePatients);
+                                                                var avg = totalPatients > 0
+                                                                ? (AttentionsByArea.Sum(x => x.TotalConsultations) / (double)totalPatients).ToString("F1")
+                                                                : "0.0";
+                                                            }
+                                                            @avg
+                                                        </span>
+                                                    </strong>
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <!-- Gráficos miniaturas para cada área -->
+                                <div style="display: none;">
+                                    @foreach (var item in AttentionsByArea)
+                                    {
+                                        var safeAreaName = item.Area.Replace(" ", "-").Replace("/", "-");
+                                        <div id="data-@safeAreaName"
+                                             data-months='@JsonSerializer.Serialize(item.ConsultationsByMonth.Keys.Select(m =>
+                                         DateTime.ParseExact(m + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture).ToString("MMM")).ToArray())'
+                                             data-values='@JsonSerializer.Serialize(item.ConsultationsByMonth.Values.ToArray())'>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Renderizar mini gráficos después de renderizar la tabla -->
+                                @if (AreaViewMode == "table")
+                                {
+                                    <script>
+                                        setTimeout(() => {
+                                            if (typeof renderAreaMiniCharts !== 'undefined') {
+                                                renderAreaMiniCharts();
+                                            }
+                                        }, 300);
+                                    </script>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p class="mb-0">No hay datos de atenciones por área para el período seleccionado</p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <canvas id="areaChart" style="height: 400px; width: 100%;"></canvas>
+                        }
+                    </div>
+                    @if (AreaViewMode == "table" && AttentionsByArea.Any())
+                    {
+                        <div class="card-footer text-muted">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Mostrando @AttentionsByArea.Count áreas médicas
+                                    </small>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <small>
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        Período: @AreaStartDate.ToString("MMM yyyy") - @AreaEndDate.ToString("MMM yyyy")
+                                        (@((AreaEndDate - AreaStartDate).Days / 30) meses)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -530,12 +777,14 @@
     private int TotalLocations = 0;
     private int TotalConsultations = 0;
 
-    // NUEVAS VARIABLES PARA LAS TABLAS
+    // VARIABLES PARA LAS TABLAS
     private Dictionary<string, int> AttentionsByGender = new();
-    private List<GeographicAttentionData> AttentionsByProvince = new();
+    private List<LocationAttentionData> AttentionsByLocation = new();
     private List<AgeRangeAttentionData> AttentionsByAgeRange = new();
     private List<ReferralBetweenDepartmentsData> ReferralsBetweenDepartments = new();
     private List<ServicesByDepartmentData> ServicesByDepartment = new();
+    private List<AttentionByAreaData> AttentionsByArea = new();
+
 
     // Variables para controlar vista tabla/gráfico
     private string GenderViewMode = "table";
@@ -543,6 +792,15 @@
     private string AgeViewMode = "table";
     private string ReferralViewMode = "table";
     private string ServiceViewMode = "table";
+    private string AreaViewMode = "table";
+
+    // Variables para control de filtros de área
+    private bool ShowAreaFilters = false;
+    private DateTime? AreaFilterStartDate;
+    private DateTime? AreaFilterEndDate;
+    private DateTime AreaStartDate;
+    private DateTime AreaEndDate;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -580,7 +838,7 @@
     {
         LocationViewMode = mode;
         StateHasChanged();
-        if (mode == "chart" && AttentionsByProvince.Any())
+        if (mode == "chart" && AttentionsByLocation.Any())
         {
             await Task.Delay(100);
             await InitializeLocationChart();
@@ -620,6 +878,30 @@
         }
     }
 
+    private async Task SetAreaViewMode(string mode)
+    {
+        AreaViewMode = mode;
+        StateHasChanged();
+
+        await Task.Delay(300); // Dar tiempo para el renderizado del DOM
+
+        if (mode == "chart" && AttentionsByArea.Any())
+        {
+            // Esperar a que el canvas esté disponible
+            await Task.Delay(100);
+
+            var areas = AttentionsByArea.Take(15).Select(x => x.Area).ToArray();
+            var totals = AttentionsByArea.Take(15).Select(x => x.TotalConsultations).ToArray();
+
+            await JSRuntime.InvokeVoidAsync("renderAreaChart", "areaChart", areas, totals);
+        }
+        else if (mode == "table" && AttentionsByArea.Any())
+        {
+            await Task.Delay(100);
+            await JSRuntime.InvokeVoidAsync("renderAreaMiniCharts");
+        }
+    }
+
     // MÉTODOS PARA INICIALIZAR GRÁFICOS
     private async Task InitializeGenderChart()
     {
@@ -641,10 +923,22 @@
     {
         try
         {
-            var locations = AttentionsByProvince.Take(10).Select(x => $"{x.City}, {x.Province}").ToArray();
-            var counts = AttentionsByProvince.Take(10).Select(x => x.Count).ToArray();
+            // Agrupar por provincia para el gráfico
+            var provinces = AttentionsByLocation
+                .GroupBy(x => x.Province)
+                .Select(g => new
+                {
+                    Province = g.Key,
+                    Count = g.Sum(x => x.Count)
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(10) // Top 10 provincias
+                .ToArray();
 
-            await JSRuntime.InvokeVoidAsync("renderLocationChart", "locationChart", locations, counts);
+            var labels = provinces.Select(x => x.Province).ToArray();
+            var data = provinces.Select(x => x.Count).ToArray();
+
+            await JSRuntime.InvokeVoidAsync("renderLocationChart", "locationChart", labels, data);
         }
         catch (Exception ex)
         {
@@ -688,14 +982,36 @@
     {
         try
         {
-            var departments = ServicesByDepartment.Select(x => x.Department).ToArray();
-            var totals = ServicesByDepartment.Select(x => x.TotalServices).ToArray();
+            var professionals = ServicesByDepartment
+                .Take(10)
+                .Select(x => x.Department)
+                .ToArray();
 
-            await JSRuntime.InvokeVoidAsync("renderServiceChart", "serviceChart", departments, totals);
+            var totals = ServicesByDepartment
+                .Take(10)
+                .Select(x => x.TotalServices)
+                .ToArray();
+
+            await JSRuntime.InvokeVoidAsync("renderServiceChart", "serviceChart", professionals, totals);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error inicializando gráfico de servicios: {ex.Message}");
+        }
+    }
+
+    private async Task InitializeAreaChart()
+    {
+        try
+        {
+            var areas = AttentionsByArea.Take(15).Select(x => x.Area).ToArray();
+            var totals = AttentionsByArea.Take(15).Select(x => x.TotalConsultations).ToArray();
+
+            await JSRuntime.InvokeVoidAsync("renderAreaChart", "areaChart", areas, totals);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error inicializando gráfico de área: {ex.Message}");
         }
     }
 
@@ -752,6 +1068,10 @@
             // Procesar servicios por departamento
             await ProcessServicesByDepartment();
 
+            // Procesar atenciones por área
+            await ProcessAttentionsByArea(professionalData, allPersons);
+
+
             Message = "Estadísticas actualizadas correctamente";
         }
         catch (Exception ex)
@@ -797,75 +1117,196 @@
 
     private async Task ProcessAttentionsByLocation(List<PersonDTO> allPersons)
     {
-        var locationData = new List<GeographicAttentionData>();
+        var locationData = new List<LocationAttentionData>();
 
-        var groupedByLocation = allPersons
-            .Where(p => p.Residence != null)
-            .GroupBy(p => new { p.Residence.ProvinceName, p.Residence.CityName })
-            .Select(g => new GeographicAttentionData
+        // Obtener TODAS las atenciones médicas
+        List<MedicalCareDTO> allMedicalCares;
+
+        if (StatisticsIncludeAllRecords)
+        {
+            allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+        }
+        else if (StatisticsStartDate.HasValue && StatisticsEndDate.HasValue)
+        {
+            allMedicalCares = await GetMedicalCaresByDateRangeAsync(StatisticsStartDate, StatisticsEndDate);
+        }
+        else
+        {
+            allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+        }
+
+        if (!allMedicalCares.Any())
+        {
+            AttentionsByLocation = locationData;
+            return;
+        }
+
+        // Diccionario para cachear información de pacientes
+        var patientInfoCache = new Dictionary<int, (string Province, string City)>();
+
+        foreach (var medicalCare in allMedicalCares)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(medicalCare.Area))
+                    continue;
+
+                // Obtener información de ubicación del paciente
+                (string Province, string City) locationInfo;
+
+                if (!patientInfoCache.TryGetValue(medicalCare.PatientId, out locationInfo))
                 {
-                    Province = g.Key.ProvinceName ?? "Sin provincia",
-                    City = g.Key.CityName ?? "Sin ciudad",
-                    Count = g.Count()
-                })
-            .ToList();
+                    var patient = allPersons.FirstOrDefault(p => p.Id == medicalCare.PatientId);
+                    if (patient?.Residence != null)
+                    {
+                        locationInfo = (
+                            Province: patient.Residence.ProvinceName ?? "Sin provincia",
+                            City: patient.Residence.CityName ?? "Sin ciudad"
+                        );
+                    }
+                    else
+                    {
+                        locationInfo = ("Sin provincia", "Sin ciudad");
+                    }
+                    patientInfoCache[medicalCare.PatientId] = locationInfo;
+                }
 
-        AttentionsByProvince = groupedByLocation;
+                // Buscar si ya existe esta combinación en los datos
+                var existingRecord = locationData.FirstOrDefault(x =>
+                    x.Province == locationInfo.Province &&
+                    x.City == locationInfo.City &&
+                    x.Department == medicalCare.Area);
+
+                if (existingRecord != null)
+                {
+                    existingRecord.Count++;
+                }
+                else
+                {
+                    locationData.Add(new LocationAttentionData
+                        {
+                            Province = locationInfo.Province,
+                            City = locationInfo.City,
+                            Department = medicalCare.Area,
+                            Count = 1
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error procesando atención ID {medicalCare.CareId}: {ex.Message}");
+            }
+        }
+
+        // Ordenar: Primero por provincia, luego por ciudad, luego por cantidad (descendente)
+        AttentionsByLocation = locationData
+            .OrderBy(x => x.Province)
+            .ThenBy(x => x.City)
+            .ThenByDescending(x => x.Count)
+            .ThenBy(x => x.Department)
+            .ToList();
     }
 
     private async Task ProcessAttentionsByAgeRange(List<ProfessionalReportDTO> professionalData, List<PersonDTO> allPersons)
     {
-        var ageRanges = new List<AgeRangeAttentionData>
+        // Obtener TODAS las atenciones médicas
+        List<MedicalCareDTO> allMedicalCares;
+
+        if (StatisticsIncludeAllRecords)
         {
-            new AgeRangeAttentionData { Range = "0-10 años", MinAge = 0, MaxAge = 10 },
-            new AgeRangeAttentionData { Range = "11-20 años", MinAge = 11, MaxAge = 20 },
-            new AgeRangeAttentionData { Range = "21-30 años", MinAge = 21, MaxAge = 30 },
-            new AgeRangeAttentionData { Range = "31-40 años", MinAge = 31, MaxAge = 40 },
-            new AgeRangeAttentionData { Range = "41-50 años", MinAge = 41, MaxAge = 50 },
-            new AgeRangeAttentionData { Range = "51-60 años", MinAge = 51, MaxAge = 60 },
-            new AgeRangeAttentionData { Range = "61+ años", MinAge = 61, MaxAge = 200 }
-        };
+            // Obtener todas las atenciones médicas
+            allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+        }
+        else if (StatisticsStartDate.HasValue && StatisticsEndDate.HasValue)
+        {
+            // Obtener atenciones filtradas por fecha
+            allMedicalCares = await GetMedicalCaresByDateRangeAsync(StatisticsStartDate, StatisticsEndDate);
+        }
+        else
+        {
+            // Usar todas las atenciones si no hay filtro
+            allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+        }
+
+        var ageRanges = new List<AgeRangeAttentionData>
+    {
+        new AgeRangeAttentionData { Range = "0-10 años", MinAge = 0, MaxAge = 10 },
+        new AgeRangeAttentionData { Range = "11-20 años", MinAge = 11, MaxAge = 20 },
+        new AgeRangeAttentionData { Range = "21-30 años", MinAge = 21, MaxAge = 30 },
+        new AgeRangeAttentionData { Range = "31-40 años", MinAge = 31, MaxAge = 40 },
+        new AgeRangeAttentionData { Range = "41-50 años", MinAge = 41, MaxAge = 50 },
+        new AgeRangeAttentionData { Range = "51-60 años", MinAge = 51, MaxAge = 60 },
+        new AgeRangeAttentionData { Range = "61+ años", MinAge = 61, MaxAge = 200 }
+    };
 
         var departmentNames = Areas.Select(a => a.Name).ToList();
 
+        // Inicializar todos los rangos de edad con todos los departamentos
         foreach (var ageRange in ageRanges)
         {
             foreach (var dept in departmentNames)
             {
                 ageRange.ByDepartment[dept] = 0;
             }
+            ageRange.Total = 0;
         }
 
-        foreach (var prof in professionalData)
+        // Procesar cada atención médica
+        foreach (var medicalCare in allMedicalCares)
         {
-            foreach (var consultation in prof.RecentConsultations)
+            try
             {
-                var patient = allPersons.FirstOrDefault(p =>
-                    consultation.PatientName.Contains(p.FirstName) &&
-                    consultation.PatientName.Contains(p.LastName));
+                // Buscar al paciente por ID
+                var patient = allPersons.FirstOrDefault(p => p.Id == medicalCare.PatientId);
 
-                if (patient?.BirthDate != null)
+                if (patient == null)
+                    continue;
+
+                if (patient.BirthDate.HasValue)
                 {
                     var age = CalculateAge(patient.BirthDate.Value);
                     var ageRange = ageRanges.FirstOrDefault(ar => age >= ar.MinAge && age <= ar.MaxAge);
 
-                    if (ageRange != null && !string.IsNullOrEmpty(consultation.Area))
+                    if (ageRange != null && !string.IsNullOrEmpty(medicalCare.Area))
                     {
-                        if (ageRange.ByDepartment.ContainsKey(consultation.Area))
+                        // Verificar si el departamento/área existe en el diccionario
+                        if (ageRange.ByDepartment.ContainsKey(medicalCare.Area))
                         {
-                            ageRange.ByDepartment[consultation.Area]++;
+                            ageRange.ByDepartment[medicalCare.Area]++;
                         }
+                        else
+                        {
+                            // Si el área no existe en la lista, agregarla
+                            ageRange.ByDepartment[medicalCare.Area] = 1;
+                            if (!departmentNames.Contains(medicalCare.Area))
+                            {
+                                departmentNames.Add(medicalCare.Area);
+                            }
+                        }
+                        ageRange.Total++;
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error procesando atención médica ID {medicalCare.CareId}: {ex.Message}");
+            }
+        }
+
+        // Asegurar que todos los rangos tengan todas las áreas en su diccionario
+        foreach (var ageRange in ageRanges)
+        {
+            foreach (var dept in departmentNames)
+            {
+                if (!ageRange.ByDepartment.ContainsKey(dept))
+                {
+                    ageRange.ByDepartment[dept] = 0;
                 }
             }
         }
 
-        foreach (var ageRange in ageRanges)
-        {
-            ageRange.Total = ageRange.ByDepartment.Values.Sum();
-        }
-
-        AttentionsByAgeRange = ageRanges;
+        // Filtrar solo los rangos que tienen datos
+        AttentionsByAgeRange = ageRanges.Where(ar => ar.Total > 0).ToList();
     }
 
     private async Task ProcessReferralsBetweenDepartments()
@@ -902,19 +1343,234 @@
             return;
         }
 
+        // Obtener todos los profesionales para poder obtener sus nombres completos
+        var allProfessionals = await HealthProfessionalService.GetAllHealthProfessionalsAsync();
+
+        // Agrupar servicios por profesional
         var serviceData = allServices
-            .Where(s => s.CareId.HasValue)
-            .GroupBy(s => "Departamento") // Aquí necesitarías obtener el departamento del MedicalCare
-            .Select(g => new ServicesByDepartmentData
-                {
-                    Department = g.Key,
-                    TotalServices = g.Count(),
-                    ServiceTypes = g.GroupBy(s => s.ServiceType ?? "Sin tipo")
-                        .ToDictionary(sg => sg.Key, sg => sg.Count())
-                })
+            .Where(s => s.HealthProfessionalId > 0 && s.ServiceDate.HasValue)
+            .GroupBy(s => s.HealthProfessionalId)
+            .Select(g =>
+            {
+                // Encontrar el profesional correspondiente
+                var professional = allProfessionals?.FirstOrDefault(p => p.HealthProfessionalId == g.Key);
+                var professionalName = professional?.FullName ?? $"Profesional ID: {g.Key}";
+
+                return new ServicesByDepartmentData
+                    {
+                    // Cambiar Department por ProfessionalName
+                        Department = professionalName, // Aquí usamos el nombre del profesional
+                        TotalServices = g.Count(),
+                        ServiceTypes = g.GroupBy(s => s.ServiceType ?? "Sin tipo")
+                            .ToDictionary(sg => sg.Key, sg => sg.Count())
+                    };
+            })
+            .OrderByDescending(x => x.TotalServices)
             .ToList();
 
         ServicesByDepartment = serviceData;
+    }
+
+    private async Task ProcessAttentionsByArea(List<ProfessionalReportDTO> professionalData, List<PersonDTO> allPersons)
+    {
+        try
+        {
+            var areaData = new List<AttentionByAreaData>();
+
+            // Obtener todas las atenciones médicas filtradas por fecha si es necesario
+            List<MedicalCareDTO> medicalCares;
+
+            if (StatisticsIncludeAllRecords)
+            {
+                // Obtener todas las atenciones médicas
+                medicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+            }
+            else
+            {
+                // Obtener atenciones filtradas por fecha usando un método alternativo
+                // Necesitarás crear un método en MedicalCareService para filtrar por fecha
+                medicalCares = await GetMedicalCaresByDateRangeAsync(StatisticsStartDate, StatisticsEndDate);
+            }
+
+            if (medicalCares == null || !medicalCares.Any())
+            {
+                AttentionsByArea = areaData;
+                return;
+            }
+
+            // Agrupar por área
+            var consultationsByArea = medicalCares
+                .Where(c => !string.IsNullOrEmpty(c.Area))
+                .GroupBy(c => c.Area)
+                .Select(g => new
+                {
+                    Area = g.Key,
+                    Consultations = g.ToList(),
+                    TotalConsultations = g.Count(),
+                    UniquePatients = g.Select(c => c.PatientId)
+                        .Distinct()
+                        .Count()
+                })
+                .ToList();
+
+            // Determinar el rango de meses a mostrar
+            DateTime startDate, endDate;
+
+            if (StatisticsIncludeAllRecords)
+            {
+                // Mostrar todos los registros - determinar rango dinámico
+                var earliestDate = medicalCares.Min(c => c.CareDate);
+                var latestDate = medicalCares.Max(c => c.CareDate);
+
+                // Mostrar últimos 12 meses o desde el inicio si menos de 12 meses
+                startDate = (latestDate - earliestDate).TotalDays > 365
+                    ? latestDate.AddMonths(-11)
+                    : earliestDate;
+                endDate = latestDate;
+            }
+            else if (StatisticsStartDate.HasValue && StatisticsEndDate.HasValue)
+            {
+                // Usar fechas del filtro
+                startDate = StatisticsStartDate.Value;
+                endDate = StatisticsEndDate.Value;
+            }
+            else
+            {
+                // Por defecto últimos 6 meses
+                endDate = DateTime.Now;
+                startDate = endDate.AddMonths(-5);
+            }
+
+            // Generar lista de meses
+            var months = new List<string>();
+            var currentDate = new DateTime(startDate.Year, startDate.Month, 1);
+            var endMonth = new DateTime(endDate.Year, endDate.Month, 1);
+
+            while (currentDate <= endMonth)
+            {
+                months.Add(currentDate.ToString("yyyy-MM"));
+                currentDate = currentDate.AddMonths(1);
+            }
+
+            foreach (var areaGroup in consultationsByArea)
+            {
+                var areaItem = new AttentionByAreaData
+                    {
+                        Area = areaGroup.Area,
+                        TotalConsultations = areaGroup.TotalConsultations,
+                        UniquePatients = areaGroup.UniquePatients,
+                        AverageConsultationsPerPatient = areaGroup.UniquePatients > 0
+                            ? Math.Round((double)areaGroup.TotalConsultations / areaGroup.UniquePatients, 2)
+                            : 0
+                    };
+
+                // Agrupar por mes
+                var consultationsByMonth = areaGroup.Consultations
+                    .GroupBy(c => new DateTime(c.CareDate.Year, c.CareDate.Month, 1).ToString("yyyy-MM"))
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // Inicializar todos los meses (incluso con 0)
+                foreach (var month in months)
+                {
+                    areaItem.ConsultationsByMonth[month] = consultationsByMonth.ContainsKey(month)
+                        ? consultationsByMonth[month]
+                        : 0;
+                }
+
+                areaData.Add(areaItem);
+            }
+
+            // Ordenar por total de atenciones
+            AttentionsByArea = areaData
+                .OrderByDescending(x => x.TotalConsultations)
+                .ThenBy(x => x.Area)
+                .ToList();
+
+            // Guardar el rango de fechas para mostrar en la UI
+            AreaStartDate = startDate;
+            AreaEndDate = endDate;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando atenciones por área: {ex.Message}");
+            AttentionsByArea = new List<AttentionByAreaData>();
+        }
+    }
+
+    // Método auxiliar para obtener atenciones por rango de fechas
+    private async Task<List<MedicalCareDTO>> GetMedicalCaresByDateRangeAsync(DateTime? startDate, DateTime? endDate)
+    {
+        try
+        {
+            // Primero obtenemos todas las atenciones
+            var allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+
+            if (!allMedicalCares.Any())
+                return new List<MedicalCareDTO>();
+
+            // Filtramos por fecha si se especificó
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                return allMedicalCares
+                    .Where(c => c.CareDate.Date >= startDate.Value.Date &&
+                               c.CareDate.Date <= endDate.Value.Date)
+                    .ToList();
+            }
+            else if (startDate.HasValue)
+            {
+                return allMedicalCares
+                    .Where(c => c.CareDate.Date >= startDate.Value.Date)
+                    .ToList();
+            }
+            else if (endDate.HasValue)
+            {
+                return allMedicalCares
+                    .Where(c => c.CareDate.Date <= endDate.Value.Date)
+                    .ToList();
+            }
+
+            return allMedicalCares;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error obteniendo atenciones por rango de fechas: {ex.Message}");
+            return new List<MedicalCareDTO>();
+        }
+    }
+    // Métodos para filtros de área
+    private void ToggleAreaFilters()
+    {
+        ShowAreaFilters = !ShowAreaFilters;
+        if (ShowAreaFilters)
+        {
+            // Inicializar fechas con el rango actual
+            AreaFilterStartDate = AreaStartDate;
+            AreaFilterEndDate = AreaEndDate;
+        }
+    }
+
+    private async Task ApplyAreaFilters()
+    {
+        if (!AreaFilterStartDate.HasValue || !AreaFilterEndDate.HasValue)
+        {
+            ErrorMessage = "Por favor seleccione ambas fechas para filtrar";
+            return;
+        }
+
+        if (AreaFilterStartDate.Value > AreaFilterEndDate.Value)
+        {
+            ErrorMessage = "La fecha de inicio no puede ser mayor a la fecha de fin";
+            return;
+        }
+
+        // Actualizar las estadísticas con las nuevas fechas
+        StatisticsIncludeAllRecords = false;
+        StatisticsStartDate = AreaFilterStartDate;
+        StatisticsEndDate = AreaFilterEndDate;
+
+        await LoadStatistics();
+        ShowAreaFilters = false;
+        Message = "Filtros aplicados correctamente";
     }
 
     private int CalculateAge(DateTime birthDate)
@@ -1084,7 +1740,27 @@
     public class ServicesByDepartmentData
     {
         public string Department { get; set; } = string.Empty;
+        public string ProfessionalName { get; set; } = string.Empty; // Nueva propiedad
         public int TotalServices { get; set; }
         public Dictionary<string, int> ServiceTypes { get; set; } = new();
     }
+
+    public class AttentionByAreaData
+    {
+        public string Area { get; set; } = string.Empty;
+        public int TotalConsultations { get; set; }
+        public int UniquePatients { get; set; }
+        public double AverageConsultationsPerPatient { get; set; }
+        public Dictionary<string, int> ConsultationsByMonth { get; set; } = new();
+    }
+
+    public class LocationAttentionData
+    {
+        public string Province { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+
 }

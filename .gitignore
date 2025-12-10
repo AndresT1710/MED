@@ -9,7 +9,6 @@
 **/*.pdb
 **/*.exe
 **/*.js.map
-**/*.js
 **/*.json
 **/*.cache
 

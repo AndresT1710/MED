@@ -19,5 +19,4 @@
 **/Client/bin/
 **/Client/obj/
 **/wwwroot/_framework/
-**/*.js
 **/*.json

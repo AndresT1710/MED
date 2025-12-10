@@ -1,5 +1,5 @@
 ﻿// ========================================
-// CHARTS HELPER - Sistema de Reportes SMED
+// CHARTS HELPER - Sistema de Reportes SMED...
 // ========================================
 
 // Almacenamiento global de instancias de gráficos

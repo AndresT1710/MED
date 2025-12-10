@@ -1088,31 +1088,70 @@
 
     private async Task ProcessAttentionsByGender(List<ProfessionalReportDTO> professionalData, List<PersonDTO> allPersons)
     {
-        var patientIds = professionalData
-            .SelectMany(p => p.RecentConsultations.Select(c => c.PatientName))
-            .Distinct()
-            .ToList();
-
-        var genderCounts = new Dictionary<string, int>();
-
-        foreach (var person in allPersons)
+        try
         {
-            var consultations = professionalData
-                .SelectMany(p => p.RecentConsultations)
-                .Count(c => c.PatientName.Contains(person.FirstName) && c.PatientName.Contains(person.LastName));
+            // Obtener TODAS las atenciones médicas según los filtros
+            List<MedicalCareDTO> allMedicalCares;
 
-            if (consultations > 0)
+            if (StatisticsIncludeAllRecords)
             {
-                var genderName = person.GenderId == 1 ? "Masculino" : person.GenderId == 2 ? "Femenino" : "Otro";
-
-                if (!genderCounts.ContainsKey(genderName))
-                    genderCounts[genderName] = 0;
-
-                genderCounts[genderName] += consultations;
+                allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
             }
-        }
+            else if (StatisticsStartDate.HasValue && StatisticsEndDate.HasValue)
+            {
+                allMedicalCares = await GetMedicalCaresByDateRangeAsync(StatisticsStartDate, StatisticsEndDate);
+            }
+            else
+            {
+                allMedicalCares = await MedicalCareService.GetAllAsync() ?? new List<MedicalCareDTO>();
+            }
 
-        AttentionsByGender = genderCounts;
+            if (!allMedicalCares.Any())
+            {
+                AttentionsByGender = new Dictionary<string, int>();
+                return;
+            }
+
+            // Crear diccionario de género por paciente ID para optimizar búsquedas
+            var patientGenderCache = new Dictionary<int, string>();
+
+            foreach (var person in allPersons)
+            {
+                var genderName = person.GenderId switch
+                {
+                    1 => "Masculino",
+                    2 => "Femenino",
+                    _ => "Otro"
+                };
+                patientGenderCache[person.Id] = genderName;
+            }
+
+            // Contar atenciones por género
+            var genderCounts = new Dictionary<string, int>
+        {
+            { "Masculino", 0 },
+            { "Femenino", 0 },
+            { "Otro", 0 }
+        };
+
+            foreach (var medicalCare in allMedicalCares)
+            {
+                if (patientGenderCache.TryGetValue(medicalCare.PatientId, out var gender))
+                {
+                    genderCounts[gender]++;
+                }
+            }
+
+            // Filtrar géneros con al menos 1 atención
+            AttentionsByGender = genderCounts
+                .Where(x => x.Value > 0)
+                .ToDictionary(x => x.Key, x => x.Value);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando atenciones por género: {ex.Message}");
+            AttentionsByGender = new Dictionary<string, int>();
+        }
     }
 
     private async Task ProcessAttentionsByLocation(List<PersonDTO> allPersons)

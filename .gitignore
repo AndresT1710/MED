@@ -9,7 +9,6 @@
 **/*.pdb
 **/*.exe
 **/*.js.map
-**/*.js
 **/*.json
 **/*.cache
 
@@ -19,5 +18,4 @@
 **/Client/bin/
 **/Client/obj/
 **/wwwroot/_framework/
-**/*.js
 **/*.json

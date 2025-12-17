@@ -1,0 +1,75 @@
+﻿@namespace SMED.FrontEnd.Components
+@using SMED.Shared.DTOs
+
+<div class="previous-measurements mt-1">
+    @if (PreviousMeasurements?.Any() == true)
+    {
+        <div class="card border-info mb-2">
+            <div class="card-header bg-info text-white py-1">
+                <small><i class="fas fa-history me-1"></i>Medidas Anteriores</small>
+                <span class="badge bg-warning ms-2">
+                    @GetMostRecentDate() más reciente
+                </span>
+            </div>
+            <div class="card-body p-2">
+                @foreach (var measurement in GetOrderedMeasurements())
+                {
+                    <div class="previous-measurement-item @(IsMostRecent(measurement) ? "most-recent" : "")">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                @measurement.MeasurementDate?.ToString("dd/MM/yyyy")
+                                @if (IsMostRecent(measurement))
+                                {
+                                    <span class="badge bg-success ms-1">Más reciente</span>
+                                }
+                            </span>
+                            <span class="badge bg-secondary">@measurement.Area</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="fw-bold @(IsMostRecent(measurement) ? "text-primary" : "")">@measurement.Value</span>
+                        </div>
+                        @if (!measurement.Equals(GetOrderedMeasurements().Last()))
+                        {
+                            <hr class="my-1" />
+                        }
+                    </div>
+                }
+            </div>
+            <div class="card-footer py-1 bg-light">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Mostrando la atención más reciente primero (@GetMostRecentDate())
+                </small>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<PreviousMeasurementDTO>? PreviousMeasurements { get; set; }
+
+    private List<PreviousMeasurementDTO> GetOrderedMeasurements()
+    {
+        if (PreviousMeasurements == null || !PreviousMeasurements.Any())
+            return new List<PreviousMeasurementDTO>();
+
+        // Ordenar por fecha descendente (la más reciente primero)
+        return PreviousMeasurements
+            .OrderByDescending(m => m.MeasurementDate)
+            .ToList();
+    }
+
+    private string GetMostRecentDate()
+    {
+        var mostRecent = GetOrderedMeasurements().FirstOrDefault();
+        return mostRecent?.MeasurementDate?.ToString("dd/MM/yyyy") ?? "N/A";
+    }
+
+    private bool IsMostRecent(PreviousMeasurementDTO measurement)
+    {
+        var mostRecent = GetOrderedMeasurements().FirstOrDefault();
+        return mostRecent != null && measurement.MeasurementDate == mostRecent.MeasurementDate;
+    }
+}

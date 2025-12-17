@@ -23,18 +23,19 @@
     </div>
 
     <!-- Filtros para Generación de Reportes PDF -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Generación de Reportes PDF</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Tipo de Reporte</label>
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Generación de Reportes PDF</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tipo de Reporte</label>
                     <select @bind="ReportRequest.ReportType" class="form-select">
                         <option value="">Seleccione un reporte</option>
                         <option value="medical-care">Atenciones Médicas</option>
                         <option value="patient">Pacientes</option>
+                        <option value="patient-specific">Paciente Específico</option>
                         <option value="professional">Profesionales</option>
                         <option value="professional-detail">Detalle de Profesional</option>
                         <option value="location">Por Ubicación</option>
@@ -42,18 +43,18 @@
                         <option value="top-patients">Pacientes con Más Atenciones</option>
                         <option value="statistical">Estadístico</option>
                     </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Fecha Inicio</label>
-                    <input type="date" @bind="ReportRequest.StartDate" @bind:format="yyyy-MM-dd" class="form-control" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Fecha Fin</label>
-                    <input type="date" @bind="ReportRequest.EndDate" @bind:format="yyyy-MM-dd" class="form-control" />
-                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fecha Inicio</label>
+                <input type="date" @bind="ReportRequest.StartDate" @bind:format="yyyy-MM-dd" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fecha Fin</label>
+                <input type="date" @bind="ReportRequest.EndDate" @bind:format="yyyy-MM-dd" class="form-control" />
+            </div>
                 <div class="col-md-2">
                     <label class="form-label">Área</label>
-                    <select @bind="ReportRequest.Area" class="form-select">
+                    <select @bind="SelectedArea" class="form-select">
                         <option value="">Todas las áreas</option>
                         @foreach (var area in Areas)
                         {
@@ -61,29 +62,62 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Profesional</label>
-                    <select @bind="ReportRequest.HealthProfessionalId" class="form-select">
-                        <option value="">Todos</option>
+            <div class="col-md-2">
+                <label class="form-label">Profesional</label>
+                <select @bind="ReportRequest.HealthProfessionalId" class="form-select">
+                    <option value="">Todos</option>
+                    @if (FilteredProfessionals.Any())
+                    {
+                        @foreach (var prof in FilteredProfessionals)
+                        {
+                            <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                        }
+                    }
+                    else
+                    {
                         @foreach (var prof in Professionals)
                         {
                             <option value="@prof.HealthProfessionalId">@prof.FullName</option>
                         }
-                    </select>
-                </div>
+                    }
+                </select>
             </div>
-            <div class="row mt-3">
-                <div class="col-12">
-                    <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@IsLoading">
-                        <i class="fas fa-file-pdf"></i> Generar Reporte PDF
-                    </button>
-                    <button class="btn btn-outline-secondary" @onclick="ClearReportFilters">
-                        <i class="fas fa-broom"></i> Limpiar Filtros
-                    </button>
-                </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@IsLoading">
+                    <i class="fas fa-file-pdf"></i> Generar Reporte PDF
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="ClearReportFilters">
+                    <i class="fas fa-broom"></i> Limpiar Filtros
+                </button>
             </div>
         </div>
     </div>
+</div>
+
+    @if (IsLoading || IsLoadingStatistics)
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i> Cargando datos, por favor espere...
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check"></i> @Message
+            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle"></i> @ErrorMessage
+            <button type="button" class="btn-close" @onclick="() => ErrorMessage = string.Empty"></button>
+        </div>
+    }
 
     <!-- Control de Estadísticas Generales -->
     <div class="card mb-4 border-info">
@@ -731,33 +765,13 @@
         </div>
     }
 
-    @if (IsLoading || IsLoadingStatistics)
-    {
-        <div class="alert alert-info">
-            <i class="fas fa-spinner fa-spin"></i> Cargando datos, por favor espere...
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(Message))
-    {
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="fas fa-check"></i> @Message
-            <button type="button" class="btn-close" @onclick="() => Message = string.Empty"></button>
-        </div>
-    }
-
-    @if (!string.IsNullOrEmpty(ErrorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="fas fa-exclamation-triangle"></i> @ErrorMessage
-            <button type="button" class="btn-close" @onclick="() => ErrorMessage = string.Empty"></button>
-        </div>
-    }
+    
 </div>
 
 @code {
     private ReportRequestDTO ReportRequest { get; set; } = new();
     private List<HealthProfessionalDTO> Professionals { get; set; } = new();
+    private List<HealthProfessionalDTO> FilteredProfessionals { get; set; } = new();
     private List<LocationDTO> Areas { get; set; } = new();
     private List<PlaceOfAttentionDTO> Locations { get; set; } = new();
     private bool IsLoading = false;
@@ -765,6 +779,33 @@
     private bool ShowStatistics = true;
     private string Message = string.Empty;
     private string ErrorMessage = string.Empty;
+
+    private string _selectedArea = "";
+    private string SelectedArea
+    {
+        get => _selectedArea;
+        set
+        {
+            if (_selectedArea != value)
+            {
+                _selectedArea = value;
+                ReportRequest.Area = value;
+                _ = OnAreaChanged(value);
+            }
+        }
+    }
+
+    private readonly Dictionary<string, List<int>> _areaToProfessionalTypes = new()
+        {
+            ["Enfermería"] = new List<int> { 9 }, // Enfermero
+            ["Médico General"] = new List<int> { 1 }, // Médico General
+            ["Nutrición"] = new List<int> { 17 }, // Nutricionista
+            ["Psicología"] = new List<int> { 27, 18 }, // Psicólogo y Psicólogo Clínico
+            ["Fisioterapia"] = new List<int> { 15 }, // Fisioterapeuta
+            ["Estimulación Temprana"] = new List<int> { 4 }, // Pediatra
+            ["Ginecología"] = new List<int> { 5 }, // Ginecólogo
+            ["Obstetricia"] = new List<int> { 26 } // Obstetra
+        };
 
     // Variables para control de estadísticas
     private bool StatisticsIncludeAllRecords = true;
@@ -806,6 +847,9 @@
     {
         await LoadDropdownData();
         await LoadStatistics();
+
+        // Inicializar la lista filtrada con todos los profesionales
+        FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
     }
 
     private async Task LoadDropdownData()
@@ -813,12 +857,143 @@
         try
         {
             Professionals = (await HealthProfessionalService.GetAllHealthProfessionalsAsync()).ToList();
+            FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
             Areas = (await LocationService.GetAllAsync()).ToList();
             Locations = (await PlaceOfAttentionService.GetAllPlacesAsync()).ToList();
+
+            // Cargar información adicional de personas para obtener los tipos de profesional
+            await LoadProfessionalTypeInfo();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Error cargando datos: {ex.Message}";
+        }
+    }
+
+    private async Task LoadProfessionalTypeInfo()
+    {
+        try
+        {
+            // Obtener todas las personas para tener acceso a la información de HealthProfessional
+            var allPersons = await PersonService.GetAllPersons();
+
+            // Para cada profesional, buscar su persona correspondiente para obtener el tipo
+            foreach (var professional in Professionals)
+            {
+                var person = allPersons.FirstOrDefault(p => p.Id == professional.HealthProfessionalId);
+                if (person != null && person.HealthProfessional != null)
+                {
+                    // Si tenemos el HealthProfessionalTypeId en el DTO, lo usamos
+                    // Si no, intentamos obtenerlo de la persona
+                    if (person.HealthProfessional.HealthProfessionalTypeId.HasValue)
+                    {
+                        professional.HealthProfessionalTypeId = person.HealthProfessional.HealthProfessionalTypeId;
+
+                        // También podemos mapear el nombre del tipo si no está presente
+                        if (string.IsNullOrEmpty(professional.NameTypeProfessional))
+                        {
+                            professional.NameTypeProfessional = GetProfessionalTypeName(person.HealthProfessional.HealthProfessionalTypeId.Value);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando información de tipos de profesional: {ex.Message}");
+        }
+    }
+
+    private string GetProfessionalTypeName(int typeId)
+    {
+        return typeId switch
+        {
+            1 => "Médico General",
+            2 => "Médico Especialista",
+            3 => "Cirujano",
+            4 => "Pediatra",
+            5 => "Ginecólogo",
+            6 => "Cardiólogo",
+            7 => "Neurólogo",
+            8 => "Psiquiatra",
+            9 => "Enfermero",
+            11 => "Odontólogo",
+            12 => "Farmacéutico",
+            13 => "Bioquímico",
+            14 => "Tecnólogo Médico",
+            15 => "Fisioterapeuta",
+            16 => "Terapeuta Ocupacional",
+            17 => "Nutricionista",
+            18 => "Psicólogo Clínico",
+            19 => "Técnico en Radiología",
+            20 => "Laboratorista Clínico",
+            21 => "Optómetra",
+            22 => "Audiólogo",
+            23 => "Partera",
+            24 => "Otro Profesional de Salud",
+            25 => "Ninguno",
+            26 => "Obstetra",
+            27 => "Psicólogo",
+            _ => "Desconocido"
+        };
+    }
+
+    private async Task OnAreaChanged(string area)
+    {
+        await FilterProfessionalsByArea(area);
+        StateHasChanged();
+    }
+
+    private async Task FilterProfessionalsByArea(string area)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(area))
+            {
+                // Si no hay área seleccionada, mostrar todos los profesionales
+                FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
+                return;
+            }
+
+            // Verificar si el área tiene tipos de profesionales asignados
+            if (_areaToProfessionalTypes.ContainsKey(area))
+            {
+                var professionalTypeIds = _areaToProfessionalTypes[area];
+
+                // Filtrar profesionales por tipo
+                FilteredProfessionals = Professionals
+                    .Where(p =>
+                        p.HealthProfessionalTypeId.HasValue &&
+                        professionalTypeIds.Contains(p.HealthProfessionalTypeId.Value))
+                    .ToList();
+
+                // Si no encontramos profesionales por ID, intentar filtrar por nombre del tipo
+                if (!FilteredProfessionals.Any())
+                {
+                    FilteredProfessionals = Professionals
+                        .Where(p => !string.IsNullOrEmpty(p.NameTypeProfessional))
+                        .Where(p => professionalTypeIds.Any(typeId =>
+                            p.NameTypeProfessional.Contains(GetProfessionalTypeName(typeId), StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                }
+            }
+            else
+            {
+                // Si el área no tiene tipos asignados, mostrar todos los profesionales
+                FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
+            }
+
+            // Limpiar la selección de profesional si ya no está en la lista filtrada
+            if (ReportRequest.HealthProfessionalId.HasValue &&
+                !FilteredProfessionals.Any(p => p.HealthProfessionalId == ReportRequest.HealthProfessionalId.Value))
+            {
+                ReportRequest.HealthProfessionalId = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error filtrando profesionales: {ex.Message}");
+            FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
         }
     }
 
@@ -1724,13 +1899,20 @@
         return true;
     }
 
-    private void ClearReportFilters()
+    private async Task ClearReportFilters()
     {
         ReportRequest = new ReportRequestDTO
             {
                 Format = "PDF",
                 IncludeAllRecords = false
             };
+
+        // Limpiar el área seleccionada
+        _selectedArea = "";
+
+        // Restablecer la lista de profesionales filtrados
+        FilteredProfessionals = new List<HealthProfessionalDTO>(Professionals);
+
         Message = string.Empty;
         ErrorMessage = string.Empty;
         StateHasChanged();

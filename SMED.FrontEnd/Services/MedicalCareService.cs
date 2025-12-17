@@ -298,5 +298,46 @@ namespace SMED.FrontEnd.Services
                 return new List<MedicalCareDTO>();
             }
         }
+
+        // Agrega estos métodos al servicio MedicalCareService
+        public async Task<List<MedicalCareDTO>?> GetPatientMedicalHistoryAsync(int patientId, int currentMedicalCareId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync(
+                    $"api/MedicalCare/patient-history/{patientId}/{currentMedicalCareId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<MedicalCareDTO>>();
+                }
+
+                _logger.LogWarning("Error al obtener historial del paciente: {StatusCode}", response.StatusCode);
+                return new List<MedicalCareDTO>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener historial del paciente {PatientId}", patientId);
+                return new List<MedicalCareDTO>();
+            }
+        }
+
+        public async Task<MeasurementsDTO?> GetMeasurementsByMedicalCareIdAsync(int medicalCareId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/Measurements/by-medicalcare/{medicalCareId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<MeasurementsDTO>();
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener mediciones por atención médica");
+                return null;
+            }
+        }
     }
 }

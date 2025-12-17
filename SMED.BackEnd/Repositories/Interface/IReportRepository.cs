@@ -21,5 +21,6 @@ namespace SMED.BackEnd.Repositories.Interface
         Task<LocationReportDTO> GetLocationReportDataAsync(ReportRequestDTO request);
         Task<AreaReportDTO> GetAreaReportDataAsync(ReportRequestDTO request);
         Task<List<PatientReportDTO>> GetTopPatientsDataAsync(ReportRequestDTO request);
+
     }
 }

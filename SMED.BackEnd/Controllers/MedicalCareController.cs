@@ -236,5 +236,27 @@ namespace SMED.BackEnd.Controllers
                 return BadRequest($"Error al eliminar atención médica: {ex.Message}");
             }
         }
+
+        // Agregar este método a MedicalCareController.cs
+        [HttpGet("patient-history/{patientId}/{currentMedicalCareId}")]
+        public async Task<ActionResult<List<MedicalCareDTO>>> GetPatientMedicalHistory(int patientId, int currentMedicalCareId)
+        {
+            try
+            {
+                _logger.LogInformation("Obteniendo historial del paciente {PatientId}, excluyendo {CurrentMedicalCareId}",
+                    patientId, currentMedicalCareId);
+
+                // Usar el repositorio directamente
+                var result = await _medicalCareRepository.GetPatientMedicalHistoryAsync(patientId, currentMedicalCareId);
+
+                _logger.LogInformation("Se encontraron {Count} atenciones anteriores", result.Count);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener historial del paciente");
+                return StatusCode(500, new { message = "Error interno al obtener el historial", error = ex.Message });
+            }
+        }
     }
 }

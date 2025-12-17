@@ -368,7 +368,7 @@ window.renderReferralChart = function (elementId, referrals) {
             window.chartInstances.referralChart.destroy();
         }
 
-        const labels = referrals.map(r => `${r.from} → ${r.to}`);
+        const labels = referrals.map(r => `${r.to} → ${r.from}`);
         const data = referrals.map(r => r.count);
 
         window.chartInstances.referralChart = new Chart(ctx, {

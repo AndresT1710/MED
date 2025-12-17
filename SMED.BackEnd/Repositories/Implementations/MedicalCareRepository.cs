@@ -3,6 +3,7 @@ using SMED.BackEnd.Repositories.Interface;
 using SMED.Shared.DTOs;
 using SMED.Shared.Entity;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace SMED.BackEnd.Repositories.Implementations
 {
@@ -1924,6 +1925,14 @@ person.SecondLastName
                 Console.WriteLine($"[DEBUG] Iniciando eliminación de MedicalCare ID: {id}");
 
                 var entity = await _context.MedicalCares
+                    .Include(m => m.Measurements) // <-- AGREGAR ESTO
+                        .ThenInclude(ms => ms.SkinFolds) // <-- AGREGAR ESTO
+                    .Include(m => m.Measurements) // <-- AGREGAR ESTO
+                        .ThenInclude(ms => ms.BioImpedance) // <-- AGREGAR ESTO
+                    .Include(m => m.Measurements) // <-- AGREGAR ESTO
+                        .ThenInclude(ms => ms.Perimeters) // <-- AGREGAR ESTO
+                    .Include(m => m.Measurements) // <-- AGREGAR ESTO
+                        .ThenInclude(ms => ms.Diameters) // <-- AGREGAR ESTO
                     .Include(m => m.Diagnoses)
                         .ThenInclude(d => d.Treatments)
                             .ThenInclude(t => t.Indications)
@@ -1952,6 +1961,17 @@ person.SecondLastName
                     .Include(m => m.SpecialTests)
                     .Include(m => m.PainScales)
                     .Include(m => m.Sessions)
+                    // NUEVAS INCLUSIONES PARA NUTRICIÓN
+                    .Include(m => m.Measurements)
+                    .Include(m => m.FoodPlans) // <-- AGREGAR ESTO
+                    .Include(m => m.ForbiddenFoods) // <-- AGREGAR ESTO
+                    .Include(m => m.EarlyStimulationSessions) // <-- SI APLICA
+                    .Include(m => m.EarlyStimulationEvolutionTests) // <-- SI APLICA
+                    .Include(m => m.MentalFunctionsPsychologies) // <-- SI APLICA
+                    .Include(m => m.PsychologicalDiagnoses) // <-- SI APLICA
+                    .Include(m => m.PsychologySessions) // <-- SI APLICA
+                    .Include(m => m.ComplementaryExams) // <-- SI APLICA
+                    .Include(m => m.PosturalEvaluations) // <-- SI APLICA
                     .FirstOrDefaultAsync(m => m.CareId == id);
 
                 if (entity == null)
@@ -1962,7 +1982,58 @@ person.SecondLastName
 
                 Console.WriteLine($"[DEBUG] Entidad encontrada, eliminando relaciones...");
 
-                // Eliminar diagnósticos y tratamientos
+                // PRIMERO: Eliminar Measurements y sus relaciones (CRÍTICO)
+                if (entity.Measurements != null)
+                {
+                    Console.WriteLine($"[DEBUG] Eliminando Measurements y sus relaciones...");
+
+                    // Eliminar SkinFolds si existe
+                    if (entity.Measurements.SkinFolds != null)
+                    {
+                        _context.SkinFolds.Remove(entity.Measurements.SkinFolds);
+                        Console.WriteLine($"[DEBUG] SkinFolds eliminado");
+                    }
+
+                    // Eliminar BioImpedance si existe
+                    if (entity.Measurements.BioImpedance != null)
+                    {
+                        _context.BioImpedances.Remove(entity.Measurements.BioImpedance);
+                        Console.WriteLine($"[DEBUG] BioImpedance eliminado");
+                    }
+
+                    // Eliminar Perimeters si existe
+                    if (entity.Measurements.Perimeters != null)
+                    {
+                        _context.Perimeters.Remove(entity.Measurements.Perimeters);
+                        Console.WriteLine($"[DEBUG] Perimeters eliminado");
+                    }
+
+                    // Eliminar Diameters si existe
+                    if (entity.Measurements.Diameters != null)
+                    {
+                        _context.Diameters.Remove(entity.Measurements.Diameters);
+                        Console.WriteLine($"[DEBUG] Diameters eliminado");
+                    }
+
+                    // Finalmente eliminar Measurements
+                    _context.Measurements.Remove(entity.Measurements);
+                    Console.WriteLine($"[DEBUG] Measurements eliminado");
+                }
+
+                // SEGUNDO: Eliminar otras relaciones de nutrición
+                if (entity.FoodPlans != null && entity.FoodPlans.Any())
+                {
+                    _context.FoodPlans.RemoveRange(entity.FoodPlans);
+                    Console.WriteLine($"[DEBUG] {entity.FoodPlans.Count} FoodPlans eliminados");
+                }
+
+                if (entity.ForbiddenFoods != null && entity.ForbiddenFoods.Any())
+                {
+                    _context.ForbiddenFoods.RemoveRange(entity.ForbiddenFoods);
+                    Console.WriteLine($"[DEBUG] {entity.ForbiddenFoods.Count} ForbiddenFoods eliminados");
+                }
+
+                // TERCERO: Eliminar diagnósticos y tratamientos (existente)
                 foreach (var diagnosis in entity.Diagnoses)
                 {
                     foreach (var treatment in diagnosis.Treatments)
@@ -1987,7 +2058,7 @@ person.SecondLastName
 
                 _context.Diagnosis.RemoveRange(entity.Diagnoses);
 
-                // Eliminar otros registros relacionados
+                // CUARTO: Eliminar otros registros relacionados (existente)
                 if (entity.VitalSigns != null)
                     _context.VitalSigns.Remove(entity.VitalSigns);
 
@@ -2020,7 +2091,32 @@ person.SecondLastName
                 _context.PainScales.RemoveRange(entity.PainScales);
                 _context.Sessions.RemoveRange(entity.Sessions);
 
-                // Finalmente eliminar la atención médica
+                // QUINTO: Eliminar otras relaciones específicas
+                if (entity.EarlyStimulationSessions != null && entity.EarlyStimulationSessions.Any())
+                {
+                    _context.EarlyStimulationSessions.RemoveRange(entity.EarlyStimulationSessions);
+                    Console.WriteLine($"[DEBUG] {entity.EarlyStimulationSessions.Count} EarlyStimulationSessions eliminados");
+                }
+
+                if (entity.EarlyStimulationEvolutionTests != null && entity.EarlyStimulationEvolutionTests.Any())
+                {
+                    _context.EarlyStimulationEvolutionTests.RemoveRange(entity.EarlyStimulationEvolutionTests);
+                    Console.WriteLine($"[DEBUG] {entity.EarlyStimulationEvolutionTests.Count} EarlyStimulationEvolutionTests eliminados");
+                }
+
+                if (entity.ComplementaryExams != null && entity.ComplementaryExams.Any())
+                {
+                    _context.ComplementaryExams.RemoveRange(entity.ComplementaryExams);
+                    Console.WriteLine($"[DEBUG] {entity.ComplementaryExams.Count} ComplementaryExams eliminados");
+                }
+
+                if (entity.PosturalEvaluations != null && entity.PosturalEvaluations.Any())
+                {
+                    _context.PosturalEvaluations.RemoveRange(entity.PosturalEvaluations);
+                    Console.WriteLine($"[DEBUG] {entity.PosturalEvaluations.Count} PosturalEvaluations eliminados");
+                }
+
+                // FINALMENTE: Eliminar la atención médica
                 Console.WriteLine($"[DEBUG] Eliminando MedicalCare...");
                 _context.MedicalCares.Remove(entity);
 
@@ -2034,6 +2130,14 @@ person.SecondLastName
             {
                 Console.WriteLine($"[ERROR] Error al eliminar MedicalCare ID {id}: {ex.Message}");
                 Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+
+                // Detalle del error interno
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[ERROR] Inner Exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"[ERROR] Inner StackTrace: {ex.InnerException.StackTrace}");
+                }
+
                 await transaction.RollbackAsync();
                 throw;
             }
@@ -2546,6 +2650,155 @@ person.SecondLastName
 
             Console.WriteLine($"[BACKEND DEBUG GetGeneralMedicine] Total DTOs creados: {result.Count}");
             return result;
+        }
+
+        public async Task<List<MedicalCareDTO>> GetPatientMedicalHistoryAsync(int patientId, int excludeCareId = 0)
+        {
+            try
+            {
+                Console.WriteLine($"[DEBUG REPOSITORY] Obteniendo historial nutricional para PatientId: {patientId}, excluyendo CareId: {excludeCareId}");
+
+                // Primero obtenemos los IDs de ubicaciones de nutrición
+                var nutritionLocationIds = await _context.Locations
+                    .AsNoTracking()
+                    .Where(l => l.Name.ToLower().Contains("nutrición") ||
+                               l.Name.ToLower().Contains("nutricion") ||
+                               l.Name.ToLower().Contains("nutrition"))
+                    .Select(l => l.Id)
+                    .ToListAsync();
+
+                if (!nutritionLocationIds.Any())
+                {
+                    Console.WriteLine("[DEBUG REPOSITORY] No se encontraron ubicaciones de nutrición");
+                    return new List<MedicalCareDTO>();
+                }
+
+                var query = _context.MedicalCares
+                    .AsNoTracking()
+                    .Include(m => m.LocationNavigation)
+                    .Where(m => m.PatientId == patientId &&
+                           nutritionLocationIds.Contains(m.LocationId));
+
+                if (excludeCareId > 0)
+                {
+                    query = query.Where(m => m.CareId != excludeCareId);
+                }
+
+                var medicalCares = await query
+                    .OrderByDescending(m => m.CareDate)
+                    .Take(5) // Limitar a las 5 últimas atenciones
+                    .ToListAsync();
+
+                Console.WriteLine($"[DEBUG REPOSITORY] Atenciones nutricionales encontradas: {medicalCares.Count}");
+
+                // Obtener los IDs para cargar datos relacionados
+                var careIds = medicalCares.Select(m => m.CareId).ToList();
+
+                // Cargar Measurements para cada atención - FILTRAR SOLO LOS QUE TIENEN MedicalCareId
+                var measurementsDict = new Dictionary<int, Measurements>();
+
+                if (careIds.Any())
+                {
+                    var measurementsList = await _context.Measurements
+                        .Include(m => m.SkinFolds)
+                        .Include(m => m.BioImpedance)
+                        .Include(m => m.Perimeters)
+                        .Include(m => m.Diameters)
+                        .Where(m => m.MedicalCareId.HasValue && careIds.Contains(m.MedicalCareId.Value))
+                        .ToListAsync();
+
+                    // Convertir a diccionario, asegurando que MedicalCareId no sea null
+                    foreach (var measurement in measurementsList)
+                    {
+                        if (measurement.MedicalCareId.HasValue)
+                        {
+                            measurementsDict[measurement.MedicalCareId.Value] = measurement;
+                        }
+                    }
+                }
+
+                var result = new List<MedicalCareDTO>();
+
+                foreach (var care in medicalCares)
+                {
+                    var dto = new MedicalCareDTO
+                    {
+                        CareId = care.CareId,
+                        LocationId = care.LocationId,
+                        PlaceOfAttentionId = care.PlaceOfAttentionId,
+                        PatientId = care.PatientId,
+                        HealthProfessionalId = care.HealthProfessionalId,
+                        CareDate = care.CareDate,
+                        Area = care.LocationNavigation?.Name
+                    };
+
+                    // Cargar measurements si existen
+                    if (measurementsDict.TryGetValue(care.CareId, out var measurements))
+                    {
+                        dto.Measurements = new MeasurementsDTO
+                        {
+                            MeasurementsId = measurements.MeasurementsId,
+                            MedicalCareId = measurements.MedicalCareId,
+                            SkinFolds = measurements.SkinFolds != null ? new SkinFoldsDTO
+                            {
+                                SkinFoldsId = measurements.SkinFolds.SkinFoldsId,
+                                Subscapular = measurements.SkinFolds.Subscapular,
+                                Triceps = measurements.SkinFolds.Triceps,
+                                Biceps = measurements.SkinFolds.Biceps,
+                                IliacCrest = measurements.SkinFolds.IliacCrest,
+                                Supraespinal = measurements.SkinFolds.Supraespinal,
+                                Abdominal = measurements.SkinFolds.Abdominal,
+                                FrontalThigh = measurements.SkinFolds.FrontalThigh,
+                                MedialCalf = measurements.SkinFolds.MedialCalf,
+                                MedialAxillary = measurements.SkinFolds.MedialAxillary,
+                                Pectoral = measurements.SkinFolds.Pectoral
+                            } : null,
+                            BioImpedance = measurements.BioImpedance != null ? new BioImpedanceDTO
+                            {
+                                BioImpedanceId = measurements.BioImpedance.BioImpedanceId,
+                                BodyFatPercentage = measurements.BioImpedance.BodyFatPercentage,
+                                UpperSectionFatPercentage = measurements.BioImpedance.UpperSectionFatPercentage,
+                                LowerSectionFatPercentage = measurements.BioImpedance.LowerSectionFatPercentage,
+                                VisceralFat = measurements.BioImpedance.VisceralFat,
+                                MuscleMass = measurements.BioImpedance.MuscleMass,
+                                BoneWeight = measurements.BioImpedance.BoneWeight,
+                                BodyWater = measurements.BioImpedance.BodyWater
+                            } : null,
+                            Perimeters = measurements.Perimeters != null ? new PerimetersDTO
+                            {
+                                PerimetersId = measurements.Perimeters.PerimetersId,
+                                Cephalic = measurements.Perimeters.Cephalic,
+                                Neck = measurements.Perimeters.Neck,
+                                RelaxedArmHalf = measurements.Perimeters.RelaxedArmHalf,
+                                Forearm = measurements.Perimeters.Forearm,
+                                Wrist = measurements.Perimeters.Wrist
+                            } : null,
+                            Diameters = measurements.Diameters != null ? new DiametersDTO
+                            {
+                                DiametersId = measurements.Diameters.DiametersId,
+                                Humerus = measurements.Diameters.Humerus,
+                                Femur = measurements.Diameters.Femur,
+                                Wrist = measurements.Diameters.Wrist
+                            } : null
+                        };
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[DEBUG REPOSITORY] No se encontraron measurements para atención {care.CareId}");
+                    }
+
+                    result.Add(dto);
+                }
+
+                Console.WriteLine($"[DEBUG REPOSITORY] Historial procesado: {result.Count} atenciones con {measurementsDict.Count} measurements");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR REPOSITORY] Error obteniendo historial del paciente: {ex.Message}");
+                Console.WriteLine($"[ERROR REPOSITORY] StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
     }

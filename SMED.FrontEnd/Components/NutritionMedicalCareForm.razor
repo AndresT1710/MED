@@ -308,7 +308,6 @@
             </div>
         </div>
 
-
         <!-- Pestaña 2: Pliegues -->
         <div class="tab-pane @(activeTab == "pliegues" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -321,6 +320,24 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
+                        @if (isLoadingPreviousMeasurements)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando medidas anteriores...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (patientMedicalHistory.Any())
+                        {
+                            <div class="alert alert-success mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Se encontraron <strong>@patientMedicalHistory.Count</strong> atenciones anteriores con mediciones.
+                                Las medidas anteriores se muestran debajo de cada campo.
+                            </div>
+                        }
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Sección de Pliegues Cutáneos</strong> - Complete las mediciones antropométricas del paciente. Los datos se guardan automáticamente.
@@ -329,72 +346,217 @@
                         <div class="row g-3">
                             <!-- Primera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Subescapular (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Subescapular (mm)</span>
+                                    @if (GetPreviousSkinFolds("Subescapular").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Subescapular").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Subscapular"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Subescapular").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Subescapular")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Tríceps (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Tríceps (mm)</span>
+                                    @if (GetPreviousSkinFolds("Tríceps").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Tríceps").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Triceps"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Tríceps").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Tríceps")" />
+                                }
                             </div>
 
                             <!-- Segunda fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Bíceps (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Bíceps (mm)</span>
+                                    @if (GetPreviousSkinFolds("Bíceps").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Bíceps").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Biceps"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Bíceps").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Bíceps")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Cresta Ilíaca (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Cresta Ilíaca (mm)</span>
+                                    @if (GetPreviousSkinFolds("Cresta Ilíaca").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Cresta Ilíaca").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.IliacCrest"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Cresta Ilíaca").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Cresta Ilíaca")" />
+                                }
                             </div>
 
                             <!-- Tercera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Supraespinal (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Supraespinal (mm)</span>
+                                    @if (GetPreviousSkinFolds("Supraespinal").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Supraespinal").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Supraespinal"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Supraespinal").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Supraespinal")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Abdominal (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Abdominal (mm)</span>
+                                    @if (GetPreviousSkinFolds("Abdominal").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Abdominal").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Abdominal"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Abdominal").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Abdominal")" />
+                                }
                             </div>
 
                             <!-- Cuarta fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Muslo Frontal (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Muslo Frontal (mm)</span>
+                                    @if (GetPreviousSkinFolds("Muslo Frontal").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Muslo Frontal").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.FrontalThigh"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Muslo Frontal").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Muslo Frontal")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Pantorrilla Medial (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Pantorrilla Medial (mm)</span>
+                                    @if (GetPreviousSkinFolds("Pantorrilla Medial").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Pantorrilla Medial").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.MedialCalf"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Pantorrilla Medial").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Pantorrilla Medial")" />
+                                }
                             </div>
 
                             <!-- Quinta fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Axilar Medial (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Axilar Medial (mm)</span>
+                                    @if (GetPreviousSkinFolds("Axilar Medial").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Axilar Medial").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.MedialAxillary"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Axilar Medial").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Axilar Medial")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Pectoral (mm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Pectoral (mm)</span>
+                                    @if (GetPreviousSkinFolds("Pectoral").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousSkinFolds("Pectoral").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@skinFoldsData.Pectoral"
                                                @bind-Content:after="AutoSaveSkinFolds" />
+                                @if (GetPreviousSkinFolds("Pectoral").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousSkinFolds("Pectoral")" />
+                                }
                             </div>
                         </div>
 
@@ -418,7 +580,6 @@
             </div>
         </div>
 
-
         <!-- Pestaña 3: Bioimpedancia -->
         <div class="tab-pane @(activeTab == "bioimpedancia" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -431,6 +592,24 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
+                        @if (isLoadingPreviousMeasurements)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando medidas anteriores...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (patientMedicalHistory.Any())
+                        {
+                            <div class="alert alert-success mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Se encontraron <strong>@patientMedicalHistory.Count</strong> atenciones anteriores con mediciones.
+                                Las medidas anteriores se muestran debajo de cada campo.
+                            </div>
+                        }
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Análisis de Composición Corporal</strong> - Registre los resultados de la bioimpedancia. Los datos se guardan automáticamente.
@@ -439,52 +618,153 @@
                         <div class="row g-3">
                             <!-- Primera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Porcentaje de Grasa Corporal (%)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Porcentaje de Grasa Corporal (%)</span>
+                                    @if (GetPreviousBioImpedance("BodyFatPercentage").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("BodyFatPercentage").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.BodyFatPercentage"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("BodyFatPercentage").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("BodyFatPercentage")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Porcentaje Grasa Sección Superior (%)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Porcentaje Grasa Sección Superior (%)</span>
+                                    @if (GetPreviousBioImpedance("UpperSectionFatPercentage").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("UpperSectionFatPercentage").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.UpperSectionFatPercentage"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("UpperSectionFatPercentage").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("UpperSectionFatPercentage")" />
+                                }
                             </div>
 
                             <!-- Segunda fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Porcentaje Grasa Sección Inferior (%)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Porcentaje Grasa Sección Inferior (%)</span>
+                                    @if (GetPreviousBioImpedance("LowerSectionFatPercentage").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("LowerSectionFatPercentage").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.LowerSectionFatPercentage"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("LowerSectionFatPercentage").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("LowerSectionFatPercentage")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Grasa Visceral"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Grasa Visceral</span>
+                                    @if (GetPreviousBioImpedance("VisceralFat").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("VisceralFat").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.VisceralFat"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("VisceralFat").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("VisceralFat")" />
+                                }
                             </div>
 
                             <!-- Tercera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Masa Muscular (kg)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Masa Muscular (kg)</span>
+                                    @if (GetPreviousBioImpedance("MuscleMass").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("MuscleMass").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.MuscleMass"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("MuscleMass").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("MuscleMass")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Peso Óseo (kg)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Peso Óseo (kg)</span>
+                                    @if (GetPreviousBioImpedance("BoneWeight").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("BoneWeight").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.BoneWeight"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("BoneWeight").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("BoneWeight")" />
+                                }
                             </div>
 
                             <!-- Cuarta fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Agua Corporal (L)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Agua Corporal (L)</span>
+                                    @if (GetPreviousBioImpedance("BodyWater").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousBioImpedance("BodyWater").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@bioImpedanceData.BodyWater"
                                                @bind-Content:after="AutoSaveBioImpedance" />
+                                @if (GetPreviousBioImpedance("BodyWater").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousBioImpedance("BodyWater")" />
+                                }
                             </div>
                         </div>
 
@@ -508,8 +788,6 @@
             </div>
         </div>
 
-
-
         <!-- Pestaña 4: Perímetros -->
         <div class="tab-pane @(activeTab == "perimetros" ? "show active" : "")" role="tabpanel">
             <div class="card">
@@ -522,6 +800,24 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
+                        @if (isLoadingPreviousMeasurements)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando medidas anteriores...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (patientMedicalHistory.Any())
+                        {
+                            <div class="alert alert-success mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Se encontraron <strong>@patientMedicalHistory.Count</strong> atenciones anteriores con mediciones.
+                                Las medidas anteriores se muestran debajo de cada campo.
+                            </div>
+                        }
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Perímetros Corporales</strong> - Registre las circunferencias del paciente. Los datos se guardan automáticamente.
@@ -530,38 +826,110 @@
                         <div class="row g-3">
                             <!-- Primera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Cefálico (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Cefálico (cm)</span>
+                                    @if (GetPreviousPerimeters("Cefálico").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousPerimeters("Cefálico").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@perimetersData.Cephalic"
                                                @bind-Content:after="AutoSavePerimeters" />
+                                @if (GetPreviousPerimeters("Cefálico").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousPerimeters("Cefálico")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Cuello (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Cuello (cm)</span>
+                                    @if (GetPreviousPerimeters("Cuello").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousPerimeters("Cuello").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@perimetersData.Neck"
                                                @bind-Content:after="AutoSavePerimeters" />
+                                @if (GetPreviousPerimeters("Cuello").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousPerimeters("Cuello")" />
+                                }
                             </div>
 
                             <!-- Segunda fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Mitad Brazo Relajado (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Mitad Brazo Relajado (cm)</span>
+                                    @if (GetPreviousPerimeters("Mitad Brazo Relajado").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousPerimeters("Mitad Brazo Relajado").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@perimetersData.RelaxedArmHalf"
                                                @bind-Content:after="AutoSavePerimeters" />
+                                @if (GetPreviousPerimeters("Mitad Brazo Relajado").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousPerimeters("Mitad Brazo Relajado")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Antebrazo (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Antebrazo (cm)</span>
+                                    @if (GetPreviousPerimeters("Antebrazo").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousPerimeters("Antebrazo").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@perimetersData.Forearm"
                                                @bind-Content:after="AutoSavePerimeters" />
+                                @if (GetPreviousPerimeters("Antebrazo").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousPerimeters("Antebrazo")" />
+                                }
                             </div>
 
                             <!-- Tercera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Muñeca (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Muñeca (cm)</span>
+                                    @if (GetPreviousPerimeters("Muñeca").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousPerimeters("Muñeca").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@perimetersData.Wrist"
                                                @bind-Content:after="AutoSavePerimeters" />
+                                @if (GetPreviousPerimeters("Muñeca").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousPerimeters("Muñeca")" />
+                                }
                             </div>
                         </div>
 
@@ -597,6 +965,24 @@
                 <div class="card-body">
                     @if (currentMedicalCareId > 0)
                     {
+                        @if (isLoadingPreviousMeasurements)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    <span>Cargando medidas anteriores...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (patientMedicalHistory.Any())
+                        {
+                            <div class="alert alert-success mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Se encontraron <strong>@patientMedicalHistory.Count</strong> atenciones anteriores con mediciones.
+                                Las medidas anteriores se muestran debajo de cada campo.
+                            </div>
+                        }
+
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Diámetros Óseos</strong> - Registre las medidas de la estructura ósea. Los datos se guardan automáticamente.
@@ -605,24 +991,67 @@
                         <div class="row g-3">
                             <!-- Primera fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Húmero (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Húmero (cm)</span>
+                                    @if (GetPreviousDiameters("Húmero").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousDiameters("Húmero").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@diametersData.Humerus"
                                                @bind-Content:after="AutoSaveDiameters" />
+                                @if (GetPreviousDiameters("Húmero").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousDiameters("Húmero")" />
+                                }
                             </div>
+                            
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Fémur (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Fémur (cm)</span>
+                                    @if (GetPreviousDiameters("Fémur").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousDiameters("Fémur").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@diametersData.Femur"
                                                @bind-Content:after="AutoSaveDiameters" />
+                                @if (GetPreviousDiameters("Fémur").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousDiameters("Fémur")" />
+                                }
                             </div>
 
                             <!-- Segunda fila -->
                             <div class="col-md-6">
-                                <ContainerBox1 Title="Muñeca (cm)"
-                                               Width="full"
+                                <label class="form-label fw-bold d-flex justify-content-between">
+                                    <span>Muñeca (cm)</span>
+                                    @if (GetPreviousDiameters("Muñeca").Any())
+                                    {
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-history me-1"></i>
+                                            @GetPreviousDiameters("Muñeca").Count anteriores
+                                        </span>
+                                    }
+                                </label>
+                                <ContainerBox1 Width="full"
                                                @bind-Content="@diametersData.Wrist"
                                                @bind-Content:after="AutoSaveDiameters" />
+                                @if (GetPreviousDiameters("Muñeca").Any())
+                                {
+                                    <PreviousMeasurementsComponent 
+                                        PreviousMeasurements="@GetPreviousDiameters("Muñeca")" />
+                                }
                             </div>
                         </div>
 
@@ -814,7 +1243,7 @@
                     {
                         <div class="alert alert-info mb-3">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Información:</strong> Puede registrar múltiples derivaciones para esta atención de psicología.
+                            <strong>Información:</strong> Puede registrar múltiples derivaciones para esta atención de nutrición.
                         </div>
 
                         <EditableTable Title="Derivaciones"
@@ -948,8 +1377,6 @@
                 </div>
             </div>
         </div>
-
-
     </div>
 </div>
 
@@ -957,7 +1384,6 @@
     [Parameter] public MedicalCareDTO MedicalCare { get; set; } = new();
     [Parameter] public EventCallback<MedicalCareDTO> OnSaved { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
-
 
 
     // Variables para pestañas
@@ -1028,13 +1454,293 @@
     private int? selectedLocationDId = null;
     private bool hasUnsavedReferralData = false;
 
+    // Variables para medidas anteriores
+    private List<MedicalCareDTO> patientMedicalHistory = new();
+    private Dictionary<int, MeasurementsDTO> previousMeasurementsCache = new();
+    private bool isLoadingPreviousMeasurements = false;
+
+    private async Task LoadPatientMedicalHistory()
+    {
+        if (currentMedicalCareId <= 0 || selectedPatientId <= 0)
+        {
+            await JS.InvokeVoidAsync("console.log",
+                "No se puede cargar historial: CareId o PatientId no válidos");
+            return;
+        }
+
+        try
+        {
+            isLoadingPreviousMeasurements = true;
+            StateHasChanged();
+
+            // Limpiar datos anteriores
+            patientMedicalHistory = new List<MedicalCareDTO>();
+            previousMeasurementsCache = new Dictionary<int, MeasurementsDTO>();
+
+            await JS.InvokeVoidAsync("console.log",
+                $"Iniciando carga de historial: Paciente={selectedPatientId}, Atención actual={currentMedicalCareId}");
+
+            // Obtener historial de atenciones anteriores de nutrición
+            var history = await MedicalCareService.GetPatientMedicalHistoryAsync(
+                selectedPatientId, currentMedicalCareId);
+
+            if (history != null && history.Any())
+            {
+                // Ordenar por fecha de atención descendente (la más reciente primero)
+                patientMedicalHistory = history
+                    .OrderByDescending(h => h.CareDate)
+                    .ToList();
+
+                await JS.InvokeVoidAsync("console.log",
+                    $"Se encontraron {patientMedicalHistory.Count} atenciones anteriores");
+
+                // Procesar cada atención para extraer measurements
+                foreach (var care in patientMedicalHistory)
+                {
+                    try
+                    {
+                        // Intentar obtener measurements directamente del DTO
+                        if (care.Measurements != null)
+                        {
+                            previousMeasurementsCache[care.CareId] = care.Measurements;
+                            await JS.InvokeVoidAsync("console.log",
+                                $"✓ Measurements cargados para atención {care.CareId} ({care.CareDate:dd/MM/yyyy})");
+                        }
+                        else
+                        {
+                            await JS.InvokeVoidAsync("console.log",
+                                $"✗ Atención {care.CareId} no tiene measurements");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await JS.InvokeVoidAsync("console.error",
+                            $"Error procesando atención {care.CareId}: {ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.log", "No se encontraron atenciones anteriores");
+            }
+
+            await DebugMeasurementsData(); // Mostrar datos para depuración
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Error cargando historial: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingPreviousMeasurements = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DebugMeasurementsData()
+    {
+        await JS.InvokeVoidAsync("console.log", "=== DEBUG: Historial de Medidas ===");
+        await JS.InvokeVoidAsync("console.log", $"Total atenciones: {patientMedicalHistory.Count}");
+
+        foreach (var care in patientMedicalHistory)
+        {
+            await JS.InvokeVoidAsync("console.log",
+                $"\nAtención ID: {care.CareId}, Fecha: {care.CareDate:dd/MM/yyyy}");
+
+            if (previousMeasurementsCache.ContainsKey(care.CareId))
+            {
+                var measurements = previousMeasurementsCache[care.CareId];
+                await JS.InvokeVoidAsync("console.log", $"  Measurements ID: {measurements.MeasurementsId}");
+
+                // Verificar pliegues
+                if (measurements.SkinFolds != null)
+                {
+                    var skinFolds = measurements.SkinFolds;
+                    await JS.InvokeVoidAsync("console.log", $"  Pliegues disponibles:");
+                    if (!string.IsNullOrEmpty(skinFolds.Subscapular))
+                        await JS.InvokeVoidAsync("console.log", $"    - Subescapular: {skinFolds.Subscapular}");
+                    if (!string.IsNullOrEmpty(skinFolds.Triceps))
+                        await JS.InvokeVoidAsync("console.log", $"    - Tríceps: {skinFolds.Triceps}");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("console.log", $"  No hay pliegues");
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("console.log", $"  Sin measurements en cache");
+            }
+        }
+    }
+
+    // Método para obtener medidas anteriores de pliegues
+    private List<PreviousMeasurementDTO> GetPreviousSkinFolds(string foldType)
+    {
+        var previousList = new List<PreviousMeasurementDTO>();
+
+        foreach (var kvp in previousMeasurementsCache)
+        {
+            var care = patientMedicalHistory.FirstOrDefault(c => c.CareId == kvp.Key);
+            if (care == null) continue;
+
+            var measurements = kvp.Value;
+            var skinFolds = measurements.SkinFolds;
+            if (skinFolds == null) continue;
+
+            string? value = foldType switch
+            {
+                "Subescapular" => skinFolds.Subscapular,
+                "Tríceps" => skinFolds.Triceps,
+                "Bíceps" => skinFolds.Biceps,
+                "Cresta Ilíaca" => skinFolds.IliacCrest,
+                "Supraespinal" => skinFolds.Supraespinal,
+                "Abdominal" => skinFolds.Abdominal,
+                "Muslo Frontal" => skinFolds.FrontalThigh,
+                "Pantorrilla Medial" => skinFolds.MedialCalf,
+                "Axilar Medial" => skinFolds.MedialAxillary,
+                "Pectoral" => skinFolds.Pectoral,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                previousList.Add(new PreviousMeasurementDTO
+                    {
+                        Value = value,
+                        MeasurementDate = care.CareDate,
+                        MedicalCareId = care.CareId,
+                        Area = care.Area ?? "Nutrición"
+                    });
+            }
+        }
+
+        // Ordenar por fecha descendente para que la más reciente aparezca primero
+        return previousList.OrderByDescending(p => p.MeasurementDate).ToList();
+    }
+
+    // Hacer lo mismo para los otros métodos:
+    private List<PreviousMeasurementDTO> GetPreviousBioImpedance(string type)
+    {
+        var previousList = new List<PreviousMeasurementDTO>();
+
+        foreach (var kvp in previousMeasurementsCache)
+        {
+            var care = patientMedicalHistory.FirstOrDefault(c => c.CareId == kvp.Key);
+            if (care == null) continue;
+
+            var measurements = kvp.Value;
+            var bioImpedance = measurements.BioImpedance;
+            if (bioImpedance == null) continue;
+
+            string? value = type switch
+            {
+                "BodyFatPercentage" => bioImpedance.BodyFatPercentage,
+                "UpperSectionFatPercentage" => bioImpedance.UpperSectionFatPercentage,
+                "LowerSectionFatPercentage" => bioImpedance.LowerSectionFatPercentage,
+                "VisceralFat" => bioImpedance.VisceralFat,
+                "MuscleMass" => bioImpedance.MuscleMass,
+                "BoneWeight" => bioImpedance.BoneWeight,
+                "BodyWater" => bioImpedance.BodyWater,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                previousList.Add(new PreviousMeasurementDTO
+                    {
+                        Value = value,
+                        MeasurementDate = care.CareDate,
+                        MedicalCareId = care.CareId,
+                        Area = care.Area ?? "Nutrición"
+                    });
+            }
+        }
+
+        return previousList.OrderByDescending(p => p.MeasurementDate).ToList();
+    }
+
+    private List<PreviousMeasurementDTO> GetPreviousPerimeters(string type)
+    {
+        var previousList = new List<PreviousMeasurementDTO>();
+
+        foreach (var kvp in previousMeasurementsCache)
+        {
+            var care = patientMedicalHistory.FirstOrDefault(c => c.CareId == kvp.Key);
+            if (care == null) continue;
+
+            var measurements = kvp.Value;
+            var perimeters = measurements.Perimeters;
+            if (perimeters == null) continue;
+
+            string? value = type switch
+            {
+                "Cefálico" => perimeters.Cephalic,
+                "Cuello" => perimeters.Neck,
+                "Mitad Brazo Relajado" => perimeters.RelaxedArmHalf,
+                "Antebrazo" => perimeters.Forearm,
+                "Muñeca" => perimeters.Wrist,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                previousList.Add(new PreviousMeasurementDTO
+                    {
+                        Value = value,
+                        MeasurementDate = care.CareDate,
+                        MedicalCareId = care.CareId,
+                        Area = care.Area ?? "Nutrición"
+                    });
+            }
+        }
+
+        return previousList.OrderByDescending(p => p.MeasurementDate).ToList();
+    }
+
+    private List<PreviousMeasurementDTO> GetPreviousDiameters(string type)
+    {
+        var previousList = new List<PreviousMeasurementDTO>();
+
+        foreach (var kvp in previousMeasurementsCache)
+        {
+            var care = patientMedicalHistory.FirstOrDefault(c => c.CareId == kvp.Key);
+            if (care == null) continue;
+
+            var measurements = kvp.Value;
+            var diameters = measurements.Diameters;
+            if (diameters == null) continue;
+
+            string? value = type switch
+            {
+                "Húmero" => diameters.Humerus,
+                "Fémur" => diameters.Femur,
+                "Muñeca" => diameters.Wrist,
+                _ => null
+            };
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                previousList.Add(new PreviousMeasurementDTO
+                    {
+                        Value = value,
+                        MeasurementDate = care.CareDate,
+                        MedicalCareId = care.CareId,
+                        Area = care.Area ?? "Nutrición"
+                    });
+            }
+        }
+
+        return previousList.OrderByDescending(p => p.MeasurementDate).ToList();
+    }
+
+
     protected override async Task OnInitializedAsync()
     {
         await LoadLocationsAndPlaces();
         await LoadHealthProfessionals();
         await ObtenerProfesionalLogueado();
         await LoadReferralData();
-
 
         if (MedicalCare != null && MedicalCare.CareId > 0)
         {
@@ -1051,24 +1757,36 @@
 
     // ========== MÉTODOS PARA PESTAÑAS ==========
 
-    // ========== MÉTODOS PARA PESTAÑAS ==========
-
     private async Task SetActiveTab(string tab)
     {
         if (tab != "patient" && !IsPatientTabComplete())
         {
             showValidationErrors = true;
-            await JS.InvokeVoidAsync("alert", "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
+            await JS.InvokeVoidAsync("alert",
+                "Debe completar toda la información obligatoria en la pestaña de Selección de Paciente antes de continuar.");
             return;
         }
 
         if (tab != "patient" && currentMedicalCareId == 0)
         {
-            await JS.InvokeVoidAsync("alert", "Debe guardar primero los datos básicos del paciente antes de continuar.");
+            await JS.InvokeVoidAsync("alert",
+                "Debe guardar primero los datos básicos del paciente antes de continuar.");
             return;
         }
 
-        // Cargar datos específicos de la pestaña cuando se activa
+        // Cargar historial del paciente cuando se accede a pestañas de mediciones
+        if ((tab == "pliegues" || tab == "bioimpedancia" || tab == "perimetros" || tab == "diametros")
+            && currentMedicalCareId > 0 && selectedPatientId > 0)
+        {
+            await JS.InvokeVoidAsync("console.log",
+                $"Activando pestaña {tab}, cargando historial...");
+            await LoadPatientMedicalHistory();
+
+            // Esperar un momento para que se actualice la UI
+            await Task.Delay(300);
+        }
+
+        // Cargar datos específicos de la pestaña
         if (tab == "pliegues" && currentMedicalCareId > 0)
         {
             await LoadSkinFoldsData();
@@ -1087,7 +1805,9 @@
         }
         else if (tab == "plan" && currentMedicalCareId > 0)
         {
+            await LoadFoodsData();
             await LoadFoodPlansData();
+            await LoadForbiddenFoodsData();
         }
         else if (tab == "referral" && currentMedicalCareId > 0)
         {

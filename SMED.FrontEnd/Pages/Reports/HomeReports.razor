@@ -23,19 +23,18 @@
     </div>
 
     <!-- Filtros para Generación de Reportes PDF -->
-<div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Generación de Reportes PDF</h5>
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Tipo de Reporte</label>
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Generación de Reportes PDF</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tipo de Reporte</label>
                     <select @bind="ReportRequest.ReportType" class="form-select">
                         <option value="">Seleccione un reporte</option>
                         <option value="medical-care">Atenciones Médicas</option>
                         <option value="patient">Pacientes</option>
-                        <option value="patient-specific">Paciente Específico</option>
                         <option value="professional">Profesionales</option>
                         <option value="professional-detail">Detalle de Profesional</option>
                         <option value="location">Por Ubicación</option>
@@ -43,15 +42,15 @@
                         <option value="top-patients">Pacientes con Más Atenciones</option>
                         <option value="statistical">Estadístico</option>
                     </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Fecha Inicio</label>
-                <input type="date" @bind="ReportRequest.StartDate" @bind:format="yyyy-MM-dd" class="form-control" />
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Fecha Fin</label>
-                <input type="date" @bind="ReportRequest.EndDate" @bind:format="yyyy-MM-dd" class="form-control" />
-            </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" @bind="ReportRequest.StartDate" @bind:format="yyyy-MM-dd" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" @bind="ReportRequest.EndDate" @bind:format="yyyy-MM-dd" class="form-control" />
+                </div>
                 <div class="col-md-2">
                     <label class="form-label">Área</label>
                     <select @bind="SelectedArea" class="form-select">
@@ -62,39 +61,39 @@
                         }
                     </select>
                 </div>
-            <div class="col-md-2">
-                <label class="form-label">Profesional</label>
-                <select @bind="ReportRequest.HealthProfessionalId" class="form-select">
-                    <option value="">Todos</option>
-                    @if (FilteredProfessionals.Any())
-                    {
-                        @foreach (var prof in FilteredProfessionals)
+                <div class="col-md-2">
+                    <label class="form-label">Profesional</label>
+                    <select @bind="ReportRequest.HealthProfessionalId" class="form-select">
+                        <option value="">Todos</option>
+                        @if (FilteredProfessionals.Any())
                         {
-                            <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                            @foreach (var prof in FilteredProfessionals)
+                            {
+                                <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                            }
                         }
-                    }
-                    else
-                    {
-                        @foreach (var prof in Professionals)
+                        else
                         {
-                            <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                            @foreach (var prof in Professionals)
+                            {
+                                <option value="@prof.HealthProfessionalId">@prof.FullName</option>
+                            }
                         }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12">
-                <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@IsLoading">
-                    <i class="fas fa-file-pdf"></i> Generar Reporte PDF
-                </button>
-                <button class="btn btn-outline-secondary" @onclick="ClearReportFilters">
-                    <i class="fas fa-broom"></i> Limpiar Filtros
-                </button>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary me-2" @onclick="GenerateReport" disabled="@IsLoading">
+                        <i class="fas fa-file-pdf"></i> Generar Reporte PDF
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ClearReportFilters">
+                        <i class="fas fa-broom"></i> Limpiar Filtros
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     @if (IsLoading || IsLoadingStatistics)
     {
@@ -321,11 +320,11 @@
                                                     <td>@item.City</td>
                                                     <td>@item.Department</td>
                                                     <td class="text-end">
-                                                        <span class="badge bg-info" ">@item.Count</span>
+                                                        <span class="badge bg-info">@item.Count</span>
                                                     </td>
                                                 </tr>
 
-                                                @if (rowCount >= 50) // Limitar a 50 filas para mejor rendimiento
+                                                @if (rowCount >= 50)
                                                 {
                                                     <tr>
                                                         <td colspan="4" class="text-center text-muted">
@@ -714,18 +713,6 @@
                                         </div>
                                     }
                                 </div>
-
-                                <!-- Renderizar mini gráficos después de renderizar la tabla -->
-                                @if (AreaViewMode == "table")
-                                {
-                                    <script>
-                                        setTimeout(() => {
-                                            if (typeof renderAreaMiniCharts !== 'undefined') {
-                                                renderAreaMiniCharts();
-                                            }
-                                        }, 300);
-                                    </script>
-                                }
                             }
                             else
                             {
@@ -764,16 +751,14 @@
             </div>
         </div>
     }
-
-    
 </div>
 
 @code {
-    private ReportRequestDTO ReportRequest { get; set; } = new();
-    private List<HealthProfessionalDTO> Professionals { get; set; } = new();
-    private List<HealthProfessionalDTO> FilteredProfessionals { get; set; } = new();
-    private List<LocationDTO> Areas { get; set; } = new();
-    private List<PlaceOfAttentionDTO> Locations { get; set; } = new();
+    private ReportRequestDTO ReportRequest { get; set; } = new ReportRequestDTO();
+    private List<HealthProfessionalDTO> Professionals { get; set; } = new List<HealthProfessionalDTO>();
+    private List<HealthProfessionalDTO> FilteredProfessionals { get; set; } = new List<HealthProfessionalDTO>();
+    private List<LocationDTO> Areas { get; set; } = new List<LocationDTO>();
+    private List<PlaceOfAttentionDTO> Locations { get; set; } = new List<PlaceOfAttentionDTO>();
     private bool IsLoading = false;
     private bool IsLoadingStatistics = false;
     private bool ShowStatistics = true;
@@ -819,13 +804,12 @@
     private int TotalConsultations = 0;
 
     // VARIABLES PARA LAS TABLAS
-    private Dictionary<string, int> AttentionsByGender = new();
-    private List<LocationAttentionData> AttentionsByLocation = new();
-    private List<AgeRangeAttentionData> AttentionsByAgeRange = new();
-    private List<ReferralBetweenDepartmentsData> ReferralsBetweenDepartments = new();
-    private List<ServicesByDepartmentData> ServicesByDepartment = new();
-    private List<AttentionByAreaData> AttentionsByArea = new();
-
+    private Dictionary<string, int> AttentionsByGender = new Dictionary<string, int>();
+    private List<LocationAttentionData> AttentionsByLocation = new List<LocationAttentionData>();
+    private List<AgeRangeAttentionData> AttentionsByAgeRange = new List<AgeRangeAttentionData>();
+    private List<ReferralBetweenDepartmentsData> ReferralsBetweenDepartments = new List<ReferralBetweenDepartmentsData>();
+    private List<ServicesByDepartmentData> ServicesByDepartment = new List<ServicesByDepartmentData>();
+    private List<AttentionByAreaData> AttentionsByArea = new List<AttentionByAreaData>();
 
     // Variables para controlar vista tabla/gráfico
     private string GenderViewMode = "table";
@@ -841,7 +825,6 @@
     private DateTime? AreaFilterEndDate;
     private DateTime AreaStartDate;
     private DateTime AreaEndDate;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -1246,7 +1229,6 @@
             // Procesar atenciones por área
             await ProcessAttentionsByArea(professionalData, allPersons);
 
-
             Message = "Estadísticas actualizadas correctamente";
         }
         catch (Exception ex)
@@ -1303,11 +1285,11 @@
 
             // Contar atenciones por género
             var genderCounts = new Dictionary<string, int>
-        {
-            { "Masculino", 0 },
-            { "Femenino", 0 },
-            { "Otro", 0 }
-        };
+            {
+                { "Masculino", 0 },
+                { "Femenino", 0 },
+                { "Otro", 0 }
+            };
 
             foreach (var medicalCare in allMedicalCares)
             {
@@ -1443,15 +1425,15 @@
         }
 
         var ageRanges = new List<AgeRangeAttentionData>
-    {
-        new AgeRangeAttentionData { Range = "0-10 años", MinAge = 0, MaxAge = 10 },
-        new AgeRangeAttentionData { Range = "11-20 años", MinAge = 11, MaxAge = 20 },
-        new AgeRangeAttentionData { Range = "21-30 años", MinAge = 21, MaxAge = 30 },
-        new AgeRangeAttentionData { Range = "31-40 años", MinAge = 31, MaxAge = 40 },
-        new AgeRangeAttentionData { Range = "41-50 años", MinAge = 41, MaxAge = 50 },
-        new AgeRangeAttentionData { Range = "51-60 años", MinAge = 51, MaxAge = 60 },
-        new AgeRangeAttentionData { Range = "61+ años", MinAge = 61, MaxAge = 200 }
-    };
+        {
+            new AgeRangeAttentionData { Range = "0-10 años", MinAge = 0, MaxAge = 10 },
+            new AgeRangeAttentionData { Range = "11-20 años", MinAge = 11, MaxAge = 20 },
+            new AgeRangeAttentionData { Range = "21-30 años", MinAge = 21, MaxAge = 30 },
+            new AgeRangeAttentionData { Range = "31-40 años", MinAge = 31, MaxAge = 40 },
+            new AgeRangeAttentionData { Range = "41-50 años", MinAge = 41, MaxAge = 50 },
+            new AgeRangeAttentionData { Range = "51-60 años", MinAge = 51, MaxAge = 60 },
+            new AgeRangeAttentionData { Range = "61+ años", MinAge = 61, MaxAge = 200 }
+        };
 
         var departmentNames = Areas.Select(a => a.Name).ToList();
 
@@ -1751,6 +1733,7 @@
             return new List<MedicalCareDTO>();
         }
     }
+
     // Métodos para filtros de área
     private void ToggleAreaFilters()
     {
@@ -1947,7 +1930,7 @@
         public string Range { get; set; } = string.Empty;
         public int MinAge { get; set; }
         public int MaxAge { get; set; }
-        public Dictionary<string, int> ByDepartment { get; set; } = new();
+        public Dictionary<string, int> ByDepartment { get; set; } = new Dictionary<string, int>();
         public int Total { get; set; }
     }
 
@@ -1963,7 +1946,7 @@
         public string Department { get; set; } = string.Empty;
         public string ProfessionalName { get; set; } = string.Empty; // Nueva propiedad
         public int TotalServices { get; set; }
-        public Dictionary<string, int> ServiceTypes { get; set; } = new();
+        public Dictionary<string, int> ServiceTypes { get; set; } = new Dictionary<string, int>();
     }
 
     public class AttentionByAreaData
@@ -1972,7 +1955,7 @@
         public int TotalConsultations { get; set; }
         public int UniquePatients { get; set; }
         public double AverageConsultationsPerPatient { get; set; }
-        public Dictionary<string, int> ConsultationsByMonth { get; set; } = new();
+        public Dictionary<string, int> ConsultationsByMonth { get; set; } = new Dictionary<string, int>();
     }
 
     public class LocationAttentionData
@@ -1982,6 +1965,4 @@
         public string Department { get; set; } = string.Empty;
         public int Count { get; set; }
     }
-
-
 }

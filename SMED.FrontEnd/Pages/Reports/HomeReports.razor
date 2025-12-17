@@ -208,7 +208,7 @@
                                             {
                                                 <tr>
                                                     <td>@item.Key</td>
-                                                    <td><span class="badge bg-primary">@item.Value</span></td>
+                                                    <td><span class="badge bg-info">@item.Value</span></td>
                                                     <td>@(TotalConsultations > 0 ? ((item.Value * 100.0 / TotalConsultations).ToString("F1") + "%") : "0%")</td>
                                                 </tr>
                                             }
@@ -234,7 +234,7 @@
             <!-- TABLA: Atenciones por Ciudad/Provincia -->
             <div class="col-md-6 mb-4">
                 <div class="card">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Atenciones por Ubicación Geográfica</h6>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm @(LocationViewMode == "table" ? "btn-light" : "btn-outline-light")"
@@ -287,7 +287,7 @@
                                                     <td>@item.City</td>
                                                     <td>@item.Department</td>
                                                     <td class="text-end">
-                                                        <span class="badge bg-success">@item.Count</span>
+                                                        <span class="badge bg-info" ">@item.Count</span>
                                                     </td>
                                                 </tr>
 
@@ -346,7 +346,7 @@
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card">
-                    <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-user-clock me-2"></i>Atenciones por Rango de Edad y Departamento</h6>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm @(AgeViewMode == "table" ? "btn-light" : "btn-outline-light")"
@@ -412,7 +412,7 @@
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card">
-                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Derivaciones entre Departamentos</h6>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm @(ReferralViewMode == "table" ? "btn-light" : "btn-outline-light")"
@@ -449,7 +449,7 @@
                                                 <tr>
                                                     <td>@item.FromDepartment</td>
                                                     <td>@item.ToDepartment</td>
-                                                    <td><span class="badge bg-danger">@item.Count</span></td>
+                                                    <td><span class="badge bg-info">@item.Count</span></td>
                                                     <td>@((item.Count * 100.0 / Math.Max(totalReferrals, 1)).ToString("F1"))%</td>
                                                 </tr>
                                             }
@@ -473,11 +473,11 @@
             </div>
         </div>
 
-        <!-- TABLA: Servicios Realizados por Departamento -->
+        <!-- TABLA: Servicios Realizados por profesional -->
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card">
-                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-briefcase-medical me-2"></i>Servicios Realizados por Profesional</h6>
                         <div class="btn-group" role="group">
                             <button class="btn btn-sm @(ServiceViewMode == "table" ? "btn-light" : "btn-outline-light")"
@@ -602,7 +602,7 @@
                                             <tr>
                                                 <th>Área Médica</th>
                                                 <th class="text-center">Total Atenciones</th>
-                                                <th class="text-center">Pacientes Únicos</th>
+                                                <th class="text-center">Pacientes</th>
                                                 <th class="text-center">Prom. Atenciones/Paciente</th>
                                                 <th class="text-center">Tendencia</th>
                                             </tr>

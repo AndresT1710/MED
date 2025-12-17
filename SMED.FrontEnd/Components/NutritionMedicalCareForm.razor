@@ -2888,16 +2888,16 @@
     private async Task OnAddReferralRequested()
     {
         currentReferral = new MedicalReferralDTO
-            {
-                Id = 0,
-                MedicalCareId = currentMedicalCareId,
-                DateOfReferral = DateTime.Now,
-                Description = "",
-                AdditionalNotes = "",
-                Status = "Pendiente",
-                IsUrgent = false,
-                LocationId = null
-            };
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            DateOfReferral = DateTime.Now,
+            Description = "",
+            AdditionalNotes = "",
+            Status = "Pendiente",
+            IsUrgent = false,
+            LocationId = null
+        };
 
         selectedLocationDId = null;
         referralErrors.Clear();
@@ -2910,16 +2910,16 @@
         if (existing != null)
         {
             currentReferral = new MedicalReferralDTO
-                {
-                    Id = existing.Id,
-                    MedicalCareId = existing.MedicalCareId,
-                    DateOfReferral = existing.DateOfReferral,
-                    Description = existing.Description ?? "",
-                    AdditionalNotes = existing.AdditionalNotes,
-                    Status = existing.Status ?? "Pendiente",
-                    IsUrgent = existing.IsUrgent,
-                    LocationId = existing.LocationId
-                };
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                DateOfReferral = existing.DateOfReferral,
+                Description = existing.Description ?? "",
+                AdditionalNotes = existing.AdditionalNotes,
+                Status = existing.Status ?? "Pendiente",
+                IsUrgent = existing.IsUrgent,
+                LocationId = existing.LocationId
+            };
 
             selectedLocationDId = existing.LocationId;
         }

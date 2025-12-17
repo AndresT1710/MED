@@ -511,9 +511,6 @@
                                 <button class="btn btn-outline-primary me-2" @onclick="@(() => SetActiveTab("services"))">
                                     Ir a Servicios <i class="fas fa-arrow-right ms-2"></i>
                                 </button>
-                                <button class="btn btn-outline-info" @onclick="@(() => SetActiveTab("procedures"))">
-                                    Ir a Procedimientos <i class="fas fa-arrow-right ms-2"></i>
-                                </button>
                             </div>
                         </div>
                     }
@@ -1257,13 +1254,13 @@
         ClearServiceForm();
 
         currentService = new MedicalServiceDTO
-            {
-                ServiceId = 0,
-                PatientId = selectedPatientId,
-                HealthProfessionalId = selectedHealthProfessionalId,
-                CareId = createdCareId.Value,
-                ServiceDate = DateTime.Now
-            };
+        {
+            ServiceId = 0,
+            PatientId = selectedPatientId,
+            HealthProfessionalId = selectedHealthProfessionalId,
+            CareId = createdCareId.Value,
+            ServiceDate = DateTime.Now
+        };
 
         StateHasChanged();
     }
@@ -1280,17 +1277,17 @@
             if (service != null)
             {
                 currentService = new MedicalServiceDTO
-                    {
-                        ServiceId = service.ServiceId,
-                        PatientId = service.PatientId,
-                        HealthProfessionalId = service.HealthProfessionalId,
-                        CareId = service.CareId,
-                        ServiceDate = service.ServiceDate,
-                        ServiceType = service.ServiceType,
-                        Diagnosis = service.Diagnosis,
-                        Observations = service.Observations,
-                        Recommendations = service.Recommendations
-                    };
+                {
+                    ServiceId = service.ServiceId,
+                    PatientId = service.PatientId,
+                    HealthProfessionalId = service.HealthProfessionalId,
+                    CareId = service.CareId,
+                    ServiceDate = service.ServiceDate,
+                    ServiceType = service.ServiceType,
+                    Diagnosis = service.Diagnosis,
+                    Observations = service.Observations,
+                    Recommendations = service.Recommendations
+                };
 
                 serviceErrors.Clear();
                 serviceFormError = "";
@@ -1784,13 +1781,13 @@
             var profesional = profesionales.FirstOrDefault(p => p.HealthProfessionalId == selectedHealthProfessionalId);
 
             var medicalCareDto = new MedicalCareDTO
-                {
-                    PatientId = selectedPatientId,
-                    HealthProfessionalId = selectedHealthProfessionalId, // Ya asignado automáticamente
-                    PlaceOfAttentionId = int.Parse(lugarSeleccionada),
-                    LocationId = enfermerialLocationId,
-                    CareDate = DateTime.Now,
-                };
+            {
+                PatientId = selectedPatientId,
+                HealthProfessionalId = selectedHealthProfessionalId, // Ya asignado automáticamente
+                PlaceOfAttentionId = int.Parse(lugarSeleccionada),
+                LocationId = enfermerialLocationId,
+                CareDate = DateTime.Now,
+            };
 
             var result = await MedicalCareService.CreateAsync(medicalCareDto);
             if (!result.Success)
@@ -1810,10 +1807,10 @@
             if (!string.IsNullOrWhiteSpace(motivoConsulta))
             {
                 var reasonDto = new ReasonForConsultationDTO
-                    {
-                        Description = motivoConsulta.Trim(),
-                        MedicalCareId = createdCareId.Value
-                    };
+                {
+                    Description = motivoConsulta.Trim(),
+                    MedicalCareId = createdCareId.Value
+                };
                 await ReasonForConsultationService.CreateAsync(reasonDto);
             }
         }
@@ -2082,15 +2079,15 @@
         ClearProcedureForm();
 
         currentProcedure = new MedicalProcedureDTO
-            {
-                ProcedureId = 0,
-                PatientId = selectedPatientId,
-                CareId = createdCareId.Value,
-                ProcedureDate = DateTime.Now,
-                Status = "Realizado",
-                SpecificProcedureId = 0,
-                LocationId = enfermerialLocationId
-            };
+        {
+            ProcedureId = 0,
+            PatientId = selectedPatientId,
+            CareId = createdCareId.Value,
+            ProcedureDate = DateTime.Now,
+            Status = "Realizado",
+            SpecificProcedureId = 0,
+            LocationId = enfermerialLocationId
+        };
 
         StateHasChanged();
     }
@@ -2116,18 +2113,18 @@
                 await JS.InvokeVoidAsync("console.log", $"SpecificProcedureId: {procedure.SpecificProcedureId}");
 
                 currentProcedure = new MedicalProcedureDTO
-                    {
-                        ProcedureId = procedure.ProcedureId,
-                        PatientId = procedure.PatientId,
-                        CareId = procedure.CareId,
-                        ProcedureDate = procedure.ProcedureDate,
-                        HealthProfessionalId = procedure.HealthProfessionalId,
-                        TypeOfProcedureId = procedure.TypeOfProcedureId,
-                        SpecificProcedureId = procedure.SpecificProcedureId,
-                        LocationId = procedure.LocationId,
-                        Observations = procedure.Observations,
-                        Status = procedure.Status
-                    };
+                {
+                    ProcedureId = procedure.ProcedureId,
+                    PatientId = procedure.PatientId,
+                    CareId = procedure.CareId,
+                    ProcedureDate = procedure.ProcedureDate,
+                    HealthProfessionalId = procedure.HealthProfessionalId,
+                    TypeOfProcedureId = procedure.TypeOfProcedureId,
+                    SpecificProcedureId = procedure.SpecificProcedureId,
+                    LocationId = procedure.LocationId,
+                    Observations = procedure.Observations,
+                    Status = procedure.Status
+                };
 
                 selectedTypeOfProcedureId = procedure.TypeOfProcedureId ?? 0;
 
@@ -2487,22 +2484,22 @@
                 }
 
                 var vitalSignsDto = new VitalSignsDTO
-                    {
-                        Id = existingVitalSigns?.Id ?? 0,
-                        MedicalCareId = medicalCareResult.CareId,
-                        Weight = ParseDecimal(pesoInput),
-                        Height = ParseDecimal(tallaInput),
-                        Icm = calculatedIMC ?? ParseDecimal(imcInput),
-                        AbdominalCircumference = ParseDecimal(perimetroAbdominalInput),
-                        BloodPressure = string.IsNullOrWhiteSpace(presionArterialInput) ? null : presionArterialInput.Trim(),
-                        Temperature = ParseDecimal(temperaturaInput),
-                        MeanArterialPressure = ParseDecimal(pamInput),
-                        HeartRate = ParseInt(frecuenciaCardiacaInput),
-                        OxygenSaturation = ParseDecimal(saturacionOxigenoInput),
-                        RespiratoryRate = ParseInt(frecuenciaRespiratoriaInput),
-                        BloodGlucose = ParseDecimal(glucosaCapilarInput),
-                        Hemoglobin = ParseDecimal(hemoglobinaInput)
-                    };
+                {
+                    Id = existingVitalSigns?.Id ?? 0,
+                    MedicalCareId = medicalCareResult.CareId,
+                    Weight = ParseDecimal(pesoInput),
+                    Height = ParseDecimal(tallaInput),
+                    Icm = calculatedIMC ?? ParseDecimal(imcInput),
+                    AbdominalCircumference = ParseDecimal(perimetroAbdominalInput),
+                    BloodPressure = string.IsNullOrWhiteSpace(presionArterialInput) ? null : presionArterialInput.Trim(),
+                    Temperature = ParseDecimal(temperaturaInput),
+                    MeanArterialPressure = ParseDecimal(pamInput),
+                    HeartRate = ParseInt(frecuenciaCardiacaInput),
+                    OxygenSaturation = ParseDecimal(saturacionOxigenoInput),
+                    RespiratoryRate = ParseInt(frecuenciaRespiratoriaInput),
+                    BloodGlucose = ParseDecimal(glucosaCapilarInput),
+                    Hemoglobin = ParseDecimal(hemoglobinaInput)
+                };
 
                 try
                 {
@@ -2695,16 +2692,16 @@
     private async Task OnAddReferralRequested()
     {
         currentReferral = new MedicalReferralDTO
-            {
-                Id = 0,
-                MedicalCareId = currentMedicalCareId,
-                DateOfReferral = DateTime.Now,
-                Description = "",
-                AdditionalNotes = "",
-                Status = "Pendiente",
-                IsUrgent = false,
-                LocationId = null // Inicializar como null
-            };
+        {
+            Id = 0,
+            MedicalCareId = currentMedicalCareId,
+            DateOfReferral = DateTime.Now,
+            Description = "",
+            AdditionalNotes = "",
+            Status = "Pendiente",
+            IsUrgent = false,
+            LocationId = null // Inicializar como null
+        };
 
         selectedLocationDId = null; // Resetear selección
         referralErrors.Clear();
@@ -2717,16 +2714,16 @@
         if (existing != null)
         {
             currentReferral = new MedicalReferralDTO
-                {
-                    Id = existing.Id,
-                    MedicalCareId = existing.MedicalCareId,
-                    DateOfReferral = existing.DateOfReferral,
-                    Description = existing.Description ?? "",
-                    AdditionalNotes = existing.AdditionalNotes,
-                    Status = existing.Status ?? "Pendiente",
-                    IsUrgent = existing.IsUrgent,
-                    LocationId = existing.LocationId // CARGAR EL LOCATION_ID EXISTENTE
-                };
+            {
+                Id = existing.Id,
+                MedicalCareId = existing.MedicalCareId,
+                DateOfReferral = existing.DateOfReferral,
+                Description = existing.Description ?? "",
+                AdditionalNotes = existing.AdditionalNotes,
+                Status = existing.Status ?? "Pendiente",
+                IsUrgent = existing.IsUrgent,
+                LocationId = existing.LocationId // CARGAR EL LOCATION_ID EXISTENTE
+            };
 
             // Asignar el LocationId al selector
             selectedLocationDId = existing.LocationId;
